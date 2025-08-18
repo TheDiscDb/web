@@ -1,0 +1,4 @@
+﻿@if (!string.IsNullOrWhiteSpace(this.Asin))
+{
+    <span class="amazon-associates-button" title="View on Amazon"><a href="@GetUrl()" target="_blank" rel="noreferrer"><img src="/amazon-icon.png" alt="View on Amazon" class="amazonAssociatesButton" width="@this.Width" /></a></span>
+}

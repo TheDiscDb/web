@@ -1,0 +1,51 @@
+﻿@page "/{type}/{slug}/releases/{releaseSlug}"
+
+<PageTitle>Release Detail</PageTitle>
+
+@if (Item == null || Release == null)
+{
+    <Div>Item or release not found</Div>
+}
+else
+{
+    <PageTitle>@Item.Title - @Release.Title - TheDiscDb</PageTitle>
+    <HeadContent>
+        <meta name="description" content="The releases @Release.Title from the @Item.Type contained on TheDiscDb." />
+        <link rel="canonical" href="@BuildCanonicalLink(GetReleaseLink(Item, Release))" />
+    </HeadContent>
+    <div class="vstack">
+        <TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootLink(this.Item), GetMediaItemLink(this.Item)]" PrimaryText="@Release.Title" />
+        <div class="hstack gap-3 align-items-start">
+            <MediaImage Url="@Release?.ImageUrl" Width="413" Height="525" Title="@Release?.FullTitle" />
+            <div class="vstack">
+                <h1>@Item.FullTitle</h1>
+                <h2>@Release?.FullTitle</h2>
+                <div>Released @string.Format("{0:d}", @Release?.ReleaseDate)</div>
+                <AmazonAssociatesButton Asin="@Release?.Asin" Width="25" />
+                <ul>
+                    @if (Release?.Discs != null)
+                    {
+                        foreach (var disc in Release.Discs)
+                        {
+                            <li><Anchor To="@disc.DiscDetailUrl(this.Release, this.Item)">@disc.FullDiscName()</Anchor></li>
+                            <ul class="facts">
+                                @foreach (var feature in NavigationExtensions.GetDiscFeatures(disc))
+                                {
+                                    <li>
+                                        <span class="feature">@feature.Description</span>
+                                        @if (feature.HasChapters)
+                                        {
+                                            <span title="Has chapter names">
+                                                <Icon Name="IconName.List" />
+                                            </span>
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}

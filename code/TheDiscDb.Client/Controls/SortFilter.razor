@@ -1,0 +1,18 @@
+﻿@using Blazorise
+
+@typeparam TSortItem
+
+<div class="hstack gap-0">
+    <span>Sort by: </span>
+    <select @onchange="SortDefinitionChanged">
+        @if (AllItems != null)
+        {
+            foreach (var state in AllItems)
+            {
+                <option value="@state.Id" checked="@(state!.Default)">@state.DisplayText</option>
+            }
+        }
+    </select>
+
+    <button type="button" class="btn" @onclick="SortDirectionClicked"><Icon Name="@SortIcon" title="@SortDirectionDescription" /></button>
+</div>

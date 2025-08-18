@@ -1,0 +1,16 @@
+﻿@if (Item != null && IsMediaItem)
+{
+    var filteredItems = MediaItem?.MediaItemGroups.Where(g => g?.Group?.Name != null && g.Group.Name.Equals(this.Text, StringComparison.OrdinalIgnoreCase) && g?.Role != null && g.Role.Equals(this.Role, StringComparison.OrdinalIgnoreCase)).ToList();
+    if (filteredItems == null || filteredItems.Count == 0)
+    {
+        <li>@this.Text</li>
+    }
+    else
+    {
+        var group = filteredItems.First().Group;
+        @if(group != null)
+        {
+            <li key=@group.Slug><a href="/g/@group.Slug">@group.Name</a></li>
+        }
+    }
+}
