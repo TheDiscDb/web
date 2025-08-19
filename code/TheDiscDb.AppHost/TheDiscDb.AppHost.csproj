@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" Version="9.4.1" />
+    <PackageReference Include="Aspire.Hosting.Azure.AppService" Version="9.4.1-preview.1.25408.4" />
+    <PackageReference Include="Aspire.Hosting.Azure.Sql" Version="9.4.1" />
     <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="9.4.1" />
     <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.4.1" />
   </ItemGroup>

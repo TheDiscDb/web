@@ -1,0 +1,11 @@
+using './migrations.module.bicep'
+
+param migrations_containerimage = '{{ .Image }}'
+param migrations_identity_outputs_clientid = '{{ .Env.MIGRATIONS_IDENTITY_CLIENTID }}'
+param migrations_identity_outputs_id = '{{ .Env.MIGRATIONS_IDENTITY_ID }}'
+param prod_outputs_azure_container_registry_endpoint = '{{ .Env.PROD_AZURE_CONTAINER_REGISTRY_ENDPOINT }}'
+param prod_outputs_azure_container_registry_managed_identity_client_id = '{{ .Env.PROD_AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_CLIENT_ID }}'
+param prod_outputs_azure_container_registry_managed_identity_id = '{{ .Env.PROD_AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID }}'
+param prod_outputs_planid = '{{ .Env.PROD_PLANID }}'
+param sql_outputs_sqlserverfqdn = '{{ .Env.SQL_SQLSERVERFQDN }}'
+param storage_outputs_blobendpoint = '{{ .Env.STORAGE_BLOBENDPOINT }}'
