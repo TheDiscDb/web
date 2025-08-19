@@ -158,6 +158,7 @@
             }
             else
             {
+                // TODO: Is this correct logic? Seems backwards
                 if (!dataImportOptions.Value.CleanImport)
                 {
                     // clear the existing discs
@@ -240,8 +241,7 @@
                 throw new ArgumentNullException(nameof(path));
             }
 
-
-            var index = path.IndexOf(string.Format("{0}data{0}", this.fileSystem.Path.DirectorySeparatorChar));
+            var index = path.LastIndexOf(string.Format("{0}data{0}", this.fileSystem.Path.DirectorySeparatorChar));
             if (index > 0)
             {
                 return path.Substring(0, index + 6);
@@ -298,6 +298,7 @@
                     metadata.ImageUrl = remotePath;
 
                     // re-save the metadata file
+                    // TODO: This might cause files to change in local dev scenarios
                     json = JsonSerializer.Serialize(metadata, JsonOptions);
                     await this.fileSystem.File.WriteAllText(metaDataFile, json, cancellationToken);
                 }
@@ -381,22 +382,49 @@
                         Map(release, releaseFile);
 
                         string imagePath = this.fileSystem.Path.Combine(releaseFolder, "front.jpg");
-                        if (await this.fileSystem.File.Exists(imagePath, cancellationToken) && string.IsNullOrEmpty(release.ImageUrl))
+                        if (await this.fileSystem.File.Exists(imagePath, cancellationToken))
                         {
+                            bool releaseChanged = false;
                             string remotePath = string.Format("{0}/{1}/{2}.jpg", metadata.Type, metadata.Slug, release.Slug);
-                            string url = await this.imageStore.SaveImage(imagePath, remotePath, cancellationToken);
-                            release.ImageUrl = remotePath;
-                            releaseFile.ImageUrl = remotePath;
+                            bool existsInBlobStorage = await this.imageStore.Exists(remotePath, cancellationToken);
+                            if (string.IsNullOrEmpty(release.ImageUrl))
+                            {
+                                if (!existsInBlobStorage)
+                                {
+                                    string url = await this.imageStore.SaveImage(imagePath, remotePath, cancellationToken);
+                                }
 
-                            // re-save the release file
-                            json = JsonSerializer.Serialize(releaseFile, JsonOptions);
-                            await this.fileSystem.File.WriteAllText(releaseFilePath, json, cancellationToken);
+                                release.ImageUrl = remotePath;
+                                releaseFile.ImageUrl = remotePath;
+                                releaseChanged = true;
+                            }
+                            else
+                            {
+                                if (!existsInBlobStorage)
+                                {
+                                    string url = await this.imageStore.SaveImage(imagePath, remotePath, cancellationToken);
+                                    if (releaseFile.ImageUrl != remotePath)
+                                    {
+                                        release.ImageUrl = remotePath;
+                                        releaseFile.ImageUrl = remotePath;
+                                        releaseChanged = true;
+                                    }
+                                }
+                            }
+
+                            if (releaseChanged)
+                            {
+                                // re-save the release file
+                                json = JsonSerializer.Serialize(releaseFile, JsonOptions);
+                                await this.fileSystem.File.WriteAllText(releaseFilePath, json, cancellationToken);
+                            }
                         }
 
                         if (!dataImportOptions.Value.CleanImport)
                         {
                             release.Discs.Clear();
                         }
+
                         foreach (var file in await this.fileSystem.Directory.GetFiles(releaseFolder, "disc*.json", cancellationToken))
                         {
                             string fileName = this.fileSystem.Path.GetFileName(file);

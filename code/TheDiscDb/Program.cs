@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Text;
 using Azure;
 using Azure.Storage.Blobs.Models;
@@ -8,7 +7,6 @@ using Blazorise.Icons.FontAwesome;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SixLabors.ImageSharp.Web.Caching.Azure;
 using SixLabors.ImageSharp.Web.DependencyInjection;
@@ -72,20 +70,23 @@ builder.Services
     .AddTheDiscDbClient()
     .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{serviceUrl}/graphql"));
 
+builder.AddAzureBlobServiceClient("blobs");
+var blobConnectionString = builder.Configuration.GetConnectionString("blobs") ?? throw new Exception("Blob connection string not configured");
+var blobContainerName = builder.Configuration.GetValue<string>("BlobStorage:Container") ?? throw new Exception("Blob storage container not configured");
 builder.Services.AddImageSharp()
     .ClearProviders()
     .Configure<AzureBlobStorageImageProviderOptions>(options =>
     {
         options.BlobContainers.Add(new AzureBlobContainerClientOptions
         {
-            ConnectionString = builder.Configuration.GetValue<string>("BlobStorage:ConnectionString") ?? throw new Exception("Blob storage connection string not configured"),
-            ContainerName = builder.Configuration.GetValue<string>("BlobStorage:Container") ?? throw new Exception("Blob storage container not configured")
+            ConnectionString = blobConnectionString,
+            ContainerName = blobContainerName
         });
     })
     .Configure<AzureBlobStorageCacheOptions>(options =>
     {
-        options.ConnectionString = builder.Configuration.GetValue<string>("BlobStorage:ConnectionString") ?? throw new ArgumentException("Required configuration 'BlobStorage:ConnectionString' was not found");
         options.ContainerName = "imagecache";
+        options.ConnectionString = blobConnectionString;
 
         // Optionally create the cache container on startup if not already created.
         AzureBlobStorageCache.CreateIfNotExists(options, PublicAccessType.None);
@@ -153,8 +154,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
-
-//app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -13,4 +13,9 @@
         public string FullName { get; set; }
         public string ShortName { get; set; }
     }
+
+    public class BlobStorageOptions
+    {
+        public string? ContainerName { get; set; }
+    }
 }

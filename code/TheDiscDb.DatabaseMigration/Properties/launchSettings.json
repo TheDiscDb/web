@@ -5,8 +5,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Development",
-        "DatabaseMigration__DataDirectoryRoot": "C:\\code\\thediscdb\\data\\data"
+        "DOTNET_ENVIRONMENT": "Development"
       }
     }
   }

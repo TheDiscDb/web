@@ -19,16 +19,16 @@ builder.AddSqlServerDbContext<SqlServerDataContext>("thediscdb", configureDbCont
         x.MigrationsAssembly("TheDiscDb.DatabaseMigration");
     });
 });
+builder.Services.AddScoped<IDbContextFactory<SqlServerDataContext>, SingletonDbContextFactory>();
+
+builder.AddAzureBlobServiceClient("blobs");
+builder.Services.Configure<BlobStorageOptions>(builder.Configuration.GetSection("BlobStorage"));
+builder.Services.AddSingleton<IStaticImageStore, BlobStorageStaticImageStore>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IFileSystem, PhysicalFileSystem>();
-builder.Services.AddScoped<IDbContextFactory<SqlServerDataContext>, SingletonDbContextFactory>();
-// todo replace with real one
-builder.Services.AddSingleton<IStaticImageStore, NullStaticImageStore>();
-builder.Services.Configure<DataImporterOptions>(o =>
-{
-    o.CleanImport = true;
-});
+
+builder.Services.Configure<DataImporterOptions>(builder.Configuration.GetSection("DataImporter"));
 builder.Services.AddScoped<DataImporter>();
 builder.Services.Configure<DatabaseMigrationOptions>(builder.Configuration.GetSection("DatabaseMigration"));
 

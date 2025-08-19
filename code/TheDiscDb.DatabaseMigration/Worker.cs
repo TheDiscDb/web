@@ -26,7 +26,12 @@ public class Worker(
             var options = scope.ServiceProvider.GetRequiredService<IOptions<DatabaseMigrationOptions>>();
             
             await RunMigrationAsync(dbContext, cancellationToken);
-            await SeedDataAsync(dataImporter, options.Value, cancellationToken);
+
+            bool hasData = await dbContext.MediaItems.AnyAsync();
+            if (!hasData) // TODO: Allow more data to be imported/forced
+            {
+                await SeedDataAsync(dataImporter, options.Value, cancellationToken);
+            }
         }
         catch (Exception ex)
         {
@@ -49,26 +54,26 @@ public class Worker(
 
     private async Task SeedDataAsync(DataImporter dataImporter, DatabaseMigrationOptions options, CancellationToken cancellationToken)
     {
-        var randomMovies = GetRandomSubdirectories(Path.Combine(options.DataDirectoryRoot, "movie"));
+        var randomMovies = GetRandomSubdirectories(Path.Combine(options.DataDirectoryRoot, "movie"), options.MaxItemsToImportPerMediaType);
         foreach (var item in randomMovies)
         {
             await dataImporter.Import(item, cancellationToken);
         }
 
-        var randomSeries = GetRandomSubdirectories(Path.Combine(options.DataDirectoryRoot, "series"));
+        var randomSeries = GetRandomSubdirectories(Path.Combine(options.DataDirectoryRoot, "series"), options.MaxItemsToImportPerMediaType);
         foreach (var item in randomSeries)
         {
             await dataImporter.Import(item, cancellationToken);
         }
 
-        var randomSets = GetRandomSubdirectories(Path.Combine(options.DataDirectoryRoot, "sets"));
+        var randomSets = GetRandomSubdirectories(Path.Combine(options.DataDirectoryRoot, "sets"), options.MaxItemsToImportPerMediaType);
         foreach (var item in randomSets)
         {
             await dataImporter.Import(item, cancellationToken);
         }
     }
 
-    private static IEnumerable<string> GetRandomSubdirectories(string directory, int max = 5)
+    private static IEnumerable<string> GetRandomSubdirectories(string directory, int max)
     {
         var subDirectories = Directory.GetDirectories(directory);
         var randomized = subDirectories.OrderBy(i => Guid.NewGuid()).Take(max);
