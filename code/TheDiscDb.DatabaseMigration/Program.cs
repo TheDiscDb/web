@@ -1,5 +1,6 @@
+using Fantastic.FileSystem;
 using Microsoft.EntityFrameworkCore;
-
+using TheDiscDb.Data.Import;
 using TheDiscDb.DatabaseMigration;
 using TheDiscDb.Web.Data;
 
@@ -19,6 +20,17 @@ builder.AddSqlServerDbContext<SqlServerDataContext>("thediscdb", configureDbCont
     });
 });
 
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IFileSystem, PhysicalFileSystem>();
+builder.Services.AddScoped<IDbContextFactory<SqlServerDataContext>, SingletonDbContextFactory>();
+// todo replace with real one
+builder.Services.AddSingleton<IStaticImageStore, NullStaticImageStore>();
+builder.Services.Configure<DataImporterOptions>(o =>
+{
+    o.CleanImport = true;
+});
+builder.Services.AddScoped<DataImporter>();
+builder.Services.Configure<DatabaseMigrationOptions>(builder.Configuration.GetSection("DatabaseMigration"));
 
 var host = builder.Build();
 host.Run();

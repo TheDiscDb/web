@@ -67,7 +67,6 @@ builder.Services.AddScoped<TheDiscDb.Client.SearchClient>();
 
 var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")!.Split(";");
 var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));
-//serviceUrl = "https://thediscdb.com";
 
 builder.Services
     .AddTheDiscDbClient()

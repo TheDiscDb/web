@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using TheDiscDb.Data.Import;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.DatabaseMigration;
@@ -18,10 +20,13 @@ public class Worker(
         try
         {
             using var scope = serviceProvider.CreateScope();
+            
             var dbContext = scope.ServiceProvider.GetRequiredService<SqlServerDataContext>();
-
+            var dataImporter = scope.ServiceProvider.GetRequiredService<DataImporter>();
+            var options = scope.ServiceProvider.GetRequiredService<IOptions<DatabaseMigrationOptions>>();
+            
             await RunMigrationAsync(dbContext, cancellationToken);
-            await SeedDataAsync(dbContext, cancellationToken);
+            await SeedDataAsync(dataImporter, options.Value, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -42,17 +47,31 @@ public class Worker(
         });
     }
 
-    private static Task SeedDataAsync(SqlServerDataContext dbContext, CancellationToken cancellationToken)
+    private async Task SeedDataAsync(DataImporter dataImporter, DatabaseMigrationOptions options, CancellationToken cancellationToken)
     {
-        return Task.CompletedTask;
-        //var strategy = dbContext.Database.CreateExecutionStrategy();
-        //await strategy.ExecuteAsync(async () =>
-        //{
-        //    // Seed the database
-        //    await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-        //    await dbContext.Tickets.AddAsync(firstTicket, cancellationToken);
-        //    await dbContext.SaveChangesAsync(cancellationToken);
-        //    await transaction.CommitAsync(cancellationToken);
-        //});
+        var randomMovies = GetRandomSubdirectories(Path.Combine(options.DataDirectoryRoot, "movie"));
+        foreach (var item in randomMovies)
+        {
+            await dataImporter.Import(item, cancellationToken);
+        }
+
+        var randomSeries = GetRandomSubdirectories(Path.Combine(options.DataDirectoryRoot, "series"));
+        foreach (var item in randomSeries)
+        {
+            await dataImporter.Import(item, cancellationToken);
+        }
+
+        var randomSets = GetRandomSubdirectories(Path.Combine(options.DataDirectoryRoot, "sets"));
+        foreach (var item in randomSets)
+        {
+            await dataImporter.Import(item, cancellationToken);
+        }
+    }
+
+    private static IEnumerable<string> GetRandomSubdirectories(string directory, int max = 5)
+    {
+        var subDirectories = Directory.GetDirectories(directory);
+        var randomized = subDirectories.OrderBy(i => Guid.NewGuid()).Take(max);
+        return randomized;
     }
 }
