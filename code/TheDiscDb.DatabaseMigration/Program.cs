@@ -31,6 +31,7 @@ builder.Services.AddSingleton<IFileSystem, PhysicalFileSystem>();
 builder.Services.Configure<DataImporterOptions>(builder.Configuration.GetSection("DataImporter"));
 builder.Services.AddScoped<DataImporter>();
 builder.Services.Configure<DatabaseMigrationOptions>(builder.Configuration.GetSection("DatabaseMigration"));
+builder.Services.AddScoped<DataSeeder>();
 
 var host = builder.Build();
 host.Run();

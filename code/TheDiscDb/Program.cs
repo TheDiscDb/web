@@ -1,13 +1,10 @@
-using System.Text;
 using Azure;
 using Azure.Storage.Blobs.Models;
 using Blazorise;
 using Blazorise.Bootstrap5;
 using Blazorise.Icons.FontAwesome;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
-using Microsoft.IdentityModel.Tokens;
 using SixLabors.ImageSharp.Web.Caching.Azure;
 using SixLabors.ImageSharp.Web.DependencyInjection;
 using SixLabors.ImageSharp.Web.Providers.Azure;
@@ -15,7 +12,6 @@ using TheDiscDb;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Search;
 using TheDiscDb.Web;
-using TheDiscDb.Web.Authentication;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
 
@@ -36,7 +32,6 @@ builder.Services
     .AddBlazorise(options =>
     {
         options.Immediate = true;
-        options.ProductToken = "CjxRBHF6NA0+UAJxfDM1BlEAc3s1DD1WAHl+Nws7bjoNJ2ZdYhBVCCo/CTRQBUxERldhE1EvN0xcNm46FD1gSkUHCkxESVFvBl4yK1FBfAYKAiFoVXkNWTU3CDJTPHQAGkR/Xip0HhFIeVQ8bxMBUmtTPApwfjUIPG46HhFEbVgscw4DVXRJN3UeEUh5VDxvEwFSa1M8CnB+NQg8bjoeEUZwTTFkEhFadU07bx4cSm9fPG97fzUIAWlvHgJMa1g1eQQZWmdBImgeEVd3WzBvHnQ0CDxTAExEWmdYMXUEGEx9WzxvDA9dZ1MxfxYdWmc2UgBxfggyZyBKMnxwXmJSZDQrcVRaEHt4BzMXdiFqFAZjVjQOUnl7TAE4DWYyBUdIfTtmbi93Ym9UdG4dVk9YOmAtPWh2YjlfdH5gYiMPSjMlY1M+B2YCFzMXQRNiFiJPTnsAVTF6QEg0MAUoFzBdPyBdcD4wfnUreRsZc1x6L3EnHVxaPBVJGD88E0AuYQUpYm87UwUUBFd9eygFGSNDWmkhfTINTVAnUUhxfDxibTNDfA==\r\n\r\n";
     })
     .AddBootstrap5Providers()
     .AddFontAwesomeIcons();
@@ -94,62 +89,36 @@ builder.Services.AddImageSharp()
     .SetCache<AzureBlobStorageCache>()
     .AddProvider<AzureBlobStorageImageProvider>();
 
+var searchApiKey = builder.Configuration["Search:ApiKey"];
+bool searchEnabled = !string.IsNullOrEmpty(searchApiKey);
+
 builder.Services.AddAzureClients(b =>
 {
     var endpoint = builder.Configuration["Search:Endpoint"];
-    if (endpoint == null)
+    if (!searchEnabled || endpoint == null)
     {
-        throw new Exception("Search:Endpoint not configured");
-    }
-
-    var apiKey = builder.Configuration["Search:ApiKey"];
-    if (apiKey == null)
-    {
-        throw new Exception("Search:ApiKey not configured");
+        return;
     }
 
     var uri = new Uri(endpoint);
-    var credential = new AzureKeyCredential(apiKey);
+    var credential = new AzureKeyCredential(searchApiKey!);
     b.AddSearchIndexClient(uri, credential);
 });
-builder.Services.AddSingleton<ISearchService, SearchService>();
-builder.Services.AddSingleton<ISearchIndexService, SearchIndexService>();
+
+if (!searchEnabled)
+{
+    builder.Services.AddSingleton<ISearchService, NullSearchService>();
+    builder.Services.AddSingleton<ISearchIndexService, NullSearchIndexService>();
+}
+else
+{
+    builder.Services.AddSingleton<ISearchService, SearchService>();
+    builder.Services.AddSingleton<ISearchIndexService, SearchIndexService>();
+}
+    
 builder.Services.Configure<SearchOptions>(builder.Configuration.GetSection("Search"));
 builder.Services.AddSingleton<CacheHelper>();
 builder.Services.AddSingleton<SitemapGenerator>();
-
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options => {
-
-    var issuer = builder.Configuration["Jwt:Issuer"];
-    if (issuer == null)
-    {
-        throw new Exception("Jwt:Issuer not configured");
-    }
-
-    var audience = builder.Configuration["Jwt:Audience"];
-    if (audience == null)
-    {
-        throw new Exception("Jwt:Audience not configured");
-    }
-
-    var key = builder.Configuration["Jwt:Key"];
-    if (key == null)
-    {
-        throw new Exception("Jwt:Key not configured");
-    }
-
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = issuer,
-        ValidAudience = audience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
-    };
-});
 
 var app = builder.Build();
 
