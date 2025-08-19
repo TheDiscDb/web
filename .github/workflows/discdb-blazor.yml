@@ -1,0 +1,51 @@
+name: Build and deploy Blazor app
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main']
+    paths: ['src/**']
+env:
+  AZURE_WEBAPP_NAME: discdb
+  AZURE_WEBAPP_PACKAGE_PATH: TheDiscDb\TheDiscDb\published
+  CONFIGURATION: Release
+  DOTNET_CORE_VERSION: 9.0.x
+  WORKING_DIRECTORY: code\TheDiscDb
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
+    - name: Add github nuget source
+      run: dotnet nuget add source --username lfoust --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/TheDiscDb/index.json"
+    - name: Restore
+      run: dotnet restore "${{ env.WORKING_DIRECTORY }}\TheDiscDb.csproj"
+    - name: Build
+      run: dotnet build "${{ env.WORKING_DIRECTORY }}\TheDiscDb.csproj" --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Test
+      run: dotnet test "${{ env.WORKING_DIRECTORY }}" --no-build
+    - name: Publish
+      run: dotnet publish "${{ env.WORKING_DIRECTORY }}\TheDiscDb.csproj" --configuration ${{ env.CONFIGURATION }} --no-build --output "${{ env.AZURE_WEBAPP_PACKAGE_PATH }}"
+    - name: Publish Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: webapp
+        path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+  deploy:
+    runs-on: windows-latest
+    needs: build
+    steps:
+    - name: Download artifact from build job
+      uses: actions/download-artifact@v4
+      with:
+        name: webapp
+        path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    - name: Deploy to Azure WebApp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.discdb_D0FA }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
