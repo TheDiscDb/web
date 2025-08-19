@@ -1,0 +1,101 @@
+﻿@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndex}/{file}/{extension}"
+@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndex}/{file}"
+@page "/{type}/{slug}/discs/{slugOrIndex}/{file}"
+@page "/{type}/{slug}/discs/{slugOrIndex}/{file}/{extension}"
+
+@if (Item == null || Release == null || Disc == null || Title == null)
+{
+    <Div>Item, Release, Disc, or Title not found</Div>
+}
+else
+{
+    <PageTitle>@Item.Title - @Release.Title - TheDiscDb</PageTitle>
+    <HeadContent>
+        <meta name="description" content="Details about the file @Title.SourceFile from @Release.Title disc @Disc.Index including chapters and individual tracks." />
+        <link rel="canonical" href="@BuildCanonicalLink(GetDiscTitleLink(Item, Release, Disc, Title.SourceFile))" />
+    </HeadContent>
+    <div class="vstack">
+        <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@Title.SourceFile" Items="[
+            GetRootLink(this.Item),
+            GetMediaItemLink(this.Item),
+            GetReleaseLink(this.Item, this.Release),
+            GetDiscLink(this.Item, this.Release, this.Disc)
+        ]" />
+        <div class="container">
+            <div class="row">
+                <div class="col-3">
+                    <div class="vstack">
+                        <p class="people-role">Source File</p>
+                        <p class="people">@Title.SourceFile</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="vstack">
+                        <p class="people-role">Description</p>
+                        <p class="people">@Title.TitleDescription()</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="vstack">
+                        <p class="people-role">Length</p>
+                        <p class="people">@Title.Duration</p>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-3">
+                    <div class="vstack">
+                        <p class="people-role">Type</p>
+                        @if (Title.Item != null)
+                        {
+                            <p class="people">@Title.Item.Type</p>
+                        }
+                        else
+                        {
+                            <p class="people"></p>
+                        }
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="vstack">
+                        <p class="people-role">Segment Map</p>
+                        <p class="people" style="overflowWrap: anywhere;">@Title.SegmentMap</p>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="vstack">
+                        <p class="people-role">Size</p>
+                        <p class="people">@Title.DisplaySize</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if (Title.Item != null && Title.Item.Chapters != null && Title.Item.Chapters.Count > 0)
+        {
+            <h3>Chapters</h3>
+            <ol>
+                @foreach (var chapter in Title.Item.Chapters)
+                {
+                    <li>@chapter.Title</li>
+                }
+            </ol>
+        }
+        <Table>
+            <TableHeader>
+                <TableHeaderCell>Index</TableHeaderCell>
+                <TableHeaderCell>Description</TableHeaderCell>
+                <TableHeaderCell>Type</TableHeaderCell>
+            </TableHeader>
+            <TableBody>
+                @foreach (var track in Title.Tracks)
+                {
+                    <TableRow>
+                        <TableRowCell>@track.Index</TableRowCell>
+                        <TableRowCell>@track.GetDesciption()</TableRowCell>
+                        <TableRowCell>@track.Type</TableRowCell>
+                    </TableRow>
+                }
+            </TableBody>
+        </Table>
+    </div>
+}

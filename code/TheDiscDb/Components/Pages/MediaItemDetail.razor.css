@@ -1,0 +1,65 @@
+﻿::deep div.facts {
+    display: flex;
+}
+
+::deep div.facts span + span {
+    padding-left: 20px;
+    position: relative;
+    top: 0;
+    left: 0;
+}
+
+::deep div.facts span.certification {
+    display: inline-flex;
+    white-space: nowrap;
+    align-items: center;
+    align-content: center;
+    padding: 0.06em 4px 0.15em 4px !important;
+    border: 1px solid rgba(0, 0, 0, 0.6);
+    color: rgba(0, 0, 0, 0.6);
+    line-height: 1;
+    border-radius: 2px;
+    margin-right: 7px
+}
+
+::deep h3.tagline {
+    margin-bottom: 0;
+    font-size: 1.1em;
+    font-weight: 400;
+    font-style: italic;
+    opacity: 0.7;
+    margin-top: 1em;
+}
+
+::deep h3.tagline + h3 {
+    margin-top: 10px
+}
+
+::deep p.people-role {
+    font-weight: bold;
+    margin-bottom: 0px;
+}
+
+::deep p.people {
+    text-overflow: ellipsis;
+}
+
+::deep .groupList {
+    display: inline;
+    list-style: none;
+    padding-left: 0;
+}
+
+::deep .groupList li {
+    display: inline;
+}
+
+/* Make the items comma delimited */
+::deep .groupList li:after {
+    content: ", ";
+}
+
+/* Remove the trailing comma */
+::deep .groupList li:last-child:after {
+    content: "";
+}

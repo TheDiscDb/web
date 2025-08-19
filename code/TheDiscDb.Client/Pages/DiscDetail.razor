@@ -1,0 +1,64 @@
+﻿@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndexString}"
+@page "/disc/{contentHash}"
+
+@rendermode InteractiveAuto
+@using Blazorise
+
+@if (Item == null || Disc == null || Release == null)
+{
+    <Div>Item, Disc or Release not found</Div>
+}
+else
+{
+    <PageTitle>@Item.Title - @Release.Title - @Disc.Name - TheDiscDb</PageTitle>
+    <HeadContent>
+        <meta name="description" content="Details about the disc @Disc.Name from the release @Release.Title." />
+        <link rel="canonical" href="@BuildCanonicalLink(GetDiscLink(Item, Release, Disc))" />
+    </HeadContent>
+    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@Disc.GetFullName()" Items="[
+            GetRootLink(this.Item),
+            GetMediaItemLink(this.Item),
+            GetReleaseLink(this.Item, this.Release),
+            GetDiscLink(this.Item, this.Release, this.Disc)
+        ]" />
+    <h1>@Disc.GetFullName()</h1>
+    <h2>@Release.Title</h2>
+
+    <Switch TValue="bool" CheckedChanged="AllTitlesChanged">
+        Show all titles
+    </Switch>
+
+    <Table>
+        <TableHeader>
+            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("SourceFile"))">Source File</TableHeaderCell>
+            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("Description"))">Description</TableHeaderCell>
+            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("ItemType"))">Type</TableHeaderCell>
+            @if (this.Item!.Type!.Equals("series", StringComparison.OrdinalIgnoreCase))
+            {
+                <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("Season"))">Season</TableHeaderCell>
+                <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("Episode"))">Episode</TableHeaderCell>
+            }
+            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("SegmentMap"))">Segment Map</TableHeaderCell>
+            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("Duration"))">Length</TableHeaderCell>
+            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("DisplaySize"))">Size</TableHeaderCell>
+        </TableHeader>
+        <TableBody>
+            @foreach (var title in FilteredTitles)
+            {
+                <TableRow>
+                    <TableRowCell><Anchor To="@TitleDetailUrl(title)">@title.SourceFile</Anchor></TableRowCell>
+                    <TableRowCell>@title.Description</TableRowCell>
+                    <TableRowCell>@title.ItemType</TableRowCell>
+                    @if (this.Item!.Type!.Equals("series", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <TableRowCell>@title.Season</TableRowCell>
+                        <TableRowCell>@title.Episode</TableRowCell>
+                    }
+                    <TableRowCell>@title.SegmentMap</TableRowCell>
+                    <TableRowCell>@title.Duration</TableRowCell>
+                    <TableRowCell>@title.DisplaySize</TableRowCell>
+                </TableRow>
+            }
+        </TableBody>
+    </Table>
+}

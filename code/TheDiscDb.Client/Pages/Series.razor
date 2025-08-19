@@ -1,0 +1,27 @@
+﻿@page "/series"
+
+@rendermode InteractiveAuto
+@using TheDiscDb.Components.InfiniteScrolling
+
+<PageTitle>All TV Series - TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="The full list of tv series contained on TheDiscDb." />
+    <link rel="canonical" href="https://thediscdb.com/series" />
+</HeadContent>
+
+<SortFilter AllItems="@SortItemDefinitions" SelectionChanged="SortDefinitionChanged" TSortItem="MediaItemSortInput" />
+
+<div class="media-item-list">
+    <InfiniteScrolling ItemsProvider="GetItems" @ref="infiniteScrolling">
+        <ItemTemplate Context="Item">
+            <div>
+                <a href="@Item.ItemDetailUrl()" title="@Item.Title">
+                    <MediaImage Url="@Item?.ImageUrl" Width="156" Height="231" Title="@Item?.Title" />
+                </a>
+            </div>
+        </ItemTemplate>
+        <LoadingTemplate>
+            <div><span class="oi oi-reload spin"></span> Loading more items...</div>
+        </LoadingTemplate>
+    </InfiniteScrolling>
+</div>

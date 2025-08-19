@@ -1,0 +1,27 @@
+﻿@page "/boxsets"
+
+@rendermode InteractiveAuto
+@using TheDiscDb.Components.InfiniteScrolling
+
+<PageTitle>All Boxsets - TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="A list of all the boxsets featured on TheDiscDb. Boxsets contain multiple titles and discs." />
+    <link rel="canonical" href="@BuildCanonicalLink(GetBoxsetRootLink())" />
+</HeadContent>
+
+<SortFilter AllItems="@SortItemDefinitions" SelectionChanged="SortDefinitionChanged" TSortItem="BoxsetSortInput" />
+
+<div class="media-item-list">
+    <InfiniteScrolling ItemsProvider="GetItems" @ref="infiniteScrolling">
+        <ItemTemplate Context="Item">
+            <div>
+                <a href="@Item.ItemDetailUrl()" title="@Item.Title">
+                    <MediaImage Url="@Item?.ImageUrl" Width="156" Height="231" Title="@Item?.Title" />
+                </a>
+            </div>
+        </ItemTemplate>
+        <LoadingTemplate>
+            <div><span class="oi oi-reload spin"></span> Loading more items...</div>
+        </LoadingTemplate>
+    </InfiniteScrolling>
+</div>

@@ -1,0 +1,51 @@
+﻿@page "/{type}/{slug}"
+
+@if (Item == null)
+{
+    <Div>Item not found</Div>
+}
+else
+{
+    <PageTitle>@Item.Title - TheDiscDb</PageTitle>
+    <HeadContent>
+        <meta name="description" content="Details of the @Item.Type @Item.Title including plot, stars, directors, writers, and a list of the releases present in TheDiscDb." />
+        <link rel="canonical" href="@BuildCanonicalLink(GetMediaItemLink(Item))" />
+    </HeadContent>
+    <div class="vstack">
+        <TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootLink(this.Item)]" PrimaryText="@Item.Title" />
+        <div class="hstack gap-3 d-flex align-items-start">
+            <img src="/images/@Item.ImageUrl?width=345&height=518" width="345" height="518" alt="@Item.FullTitle" class="mediaItemDetailCover" />
+            <div class="vstack">
+                <h1>@Item.FullTitle</h1>
+                <div class="facts">
+                    <span class="certification">@Item.ContentRating</span>
+                    <span class="genres"><GroupList Item="@Item" ListText="@Item.Genres" Role="Genre" /></span>
+                    <span class="runtime">@Item.Runtime</span>
+                </div>
+                <div>
+                    <h3 class="tagline" dir="auto">@Item.Tagline</h3>
+                    <h3 dir="auto">Overview</h3>
+                    <div class="overview" dir="auto">
+                        <p>@Item.Plot</p>
+                    </div>
+                </div>
+                <div class="hstack gap-3">
+                    <div class="vstack">
+                        <p class="people-role">Directors</p>
+                        <p class="people"><GroupList Item="@Item" ListText="@Item.Directors" Role="Director" /></p>
+                    </div>
+                    <div class="vstack">
+                        <p class="people-role">Stars</p>
+                        <p class="people"><GroupList Item="@Item" ListText="@Item.Stars" Role="Actor" /></p>
+                    </div>
+                    <div class="vstack">
+                        <p class="people-role">Writers</p>
+                        <p class="people"><GroupList Item="@Item" ListText="@Item.Writers" Role="Writer" /></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ReleaseList Item="@Item" Releases="Releases" />
+}

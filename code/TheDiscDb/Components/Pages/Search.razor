@@ -1,0 +1,26 @@
+﻿@page "/search/{query}"
+@using System.Web
+@using TheDiscDb.Client.Controls
+
+<PageTitle>
+    Search results for '@HttpUtility.UrlDecode(Query)' - TheDiscDb
+</PageTitle>
+<HeadContent>
+    <meta name="description" content="Search results for '@HttpUtility.UrlDecode(Query)' on TheDiscDb." />
+    <link rel="canonical" href="https://thediscdb.com/search/@HttpUtility.UrlEncode(Query)" />
+</HeadContent>
+
+<h2>Search results for '@HttpUtility.UrlDecode(Query)'</h2>
+@if (Results != null)
+{
+    <div class="media-item-list">
+    @foreach (var item in Results)
+    {
+        <div>
+            <a href="@item.RelativeUrl" title="@item.Title">
+                <MediaImage Url="@item?.ImageUrl" Width="156" Height="231" Title="@item?.Title" />
+            </a>
+        </div>
+    }
+    </div>
+}

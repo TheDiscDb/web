@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>dotnet-TheDiscDb.DatabaseMigration-9e37728f-3286-4ac5-9a23-e4cece43bb38</UserSecretsId>
+        <DisableSystemTextJsonSourceGenerator>true</DisableSystemTextJsonSourceGenerator>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="9.4.1" />
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="9.4.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\TheDiscDb.Data.Import\TheDiscDb.Data.Import.csproj" />
+        <ProjectReference Include="..\TheDiscDb.Data\TheDiscDb.Data.csproj" />
+        <ProjectReference Include="..\TheDiscDb.ServiceDefaults\TheDiscDb.ServiceDefaults.csproj" />
+    </ItemGroup>
+</Project>

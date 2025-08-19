@@ -1,0 +1,12 @@
+using './thediscdb-web.module.bicep'
+
+param prod_outputs_azure_container_registry_endpoint = '{{ .Env.PROD_AZURE_CONTAINER_REGISTRY_ENDPOINT }}'
+param prod_outputs_azure_container_registry_managed_identity_client_id = '{{ .Env.PROD_AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_CLIENT_ID }}'
+param prod_outputs_azure_container_registry_managed_identity_id = '{{ .Env.PROD_AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID }}'
+param prod_outputs_planid = '{{ .Env.PROD_PLANID }}'
+param sql_outputs_sqlserverfqdn = '{{ .Env.SQL_SQLSERVERFQDN }}'
+param storage_outputs_blobendpoint = '{{ .Env.STORAGE_BLOBENDPOINT }}'
+param thediscdb_web_containerimage = '{{ .Image }}'
+param thediscdb_web_containerport = '{{ targetPortOrDefault 8080 }}'
+param thediscdb_web_identity_outputs_clientid = '{{ .Env.THEDISCDB_WEB_IDENTITY_CLIENTID }}'
+param thediscdb_web_identity_outputs_id = '{{ .Env.THEDISCDB_WEB_IDENTITY_ID }}'

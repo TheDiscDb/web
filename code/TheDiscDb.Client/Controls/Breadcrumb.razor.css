@@ -1,0 +1,21 @@
+﻿.breadcrumb {
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.breadcrumb-link a {
+    text-decoration: none;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.breadcrumb-link a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-primary {
+    font-weight: bold;
+}
+
+.breadcrumb-divider {
+    margin-left: 8px;
+    margin-right: 8px;
+}

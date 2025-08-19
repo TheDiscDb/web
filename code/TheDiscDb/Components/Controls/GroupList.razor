@@ -1,0 +1,14 @@
+﻿@using TheDiscDb.InputModels
+@if (string.IsNullOrWhiteSpace(this.ListText))
+{
+    <span />
+}
+else
+{
+    <ul class="groupList">
+        @foreach (var text in this.ListText.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        {
+            <RoleLink Item="@Item" Text="@text" Role="@Role" />
+        }
+    </ul>
+}
