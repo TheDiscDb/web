@@ -1,0 +1,10 @@
+﻿@page "/contribute"
+
+@rendermode InteractiveAuto
+
+<h3>Contribute</h3>
+Select Movie or Series
+Search for Item on TMDB
+
+<InputText DisplayName="TMDB ID" @bind-Value="TmdbId" />
+<button type="button" class="bt" @onclick="NextButtonClicked">Next</button>
