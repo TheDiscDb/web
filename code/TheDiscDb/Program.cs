@@ -3,6 +3,7 @@ using Azure.Storage.Blobs.Models;
 using Blazorise;
 using Blazorise.Bootstrap5;
 using Blazorise.Icons.FontAwesome;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using SixLabors.ImageSharp.Web.Caching.Azure;
@@ -23,10 +24,55 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddCors();
 builder.Services.AddMemoryCache();
 
-// Add services to the container.
+var gihubOptions = new TheDiscDb.Web.Authentication.AuthenticationOptions();
+builder.Configuration.GetSection("Authentication:GitHub").Bind(gihubOptions);
+
+var authBuilder = builder.Services.AddAuthentication();
+
+// Only add github auth if configured
+if (!string.IsNullOrEmpty(gihubOptions.ClientId) && !string.IsNullOrEmpty(gihubOptions.ClientSecret))
+{
+    authBuilder.AddGitHub(options =>
+    {
+        options.ClientId = gihubOptions.ClientId!;
+        options.ClientSecret = gihubOptions.ClientSecret!;
+        options.Scope.Add("read:user");
+    });
+}
+
+var microsoftOptions = new TheDiscDb.Web.Authentication.AuthenticationOptions();
+builder.Configuration.GetSection("Authentication:Microsoft").Bind(microsoftOptions);
+
+if (!string.IsNullOrEmpty(microsoftOptions.ClientId) && !string.IsNullOrEmpty(microsoftOptions.ClientSecret))
+{
+    authBuilder.AddMicrosoftAccount(options =>
+    {
+        options.ClientId = microsoftOptions.ClientId;
+        options.ClientSecret = microsoftOptions.ClientSecret;
+    });
+}
+
+var googleOptions = new TheDiscDb.Web.Authentication.AuthenticationOptions();
+builder.Configuration.GetSection("Authentication:Google").Bind(googleOptions);
+
+if (!string.IsNullOrEmpty(googleOptions.ClientId) && !string.IsNullOrEmpty(googleOptions.ClientSecret))
+{
+    authBuilder.AddGoogle(options =>
+    {
+        options.ClientId = googleOptions.ClientId;
+        options.ClientSecret = googleOptions.ClientSecret;
+    });
+}
+
+builder.Services.AddIdentity<TheDiscDbUser, IdentityRole>()
+    .AddEntityFrameworkStores<SqlServerDataContext>()
+    .AddDefaultTokenProviders();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+builder.Services.AddScoped<TheDiscDb.Components.Account.IdentityRedirectManager>();
 
 builder.Services
     .AddBlazorise(options =>
@@ -41,6 +87,7 @@ builder.Services.AddPooledDbContextFactory<SqlServerDataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("thediscdb"));
 });
 builder.EnrichSqlServerDbContext<SqlServerDataContext>();
+builder.Services.AddScoped<SqlServerDataContext>(p => p.GetRequiredService<IDbContextFactory<SqlServerDataContext>>().CreateDbContext());
 
 builder.Services
 .AddGraphQLServer()
@@ -115,7 +162,7 @@ else
     builder.Services.AddSingleton<ISearchService, SearchService>();
     builder.Services.AddSingleton<ISearchIndexService, SearchIndexService>();
 }
-    
+
 builder.Services.Configure<SearchOptions>(builder.Configuration.GetSection("Search"));
 builder.Services.AddSingleton<CacheHelper>();
 builder.Services.AddSingleton<SitemapGenerator>();
@@ -155,5 +202,7 @@ app.MapRazorComponents<TheDiscDb.Components.App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(TheDiscDb.Client._Imports).Assembly);
+
+app.MapAdditionalIdentityEndpoints();
 
 app.Run();
