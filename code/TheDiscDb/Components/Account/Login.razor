@@ -1,0 +1,21 @@
+﻿@page "/Account/Login"
+
+<PageTitle>Login - TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="The login page for TheDiscDb." />
+    <link rel="canonical" href="https://thediscdb.com/account/login" />
+</HeadContent>
+
+<h1>Login</h1>
+<form class="form-horizontal" action="Account/PerformExternalLogin" method="post">
+    <div>
+        <AntiforgeryToken />
+        <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+        <p>
+            @foreach (var provider in externalLogins)
+            {
+                <button type="submit" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account"><img src="/@provider.Name-login.png" /></button>
+            }
+        </p>
+    </div>
+</form>
