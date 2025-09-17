@@ -11,6 +11,7 @@
     <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="9.4.1" />
     <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="9.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="9.0.9" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OAuth" Version="2.3.0" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.12.0" />
     <PackageReference Include="SixLabors.Fonts" Version="2.1.3" />

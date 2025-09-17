@@ -108,7 +108,8 @@ public partial class ExternalLogin : ComponentBase
         }
 
         Input.Email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
-        Input.FullName = externalLoginInfo.Principal.FindFirstValue(GithubClaims.FullName) ?? "";
+        Input.FullName = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Name)??
+                         externalLoginInfo.Principal.FindFirstValue(GithubClaims.FullName) ?? "";
         Input.UserName = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Name) ?? "";
         Input.Url = externalLoginInfo.Principal.FindFirstValue(GithubClaims.Url) ?? "";
     }
@@ -122,7 +123,7 @@ public partial class ExternalLogin : ComponentBase
         }
 
         var emailStore = GetEmailStore();
-        var user = CreateUser();
+        var user = new TheDiscDbUser();
         var claimStore = GetClaimStore();
 
         await UserStore.SetUserNameAsync(user, Input.UserName, CancellationToken.None);
@@ -148,19 +149,6 @@ public partial class ExternalLogin : ComponentBase
         else
         {
             message = $"Error: {string.Join(",", result.Errors.Select(error => error.Description))}";
-        }
-    }
-
-    private TheDiscDbUser CreateUser()
-    {
-        try
-        {
-            return Activator.CreateInstance<TheDiscDbUser>();
-        }
-        catch
-        {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(TheDiscDbUser)}'. " +
-                $"Ensure that '{nameof(TheDiscDbUser)}' is not an abstract class and has a parameterless constructor");
         }
     }
 

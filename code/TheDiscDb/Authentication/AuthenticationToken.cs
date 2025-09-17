@@ -12,7 +12,7 @@ public class JwtOptions
     public string? Audience { get; set; }
 }
 
-public class GitHubAuthenticationOptions
+public class AuthenticationOptions
 {
     public string? ClientId { get; set; }
     public string? ClientSecret { get; set; }

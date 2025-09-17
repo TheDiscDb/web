@@ -14,7 +14,9 @@
         <p>
             @foreach (var provider in externalLogins)
             {
-                <button type="submit" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account"><img src="/@provider.Name-login.png" /></button>
+                <p>
+                    <button type="submit" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account"><img src="/@provider.Name-login.png" /></button>
+                </p>
             }
         </p>
     </div>

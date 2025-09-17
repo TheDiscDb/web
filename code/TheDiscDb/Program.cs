@@ -24,7 +24,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddCors();
 builder.Services.AddMemoryCache();
 
-var gihubOptions = new TheDiscDb.Web.Authentication.GitHubAuthenticationOptions();
+var gihubOptions = new TheDiscDb.Web.Authentication.AuthenticationOptions();
 builder.Configuration.GetSection("Authentication:GitHub").Bind(gihubOptions);
 
 var authBuilder = builder.Services.AddAuthentication();
@@ -37,6 +37,30 @@ if (!string.IsNullOrEmpty(gihubOptions.ClientId) && !string.IsNullOrEmpty(gihubO
         options.ClientId = gihubOptions.ClientId!;
         options.ClientSecret = gihubOptions.ClientSecret!;
         options.Scope.Add("read:user");
+    });
+}
+
+var microsoftOptions = new TheDiscDb.Web.Authentication.AuthenticationOptions();
+builder.Configuration.GetSection("Authentication:Microsoft").Bind(microsoftOptions);
+
+if (!string.IsNullOrEmpty(microsoftOptions.ClientId) && !string.IsNullOrEmpty(microsoftOptions.ClientSecret))
+{
+    authBuilder.AddMicrosoftAccount(options =>
+    {
+        options.ClientId = microsoftOptions.ClientId;
+        options.ClientSecret = microsoftOptions.ClientSecret;
+    });
+}
+
+var googleOptions = new TheDiscDb.Web.Authentication.AuthenticationOptions();
+builder.Configuration.GetSection("Authentication:Google").Bind(googleOptions);
+
+if (!string.IsNullOrEmpty(googleOptions.ClientId) && !string.IsNullOrEmpty(googleOptions.ClientSecret))
+{
+    authBuilder.AddGoogle(options =>
+    {
+        options.ClientId = googleOptions.ClientId;
+        options.ClientSecret = googleOptions.ClientSecret;
     });
 }
 
