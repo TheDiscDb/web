@@ -1,10 +1,21 @@
 ﻿@page "/contribute"
 
-@rendermode InteractiveAuto
+@rendermode InteractiveWebAssembly
 
 <h3>Contribute</h3>
-Select Movie or Series
-Search for Item on TMDB
 
-<InputText DisplayName="TMDB ID" @bind-Value="TmdbId" />
-<button type="button" class="bt" @onclick="NextButtonClicked">Next</button>
+@if (handler is null)
+{
+    <button class="btn btn-primary" @onclick="OpenFolderAsync">Pick directory</button>
+}
+else
+{
+    <div>Hash: @hash</div>
+    foreach (var item in items)
+    {
+        <div>
+            <span class="oi @(item.Kind == FileSystemHandleKind.Directory ? "oi-folder" : "oi-file")" aria-hidden="true"></span>
+            @(item.Name)
+        </div>
+    }
+}

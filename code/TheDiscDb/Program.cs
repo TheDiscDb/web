@@ -15,6 +15,7 @@ using TheDiscDb.Search;
 using TheDiscDb.Web;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
+using KristofferStrube.Blazor.FileSystemAccess;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -104,6 +105,7 @@ builder.Services
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TheDiscDb.Client.SearchClient>();
+builder.Services.AddScoped<TheDiscDb.Client.HashClient>();
 
 var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")!.Split(";");
 var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));
@@ -166,6 +168,9 @@ else
 builder.Services.Configure<SearchOptions>(builder.Configuration.GetSection("Search"));
 builder.Services.AddSingleton<CacheHelper>();
 builder.Services.AddSingleton<SitemapGenerator>();
+
+builder.Services.AddFileSystemAccessService();
+builder.Services.AddFileSystemAccessServiceInProcess();
 
 var app = builder.Build();
 

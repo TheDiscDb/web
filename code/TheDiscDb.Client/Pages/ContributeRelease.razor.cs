@@ -5,5 +5,5 @@ namespace TheDiscDb.Client.Pages;
 public partial class ContributeRelease : ComponentBase
 {
     [Parameter]
-    public string? TmdbId { get; set; }
+    public string? Hash { get; set; }
 }

@@ -1,47 +1,51 @@
-﻿namespace TheDiscDb.Web.Controllers
+﻿using Microsoft.AspNetCore.Mvc;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Processing;
+using TheDiscDb.Core.DiscHash;
+using TheDiscDb.Client;
+using TheDiscDb.Search;
+
+namespace TheDiscDb.Web.Controllers;
+
+[ApiController]
+[Route("api")]
+public class ClientApiController : ControllerBase
 {
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Threading.Tasks;
-    using Microsoft.AspNetCore.Mvc;
-    using SixLabors.ImageSharp.Formats.Png;
-    using SixLabors.ImageSharp.Processing;
-    using TheDiscDb.Search;
-    using TheDiscDb.Web.Barcode;
+    private readonly ISearchService search;
 
-    [ApiController]
-    [Route("api")]
-    public class ClientApiController : ControllerBase
+    public ClientApiController(ISearchService search)
     {
-        private readonly ISearchService search;
+        this.search = search ?? throw new System.ArgumentNullException(nameof(search));
+    }
 
-        public ClientApiController(ISearchService search)
+    [HttpGet("search")]
+    public async Task<IEnumerable<SearchEntry>> Search(string s)
+    {
+        var results = await this.search.Search(s);
+        return results;
+    }
+
+    [HttpGet("barcode")]
+    public FileContentResult Barcode(string data, int width = 200)
+    {
+        var barcode = new Barcode.Barcode(data)
         {
-            this.search = search ?? throw new System.ArgumentNullException(nameof(search));
-        }
+            ShowLabel = true
+        };
 
-        [HttpGet("search")]
-        public async Task<IEnumerable<SearchEntry>> Search(string s)
+        var image = barcode.GenerateImage();
+        image.Mutate(o => o.Resize(width, 0));
+        using (var stream = new MemoryStream())
         {
-            var results = await this.search.Search(s);
-            return results;
+            image.Save(stream, new PngEncoder());
+            return File(stream.ToArray(), "image/png");
         }
+    }
 
-        [HttpGet("barcode")]
-        public FileContentResult Barcode(string data, int width = 200)
-        {
-            var barcode = new Barcode(data)
-            {
-                ShowLabel = true
-            };
-
-            var image = barcode.GenerateImage();
-            image.Mutate(o => o.Resize(width, 0));
-            using (var stream = new MemoryStream())
-            {
-                image.Save(stream, new PngEncoder());
-                return File(stream.ToArray(), "image/png");
-            }
-        }
+    [HttpPost("hash")]
+    public HashResponse Hash([FromBody] HashRequest request)
+    {
+        var hash = request.Files.OrderBy(f => f.Name).CalculateHash();
+        return new HashResponse { Hash = hash };
     }
 }

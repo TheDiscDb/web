@@ -1,27 +1,27 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.3.1" />
+    <Sdk Name="Aspire.AppHost.Sdk" Version="9.4.2" />
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <UserSecretsId>d5e622dd-13b1-4b04-a9d4-670ad1acbe42</UserSecretsId>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UserSecretsId>d5e622dd-13b1-4b04-a9d4-670ad1acbe42</UserSecretsId>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.4.1" />
-    <PackageReference Include="Aspire.Hosting.Azure.AppService" Version="9.4.1-preview.1.25408.4" />
-    <PackageReference Include="Aspire.Hosting.Azure.Sql" Version="9.4.1" />
-    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="9.4.1" />
-    <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.4.1" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Aspire.Hosting.AppHost" Version="9.4.2" />
+        <PackageReference Include="Aspire.Hosting.Azure.AppService" Version="9.4.1-preview.1.25408.4" />
+        <PackageReference Include="Aspire.Hosting.Azure.Sql" Version="9.4.2" />
+        <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="9.4.2" />
+        <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.4.2" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\TheDiscDb.Client\TheDiscDb.Client.csproj" />
-    <ProjectReference Include="..\TheDiscDb.DatabaseMigration\TheDiscDb.DatabaseMigration.csproj" />
-    <ProjectReference Include="..\TheDiscDb\TheDiscDb.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\TheDiscDb.Client\TheDiscDb.Client.csproj" />
+        <ProjectReference Include="..\TheDiscDb.DatabaseMigration\TheDiscDb.DatabaseMigration.csproj" />
+        <ProjectReference Include="..\TheDiscDb\TheDiscDb.csproj" />
+    </ItemGroup>
 
 </Project>
