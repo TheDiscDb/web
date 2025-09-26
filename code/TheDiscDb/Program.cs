@@ -16,12 +16,16 @@ using TheDiscDb.Web;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
 using KristofferStrube.Blazor.FileSystemAccess;
+using Fantastic.TheMovieDb.Caching.FileSystem;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews( options =>
+{
+    options.InputFormatters.Add(new PlainTextInputFormatter());
+});
 builder.Services.AddCors();
 builder.Services.AddMemoryCache();
 
@@ -106,6 +110,10 @@ builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TheDiscDb.Client.SearchClient>();
 builder.Services.AddScoped<TheDiscDb.Client.HashClient>();
+builder.Services.AddScoped<TheDiscDb.Client.TmdbClient>();
+builder.Services.AddSingleton<IFileSystemCache, TheDiscDb.Client.NullFileSystemCache>();
+builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
+builder.Services.AddScoped<Fantastic.TheMovieDb.TheMovieDbClient>();
 
 var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")!.Split(";");
 var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));

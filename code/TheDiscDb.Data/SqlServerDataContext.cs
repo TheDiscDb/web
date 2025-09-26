@@ -1,5 +1,7 @@
 ﻿namespace TheDiscDb.Web.Data;
 
+using System;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
@@ -197,4 +199,24 @@ public class SqlServerDataContext : DbContext
 
 public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser
 {
+}
+
+public class UserContribution
+{
+    public string Id { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public TheDiscDbUser User { get; set; } = null!;
+    public DateTimeOffset Created { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public string Status { get; set; } = "Pending";
+    public string StoragePath { get; set; } = string.Empty;
+    public ICollection<UserContributionDisc> Discs { get; set; } = new HashSet<UserContributionDisc>();
+}
+
+public class UserContributionDisc
+{
+    public int Id { get; set; }
+    public int UserContributionId { get; set; }
+    public UserContribution UserContribution { get; set; } = null!;
+    public string StoragePath { get; set; } = string.Empty;
 }

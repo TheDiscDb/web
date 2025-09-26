@@ -20,6 +20,11 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddScoped<SearchClient>();
 builder.Services.AddScoped<HashClient>();
 
+builder.Services.AddScoped<TmdbClient>();
+builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
+builder.Services.AddSingleton<Fantastic.TheMovieDb.Caching.FileSystem.IFileSystemCache, NullFileSystemCache>();
+builder.Services.AddScoped<Fantastic.TheMovieDb.TheMovieDbClient>();
+
 builder.Services
     .AddTheDiscDbClient()
     .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{builder.HostEnvironment.BaseAddress}graphql"));

@@ -1,14 +1,14 @@
-﻿using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Authorization;
+﻿using KristofferStrube.Blazor.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
-using KristofferStrube.Blazor.FileSystem;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using TheDiscDb.Core.DiscHash;
 
-namespace TheDiscDb.Client.Pages;
+namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class Contribute : ComponentBase
+public partial class CalculateHash : ComponentBase
 {
     [Inject]
     public IFileSystemAccessServiceInProcess FileSystemAccessService { get; set; } = default!;
@@ -35,8 +35,7 @@ public partial class Contribute : ComponentBase
                 Mode = FileSystemPermissionMode.Read,
             });
 
-            await CalculateHash();
-            //items = await handler!.ValuesAsync();
+            await TryCalculateHash();
         }
         catch (Exception ex)
         {
@@ -44,7 +43,7 @@ public partial class Contribute : ComponentBase
         }
     }
 
-    async Task CalculateHash()
+    async Task TryCalculateHash()
     {
         items = await handler!.ValuesAsync();
 
@@ -62,10 +61,13 @@ public partial class Contribute : ComponentBase
                     Files = hashItems.ToList()
                 };
 
+                // TODO: Get a cancellation token
                 var response = await this.HashClient.HashAsync(request);
-
-                hash = response.Hash;
-                this.Navigation.NavigateTo($"/contribute/{response.Hash}");
+                if (response != null && !string.IsNullOrEmpty(response.Hash))
+                {
+                    hash = response.Hash;
+                    this.Navigation.NavigateTo($"/contribute/{response.Hash}");
+                }
             }
         }
         else

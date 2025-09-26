@@ -1,0 +1,6 @@
+﻿@page "/contribute/{hash}/{mediaType}"
+
+@rendermode InteractiveAuto
+
+<h3>What @MediaType would you like to contribute?</h3>
+<input @bind="SearchText" @bind:event="oninput" class="form-control" placeholder="Search for a title..." />

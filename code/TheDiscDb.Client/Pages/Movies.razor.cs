@@ -7,8 +7,6 @@ using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Client.Pages
 {
-
-
     public partial class Movies : ComponentBase
     {
         private InfiniteScrolling<IGetMovies_MediaItems_Nodes>? infiniteScrolling;

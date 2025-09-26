@@ -19,6 +19,7 @@
         <GraphQL Remove="graphql\queries\GetSeries.graphql" />
     </ItemGroup>
     <ItemGroup>
+        <PackageReference Include="Fantastic.TheMovieDb" Version="1.2.2" />
         <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.3.0" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.9" />
         <PackageReference Include="Blazorise.Bootstrap" Version="1.8.0" />
