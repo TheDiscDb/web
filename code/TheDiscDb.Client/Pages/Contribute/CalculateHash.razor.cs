@@ -10,6 +10,9 @@ namespace TheDiscDb.Client.Pages.Contribute;
 [Authorize]
 public partial class CalculateHash : ComponentBase
 {
+    [Parameter]
+    public string? ContributionId { get; set; }
+
     [Inject]
     public IFileSystemAccessServiceInProcess FileSystemAccessService { get; set; } = default!;
 
@@ -17,7 +20,7 @@ public partial class CalculateHash : ComponentBase
     public IJSRuntime Js { get; set; } = default!;
 
     [Inject]
-    public HashClient HashClient { get; set; } = default!;
+    public ApiClient Client { get; set; } = default!;
 
     [Inject]
     public NavigationManager Navigation { get; set; } = default!;
@@ -25,6 +28,13 @@ public partial class CalculateHash : ComponentBase
     FileSystemDirectoryHandleInProcess? handler;
     IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
     string hash = string.Empty;
+    private readonly SaveDiscRequest request = new();
+
+    protected override Task OnInitializedAsync()
+    {
+        request.ContributionId = ContributionId!;
+        return Task.CompletedTask;
+    }
 
     async Task OpenFolderAsync()
     {
@@ -62,11 +72,11 @@ public partial class CalculateHash : ComponentBase
                 };
 
                 // TODO: Get a cancellation token
-                var response = await this.HashClient.HashAsync(request);
+                var response = await this.Client.HashAsync(request);
                 if (response != null && !string.IsNullOrEmpty(response.Hash))
                 {
                     hash = response.Hash;
-                    this.Navigation.NavigateTo($"/contribute/{response.Hash}");
+                    //this.Navigation.NavigateTo($"/contribution/{ContributionId}/adddisc/{response.Hash}");
                 }
             }
         }
@@ -100,5 +110,25 @@ public partial class CalculateHash : ComponentBase
         }
 
         return results;
+    }
+
+    async Task HandleValidSubmit()
+    {
+        var response = await this.Client.SaveDiscAsync(this.request);
+
+        this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{response.DiscId}");
+    }
+
+    private void DiscTitleChanged(ChangeEventArgs args)
+    {
+        if (args?.Value != null)
+        {
+            string title = args.Value.ToString()!;
+
+            if (!string.IsNullOrEmpty(title))
+            {
+                this.request.Slug = title.Slugify();
+            }
+        }
     }
 }

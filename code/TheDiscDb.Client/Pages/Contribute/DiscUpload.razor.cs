@@ -1,12 +1,17 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
-public partial class ManageDiscs : ComponentBase
+[Authorize]
+public partial class DiscUpload : ComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }
+
+    [Parameter]
+    public string? DiscId { get; set; }
 
     [Inject]
     private NavigationManager NavigationManager { get; set; } = null!;
@@ -20,7 +25,7 @@ public partial class ManageDiscs : ComponentBase
 
     public int DriveIndex { get; set; } = 0;
 
-    private string GetUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/addDisc";
+    private string GetUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/addDisc/{DiscId}";
 
     private string GetMakeMkvPath() => "C:\\Program Files (x86)\\MakeMKV\\makemkvcon64.exe";
 

@@ -1,11 +1,16 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Components;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
+[Authorize]
 public partial class HashLookup : ComponentBase
 {
+    [Parameter]
+    public string? ContributionId { get; set; }
+
     [Parameter]
     public string? Hash { get; set; }
 

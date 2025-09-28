@@ -1,13 +1,12 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Components;
 using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
+[Authorize]
 public partial class IdentifyTitle : ComponentBase
 {
-    [Parameter]
-    public string? Hash { get; set; }
-
     [Parameter]
     public string? MediaType { get; set; }
 

@@ -15,7 +15,7 @@ public partial class NavMenu : ComponentBase
     public NavigationManager? NavigationManager { get; set; }
 
     [Inject]
-    public SearchClient SearchClient { get; set; } = null!;
+    public ApiClient SearchClient { get; set; } = null!;
 
     public IEnumerable<SearchEntry>? SearchResults { get; set; }
 

@@ -1,10 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Text;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
-using TheDiscDb.Core.DiscHash;
+using Sqids;
 using TheDiscDb.Client;
+using TheDiscDb.Core.DiscHash;
+using TheDiscDb.Data.Import;
 using TheDiscDb.Search;
-using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Web.Controllers;
@@ -15,11 +20,17 @@ public class ClientApiController : ControllerBase
 {
     private readonly ISearchService search;
     private readonly IDbContextFactory<SqlServerDataContext> dbContextFactory;
+    private readonly UserManager<TheDiscDbUser> userManager;
+    private readonly SqidsEncoder<int> idEncoder;
+    private readonly IStaticAssetStore assetStore;
 
-    public ClientApiController(ISearchService search, IDbContextFactory<SqlServerDataContext> dbContextFactory)
+    public ClientApiController(ISearchService search, IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, SqidsEncoder<int> idEncoder, IStaticAssetStore assetStore)
     {
         this.search = search ?? throw new System.ArgumentNullException(nameof(search));
         this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
+        this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+        this.idEncoder = idEncoder ?? throw new ArgumentNullException(nameof(idEncoder));
+        this.assetStore = assetStore ?? throw new ArgumentNullException(nameof(assetStore));
     }
 
     [HttpGet("search")]
@@ -59,13 +70,123 @@ public class ClientApiController : ControllerBase
         throw new NotImplementedException();
     }
 
-    [HttpPost("contribute/{contributionId}/addDisc")]
-    public void AddDisc(string contributionId, [FromBody] string logs)
+    [HttpPost("contribute/{contributionId}/addDisc/{discId}")]
+    public async Task<ActionResult> AddDisc(string contributionId, string discId, [FromBody] string logs, CancellationToken cancellationToken)
     {
-        //1. Retrieve the contribution from the database
-        //2. Save the logs in blob storage
-        //3. Add the disc to the contribution and save to the database
-        //4. Notify the client a disc has been added? (to prevent the client having to poll)
-        Console.WriteLine(logs);
+        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync();
+        {
+            int id = idEncoder.Decode(contributionId).Single();
+            var contribution = await dbContext.UserContributions
+                .Include(c => c.Discs)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (contribution == null)
+            {
+                return this.NotFound(contributionId);
+            }
+
+            int realDiscId = idEncoder.Decode(discId).Single();
+            var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
+
+            if (disc == null)
+            {
+                return this.NotFound(discId);
+            }
+
+            //Save the logs in blob storage
+            byte[] byteArray = Encoding.UTF8.GetBytes(logs);
+            using (MemoryStream memoryStream = new MemoryStream(byteArray))
+            {
+                memoryStream.Position = 0; // Reset position to the beginning
+                await this.assetStore.Save(memoryStream, $"{contributionId}/{this.idEncoder.Encode(disc.Id)}-logs.txt", ContentTypes.TextContentType, cancellationToken);
+            }
+
+            disc.LogsUploaded = true;
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        return this.Ok();
+
+        //TODO: Notify the client a disc has been added? (to prevent the client having to poll)
+    }
+
+    [HttpPost("contribute/create")]
+    [Authorize]
+    public async Task<CreateContributionResponse> CreateContribution([FromBody] CreateContributionRequest request)
+    {
+        var userId = this.userManager.GetUserId(User);
+        //var user = await this.userManager.FindByIdAsync(userId!);
+
+        var contribution = new UserContribution
+        {
+            UserId = userId,
+            Created = DateTimeOffset.UtcNow,
+            Asin = request.Asin,
+            ExternalId = request.ExternalId,
+            ExternalProvider = request.ExternalProvider,
+            MediaType = request.MediaType,
+            ReleaseDate = request.ReleaseDate,
+            Status = "New",
+            FrontImageUrl = request.FrontImageUrl,
+            BackImageUrl = request.BackImageUrl,
+            Upc = request.Upc,
+            ReleaseTitle = request.ReleaseTitle,
+            ReleaseSlug = request.ReleaseSlug
+        };
+
+        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync();
+        {
+            dbContext.UserContributions.Add(contribution);
+            await dbContext.SaveChangesAsync();
+        }
+
+        // Save images to blob storage? (or just store the url and do that later)
+
+        return new CreateContributionResponse { ContributionId = this.idEncoder.Encode(contribution.Id) };
+    }
+
+    [HttpPost("contribute/saveDisc")]
+    [Authorize]
+    public async Task<SaveDiscResponse> CreateContribution([FromBody] SaveDiscRequest request)
+    {
+        var disc = new UserContributionDisc
+        {
+            ContentHash = request.ContentHash,
+            Index = request.Index,
+            Format = request.Format,
+            Name = request.Name,
+            Slug = request.Slug
+        };
+
+        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync();
+        {
+            var contributionId = this.idEncoder.Decode(request.ContributionId).Single();
+            var discId = this.idEncoder.Decode(request.ContributionId).Single();
+            var contribution = await dbContext.UserContributions
+                .Include(c => c.Discs)
+                .FirstOrDefaultAsync(c => c.Id == contributionId);
+
+            if (contribution == null)
+            {
+                throw new Exception("Contribution not found");
+            }
+
+            var existingDisc = contribution?.Discs.FirstOrDefault(d => d.ContentHash == disc.ContentHash);
+            if (existingDisc != null)
+            {
+                existingDisc.Index = request.Index;
+                existingDisc.Format = request.Format;
+                existingDisc.Name = request.Name;
+                existingDisc.Slug = request.Slug;
+            }
+            else
+            {
+                contribution!.Discs.Add(disc);
+            }
+
+            await dbContext.SaveChangesAsync();
+        }
+
+        return new SaveDiscResponse { DiscId = this.idEncoder.Encode(disc.Id) };
     }
 }

@@ -28,11 +28,11 @@
 
         private readonly IFileSystem fileSystem;
         private readonly SqlServerDataContext dbContext;
-        private readonly IStaticImageStore imageStore;
+        private readonly IStaticAssetStore imageStore;
         private readonly IHttpClientFactory httpClientFactory;
         private readonly IOptions<DataImporterOptions> dataImportOptions;
 
-        public DataImporter(IFileSystem fileSystem, IDbContextFactory<SqlServerDataContext> dbFactory, IStaticImageStore imageStore, IHttpClientFactory httpClientFactory, IOptions<DataImporterOptions> dataImportOptions)
+        public DataImporter(IFileSystem fileSystem, IDbContextFactory<SqlServerDataContext> dbFactory, IStaticAssetStore imageStore, IHttpClientFactory httpClientFactory, IOptions<DataImporterOptions> dataImportOptions)
         {
             if (dbFactory is null)
             {
@@ -170,7 +170,7 @@
             if (await this.fileSystem.File.Exists(imagePath, cancellationToken))
             {
                 string remotePath = string.Format("boxset/{0}.jpg", boxset.Slug);
-                string url = await this.imageStore.SaveImage(imagePath, remotePath, cancellationToken);
+                string url = await this.imageStore.Save(imagePath, remotePath, ContentTypes.ImageContentType, cancellationToken);
                 boxset.Release.ImageUrl = remotePath;
                 file.ImageUrl = remotePath;
                 boxset.ImageUrl = remotePath;
@@ -294,7 +294,7 @@
                 if (await this.fileSystem.File.Exists(coverImagePath, cancellationToken) /*&& string.IsNullOrEmpty(metadata.ImageUrl)*/)
                 {
                     string remotePath = string.Format("{0}/{1}/{2}", type, metadata.Slug, "cover.jpg");
-                    string url = await this.imageStore.SaveImage(coverImagePath, remotePath, cancellationToken);
+                    string url = await this.imageStore.Save(coverImagePath, remotePath, ContentTypes.ImageContentType, cancellationToken);
                     metadata.ImageUrl = remotePath;
 
                     // re-save the metadata file
@@ -391,7 +391,7 @@
                             {
                                 if (!existsInBlobStorage)
                                 {
-                                    string url = await this.imageStore.SaveImage(imagePath, remotePath, cancellationToken);
+                                    string url = await this.imageStore.Save(imagePath, remotePath, ContentTypes.ImageContentType, cancellationToken);
                                 }
 
                                 release.ImageUrl = remotePath;
@@ -402,7 +402,7 @@
                             {
                                 if (!existsInBlobStorage)
                                 {
-                                    string url = await this.imageStore.SaveImage(imagePath, remotePath, cancellationToken);
+                                    string url = await this.imageStore.Save(imagePath, remotePath, ContentTypes.ImageContentType, cancellationToken);
                                     if (releaseFile.ImageUrl != remotePath)
                                     {
                                         release.ImageUrl = remotePath;
@@ -537,7 +537,7 @@
                     if (await this.fileSystem.File.Exists(imagePath, cancellationToken) && string.IsNullOrEmpty(release.ImageUrl))
                     {
                         string remotePath = string.Format("{0}/{1}/{2}.jpg", singleMetadata.Type, singleMetadata.Slug, release.Slug);
-                        string url = await this.imageStore.SaveImage(imagePath, remotePath, cancellationToken);
+                        string url = await this.imageStore.Save(imagePath, remotePath, ContentTypes.ImageContentType, cancellationToken);
                         release.ImageUrl = remotePath;
                         singleRelease.ImageUrl = remotePath;
 
@@ -1105,7 +1105,7 @@
                 var httpClient = this.httpClientFactory.CreateClient();
                 using (var stream = await httpClient.GetStreamAsync(url))
                 {
-                    string remoteUrl = await this.imageStore.SaveImage(stream, remotePath, cancellationToken);
+                    string remoteUrl = await this.imageStore.Save(stream, remotePath, ContentTypes.ImageContentType, cancellationToken);
                     uploadedImages.Add(remotePath);
                     return true;
                 }

@@ -3,20 +3,23 @@ using Azure.Storage.Blobs.Models;
 using Blazorise;
 using Blazorise.Bootstrap5;
 using Blazorise.Icons.FontAwesome;
+using Fantastic.TheMovieDb.Caching.FileSystem;
+using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp.Web.Caching.Azure;
 using SixLabors.ImageSharp.Web.DependencyInjection;
 using SixLabors.ImageSharp.Web.Providers.Azure;
+using Sqids;
 using TheDiscDb;
 using TheDiscDb.Data.GraphQL;
+using TheDiscDb.Data.Import;
 using TheDiscDb.Search;
 using TheDiscDb.Web;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
-using KristofferStrube.Blazor.FileSystemAccess;
-using Fantastic.TheMovieDb.Caching.FileSystem;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -108,8 +111,7 @@ builder.Services
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
-builder.Services.AddScoped<TheDiscDb.Client.SearchClient>();
-builder.Services.AddScoped<TheDiscDb.Client.HashClient>();
+builder.Services.AddScoped<TheDiscDb.Client.ApiClient>();
 builder.Services.AddScoped<TheDiscDb.Client.TmdbClient>();
 builder.Services.AddSingleton<IFileSystemCache, TheDiscDb.Client.NullFileSystemCache>();
 builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
@@ -146,6 +148,17 @@ builder.Services.AddImageSharp()
     .SetCache<AzureBlobStorageCache>()
     .AddProvider<AzureBlobStorageImageProvider>();
 
+builder.Services.AddSingleton<IOptions<BlobStorageOptions>>(provider =>
+{
+    return Options.Create(new BlobStorageOptions
+    {
+        ConnectionString = blobConnectionString,
+        ContainerName = "contributions"
+    });
+});
+
+builder.Services.AddSingleton<IStaticAssetStore, BlobStorageStaticAssetStore>();
+
 var searchApiKey = builder.Configuration["Search:ApiKey"];
 bool searchEnabled = !string.IsNullOrEmpty(searchApiKey);
 
@@ -179,6 +192,8 @@ builder.Services.AddSingleton<SitemapGenerator>();
 
 builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
+
+builder.Services.AddSingleton<SqidsEncoder<int>>();
 
 var app = builder.Build();
 

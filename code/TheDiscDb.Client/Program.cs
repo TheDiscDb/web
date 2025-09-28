@@ -17,9 +17,7 @@ builder.Services
     .AddFontAwesomeIcons();
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-builder.Services.AddScoped<SearchClient>();
-builder.Services.AddScoped<HashClient>();
-
+builder.Services.AddScoped<ApiClient>();
 builder.Services.AddScoped<TmdbClient>();
 builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
 builder.Services.AddSingleton<Fantastic.TheMovieDb.Caching.FileSystem.IFileSystemCache, NullFileSystemCache>();
