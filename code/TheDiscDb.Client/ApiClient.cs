@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Web;
+using Microsoft.AspNetCore.Components;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Search;
 
@@ -7,15 +8,25 @@ namespace TheDiscDb.Client;
 
 public class ApiClient
 {
-    private readonly HttpClient client;
+    private readonly IHttpClientFactory httpClientFactory;
+    private readonly NavigationManager navigation;
 
-    public ApiClient(HttpClient client)
+    public ApiClient(IHttpClientFactory httpClientFactory, NavigationManager navigation)
     {
-        this.client = client;
+        this.httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+        this.navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
+    }
+
+    private HttpClient GetHttpClient()
+    {
+        var client = httpClientFactory.CreateClient();
+        client.BaseAddress = new Uri(navigation.BaseUri);
+        return client;
     }
 
     public async Task<IEnumerable<SearchEntry>> Search(string term, CancellationToken cancellationToken = default)
     {
+        var client = GetHttpClient();
         var response = await client.GetFromJsonAsync<IEnumerable<SearchEntry>>($"/api/search?s={HttpUtility.UrlEncode(term)}", cancellationToken);
         if (response == null)
         {
@@ -27,6 +38,7 @@ public class ApiClient
 
     public async Task<HashResponse> HashAsync(HashRequest request, CancellationToken cancellationToken = default)
     {
+        var client = GetHttpClient();
         var response = await client.PostAsJsonAsync("/api/hash", request, cancellationToken);
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<HashResponse>(cancellationToken: cancellationToken);
@@ -39,6 +51,7 @@ public class ApiClient
 
     public async Task<CreateContributionResponse> CreateContributionAsync(CreateContributionRequest request, CancellationToken cancellationToken = default)
     {
+        var client = GetHttpClient();
         var response = await client.PostAsJsonAsync("/api/contribute/create", request, cancellationToken);
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<CreateContributionResponse>(cancellationToken: cancellationToken);
@@ -51,6 +64,7 @@ public class ApiClient
 
     public async Task<SaveDiscResponse> SaveDiscAsync(SaveDiscRequest request, CancellationToken cancellationToken = default)
     {
+        var client = GetHttpClient();
         var response = await client.PostAsJsonAsync($"/api/contribute/saveDisc", request, cancellationToken);
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<SaveDiscResponse>(cancellationToken: cancellationToken);
@@ -59,6 +73,32 @@ public class ApiClient
             throw new Exception("Unable to get save disc result from server");
         }
         return result;
+    }
+
+    public async Task<DiscStatusResponse> CheckDiscUploadStatus(string discId, CancellationToken cancellationToken = default)
+    {
+        var client = GetHttpClient();
+        var response = await client.GetFromJsonAsync<DiscStatusResponse>($"/api/contribute/checkdiskuploadstatus/{discId}", cancellationToken);
+
+        if (response == null)
+        {
+            throw new Exception("Unable to get disc status from server");
+        }
+
+        return response;
+    }
+
+    public async Task<DiscLogResponse> GetDiscLogsAsync(string contributionId, string discId, CancellationToken cancellationToken = default)
+    {
+        var client = GetHttpClient();
+        var response = await client.GetAsync($"/api/contribute/{contributionId}/discs/{discId}/getlogs", cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        string contents = await response.Content.ReadAsStringAsync();
+        return new DiscLogResponse
+        {
+            Content = contents
+        };
     }
 }
 
@@ -105,4 +145,14 @@ public class SaveDiscRequest
 public class SaveDiscResponse
 {
     public string DiscId { get; set; } = string.Empty;
+}
+
+public class DiscStatusResponse
+{
+    public bool LogsUploaded { get; set; }
+}
+
+public class DiscLogResponse
+{
+    public string Content { get; set; } = string.Empty;
 }

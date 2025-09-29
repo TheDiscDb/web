@@ -1,5 +1,6 @@
 ﻿namespace TheDiscDb.Data.Import
 {
+    using System;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -10,11 +11,17 @@
         Task<string> Save(Stream stream, string remotePath, string contentType, CancellationToken cancellationToken = default);
         Task<bool> Exists(string remotePath, CancellationToken cancellationToken = default);
         string ContainerName { get; set; }
+        Task<BinaryData> Download(string remotePath, CancellationToken cancellationToken = default);
     }
 
     public class NullStaticAssetStore : IStaticAssetStore
     {
         public string ContainerName { get; set; } = "";
+
+        public Task<BinaryData> Download(string remotePath, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(BinaryData.Empty);
+        }
 
         public Task<bool> Exists(string remotePath, CancellationToken cancellationToken = default)
         {

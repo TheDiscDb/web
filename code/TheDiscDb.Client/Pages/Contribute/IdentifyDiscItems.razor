@@ -1,0 +1,19 @@
+﻿@page "/contribution/{contributionId}/discs/{discId}/identify"
+
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+@rendermode InteractiveAuto
+
+<h1>Indentify Items</h1>
+@if (titles is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <QuickGrid Items="titles">
+        <PropertyColumn Property="@(t => t.ChapterCount)" />
+        <PropertyColumn Property="@(t => t.DisplaySize)" />
+        <PropertyColumn Property="@(t => t.SegmentMap)" />
+    </QuickGrid>
+}

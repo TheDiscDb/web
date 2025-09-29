@@ -19,6 +19,9 @@ public partial class DiscUpload : ComponentBase
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = null!;
 
+    [Inject]
+    private ApiClient Client { get; set; } = null!;
+
     private readonly string powershellCommandTemplate = "Invoke-WebRequest -Uri \"{0}\" -Method POST -ContentType \"text/plain\" -Body ((& '{1}' --minlength=0 --robot info disc:{2}) | Out-String)";
 
     public string? PowershellCommand { get; set; }
@@ -29,10 +32,26 @@ public partial class DiscUpload : ComponentBase
 
     private string GetMakeMkvPath() => "C:\\Program Files (x86)\\MakeMKV\\makemkvcon64.exe";
 
+    private Timer? timer;
+
     protected override Task OnInitializedAsync()
     {
         this.PowershellCommand = string.Format(powershellCommandTemplate, GetUri(), GetMakeMkvPath(), this.DriveIndex);
+        this.timer = new Timer(TimerTick!, null, 0, 1000);
         return Task.CompletedTask;
+    }
+
+    private void TimerTick(object state)
+    {
+        this.Client.CheckDiscUploadStatus(this.DiscId ?? string.Empty).ContinueWith(t =>
+        {
+            if (t.Result != null && t.Result.LogsUploaded)
+            {
+                this.timer?.Dispose();
+                JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
+                //this.NavigationManager.NavigateTo($"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
+            }
+        });
     }
 
     private void OnDriveIndexChanged(ChangeEventArgs e)

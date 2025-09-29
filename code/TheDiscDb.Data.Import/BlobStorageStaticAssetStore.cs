@@ -1,5 +1,6 @@
 ﻿namespace TheDiscDb.Data.Import
 {
+    using System;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -47,26 +48,26 @@
             }
         }
 
-        private async Task EnsureContainerCreated()
+        private async Task EnsureContainerCreated(CancellationToken cancellationToken)
         {
             if (!containerExists)
             {
                 BlobContainerClient containerClient = this.client.GetBlobContainerClient(this.options.Value.ContainerName);
-                await containerClient.CreateIfNotExistsAsync();
+                await containerClient.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
                 containerExists = true;
             }
         }
 
         public async Task<bool> Exists(string remotePath, CancellationToken cancellationToken = default)
         {
-            await EnsureContainerCreated();
+            await EnsureContainerCreated(cancellationToken);
             var blobClient = GetClient(remotePath);
             return await blobClient.ExistsAsync(cancellationToken);
         }
 
         public async Task<string> Save(string filePath, string remotePath, string contentType, CancellationToken cancellationToken = default)
         {
-            await EnsureContainerCreated();
+            await EnsureContainerCreated(cancellationToken);
             var blobClient = GetClient(remotePath);
             var uploadOptions = new BlobUploadOptions
             {
@@ -86,7 +87,7 @@
 
         public async Task<string> Save(Stream stream, string remotePath, string contentType, CancellationToken cancellationToken = default)
         {
-            await EnsureContainerCreated();
+            await EnsureContainerCreated(cancellationToken);
             var blobClient = GetClient(remotePath);
             var uploadOptions = new BlobUploadOptions
             {
@@ -102,6 +103,14 @@
             }
 
             return blobClient.Uri.ToString();
+        }
+
+        public async Task<BinaryData> Download(string remotePath, CancellationToken cancellationToken = default)
+        {
+            await EnsureContainerCreated(cancellationToken);
+            var blobClient = GetClient(remotePath);
+            var response = await blobClient.DownloadContentAsync(cancellationToken);
+            return response.Value.Content;
         }
     }
 }

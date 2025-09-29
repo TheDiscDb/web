@@ -21,6 +21,7 @@
     <ItemGroup>
         <PackageReference Include="Fantastic.TheMovieDb" Version="1.2.2" />
         <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.3.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="9.0.9" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.9" />
         <PackageReference Include="Blazorise.Bootstrap" Version="1.8.0" />
         <PackageReference Include="Blazorise.Bootstrap5" Version="1.8.0" />
@@ -28,6 +29,7 @@
         <PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.8.0" />
         <PackageReference Include="Sqids" Version="3.1.0" />
         <PackageReference Include="StrawberryShake.Blazor" Version="15.0.3" />
+        <PackageReference Include="TheDiscDb.MakeMkv" Version="1.1.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />

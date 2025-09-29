@@ -93,6 +93,9 @@ public class ClientApiController : ControllerBase
                 return this.NotFound(discId);
             }
 
+            // TODO: Parse the logs and clean them of PII (like drive serial numbers etc)
+            // Also validate the logs are from makemkv and not something else
+
             //Save the logs in blob storage
             byte[] byteArray = Encoding.UTF8.GetBytes(logs);
             using (MemoryStream memoryStream = new MemoryStream(byteArray))
@@ -188,5 +191,43 @@ public class ClientApiController : ControllerBase
         }
 
         return new SaveDiscResponse { DiscId = this.idEncoder.Encode(disc.Id) };
+    }
+
+    [HttpGet("contribute/checkdiskuploadstatus/{discId}")]
+    public async Task<ActionResult> CheckDiskUploadStatus(string discId)
+    {
+        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync();
+        {
+            int realDiscId = idEncoder.Decode(discId).Single();
+            var disc = await dbContext.UserContributionDiscs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.Id == realDiscId);
+
+            if (disc == null)
+            {
+                return NotFound(discId);
+            }
+
+            return new ObjectResult(new DiscStatusResponse
+            {
+                LogsUploaded = disc.LogsUploaded
+            });
+        }
+    }
+
+    [HttpGet("contribute/{contributionId}/discs/{discId}/getlogs")]
+    [Authorize]
+    public async Task<IActionResult> GetDiscLogs(string contributionId, string discId, CancellationToken cancellationToken)
+    {
+        // TODO: Check the user owns the contribution
+
+        var blob = await this.assetStore.Download($"{contributionId}/{discId}-logs.txt", cancellationToken);
+        if (blob == null)
+        {
+            return NotFound();
+        }
+
+        byte[] content = blob.ToArray();
+        return File(content, ContentTypes.TextContentType, $"{discId}-logs.txt");
     }
 }
