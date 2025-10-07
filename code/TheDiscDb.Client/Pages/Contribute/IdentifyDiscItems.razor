@@ -1,6 +1,7 @@
 ﻿@page "/contribution/{contributionId}/discs/{discId}/identify"
 
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using Blazorise
 
 @rendermode InteractiveAuto
 
@@ -15,5 +16,19 @@ else
         <PropertyColumn Property="@(t => t.ChapterCount)" />
         <PropertyColumn Property="@(t => t.DisplaySize)" />
         <PropertyColumn Property="@(t => t.SegmentMap)" />
+        <TemplateColumn>
+            <Dropdown>
+                <DropdownToggle Color="Color.Primary" ToggleIconVisible="false">
+                    <Icon Name="GetIcon(context)" />
+                </DropdownToggle>
+                <DropdownMenu>
+                    <DropdownItem Clicked='() => IdentifyItemClicked(context, "MainMovie")'>Main Movie</DropdownItem>
+                    <DropdownItem Clicked='() => IdentifyItemClicked(context, "Episode")'>Episode</DropdownItem>
+                    <DropdownItem Clicked='() => IdentifyItemClicked(context, "Extra")'>Extra</DropdownItem>
+                    <DropdownItem Clicked='() => IdentifyItemClicked(context, "DeletedScene")'>Deleted Scene</DropdownItem>
+                    <DropdownItem Clicked='() => IdentifyItemClicked(context, "Trailer")'>Trailer</DropdownItem>
+                </DropdownMenu>
+            </Dropdown>
+        </TemplateColumn>
     </QuickGrid>
 }

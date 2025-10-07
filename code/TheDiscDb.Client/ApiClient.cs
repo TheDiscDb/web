@@ -1,8 +1,10 @@
 using System.Net.Http.Json;
 using System.Web;
+using MakeMkv;
 using Microsoft.AspNetCore.Components;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Search;
+using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client;
 
@@ -91,14 +93,14 @@ public class ApiClient
     public async Task<DiscLogResponse> GetDiscLogsAsync(string contributionId, string discId, CancellationToken cancellationToken = default)
     {
         var client = GetHttpClient();
-        var response = await client.GetAsync($"/api/contribute/{contributionId}/discs/{discId}/getlogs", cancellationToken);
-        response.EnsureSuccessStatusCode();
+        var response = await client.GetFromJsonAsync<DiscLogResponse>($"/api/contribute/{contributionId}/discs/{discId}/getlogs", cancellationToken);
 
-        string contents = await response.Content.ReadAsStringAsync();
-        return new DiscLogResponse
+        if (response == null)
         {
-            Content = contents
-        };
+            throw new Exception("Unable to get disc logs from server");
+        }
+
+        return response;
     }
 }
 
@@ -154,5 +156,6 @@ public class DiscStatusResponse
 
 public class DiscLogResponse
 {
-    public string Content { get; set; } = string.Empty;
+    public DiscInfo? Info { get; set; }
+    public UserContributionDisc? Disc { get; set; }
 }

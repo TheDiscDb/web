@@ -76,6 +76,7 @@ public partial class CalculateHash : ComponentBase
                 if (response != null && !string.IsNullOrEmpty(response.Hash))
                 {
                     hash = response.Hash;
+                    this.request.ContentHash = hash;
                     //this.Navigation.NavigateTo($"/contribution/{ContributionId}/adddisc/{response.Hash}");
                 }
             }

@@ -59,6 +59,8 @@ public class SqlServerDataContext : DbContext
 
         var userContribution = modelBuilder.Entity<UserContribution>();
         userContribution.HasKey(x => x.Id);
+        userContribution.Property(x => x.Status)
+            .HasConversion<string>();
         //userContribution.HasOne(x => x.User).WithOne()
         //    .HasForeignKey<UserContribution>(x => x.UserId);
         userContribution.HasMany(x => x.Discs).WithOne(x => x.UserContribution);
@@ -225,6 +227,14 @@ public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser
 {
 }
 
+public enum UserContributionStatus
+{
+    Pending,
+    Approved,
+    ChangesRequested,
+    Rejected
+}
+
 public class UserContribution
 {
     [JsonIgnore]
@@ -232,7 +242,7 @@ public class UserContribution
     public string UserId { get; set; }
     //public TheDiscDbUser User { get; set; } = null!;
     public DateTimeOffset Created { get; set; }
-    public string Status { get; set; } = "Pending";
+    public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
     public ICollection<UserContributionDisc> Discs { get; set; } = new HashSet<UserContributionDisc>();
 
     public string MediaType { get; set; } = string.Empty;

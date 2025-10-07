@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <Sdk Name="Aspire.AppHost.Sdk" Version="9.4.2" />
+    <Sdk Name="Aspire.AppHost.Sdk" Version="9.5.0" />
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -11,11 +11,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting.AppHost" Version="9.4.2" />
+        <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.1" />
         <PackageReference Include="Aspire.Hosting.Azure.AppService" Version="9.4.1-preview.1.25408.4" />
-        <PackageReference Include="Aspire.Hosting.Azure.Sql" Version="9.4.2" />
-        <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="9.4.2" />
-        <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.4.2" />
+        <PackageReference Include="Aspire.Hosting.Azure.Sql" Version="9.5.1" />
+        <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="9.5.1" />
+        <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.5.1" />
     </ItemGroup>
 
     <ItemGroup>

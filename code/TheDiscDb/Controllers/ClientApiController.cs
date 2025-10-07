@@ -1,5 +1,8 @@
 ﻿using System.Text;
+using Azure.Core;
+using MakeMkv;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -129,7 +132,7 @@ public class ClientApiController : ControllerBase
             ExternalProvider = request.ExternalProvider,
             MediaType = request.MediaType,
             ReleaseDate = request.ReleaseDate,
-            Status = "New",
+            Status = UserContributionStatus.Pending,
             FrontImageUrl = request.FrontImageUrl,
             BackImageUrl = request.BackImageUrl,
             Upc = request.Upc,
@@ -164,7 +167,6 @@ public class ClientApiController : ControllerBase
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync();
         {
             var contributionId = this.idEncoder.Decode(request.ContributionId).Single();
-            var discId = this.idEncoder.Decode(request.ContributionId).Single();
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                 .FirstOrDefaultAsync(c => c.Id == contributionId);
@@ -216,18 +218,46 @@ public class ClientApiController : ControllerBase
     }
 
     [HttpGet("contribute/{contributionId}/discs/{discId}/getlogs")]
-    [Authorize]
+    //[Authorize]
     public async Task<IActionResult> GetDiscLogs(string contributionId, string discId, CancellationToken cancellationToken)
     {
         // TODO: Check the user owns the contribution
 
-        var blob = await this.assetStore.Download($"{contributionId}/{discId}-logs.txt", cancellationToken);
-        if (blob == null)
+        try
         {
-            return NotFound();
-        }
+            var blob = await this.assetStore.Download($"{contributionId}/{discId}-logs.txt", cancellationToken);
+            if (blob == null)
+            {
+                return NotFound();
+            }
 
-        byte[] content = blob.ToArray();
-        return File(content, ContentTypes.TextContentType, $"{discId}-logs.txt");
+            string text = blob.ToString();
+            var lines = text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var parsed = LogParser.Parse(lines);
+            var orgainized = LogParser.Organize(parsed);
+
+            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedDiscId = this.idEncoder.Decode(discId).Single();
+            UserContributionDisc? disc = null;
+            await using var dbContext = await this.dbContextFactory.CreateDbContextAsync();
+            {
+                disc = await dbContext.UserContributionDiscs
+                    .Include(c => c.Items)
+                        .ThenInclude(d => d.Chapters)
+                    .Include(c => c.Items)
+                        .ThenInclude(d => d.AudioTracks)
+                    .FirstOrDefaultAsync(c => c.Id == decodedContributionId);
+            }
+
+            return new ObjectResult(new DiscLogResponse
+            {
+                Info = orgainized,
+                Disc = disc
+            });
+        }
+        catch(Exception e)
+        {
+            return this.Problem(e.Message, e.StackTrace, 500, "Error", e.GetType().Name);
+        }
     }
 }
