@@ -143,9 +143,9 @@ public partial class DiscDetail : ComponentBase
         }
     }
 
-    private Task AllTitlesChanged(bool state)
+    private Task AllTitlesChanged(Syncfusion.Blazor.Buttons.ChangeEventArgs<bool> args)
     {
-        if (state)
+        if (args.Checked)
         {
             FilteredTitles = AllTitles;
         }

@@ -1,8 +1,5 @@
 using Azure;
 using Azure.Storage.Blobs.Models;
-using Blazorise;
-using Blazorise.Bootstrap5;
-using Blazorise.Icons.FontAwesome;
 using Fantastic.TheMovieDb.Caching.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Identity;
@@ -13,6 +10,7 @@ using SixLabors.ImageSharp.Web.Caching.Azure;
 using SixLabors.ImageSharp.Web.DependencyInjection;
 using SixLabors.ImageSharp.Web.Providers.Azure;
 using Sqids;
+using Syncfusion.Blazor;
 using TheDiscDb;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
@@ -82,13 +80,8 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddScoped<TheDiscDb.Components.Account.IdentityRedirectManager>();
 
-builder.Services
-    .AddBlazorise(options =>
-    {
-        options.Immediate = true;
-    })
-    .AddBootstrap5Providers()
-    .AddFontAwesomeIcons();
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH9eeHVURmdYVUZ0VkpWYEg=");
+builder.Services.AddSyncfusionBlazor();
 
 builder.Services.AddPooledDbContextFactory<SqlServerDataContext>(options =>
 {

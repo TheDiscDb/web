@@ -1,10 +1,6 @@
-﻿using System;
-using System.Diagnostics.Metrics;
-using System.Web;
-using Blazorise.Components;
+﻿using System.Web;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using TheDiscDb.InputModels;
 using TheDiscDb.Search;
 
 namespace TheDiscDb.Client.Controls;
@@ -19,19 +15,21 @@ public partial class NavMenu : ComponentBase
 
     public IEnumerable<SearchEntry>? SearchResults { get; set; }
 
+#pragma warning disable IDE0044 // Add readonly modifier
     private string? searchQuery;
+#pragma warning restore IDE0044 // Add readonly modifier
 
-    private async Task OnHandleReadData(AutocompleteReadDataEventArgs autocompleteReadDataEventArgs)
-    {
-        if (!autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
-        {
-            var results = await this.SearchClient.Search(autocompleteReadDataEventArgs.SearchValue);
-            if (!autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
-            {
-                this.SearchResults = results;
-            }
-        }
-    }
+    //private async Task OnHandleReadData(AutocompleteReadDataEventArgs autocompleteReadDataEventArgs)
+    //{
+    //    if (!autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
+    //    {
+    //        var results = await this.SearchClient.Search(autocompleteReadDataEventArgs.SearchValue);
+    //        if (!autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
+    //        {
+    //            this.SearchResults = results;
+    //        }
+    //    }
+    //}
 
     public async Task KeyPressed(KeyboardEventArgs e)
     {

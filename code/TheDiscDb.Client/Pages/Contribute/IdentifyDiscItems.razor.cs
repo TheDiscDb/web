@@ -1,7 +1,7 @@
-﻿using Blazorise;
-using MakeMkv;
+﻿using MakeMkv;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Syncfusion.Blazor.Buttons;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -39,10 +39,10 @@ public partial class IdentifyDiscItems : ComponentBase
     {
         if (identifiedTitles.TryGetValue(title, out bool identified) && identified)
         {
-            return IconName.MinusCircle;
+            return IconName.CircleRemove;
         }
 
-        return IconName.PlusCircle;
+        return IconName.CircleAdd;
     }
 
     private void IdentifyItemClicked(Title title, string type)

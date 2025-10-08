@@ -1,20 +1,12 @@
-using Blazorise;
-using Blazorise.Bootstrap5;
-using Blazorise.Icons.FontAwesome;
+using Syncfusion.Blazor;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using TheDiscDb.Client;
 using KristofferStrube.Blazor.FileSystemAccess;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
-builder.Services
-    .AddBlazorise(options =>
-    {
-        options.Immediate = true;
-        options.ProductToken = "CjxRBHF6NA0+UAJxfDM1BlEAc3s1DD1WAHl+Nws7bjoNJ2ZdYhBVCCo/CTRQBUxERldhE1EvN0xcNm46FD1gSkUHCkxESVFvBl4yK1FBfAYKAiFoVXkNWTU3CDJTPHQAGkR/Xip0HhFIeVQ8bxMBUmtTPApwfjUIPG46HhFEbVgscw4DVXRJN3UeEUh5VDxvEwFSa1M8CnB+NQg8bjoeEUZwTTFkEhFadU07bx4cSm9fPG97fzUIAWlvHgJMa1g1eQQZWmdBImgeEVd3WzBvHnQ0CDxTAExEWmdYMXUEGEx9WzxvDA9dZ1MxfxYdWmc2UgBxfggyZyBKMnxwXmJSZDQrcVRaEHt4BzMXdiFqFAZjVjQOUnl7TAE4DWYyBUdIfTtmbi93Ym9UdG4dVk9YOmAtPWh2YjlfdH5gYiMPSjMlY1M+B2YCFzMXQRNiFiJPTnsAVTF6QEg0MAUoFzBdPyBdcD4wfnUreRsZc1x6L3EnHVxaPBVJGD88E0AuYQUpYm87UwUUBFd9eygFGSNDWmkhfTINTVAnUUhxfDxibTNDfA==\r\n\r\n";
-    })
-    .AddBootstrap5Providers()
-    .AddFontAwesomeIcons();
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH9eeHVURmdYVUZ0VkpWYEg=");
+builder.Services.AddSyncfusionBlazor();
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });

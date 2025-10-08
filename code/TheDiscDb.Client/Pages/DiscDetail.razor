@@ -2,11 +2,10 @@
 @page "/disc/{contentHash}"
 
 @rendermode InteractiveAuto
-@using Blazorise
 
 @if (Item == null || Disc == null || Release == null)
 {
-    <Div>Item, Disc or Release not found</Div>
+    <div>Item, Disc or Release not found</div>
 }
 else
 {
@@ -24,41 +23,41 @@ else
     <h1>@Disc.GetFullName()</h1>
     <h2>@Release.Title</h2>
 
-    <Switch TValue="bool" CheckedChanged="AllTitlesChanged">
+    <SfSwitch TChecked="bool" ValueChange="e => AllTitlesChanged(e)">
         Show all titles
-    </Switch>
+    </SfSwitch>
 
-    <Table>
-        <TableHeader>
-            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("SourceFile"))">Source File</TableHeaderCell>
-            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("Description"))">Description</TableHeaderCell>
-            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("ItemType"))">Type</TableHeaderCell>
+    <table>
+        <theader>
+            <th style="cursor: pointer;" @onclick="@(e => SortTable("SourceFile"))">Source File</th>
+            <th Style="cursor: pointer;" @onclick="@(e => SortTable("Description"))">Description</th>
+            <th Style="cursor: pointer;" @onclick="@(e => SortTable("ItemType"))">Type</th>
             @if (this.Item!.Type!.Equals("series", StringComparison.OrdinalIgnoreCase))
             {
-                <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("Season"))">Season</TableHeaderCell>
-                <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("Episode"))">Episode</TableHeaderCell>
+                <th Style="cursor: pointer;" @onclick="@(e => SortTable("Season"))">Season</th>
+                <th Style="cursor: pointer;" @onclick="@(e => SortTable("Episode"))">Episode</th>
             }
-            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("SegmentMap"))">Segment Map</TableHeaderCell>
-            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("Duration"))">Length</TableHeaderCell>
-            <TableHeaderCell Style="cursor: pointer;" Clicked="@(e => SortTable("DisplaySize"))">Size</TableHeaderCell>
-        </TableHeader>
-        <TableBody>
+            <th Style="cursor: pointer;" @onclick="@(e => SortTable("SegmentMap"))">Segment Map</th>
+            <th Style="cursor: pointer;" @onclick="@(e => SortTable("Duration"))">Length</th>
+            <th Style="cursor: pointer;" @onclick="@(e => SortTable("DisplaySize"))">Size</th>
+        </theader>
+        <tbody>
             @foreach (var title in FilteredTitles)
             {
-                <TableRow>
-                    <TableRowCell><Anchor To="@TitleDetailUrl(title)">@title.SourceFile</Anchor></TableRowCell>
-                    <TableRowCell>@title.Description</TableRowCell>
-                    <TableRowCell>@title.ItemType</TableRowCell>
+                <tr>
+                    <td><a href="@TitleDetailUrl(title)">@title.SourceFile</a></td>
+                    <td>@title.Description</td>
+                    <td>@title.ItemType</td>
                     @if (this.Item!.Type!.Equals("series", StringComparison.OrdinalIgnoreCase))
                     {
-                        <TableRowCell>@title.Season</TableRowCell>
-                        <TableRowCell>@title.Episode</TableRowCell>
+                        <td>@title.Season</td>
+                        <td>@title.Episode</td>
                     }
-                    <TableRowCell>@title.SegmentMap</TableRowCell>
-                    <TableRowCell>@title.Duration</TableRowCell>
-                    <TableRowCell>@title.DisplaySize</TableRowCell>
-                </TableRow>
+                    <td>@title.SegmentMap</td>
+                    <td>@title.Duration</td>
+                    <td>@title.DisplaySize</td>
+                </tr>
             }
-        </TableBody>
-    </Table>
+        </tbody>
+    </table>
 }

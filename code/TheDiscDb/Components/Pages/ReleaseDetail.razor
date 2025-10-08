@@ -4,7 +4,7 @@
 
 @if (Item == null || Release == null)
 {
-    <Div>Item or release not found</Div>
+    <div>Item or release not found</div>
 }
 else
 {
@@ -27,7 +27,7 @@ else
                     {
                         foreach (var disc in Release.Discs)
                         {
-                            <li><Anchor To="@disc.DiscDetailUrl(this.Release, this.Item)">@disc.FullDiscName()</Anchor></li>
+                            <li><a href="@disc.DiscDetailUrl(this.Release, this.Item)">@disc.FullDiscName()</a></li>
                             <ul class="facts">
                                 @foreach (var feature in NavigationExtensions.GetDiscFeatures(disc))
                                 {
@@ -36,7 +36,7 @@ else
                                         @if (feature.HasChapters)
                                         {
                                             <span title="Has chapter names">
-                                                <Icon Name="IconName.List" />
+                                                <SfIcon Name="IconName.ListOrdered" />
                                             </span>
                                         }
                                     </li>
