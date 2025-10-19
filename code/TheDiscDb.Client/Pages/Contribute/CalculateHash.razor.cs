@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using TheDiscDb.Core.DiscHash;
+using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -20,7 +21,10 @@ public partial class CalculateHash : ComponentBase
     public IJSRuntime Js { get; set; } = default!;
 
     [Inject]
-    public ApiClient Client { get; set; } = default!;
+    public ApiClient ApiClient { get; set; } = default!;
+
+    [Inject]
+    public IUserContributionService Client { get; set; } = default!;
 
     [Inject]
     public NavigationManager Navigation { get; set; } = default!;
@@ -32,7 +36,6 @@ public partial class CalculateHash : ComponentBase
 
     protected override Task OnInitializedAsync()
     {
-        request.ContributionId = ContributionId!;
         return Task.CompletedTask;
     }
 
@@ -72,7 +75,7 @@ public partial class CalculateHash : ComponentBase
                 };
 
                 // TODO: Get a cancellation token
-                var response = await this.Client.HashAsync(request);
+                var response = await this.ApiClient.HashAsync(request);
                 if (response != null && !string.IsNullOrEmpty(response.Hash))
                 {
                     hash = response.Hash;
@@ -115,9 +118,9 @@ public partial class CalculateHash : ComponentBase
 
     async Task HandleValidSubmit()
     {
-        var response = await this.Client.SaveDiscAsync(this.request);
+        var response = await this.Client.CreateDisc(this.ContributionId!, this.request);
 
-        this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{response.DiscId}");
+        this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{response.Value.DiscId}");
     }
 
     private void DiscTitleChanged(ChangeEventArgs args)

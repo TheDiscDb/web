@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -16,7 +17,7 @@ public partial class ReleaseDetailInput : ComponentBase
     public string? ExternalId { get; set; }
 
     [Inject]
-    public ApiClient Client { get; set; } = default!;
+    public IUserContributionService Client { get; set; } = default!;
 
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
@@ -35,9 +36,9 @@ public partial class ReleaseDetailInput : ComponentBase
 
     async Task HandleValidSubmit()
     {
-        var response = await this.Client.CreateContributionAsync(this.request);
+        var response = await this.Client.CreateContribution(userId: string.Empty, this.request);
 
-        this.NavigationManager!.NavigateTo($"/contribution/{response.ContributionId}");
+        this.NavigationManager!.NavigateTo($"/contribution/{response.Value.ContributionId}");
     }
 
     private void ReleaseTitleChanged(ChangeEventArgs args)

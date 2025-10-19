@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -20,7 +21,7 @@ public partial class DiscUpload : ComponentBase
     private IJSRuntime JSRuntime { get; set; } = null!;
 
     [Inject]
-    private ApiClient Client { get; set; } = null!;
+    private IUserContributionService Client { get; set; } = null!;
 
     private readonly string powershellCommandTemplate = "Invoke-WebRequest -Uri \"{0}\" -Method POST -ContentType \"text/plain\" -Body ((& '{1}' --minlength=0 --robot info disc:{2}) | Out-String)";
 
@@ -28,7 +29,7 @@ public partial class DiscUpload : ComponentBase
 
     public int DriveIndex { get; set; } = 0;
 
-    private string GetUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/addDisc/{DiscId}";
+    private string GetUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/discs/{DiscId}/logs";
 
     private string GetMakeMkvPath() => "C:\\Program Files (x86)\\MakeMKV\\makemkvcon64.exe";
 
@@ -43,9 +44,9 @@ public partial class DiscUpload : ComponentBase
 
     private void TimerTick(object state)
     {
-        this.Client.CheckDiscUploadStatus(this.DiscId ?? string.Empty).ContinueWith(t =>
+        this.Client.CheckDiskUploadStatus(this.DiscId ?? string.Empty).ContinueWith(t =>
         {
-            if (t.Result != null && t.Result.LogsUploaded)
+            if (t != null && t.Result.Value.LogsUploaded)
             {
                 this.timer?.Dispose();
                 JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");

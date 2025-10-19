@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Buttons;
+using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -19,7 +20,7 @@ public partial class IdentifyDiscItems : ComponentBase
     private NavigationManager NavigationManager { get; set; } = null!;
 
     [Inject]
-    private ApiClient Client { get; set; } = null!;
+    private IUserContributionService Client { get; set; } = null!;
 
     private IQueryable<MakeMkv.Title>? titles = null;
     private UserContributionDisc? disc = null;
@@ -27,11 +28,11 @@ public partial class IdentifyDiscItems : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        var response = await this.Client.GetDiscLogsAsync(this.ContributionId!, this.DiscId!);
-        if (response != null)
+        var response = await this.Client.GetDiscLogs(this.ContributionId!, this.DiscId!);
+        if (response?.Value != null)
         {
-            this.titles = response.Info!.Titles.AsQueryable();
-            this.disc = response.Disc;
+            this.titles = response.Value.Info!.Titles.AsQueryable();
+            this.disc = response.Value.Disc;
         }
     }
 

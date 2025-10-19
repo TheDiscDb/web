@@ -1,0 +1,23 @@
+﻿@page "/contribution/{contributionId}"
+
+<h2>User Contribution</h2>
+@if (this.Contribution != null)
+{
+    <QuickGrid Items="Discs">
+        <TemplateColumn Title="Name">
+            <a href="/contribution/@ContributionId/disc/@context.Id/edit" title="Edit Disc">@context.Name</a>
+        </TemplateColumn>
+        <PropertyColumn Property="@(t => t.Name)" />
+        <PropertyColumn Property="@(t => t.Format)" />
+        <PropertyColumn Property="@(t => t.LogsUploaded)" />
+        <TemplateColumn>
+            <a href="#"><SfIcon Name="IconName.DeleteRow" /></a>
+        </TemplateColumn>
+    </QuickGrid>
+}
+else
+{
+    <div>Couldn't find @ContributionId</div>
+}
+
+<a class="btn btn-primary" href="/contribution/@ContributionId/AddDisc">Add Disc</a>

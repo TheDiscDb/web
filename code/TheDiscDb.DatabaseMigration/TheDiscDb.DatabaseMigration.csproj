@@ -18,6 +18,11 @@
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
     </ItemGroup>
 
+    <!-- Remove after testing -->
+    <ItemGroup>
+        <PackageReference Include="Sqids" Version="3.1.0" />
+    </ItemGroup>
+
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Data.Import\TheDiscDb.Data.Import.csproj" />
         <ProjectReference Include="..\TheDiscDb.Data\TheDiscDb.Data.csproj" />

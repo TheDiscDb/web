@@ -29,6 +29,7 @@
         <PackageReference Include="Syncfusion.Blazor.Inputs" Version="31.1.17" />
         <PackageReference Include="Syncfusion.Blazor.Themes" Version="31.1.17" />
         <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="31.1.17" />
+        <PackageReference Include="FluentResults" Version="4.0.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />

@@ -25,7 +25,7 @@
                     <NavLink class="nav-link" href="/about" Match="NavLinkMatch.All">About</NavLink>
                 </li>
             </ul>
-            <SfTextBox Placeholder="Search..." data-permanent @bind-text="@searchQuery"></SfTextBox>
+            <input type="text" placeholder="Search..." data-permanent @bind-value="searchQuery" class="form-control main-search-box" @onkeydown="KeyPressed"></input>
             @* <TextEdit Placeholder="Search..." Width="Width.Em(20)" data-permanent Debounce="true" DebounceInterval="200" @bind-Text="@searchQuery" KeyPress="KeyPressed" />
             <Button Size="Size.Small">
                 <Icon Name="IconName.Search" />

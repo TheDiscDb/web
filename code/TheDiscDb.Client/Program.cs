@@ -2,6 +2,8 @@ using Syncfusion.Blazor;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using TheDiscDb.Client;
 using KristofferStrube.Blazor.FileSystemAccess;
+using TheDiscDb.Services;
+using TheDiscDb.Services.Client;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -22,5 +24,7 @@ builder.Services
 
 builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
+
+builder.Services.AddScoped<IUserContributionService, UserContributionService>();
 
 await builder.Build().RunAsync();

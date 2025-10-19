@@ -15,6 +15,7 @@ using TheDiscDb;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Search;
+using TheDiscDb.Services;
 using TheDiscDb.Web;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
@@ -105,6 +106,7 @@ builder.Services
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TheDiscDb.Client.ApiClient>();
+builder.Services.AddScoped<IUserContributionService, TheDiscDb.Services.Server.UserContributionService>();
 builder.Services.AddScoped<TheDiscDb.Client.TmdbClient>();
 builder.Services.AddSingleton<IFileSystemCache, TheDiscDb.Client.NullFileSystemCache>();
 builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
