@@ -286,6 +286,8 @@ public class UserContributionDiscItem
     public string Year { get; set; } = string.Empty;
     public string FileName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string Season { get; set; } = string.Empty;
+    public string Episode { get; set; } = string.Empty;
     public ICollection<UserContributionChapter> Chapters { get; set; } = new HashSet<UserContributionChapter>();
     public ICollection<UserContributionAudioTrack> AudioTracks { get; set; } = new HashSet<UserContributionAudioTrack>();
 

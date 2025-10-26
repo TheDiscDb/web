@@ -11,6 +11,7 @@ using SixLabors.ImageSharp.Web.DependencyInjection;
 using SixLabors.ImageSharp.Web.Providers.Azure;
 using Sqids;
 using Syncfusion.Blazor;
+using Syncfusion.Blazor.Popups;
 using TheDiscDb;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
@@ -23,6 +24,8 @@ using TheDiscDb.Web.Sitemap;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+builder.Services.AddTransient<ContributionEndpoints>();
 
 builder.Services.AddControllersWithViews( options =>
 {
@@ -83,6 +86,7 @@ builder.Services.AddScoped<TheDiscDb.Components.Account.IdentityRedirectManager>
 
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH9eeHVURmdYVUZ0VkpWYEg=");
 builder.Services.AddSyncfusionBlazor();
+builder.Services.AddScoped<SfDialogService>();
 
 builder.Services.AddPooledDbContextFactory<SqlServerDataContext>(options =>
 {
@@ -191,6 +195,9 @@ builder.Services.AddFileSystemAccessServiceInProcess();
 builder.Services.AddSingleton<SqidsEncoder<int>>();
 
 var app = builder.Build();
+
+var contributionEndpoints = app.Services.GetRequiredService<ContributionEndpoints>();
+contributionEndpoints.MapEndpoints(app);
 
 app.MapDefaultEndpoints();
 

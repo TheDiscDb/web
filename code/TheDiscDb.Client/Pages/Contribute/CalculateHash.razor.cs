@@ -33,6 +33,7 @@ public partial class CalculateHash : ComponentBase
     IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
     string hash = string.Empty;
     private readonly SaveDiscRequest request = new();
+    readonly string[] formats = [ "4K", "Blu-ray", "DVD" ];
 
     protected override Task OnInitializedAsync()
     {
@@ -119,8 +120,10 @@ public partial class CalculateHash : ComponentBase
     async Task HandleValidSubmit()
     {
         var response = await this.Client.CreateDisc(this.ContributionId!, this.request);
-
-        this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{response.Value.DiscId}");
+        if (response.IsSuccess)
+        {
+            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{response.Value.DiscId}");
+        }
     }
 
     private void DiscTitleChanged(ChangeEventArgs args)

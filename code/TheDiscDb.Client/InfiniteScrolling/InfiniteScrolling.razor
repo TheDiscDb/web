@@ -123,7 +123,13 @@
 
         if (_module != null)
         {
-            await _module.DisposeAsync();
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch (Microsoft.JSInterop.JSDisconnectedException)
+            {
+            }
         }
 
         _currentComponentReference?.Dispose();

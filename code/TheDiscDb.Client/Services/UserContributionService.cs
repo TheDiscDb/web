@@ -121,7 +121,7 @@ public class UserContributionService : ApiClient, IUserContributionService
     public async Task<Result<SaveDiscResponse>> CreateDisc(string contributionId, SaveDiscRequest request, CancellationToken cancellationToken = default)
     {
         var client = GetHttpClient();
-        var response = await client.PostAsJsonAsync($"/api/contribute/{contributionId}/discs", request, cancellationToken);
+        var response = await client.PostAsJsonAsync($"/api/contribute/{contributionId}/discs/create", request, cancellationToken);
 
         if (response == null || !response.IsSuccessStatusCode)
         {
@@ -178,7 +178,7 @@ public class UserContributionService : ApiClient, IUserContributionService
     public async Task<Result<AddItemResponse>> AddItemToDisc(string contributionId, string discId, AddItemRequest request, CancellationToken cancellationToken = default)
     {
         var client = GetHttpClient();
-        var response = await client.PostAsJsonAsync($"/api/contribute/{contributionId}/discs/{discId}/items", request, cancellationToken);
+        var response = await client.PostAsJsonAsync($"/api/contribute/{contributionId}/discs/{discId}/item", request, cancellationToken);
 
         if (response == null || !response.IsSuccessStatusCode)
         {
@@ -192,7 +192,7 @@ public class UserContributionService : ApiClient, IUserContributionService
     public async Task<Result> DeleteItemFromDisc(string contributionId, string discId, string itemId, CancellationToken cancellationToken = default)
     {
         var client = GetHttpClient();
-        var response = await client.DeleteAsync($"/api/contribute/{contributionId}/discs/{discId}/items/{itemId}", cancellationToken);
+        var response = await client.DeleteAsync($"/api/contribute/{contributionId}/discs/{discId}/item/{itemId}", cancellationToken);
 
         if (response == null || !response.IsSuccessStatusCode)
         {

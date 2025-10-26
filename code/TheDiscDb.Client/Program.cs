@@ -1,7 +1,8 @@
-using Syncfusion.Blazor;
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using TheDiscDb.Client;
 using KristofferStrube.Blazor.FileSystemAccess;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Syncfusion.Blazor;
+using Syncfusion.Blazor.Popups;
+using TheDiscDb.Client;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Client;
 
@@ -9,6 +10,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH9eeHVURmdYVUZ0VkpWYEg=");
 builder.Services.AddSyncfusionBlazor();
+builder.Services.AddScoped<SfDialogService>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });

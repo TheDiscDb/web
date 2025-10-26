@@ -36,7 +36,7 @@ public class Worker(
                 await dataSeeder.SeedDataAsync(cancellationToken);
             }
 
-            await TrySeedContribution(dbContext, scope.ServiceProvider.GetRequiredService<IStaticAssetStore>(), options, cancellationToken);
+            //await TrySeedContribution(dbContext, scope.ServiceProvider.GetRequiredService<IStaticAssetStore>(), options, cancellationToken);
         }
         catch (Exception ex)
         {

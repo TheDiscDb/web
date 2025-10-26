@@ -1,11 +1,61 @@
-﻿using MakeMkv;
+﻿using System.ComponentModel.DataAnnotations;
+using MakeMkv;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Syncfusion.Blazor.Buttons;
+using Syncfusion.Blazor.Notifications;
+using Syncfusion.Blazor.Popups;
+using Syncfusion.Blazor.SplitButtons;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client.Pages.Contribute;
+
+public class EpisodeIdentification
+{
+    [Required]
+    public string? Season { get; set; }
+    [Required]
+    public string? Episode { get; set; }
+}
+
+public class ItemIdentification
+{
+    public required Title Title { get; set; }
+    [Required]
+    public required string ItemTitle { get; set; }
+    public string? Description { get; set; }
+    public required string Type { get; set; }
+    public EpisodeIdentification? Episode { get; set; }
+    public AddItemResponse? Response { get; set; }
+
+    public AddItemRequest CreateAddRequest()
+    {
+        return new AddItemRequest
+        {
+            ChapterCount = Title.ChapterCount,
+            Description = Description,
+            Duration = Title.DisplaySize!,
+            FileName = BuildFilename(),
+            Name = ItemTitle,
+            SegmentCount = Title.Segments.Count,
+            SegmentMap = Title.SegmentMap!,
+            Source = Title.Playlist!,
+            Type = Type,
+            Season = Episode != null ? Episode.Season : null,
+            Episode = Episode != null ? Episode.Episode : null
+        };
+    }
+
+    private string BuildFilename()
+    {
+        if (Episode != null)
+        {
+            return $"S{Episode.Season}.E{Episode.Episode}.{ItemTitle}.mkv";
+        }
+
+        return $"{Title}.mkv";
+    }
+}
 
 [Authorize]
 public partial class IdentifyDiscItems : ComponentBase
@@ -24,7 +74,17 @@ public partial class IdentifyDiscItems : ComponentBase
 
     private IQueryable<MakeMkv.Title>? titles = null;
     private UserContributionDisc? disc = null;
-    private readonly Dictionary<Title, bool> identifiedTitles = new Dictionary<Title, bool>(); 
+    private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
+
+    string message = "Loading...";
+    bool showEpisodeDialog = false;
+    bool showItemDialog = false;
+
+    SfDialog? episodeDialogObj;
+    SfDialog? itemDialogObj;
+    SfToast? toast;
+    string? toastContent;
+    ItemIdentification? currentItem;
 
     protected override async Task OnInitializedAsync()
     {
@@ -33,24 +93,128 @@ public partial class IdentifyDiscItems : ComponentBase
         {
             this.titles = response.Value.Info!.Titles.AsQueryable();
             this.disc = response.Value.Disc;
+            message = "Loaded";
         }
     }
 
-    private IconName GetIcon(Title title)
+    bool IsIdentified(Title title)
     {
-        if (identifiedTitles.TryGetValue(title, out bool identified) && identified)
+        return identifiedTitles.ContainsKey(title);
+    }
+
+    string GetIdentifyButtonText(Title title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
         {
-            return IconName.CircleRemove;
+            return item.Type;
         }
 
-        return IconName.CircleAdd;
+        return "Identify";
     }
 
-    private void IdentifyItemClicked(Title title, string type)
+    async Task RemoveIdentification(Title title)
     {
-        // TODO: Save title on server
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            var result = await this.Client.DeleteItemFromDisc(this.ContributionId!, this.DiscId!, item.Response!.ItemId);
+            if (result.IsSuccess)
+            {
+                identifiedTitles.Remove(title);
+                message = "Removed identification for " + title.DisplaySize;
+                this.StateHasChanged();
+            }
+            else
+            {
+                toastContent = "Error removing identified item";
+                await toast!.ShowAsync();
+            }
+        }
+    }
 
-        this.identifiedTitles[title] = true;
+    private async Task ItemSelected(Title title, MenuEventArgs args)
+    {
+        string type = args.Item.HtmlAttributes["data-type"].ToString() ?? "Unknown";
+
+        this.currentItem = new ItemIdentification
+        {
+            Title = title,
+            Type = type,
+            ItemTitle = ""
+        };
+
+        if (type.Equals("Episode", StringComparison.OrdinalIgnoreCase))
+        {
+            // Pop up dialog to ask for the season and the episode number
+            this.currentItem.Episode = new EpisodeIdentification();
+            this.showEpisodeDialog = true;
+        }
+        else
+        {
+            // Pop up dialog to ask for the title and description
+            this.showItemDialog = true;
+        }
+    }
+
+    public async Task HandleValidItemSubmit()
+    {
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        var response = await this.Client.AddItemToDisc(this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());
+
+        if (response.IsSuccess)
+        {
+            currentItem.Response = response.Value;
+            this.identifiedTitles[currentItem.Title] = currentItem;
+            this.StateHasChanged();
+        }
+        else
+        {
+            toastContent = "Error adding identified item";
+            await toast!.ShowAsync();
+        }
+
+        await this.itemDialogObj!.HideAsync();
+    }
+
+    private async Task ItemDialogCancelClicked()
+    {
+        this.identifiedTitles.Remove(this.currentItem!.Title!);
         this.StateHasChanged();
+        await this.itemDialogObj!.HideAsync();
+    }
+
+
+    public async Task HandleValidEpisodeSubmit()
+    {
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        var response = await this.Client.AddItemToDisc(this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());
+
+        if (response.IsSuccess)
+        {
+            currentItem.Response = response.Value;
+            this.identifiedTitles[currentItem.Title] = currentItem;
+            this.StateHasChanged();
+        }
+        else
+        {
+            toastContent = "Error adding identified episode";
+            await toast!.ShowAsync();
+        }
+
+        await this.episodeDialogObj!.HideAsync();
+    }
+
+    private async Task EpisodeDialogCancelClicked()
+    {
+        this.identifiedTitles.Remove(this.currentItem!.Title!);
+        this.StateHasChanged();
+        await this.episodeDialogObj!.HideAsync();
     }
 }

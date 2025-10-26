@@ -1,10 +1,8 @@
 using System.Net.Http.Json;
 using System.Web;
-using MakeMkv;
 using Microsoft.AspNetCore.Components;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Search;
-using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client;
 
