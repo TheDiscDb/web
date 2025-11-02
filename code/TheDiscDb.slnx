@@ -1,0 +1,15 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="TheDiscDb.AppHost/TheDiscDb.AppHost.csproj" />
+  <Project Path="TheDiscDb.Client/TheDiscDb.Client.csproj" />
+  <Project Path="TheDiscDb.Data.Import/TheDiscDb.Data.Import.csproj" />
+  <Project Path="TheDiscDb.Data/TheDiscDb.Data.csproj" />
+  <Project Path="TheDiscDb.DatabaseMigration/TheDiscDb.DatabaseMigration.csproj" />
+  <Project Path="TheDiscDb.Search/TheDiscDb.Search.csproj" />
+  <Project Path="TheDiscDb.ServiceDefaults/TheDiscDb.ServiceDefaults.csproj" />
+  <Project Path="TheDiscDb/TheDiscDb.csproj" />
+</Solution>

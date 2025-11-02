@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TheDiscDb.Web.Data;
 
@@ -11,9 +12,11 @@ using TheDiscDb.Web.Data;
 namespace TheDiscDb.Web.Migrations
 {
     [DbContext(typeof(SqlServerDataContext))]
-    partial class SqlServerDataContextModelSnapshot : ModelSnapshot
+    [Migration("20251102165950_AddUserContributions2")]
+    partial class AddUserContributions2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

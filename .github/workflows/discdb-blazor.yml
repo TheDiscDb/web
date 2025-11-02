@@ -19,8 +19,6 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
-    - name: Add github nuget source
-      run: dotnet nuget add source --username lfoust --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/TheDiscDb/index.json"
     - name: Restore
       run: dotnet restore "${{ env.WORKING_DIRECTORY }}\TheDiscDb.csproj"
     - name: Build
