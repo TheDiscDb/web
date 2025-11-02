@@ -45,6 +45,8 @@ public class CreateContributionRequest
     public string BackImageUrl { get; set; } = string.Empty;
     public string ReleaseTitle { get; set; } = string.Empty;
     public string ReleaseSlug { get; set; } = string.Empty;
+    public string RegionCode { get; set; } = string.Empty;
+    public string Locale { get; set; } = string.Empty;
 }
 
 public class CreateContributionResponse

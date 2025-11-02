@@ -22,7 +22,12 @@ public partial class ReleaseDetailInput : ComponentBase
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
 
-    private readonly CreateContributionRequest request = new();
+    private readonly CreateContributionRequest request = new CreateContributionRequest
+    {
+        Locale = "en-us",
+        RegionCode = "1"
+    };
+
     private string releaseDate = string.Empty;
 
     protected override Task OnInitializedAsync()

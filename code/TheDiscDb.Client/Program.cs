@@ -1,4 +1,5 @@
 using KristofferStrube.Blazor.FileSystemAccess;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
@@ -28,6 +29,10 @@ builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
 
 builder.Services.AddScoped<IUserContributionService, UserContributionService>();
+
+builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddSingleton<AuthenticationStateProvider, PersistentAuthenticationStateProvider>();
+
 
 await builder.Build().RunAsync();

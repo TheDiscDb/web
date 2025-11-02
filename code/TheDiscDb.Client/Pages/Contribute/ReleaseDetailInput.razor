@@ -36,6 +36,14 @@
         <label>Release Slug</label>
         <InputText class="form-control" @bind-Value="request.ReleaseSlug" />
     </div>
+    <div class="mb-3">
+        <label>Locale</label>
+        <InputText class="form-control" @bind-Value="request.Locale" />
+    </div>
+    <div class="mb-3">
+        <label>Region Code</label>
+        <InputText class="form-control" @bind-Value="request.RegionCode" />
+    </div>
 
     <button type="submit" class="btn btn-primary">Submit</button>
 </EditForm>

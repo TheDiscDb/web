@@ -14,6 +14,7 @@ using Sqids;
 using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb;
+using TheDiscDb.Client;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Search;
