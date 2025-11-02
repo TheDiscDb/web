@@ -157,7 +157,7 @@ public partial class IdentifyDiscItems : ComponentBase
         }
     }
 
-    private async Task ItemSelected(Title title, MenuEventArgs args)
+    private Task ItemSelected(Title title, MenuEventArgs args)
     {
         string type = args.Item.HtmlAttributes["data-type"].ToString() ?? "Unknown";
 
@@ -179,6 +179,8 @@ public partial class IdentifyDiscItems : ComponentBase
             // Pop up dialog to ask for the title and description
             this.showItemDialog = true;
         }
+
+        return Task.CompletedTask;
     }
 
     public async Task HandleValidItemSubmit()

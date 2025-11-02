@@ -100,7 +100,7 @@ public class UserContributionService : ApiClient, IUserContributionService
         return Result.Ok(response);
     }
 
-    public async Task<Result> SaveDiscLogs(string contributionId, string discId, string logs, CancellationToken cancellationToken = default)
+    public Task<Result> SaveDiscLogs(string contributionId, string discId, string logs, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
