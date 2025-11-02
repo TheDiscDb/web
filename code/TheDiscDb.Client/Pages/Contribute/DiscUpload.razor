@@ -1,0 +1,9 @@
+﻿@page "/contribution/{contributionId}/discs/{discId}"
+
+@rendermode InteractiveAuto
+
+<h1>Manage Discs</h1>
+To add add a disc, run the following command on your machine:
+<input type="text" @bind="DriveIndex" ValueChanged="OnValueChanged" />
+<input class="form-control" readonly type="text" @bind="PowershellCommand" />
+<button type="button" class="btn btn-primary" @onclick="CopyTextToClipboard">Copy</button>

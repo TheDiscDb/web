@@ -17,7 +17,7 @@ namespace TheDiscDb.Web.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.9")
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -639,6 +639,200 @@ namespace TheDiscDb.Web.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContribution", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Asin")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BackImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ExternalId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExternalProvider")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FrontImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Locale")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MediaType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RegionCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("ReleaseDate")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ReleaseSlug")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReleaseTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Upc")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserContributions");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionAudioTrack", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.ToTable("UserContributionAudioTracks");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionChapter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.ToTable("UserContributionChapters");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionDisc", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Format")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("LogsUploaded")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Slug")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("UserContributionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserContributionId");
+
+                    b.ToTable("UserContributionDiscs");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionDiscItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChapterCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("DiscId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Duration")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Episode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Season")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SegmentCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SegmentMap")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Size")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Source")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DiscId");
+
+                    b.ToTable("UserContributionDiscItems");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -780,6 +974,42 @@ namespace TheDiscDb.Web.Migrations
                     b.Navigation("Title");
                 });
 
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionAudioTrack", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.UserContributionDiscItem", "Item")
+                        .WithMany("AudioTracks")
+                        .HasForeignKey("ItemId");
+
+                    b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionChapter", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.UserContributionDiscItem", "Item")
+                        .WithMany("Chapters")
+                        .HasForeignKey("ItemId");
+
+                    b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionDisc", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.UserContribution", "UserContribution")
+                        .WithMany("Discs")
+                        .HasForeignKey("UserContributionId");
+
+                    b.Navigation("UserContribution");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionDiscItem", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.UserContributionDisc", "Disc")
+                        .WithMany("Items")
+                        .HasForeignKey("DiscId");
+
+                    b.Navigation("Disc");
+                });
+
             modelBuilder.Entity("TheDiscDb.InputModels.Disc", b =>
                 {
                     b.Navigation("Titles");
@@ -819,6 +1049,23 @@ namespace TheDiscDb.Web.Migrations
             modelBuilder.Entity("TheDiscDb.InputModels.Title", b =>
                 {
                     b.Navigation("Tracks");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContribution", b =>
+                {
+                    b.Navigation("Discs");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionDisc", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionDiscItem", b =>
+                {
+                    b.Navigation("AudioTracks");
+
+                    b.Navigation("Chapters");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,5 +1,8 @@
 ﻿namespace TheDiscDb.Web.Data;
 
+using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
@@ -53,6 +56,26 @@ public class SqlServerDataContext : DbContext
         var groups = modelBuilder.Entity<Group>();
         groups.HasMany(x => x.MediaItemGroups).WithOne(x => x.Group);
         groups.HasIndex(x => x.Slug).IsUnique();
+
+        var userContribution = modelBuilder.Entity<UserContribution>();
+        userContribution.HasKey(x => x.Id);
+        userContribution.Property(x => x.Status)
+            .HasConversion<string>();
+        //userContribution.HasOne(x => x.User).WithOne()
+        //    .HasForeignKey<UserContribution>(x => x.UserId);
+        userContribution.HasMany(x => x.Discs).WithOne(x => x.UserContribution);
+
+        var userDiscContribution = modelBuilder.Entity<UserContributionDisc>();
+        userDiscContribution.HasKey(x => x.Id);
+        userDiscContribution.HasMany(x => x.Items).WithOne(x => x.Disc);
+
+        var userContributiondiscItem = modelBuilder.Entity<UserContributionDiscItem>();
+        userContributiondiscItem.HasKey(x => x.Id);
+        userContributiondiscItem.HasMany(x => x.Chapters).WithOne(x => x.Item);
+        userContributiondiscItem.HasMany(x => x.AudioTracks).WithOne(x => x.Item);
+
+        var userContributionAudioTrack = modelBuilder.Entity<UserContributionAudioTrack>();
+        var userContributionChapter = modelBuilder.Entity<UserContributionChapter>();
 
         BuildIdentityModel(modelBuilder);
     }
@@ -193,8 +216,97 @@ public class SqlServerDataContext : DbContext
     public DbSet<MediaItemGroup> MediaItemGroup { get; set; } = null!;
 
     public DbSet<TheDiscDbUser> Users { get; set; } = null!;
+    public DbSet<UserContribution> UserContributions { get; set; } = null!;
+    public DbSet<UserContributionDisc> UserContributionDiscs { get; set; } = null!;
+    public DbSet<UserContributionDiscItem> UserContributionDiscItems { get; set; } = null!;
+    public DbSet<UserContributionChapter> UserContributionChapters { get; set; } = null!;
+    public DbSet<UserContributionAudioTrack> UserContributionAudioTracks { get; set; } = null!;
 }
 
 public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser
 {
+}
+
+public enum UserContributionStatus
+{
+    Pending,
+    Approved,
+    ChangesRequested,
+    Rejected
+}
+
+public class UserContribution
+{
+    public int Id { get; set; }
+    public string UserId { get; set; }
+    //public TheDiscDbUser User { get; set; } = null!;
+    public DateTimeOffset Created { get; set; }
+    public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
+    public ICollection<UserContributionDisc> Discs { get; set; } = new HashSet<UserContributionDisc>();
+
+    public string MediaType { get; set; } = string.Empty;
+    public string ExternalId { get; set; } = string.Empty;
+    public string ExternalProvider { get; set; } = string.Empty;
+    public DateTimeOffset ReleaseDate { get; set; }
+    public string Asin { get; set; } = string.Empty;
+    public string Upc { get; set; } = string.Empty;
+    public string FrontImageUrl { get; set; } = string.Empty;
+    public string BackImageUrl { get; set; } = string.Empty;
+    public string ReleaseTitle { get; set; } = string.Empty;
+    public string ReleaseSlug { get; set; } = string.Empty;
+    public string Locale { get; set; } = string.Empty;
+    public string RegionCode { get; set; } = string.Empty;
+}
+
+public class UserContributionDisc
+{
+    public int Id { get; set; }
+    [JsonIgnore]
+    public UserContribution UserContribution { get; set; } = null!;
+    public int Index { get; set; }
+    public string ContentHash { get; set; } = string.Empty;
+    public string Format { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public bool LogsUploaded { get; set; } = false;
+    public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();
+}
+
+public class UserContributionDiscItem
+{
+    public int Id { get; set; }
+    [JsonIgnore]
+    public UserContributionDisc Disc { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Source { get; set; } = string.Empty;
+    public string Duration { get; set; } = string.Empty;
+    public string Size { get; set; } = string.Empty;
+    public int ChapterCount { get; set; } = 0;
+    public int SegmentCount { get; set; } = 0;
+    public string SegmentMap { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Season { get; set; } = string.Empty;
+    public string Episode { get; set; } = string.Empty;
+    public ICollection<UserContributionChapter> Chapters { get; set; } = new HashSet<UserContributionChapter>();
+    public ICollection<UserContributionAudioTrack> AudioTracks { get; set; } = new HashSet<UserContributionAudioTrack>();
+
+}
+
+public class UserContributionChapter
+{
+    public int Id { get; set; }
+    public int Index { get; set; }
+    public string Title { get; set; }
+    [JsonIgnore]
+    public UserContributionDiscItem Item { get; set; }
+}
+
+public class UserContributionAudioTrack
+{
+    public int Id { get; set; }
+    public int Index { get; set; }
+    public string Title { get; set; }
+    [JsonIgnore]
+    public UserContributionDiscItem Item { get; set; }
 }

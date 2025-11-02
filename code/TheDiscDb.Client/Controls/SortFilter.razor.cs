@@ -1,5 +1,5 @@
-﻿using Blazorise;
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
+using Syncfusion.Blazor.Buttons;
 using TheDiscDb.Data.GraphQL;
 
 namespace TheDiscDb.Client.Controls;
@@ -28,7 +28,7 @@ public record SortItemDefinition<T>
 
 public partial class SortFilter<TSortItem> : ComponentBase
 {
-    public IconName SortIcon { get; set; } = IconName.SortAlphaUp;
+    public IconName SortIcon { get; set; } = IconName.SortAscending;
     public SortEnumType SortDirection { get; set; } = SortEnumType.Asc;
     public SortItemDefinition<TSortItem>? SelectedSortDefintion { get; set; }
     public string SortDirectionDescription => BuildSortDirectionString();
@@ -56,7 +56,7 @@ public partial class SortFilter<TSortItem> : ComponentBase
         }
 
         this.SortDirection = this.SelectedSortDefintion?.Default ?? SortEnumType.Asc;
-        this.SortIcon = this.SortDirection == SortEnumType.Asc ? IconName.SortAlphaUp : IconName.SortAlphaDown;
+        this.SortIcon = this.SortDirection == SortEnumType.Asc ? IconName.SortAscending : IconName.SortDescending;
     }
 
     private async void SortDirectionClicked(Microsoft.AspNetCore.Components.Web.MouseEventArgs e)
@@ -85,12 +85,12 @@ public partial class SortFilter<TSortItem> : ComponentBase
         if (item != null && this.SelectedSortDefintion != item)
         {
             this.SortDirection = item.Default;
-            this.SortIcon = this.SortDirection == SortEnumType.Asc ? IconName.SortAlphaUp : IconName.SortAlphaDown;
+            this.SortIcon = this.SortDirection == SortEnumType.Asc ? IconName.SortAscending : IconName.SortDescending;
         }
         else
         {
             this.SortDirection = this.SortDirection == SortEnumType.Asc ? SortEnumType.Desc : SortEnumType.Asc;
-            this.SortIcon = this.SortDirection == SortEnumType.Asc ? IconName.SortAlphaUp : IconName.SortAlphaDown;
+            this.SortIcon = this.SortDirection == SortEnumType.Asc ? IconName.SortAscending : IconName.SortDescending;
         }
 
         this.SelectedSortDefintion = item;

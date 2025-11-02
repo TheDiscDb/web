@@ -23,7 +23,7 @@ builder.Services.AddScoped<IDbContextFactory<SqlServerDataContext>, SingletonDbC
 
 builder.AddAzureBlobServiceClient("blobs");
 builder.Services.Configure<BlobStorageOptions>(builder.Configuration.GetSection("BlobStorage"));
-builder.Services.AddSingleton<IStaticImageStore, BlobStorageStaticImageStore>();
+builder.Services.AddSingleton<IStaticAssetStore, BlobStorageStaticAssetStore>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IFileSystem, PhysicalFileSystem>();

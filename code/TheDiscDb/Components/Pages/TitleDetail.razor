@@ -5,7 +5,7 @@
 
 @if (Item == null || Release == null || Disc == null || Title == null)
 {
-    <Div>Item, Release, Disc, or Title not found</Div>
+    <div>Item, Release, Disc, or Title not found</div>
 }
 else
 {
@@ -80,22 +80,22 @@ else
                 }
             </ol>
         }
-        <Table>
-            <TableHeader>
-                <TableHeaderCell>Index</TableHeaderCell>
-                <TableHeaderCell>Description</TableHeaderCell>
-                <TableHeaderCell>Type</TableHeaderCell>
-            </TableHeader>
-            <TableBody>
+        <table>
+            <thead>
+                <th>Index</th>
+                <th>Description</th>
+                <th>Type</th>
+            </thead>
+            <tbody>
                 @foreach (var track in Title.Tracks)
                 {
-                    <TableRow>
-                        <TableRowCell>@track.Index</TableRowCell>
-                        <TableRowCell>@track.GetDesciption()</TableRowCell>
-                        <TableRowCell>@track.Type</TableRowCell>
-                    </TableRow>
+                    <tr>
+                        <td>@track.Index</td>
+                        <td>@track.GetDesciption()</td>
+                        <td>@track.Type</td>
+                    </tr>
                 }
-            </TableBody>
-        </Table>
+            </tbody>
+        </table>
     </div>
 }

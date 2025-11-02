@@ -1,0 +1,33 @@
+﻿@page "/contribution/{contributionId}/adddisc"
+
+@rendermode InteractiveWebAssembly
+
+<h3>Contribute</h3>
+
+@if (handler is null)
+{
+    <button class="btn btn-primary" @onclick="OpenFolderAsync">Pick directory</button>
+}
+else
+{
+    <div>Hash: @hash</div>
+    <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label>Disc Format</label>
+            <SfDropDownList TValue="string" TItem="string" DataSource="formats" class="form-control" @bind-Value="request.Format" Placeholder="Select format" />
+        </div>
+        <div class="mb-3">
+            <label>Disc Title</label>
+            <InputText class="form-control" @bind-Value="request.Name" @oninput="DiscTitleChanged" />
+        </div>
+        <div class="mb-3">
+            <label>Disc Slug</label>
+            <InputText class="form-control" @bind-Value="request.Slug" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save</button>
+    </EditForm>
+}

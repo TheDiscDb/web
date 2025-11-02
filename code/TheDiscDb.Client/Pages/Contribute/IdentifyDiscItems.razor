@@ -1,0 +1,111 @@
+﻿@page "/contribution/{contributionId}/discs/{discId}/identify"
+
+@rendermode @(new InteractiveAutoRenderMode(prerender:false))
+
+<h1>Indentify Items</h1>
+
+@if (titles is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <QuickGrid Items="titles">
+        <PropertyColumn Property="@(t => t.ChapterCount)" />
+        <PropertyColumn Property="@(t => t.DisplaySize)" />
+        <PropertyColumn Property="@(t => t.SegmentMap)" />
+        <TemplateColumn Title="Name">
+            @GetTitle(context)
+        </TemplateColumn>
+        <TemplateColumn>
+            @if (IsIdentified(context))
+            {
+                <span>@GetIdentifyButtonText(context)</span>
+                <button @onclick="() => RemoveIdentification(context)">X</button>
+            }
+            else
+            {
+                <SfDropDownButton Content="Identify">
+                    <DropDownButtonEvents ItemSelected="(args) => ItemSelected(context, args)"></DropDownButtonEvents>
+                    <DropDownMenuItems>
+                        <DropDownMenuItem Text="Main Movie" data-type="MainMovie"></DropDownMenuItem>
+                        <DropDownMenuItem Text="Episode" data-type="Episode"></DropDownMenuItem>
+                        <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
+                        <DropDownMenuItem Text="Deleted Scene" data-type="DeletedScene"></DropDownMenuItem>
+                        <DropDownMenuItem Text="Trailer" data-type="Trailer"></DropDownMenuItem>
+                    </DropDownMenuItems>
+                </SfDropDownButton>
+            }
+        </TemplateColumn>
+    </QuickGrid>
+
+    <button class="e-btn e-primary" @onclick="SubmitIdentifications">Done Identifying</button>
+}
+
+@if (showEpisodeDialog)
+{
+    <SfDialog @ref="episodeDialogObj" Target="body" Width="390px" @bind-Visible="@showEpisodeDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Identify Episode">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <EditForm Model="@currentItem" OnValidSubmit="@HandleValidEpisodeSubmit">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <div class="field-container name-container">
+                    <SfTextBox CssClass="item-title e-field" Placeholder="Title" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.ItemTitle"></SfTextBox>
+                    <ValidationMessage For="@(() => currentItem!.ItemTitle)" />
+                </div>
+                <div class="field-container name-container">
+                    <SfTextBox CssClass="season-number e-field" Placeholder="Season Number" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.Episode!.Season"></SfTextBox>
+                    <ValidationMessage For="@(() => currentItem!.Episode!.Season)" />
+                </div>
+                <div class="field-container name-container">
+                    <SfTextBox CssClass="episode-number e-field" Placeholder="Episode Number" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Episode.Episode"></SfTextBox>
+                    <ValidationMessage For="@(() => currentItem.Episode.Episode)" />
+                </div>
+                <div class="field-container name-container">
+                    <SfTextBox CssClass="episode-description e-field" Placeholder="Description (optional)" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Description"></SfTextBox>
+                    <ValidationMessage For="@(() => currentItem.Description)" />
+                </div>
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="button" class="e-btn e-normal" @onclick="EpisodeDialogCancelClicked">Cancel</button>
+                        <button type="submit" class="e-btn e-normal e-primary">Save</button>
+                    </div>
+                </div>
+            </EditForm>
+        </ChildContent>
+    </SfDialog>
+}
+
+@if (showItemDialog)
+{
+    <SfDialog @ref="itemDialogObj" Target="body" Width="390px" @bind-Visible="@showItemDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Identify Item">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <EditForm Model="@currentItem" OnValidSubmit="@HandleValidItemSubmit">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <div class="field-container name-container">
+                    <SfTextBox CssClass="item-title e-field" Placeholder="Title" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.ItemTitle"></SfTextBox>
+                    <ValidationMessage For="@(() => currentItem!.ItemTitle)" />
+                </div>
+                <div class="field-container name-container">
+                    <SfTextBox CssClass="item-description e-field" Placeholder="Description (optional)" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Description"></SfTextBox>
+                    <ValidationMessage For="@(() => currentItem.Description)" />
+                </div>
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="button" class="e-btn e-normal" @onclick="ItemDialogCancelClicked">Cancel</button>
+                        <button type="submit" class="e-btn e-normal e-primary">Save</button>
+                    </div>
+                </div>
+            </EditForm>
+        </ChildContent>
+    </SfDialog>
+}
+
+<Syncfusion.Blazor.Popups.SfDialogProvider />
+
+<div class="col-lg-12 control-section toast-default-section">
+    <SfToast ID="toast_default" @ref="toast" Title="Adaptive Tiles Meeting" Content="@toastContent" Timeout="5000" Icon="e-meeting">
+        <ToastPosition X="Right"></ToastPosition>
+    </SfToast>
+</div>

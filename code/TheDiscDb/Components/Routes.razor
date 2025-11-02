@@ -1,47 +1,45 @@
-﻿<Blazorise.ThemeProvider Theme="@theme">
-    <Router AppAssembly="typeof(Program).Assembly" AdditionalAssemblies="new[] { typeof(Client._Imports).Assembly }">
-        <Found Context="routeData">
-            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-            <FocusOnNavigate RouteData="routeData" Selector="h1" />
-        </Found>
-    </Router>
-</Blazorise.ThemeProvider>
+﻿<Router AppAssembly="typeof(Program).Assembly" AdditionalAssemblies="new[] { typeof(Client._Imports).Assembly }">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>
 
 @code {
     const string PrimaryDarkBlue = "#00213F";
-    private Theme theme = new Theme
-        {
-            ColorOptions = new ThemeColorOptions
-            {
-                Primary = PrimaryDarkBlue,
-                Secondary = "#1D9EFF",
-                Light = "#99bb77"
-            },
-            // TextColorOptions = new ThemeTextColorOptions
-            // {
-            //     Primary = PrimaryDarkBlue,
-            // },
-            BackgroundOptions = new ThemeBackgroundOptions
-            {
-                Primary = PrimaryDarkBlue,
-                Dark = PrimaryDarkBlue
-            },
-            // BarOptions = new ThemeBarOptions
-            // {
-            //     DarkColors = new ThemeBarColorOptions
-            //     {
-            //         BackgroundColor = PrimaryDarkBlue,
-            //         Color = "green",
-            //         ItemColorOptions = new ThemeBarItemColorOptions
-            //         {
-            //             ActiveColor = "white",
-            //             HoverColor = "#C0C0C0"
-            //         },
-            //         BrandColorOptions = new ThemeBarBrandColorOptions
-            //         {
-            //             BackgroundColor = PrimaryDarkBlue
-            //         }
-            //     }
-            // }
-        };
+    // private Theme theme = new Theme
+    //     {
+    //         ColorOptions = new ThemeColorOptions
+    //         {
+    //             Primary = PrimaryDarkBlue,
+    //             Secondary = "#1D9EFF",
+    //             Light = "#99bb77"
+    //         },
+    //         // TextColorOptions = new ThemeTextColorOptions
+    //         // {
+    //         //     Primary = PrimaryDarkBlue,
+    //         // },
+    //         BackgroundOptions = new ThemeBackgroundOptions
+    //         {
+    //             Primary = PrimaryDarkBlue,
+    //             Dark = PrimaryDarkBlue
+    //         },
+    //         // BarOptions = new ThemeBarOptions
+    //         // {
+    //         //     DarkColors = new ThemeBarColorOptions
+    //         //     {
+    //         //         BackgroundColor = PrimaryDarkBlue,
+    //         //         Color = "green",
+    //         //         ItemColorOptions = new ThemeBarItemColorOptions
+    //         //         {
+    //         //             ActiveColor = "white",
+    //         //             HoverColor = "#C0C0C0"
+    //         //         },
+    //         //         BrandColorOptions = new ThemeBarBrandColorOptions
+    //         //         {
+    //         //             BackgroundColor = PrimaryDarkBlue
+    //         //         }
+    //         //     }
+    //         // }
+    //     };
 }

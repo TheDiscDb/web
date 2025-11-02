@@ -12,3 +12,13 @@ public class SearchEntry
     public ItemInfo? Release { get; set; }
     public ItemInfo? Disc { get; set; }
 }
+
+public class ExternalSearchEntry
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
+    public string Source { get; set; } = string.Empty;
+
+    // TODO: Look for any matches currently in the database?
+}

@@ -1,5 +1,4 @@
-﻿@using Blazorise
-
+﻿
 @typeparam TSortItem
 
 <div class="hstack gap-0">
@@ -14,5 +13,5 @@
         }
     </select>
 
-    <button type="button" class="btn" @onclick="SortDirectionClicked"><Icon Name="@SortIcon" title="@SortDirectionDescription" /></button>
+    <SfIcon type="button" class="btn" @onclick="SortDirectionClicked"><SfIcon Name="@SortIcon" title="@SortDirectionDescription" /></SfIcon>
 </div>

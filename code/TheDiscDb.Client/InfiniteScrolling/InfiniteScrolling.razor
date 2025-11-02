@@ -106,14 +106,30 @@
         // Stop the IntersectionObserver
         if (_instance != null)
         {
-            await _instance.InvokeVoidAsync("dispose");
-            await _instance.DisposeAsync();
-            _instance = null;
+            try
+            {
+                await _instance.InvokeVoidAsync("dispose");
+                await _instance.DisposeAsync();
+            }
+            catch (Microsoft.JSInterop.JSDisconnectedException)
+            {
+                // Nothing to be done here
+            }
+            finally
+            {
+                _instance = null;
+            }
         }
 
         if (_module != null)
         {
-            await _module.DisposeAsync();
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch (Microsoft.JSInterop.JSDisconnectedException)
+            {
+            }
         }
 
         _currentComponentReference?.Dispose();

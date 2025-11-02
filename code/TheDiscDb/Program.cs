@@ -1,17 +1,23 @@
 using Azure;
 using Azure.Storage.Blobs.Models;
-using Blazorise;
-using Blazorise.Bootstrap5;
-using Blazorise.Icons.FontAwesome;
+using Fantastic.TheMovieDb.Caching.FileSystem;
+using KristofferStrube.Blazor.FileSystemAccess;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
+using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp.Web.Caching.Azure;
 using SixLabors.ImageSharp.Web.DependencyInjection;
 using SixLabors.ImageSharp.Web.Providers.Azure;
+using Sqids;
+using Syncfusion.Blazor;
+using Syncfusion.Blazor.Popups;
 using TheDiscDb;
 using TheDiscDb.Data.GraphQL;
+using TheDiscDb.Data.Import;
 using TheDiscDb.Search;
+using TheDiscDb.Services;
 using TheDiscDb.Web;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
@@ -20,7 +26,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddTransient<ContributionEndpoints>();
+
+builder.Services.AddControllersWithViews( options =>
+{
+    options.InputFormatters.Add(new PlainTextInputFormatter());
+});
 builder.Services.AddCors();
 builder.Services.AddMemoryCache();
 
@@ -68,19 +79,19 @@ builder.Services.AddIdentity<TheDiscDbUser, IdentityRole>()
     .AddEntityFrameworkStores<SqlServerDataContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddAuthorizationCore();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthenticationStateDeserialization();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
 builder.Services.AddScoped<TheDiscDb.Components.Account.IdentityRedirectManager>();
 
-builder.Services
-    .AddBlazorise(options =>
-    {
-        options.Immediate = true;
-    })
-    .AddBootstrap5Providers()
-    .AddFontAwesomeIcons();
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH9eeHVURmdYVUZ0VkpWYEg=");
+builder.Services.AddSyncfusionBlazor();
+builder.Services.AddScoped<SfDialogService>();
 
 builder.Services.AddPooledDbContextFactory<SqlServerDataContext>(options =>
 {
@@ -103,7 +114,12 @@ builder.Services
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
-builder.Services.AddScoped<TheDiscDb.Client.SearchClient>();
+builder.Services.AddScoped<TheDiscDb.Client.ApiClient>();
+builder.Services.AddScoped<IUserContributionService, TheDiscDb.Services.Server.UserContributionService>();
+builder.Services.AddScoped<TheDiscDb.Client.TmdbClient>();
+builder.Services.AddSingleton<IFileSystemCache, TheDiscDb.Client.NullFileSystemCache>();
+builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
+builder.Services.AddScoped<Fantastic.TheMovieDb.TheMovieDbClient>();
 
 var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")!.Split(";");
 var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));
@@ -136,6 +152,17 @@ builder.Services.AddImageSharp()
     .SetCache<AzureBlobStorageCache>()
     .AddProvider<AzureBlobStorageImageProvider>();
 
+builder.Services.AddSingleton<IOptions<BlobStorageOptions>>(provider =>
+{
+    return Options.Create(new BlobStorageOptions
+    {
+        ConnectionString = blobConnectionString,
+        ContainerName = "contributions"
+    });
+});
+
+builder.Services.AddSingleton<IStaticAssetStore, BlobStorageStaticAssetStore>();
+
 var searchApiKey = builder.Configuration["Search:ApiKey"];
 bool searchEnabled = !string.IsNullOrEmpty(searchApiKey);
 
@@ -167,7 +194,15 @@ builder.Services.Configure<SearchOptions>(builder.Configuration.GetSection("Sear
 builder.Services.AddSingleton<CacheHelper>();
 builder.Services.AddSingleton<SitemapGenerator>();
 
+builder.Services.AddFileSystemAccessService();
+builder.Services.AddFileSystemAccessServiceInProcess();
+
+builder.Services.AddSingleton<SqidsEncoder<int>>();
+
 var app = builder.Build();
+
+var contributionEndpoints = app.Services.GetRequiredService<ContributionEndpoints>();
+contributionEndpoints.MapEndpoints(app);
 
 app.MapDefaultEndpoints();
 

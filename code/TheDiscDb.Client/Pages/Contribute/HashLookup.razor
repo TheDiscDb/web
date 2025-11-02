@@ -1,0 +1,13 @@
+﻿@page "/contribution/{contributionId}/adddisc/{hash}"
+
+@rendermode InteractiveAuto
+
+<h3>Hash Lookup</h3>
+@foreach (var item in foundItems)
+{
+    <div>
+        <a href="@item.ItemDetailUrl()" title="@item.Title">
+            <MediaImage Url="@item?.ImageUrl" Width="156" Height="231" Title="@item?.Title" />
+        </a>
+    </div>
+}

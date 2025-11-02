@@ -1,0 +1,41 @@
+﻿@page "/contribute/{mediaType}/{externalId}"
+
+@rendermode InteractiveAuto
+
+<h3>Create Release</h3>
+
+<EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>Release Date</label>
+        <InputText class="form-control" @bind-Value="releaseDate" @oninput="ReleaseDateChanged" />
+    </div>
+    <div class="mb-3">
+        <label>ASIN</label>
+        <InputText class="form-control" @bind-Value="request.Asin" />
+    </div>
+    <div class="mb-3">
+        <label>UPC</label>
+        <InputText class="form-control" @bind-Value="request.Upc" />
+    </div>
+    <div class="mb-3">
+        <label>Front Image URL</label>
+        <InputText class="form-control" @bind-Value="request.FrontImageUrl" />
+    </div>
+    <div class="mb-3">
+        <label>Back Image URL</label>
+        <InputText class="form-control" @bind-Value="request.BackImageUrl" />
+    </div>
+    <div class="mb-3">
+        <label>Release Title</label>
+        <InputText class="form-control" @bind-Value="request.ReleaseTitle" @oninput="ReleaseTitleChanged" />
+    </div>
+    <div class="mb-3">
+        <label>Release Slug</label>
+        <InputText class="form-control" @bind-Value="request.ReleaseSlug" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>

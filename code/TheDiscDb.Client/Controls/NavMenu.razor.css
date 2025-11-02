@@ -4,6 +4,10 @@
     margin-left: 2rem;
 }
 
+.main-search-box {
+    width: 20em;
+}
+
 .navbar-brand {
     padding-top: .8rem;
     padding-bottom: .8rem;

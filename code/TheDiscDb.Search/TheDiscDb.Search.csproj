@@ -6,7 +6,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Search.Documents" Version="11.6.1" />
+    <PackageReference Include="Azure.Search.Documents" Version="11.7.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TheDiscDb.Data\TheDiscDb.Data.csproj" />

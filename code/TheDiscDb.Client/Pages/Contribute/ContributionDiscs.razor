@@ -1,0 +1,24 @@
+﻿@page "/contribution/{contributionId}"
+@rendermode InteractiveAuto
+
+<h2>User Contribution</h2>
+@if (this.Contribution != null)
+{
+    <QuickGrid Items="Discs">
+        <TemplateColumn Title="Name">
+            <a href="/contribution/@ContributionId/disc/@context.Id/identify" title="Edit Disc">@context.Name</a>
+        </TemplateColumn>
+        <PropertyColumn Property="@(t => t.Format)" />
+        <PropertyColumn Property="@(t => t.LogsUploaded)" />
+        <TemplateColumn>
+            <a @onclick="args => DeleteDisc(context)" title="Remove disc from release"><SfIcon Name="IconName.DeleteRow" /></a>
+        </TemplateColumn>
+    </QuickGrid>
+}
+else
+{
+    <div>Couldn't find @ContributionId</div>
+}
+
+<a class="btn btn-primary" href="/contribution/@ContributionId/AddDisc">Add Disc</a>
+<a class="btn btn-primary" href="/contribution/@ContributionId/review">Complete Contribution</a>
