@@ -1,4 +1,5 @@
 ﻿@namespace TheDiscDb.Client.Controls
+@using Microsoft.AspNetCore.Components.Authorization
 @rendermode InteractiveAuto
 
 <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
@@ -18,18 +19,18 @@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/boxsets" Match="NavLinkMatch.All">Boxsets</NavLink>
                 </li>
+                <AuthorizeView>
+                    <Authorized>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/contribute" Match="NavLinkMatch.All">Contribute</NavLink>
                 </li>
+                    </Authorized>
+                </AuthorizeView>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/about" Match="NavLinkMatch.All">About</NavLink>
                 </li>
             </ul>
             <input type="text" placeholder="Search..." data-permanent @bind-value="searchQuery" class="form-control main-search-box" @onkeydown="KeyPressed"></input>
-            @* <TextEdit Placeholder="Search..." Width="Width.Em(20)" data-permanent Debounce="true" DebounceInterval="200" @bind-Text="@searchQuery" KeyPress="KeyPressed" />
-            <Button Size="Size.Small">
-                <Icon Name="IconName.Search" />
-            </Button> *@
         </div>
     </div>
 </nav>

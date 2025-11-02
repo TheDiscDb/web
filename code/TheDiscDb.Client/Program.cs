@@ -28,5 +28,6 @@ builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
 
 builder.Services.AddScoped<IUserContributionService, UserContributionService>();
+builder.Services.AddCascadingAuthenticationState();
 
 await builder.Build().RunAsync();

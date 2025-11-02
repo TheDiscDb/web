@@ -6,13 +6,12 @@
 {
     <QuickGrid Items="Discs">
         <TemplateColumn Title="Name">
-            <a href="/contribution/@ContributionId/disc/@context.Id/edit" title="Edit Disc">@context.Name</a>
+            <a href="/contribution/@ContributionId/disc/@context.Id/identify" title="Edit Disc">@context.Name</a>
         </TemplateColumn>
-        <PropertyColumn Property="@(t => t.Name)" />
         <PropertyColumn Property="@(t => t.Format)" />
         <PropertyColumn Property="@(t => t.LogsUploaded)" />
         <TemplateColumn>
-            <a href="#"><SfIcon Name="IconName.DeleteRow" /></a>
+            <a @onclick="args => DeleteDisc(context)" title="Remove disc from release"><SfIcon Name="IconName.DeleteRow" /></a>
         </TemplateColumn>
     </QuickGrid>
 }
@@ -22,3 +21,4 @@ else
 }
 
 <a class="btn btn-primary" href="/contribution/@ContributionId/AddDisc">Add Disc</a>
+<a class="btn btn-primary" href="/contribution/@ContributionId/review">Complete Contribution</a>

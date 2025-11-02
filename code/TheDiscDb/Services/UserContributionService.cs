@@ -394,13 +394,11 @@ public class UserContributionService : IUserContributionService
             ChapterCount = request.ChapterCount,
             Description = request.Description,
             Duration = request.Duration,
-            FileName = request.FileName,
             Name = request.Name,
             SegmentCount = request.SegmentCount,
             SegmentMap = request.SegmentMap,
             Source = request.Source,
-            Type = request.Type,
-            Year = request.Year
+            Type = request.Type
         };
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);

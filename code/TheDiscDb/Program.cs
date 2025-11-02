@@ -2,6 +2,7 @@ using Azure;
 using Azure.Storage.Blobs.Models;
 using Fantastic.TheMovieDb.Caching.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
@@ -77,6 +78,10 @@ if (!string.IsNullOrEmpty(googleOptions.ClientId) && !string.IsNullOrEmpty(googl
 builder.Services.AddIdentity<TheDiscDbUser, IdentityRole>()
     .AddEntityFrameworkStores<SqlServerDataContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddAuthorizationCore();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthenticationStateDeserialization();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()

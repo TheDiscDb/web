@@ -237,7 +237,6 @@ public enum UserContributionStatus
 
 public class UserContribution
 {
-    [JsonIgnore]
     public int Id { get; set; }
     public string UserId { get; set; }
     //public TheDiscDbUser User { get; set; } = null!;
@@ -255,12 +254,14 @@ public class UserContribution
     public string BackImageUrl { get; set; } = string.Empty;
     public string ReleaseTitle { get; set; } = string.Empty;
     public string ReleaseSlug { get; set; } = string.Empty;
+    public string Locale { get; set; } = string.Empty;
+    public string RegionCode { get; set; } = string.Empty;
 }
 
 public class UserContributionDisc
 {
-    [JsonIgnore]
     public int Id { get; set; }
+    [JsonIgnore]
     public UserContribution UserContribution { get; set; } = null!;
     public int Index { get; set; }
     public string ContentHash { get; set; } = string.Empty;
@@ -273,18 +274,17 @@ public class UserContributionDisc
 
 public class UserContributionDiscItem
 {
-    [JsonIgnore]
     public int Id { get; set; }
+    [JsonIgnore]
     public UserContributionDisc Disc { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Source { get; set; } = string.Empty;
     public string Duration { get; set; } = string.Empty;
+    public string Size { get; set; } = string.Empty;
     public int ChapterCount { get; set; } = 0;
     public int SegmentCount { get; set; } = 0;
     public string SegmentMap { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
-    public string Year { get; set; } = string.Empty;
-    public string FileName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Season { get; set; } = string.Empty;
     public string Episode { get; set; } = string.Empty;
@@ -295,18 +295,18 @@ public class UserContributionDiscItem
 
 public class UserContributionChapter
 {
-    [JsonIgnore]
     public int Id { get; set; }
     public int Index { get; set; }
     public string Title { get; set; }
+    [JsonIgnore]
     public UserContributionDiscItem Item { get; set; }
 }
 
 public class UserContributionAudioTrack
 {
-    [JsonIgnore]
     public int Id { get; set; }
     public int Index { get; set; }
     public string Title { get; set; }
+    [JsonIgnore]
     public UserContributionDiscItem Item { get; set; }
 }

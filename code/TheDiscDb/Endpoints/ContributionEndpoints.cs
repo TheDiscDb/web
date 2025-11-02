@@ -1,6 +1,8 @@
 ﻿using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Sqids;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
@@ -19,12 +21,15 @@ public class ContributionEndpoints
         contribute.MapPut("{contributionId}", UpdateContribution);
 
         contribute.MapGet("{contributionId}/discs", GetDiscs);
-        contribute.MapPost("{contributionId}/discs/{discId}/logs", SaveDiscLogs).AllowAnonymous();
+        contribute.MapPost("{contributionId}/discs/{discId}/logs", SaveDiscLogs)
+            .AllowAnonymous()
+            .Accepts<string>("text/plain");
         contribute.MapGet("{contributionId}/discs/{discId}/logs", GetDiscLogs);
         contribute.MapPost("{contributionId}/discs/create", CreateDisc);
         contribute.MapPut("{contributionId}/discs/{discId}", UpdateDisc);
         contribute.MapDelete("{contributionId}/discs/{discId}", DeleteDisc);
-        contribute.MapDelete("checkdiskuploadstatus/{discId}", CheckDiskUploadStatus).AllowAnonymous();
+        contribute.MapGet("checkdiskuploadstatus/{discId}", CheckDiskUploadStatus)
+            .AllowAnonymous();
 
         contribute.MapPost("{contributionId}/discs/{discId}/item", AddItemToDisc);
         contribute.MapDelete("{contributionId}/discs/{discId}/item/{itemId}", DeleteItemFromDisc);
@@ -88,12 +93,15 @@ public class ContributionEndpoints
         return JsonResult(result, $"Unable to get discs for {contributionId}");
     }
 
-    public async Task<IResult> SaveDiscLogs(IUserContributionService service, string contributionId, string discId, [FromBody] string logs, CancellationToken cancellationToken)
+    public async Task<IResult> SaveDiscLogs(IUserContributionService service, HttpRequest request, string contributionId, string discId, CancellationToken cancellationToken)
     {
-        var result = await service.SaveDiscLogs(contributionId, discId, logs, cancellationToken);
-        
-        // TODO: include a traceid people can share to look up problem later
-        return OkOrProblem(result, $"Unable to save disc logs for contribution {contributionId}, disc {discId}");
+        using (StreamReader reader = new StreamReader(request.Body, Encoding.UTF8))
+        {
+            string logs = await reader.ReadToEndAsync();
+            var result = await service.SaveDiscLogs(contributionId, discId, logs, cancellationToken);
+            // TODO: include a traceid people can share to look up problem later
+            return OkOrProblem(result, $"Unable to save disc logs for contribution {contributionId}, disc {discId}");
+        }
     }
 
     public async Task<IResult> GetDiscLogs(IUserContributionService service, string contributionId, string discId, CancellationToken cancellationToken)
@@ -133,8 +141,13 @@ public class ContributionEndpoints
         return JsonResult(result, $"Failed to add item to disc {discId} for contribution {contributionId}");
     }
 
-    public async Task<IResult> DeleteItemFromDisc(IUserContributionService service, string contributionId, string discId, string itemId, CancellationToken cancellationToken)
+    public async Task<IResult> DeleteItemFromDisc(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, CancellationToken cancellationToken)
     {
+        if (Int32.TryParse(itemId, out int parsedItemId))
+        {
+            itemId = idEncoder.Encode(parsedItemId);
+        }
+
         var result = await service.DeleteItemFromDisc(contributionId, discId, itemId, cancellationToken);
         return OkOrProblem(result, $"Unable to delete item {itemId} from disc {discId} for contribution {contributionId}");
     }

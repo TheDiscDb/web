@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Sqids;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
@@ -31,5 +30,10 @@ public partial class ContributionDiscs : ComponentBase
         {
             this.Contribution = result.Value;
         }
+    }
+
+    private async Task DeleteDisc(UserContributionDisc disc)
+    {
+        await Task.Delay(1);
     }
 }

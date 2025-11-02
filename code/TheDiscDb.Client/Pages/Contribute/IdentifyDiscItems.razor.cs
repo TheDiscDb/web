@@ -26,7 +26,7 @@ public class ItemIdentification
     public string? Description { get; set; }
     public required string Type { get; set; }
     public EpisodeIdentification? Episode { get; set; }
-    public AddItemResponse? Response { get; set; }
+    public string? DatabaseId { get; set; }
 
     public AddItemRequest CreateAddRequest()
     {
@@ -35,7 +35,6 @@ public class ItemIdentification
             ChapterCount = Title.ChapterCount,
             Description = Description,
             Duration = Title.DisplaySize!,
-            FileName = BuildFilename(),
             Name = ItemTitle,
             SegmentCount = Title.Segments.Count,
             SegmentMap = Title.SegmentMap!,
@@ -44,16 +43,6 @@ public class ItemIdentification
             Season = Episode != null ? Episode.Season : null,
             Episode = Episode != null ? Episode.Episode : null
         };
-    }
-
-    private string BuildFilename()
-    {
-        if (Episode != null)
-        {
-            return $"S{Episode.Season}.E{Episode.Episode}.{ItemTitle}.mkv";
-        }
-
-        return $"{Title}.mkv";
     }
 }
 
@@ -76,7 +65,6 @@ public partial class IdentifyDiscItems : ComponentBase
     private UserContributionDisc? disc = null;
     private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
 
-    string message = "Loading...";
     bool showEpisodeDialog = false;
     bool showItemDialog = false;
 
@@ -93,7 +81,36 @@ public partial class IdentifyDiscItems : ComponentBase
         {
             this.titles = response.Value.Info!.Titles.AsQueryable();
             this.disc = response.Value.Disc;
-            message = "Loaded";
+
+            if (disc?.Items != null)
+            {
+                foreach (var item in disc.Items)
+                {
+                    var title = this.titles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Duration);
+                    if (title != null)
+                    {
+                        var existingItem = new ItemIdentification
+                        {
+                            DatabaseId = item.Id.ToString(),
+                            Title = title,
+                            Type = item.Type,
+                            ItemTitle = item.Name,
+                            Description = item.Description
+                        };
+
+                        if (!string.IsNullOrEmpty(item.Season))
+                        {
+                            existingItem.Episode = new EpisodeIdentification
+                            {
+                                Season = item.Season,
+                                Episode = item.Episode
+                            };
+                        }
+
+                        identifiedTitles[title] = existingItem;
+                    }
+                }
+            }
         }
     }
 
@@ -112,15 +129,24 @@ public partial class IdentifyDiscItems : ComponentBase
         return "Identify";
     }
 
+    string GetTitle(Title title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            return item.ItemTitle;
+        }
+
+        return "";
+    }
+
     async Task RemoveIdentification(Title title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
-            var result = await this.Client.DeleteItemFromDisc(this.ContributionId!, this.DiscId!, item.Response!.ItemId);
+            var result = await this.Client.DeleteItemFromDisc(this.ContributionId!, this.DiscId!, item.DatabaseId!);
             if (result.IsSuccess)
             {
                 identifiedTitles.Remove(title);
-                message = "Removed identification for " + title.DisplaySize;
                 this.StateHasChanged();
             }
             else
@@ -166,7 +192,7 @@ public partial class IdentifyDiscItems : ComponentBase
 
         if (response.IsSuccess)
         {
-            currentItem.Response = response.Value;
+            currentItem.DatabaseId = response.Value.ItemId;
             this.identifiedTitles[currentItem.Title] = currentItem;
             this.StateHasChanged();
         }
@@ -198,7 +224,7 @@ public partial class IdentifyDiscItems : ComponentBase
 
         if (response.IsSuccess)
         {
-            currentItem.Response = response.Value;
+            currentItem.DatabaseId = response.Value.ItemId;
             this.identifiedTitles[currentItem.Title] = currentItem;
             this.StateHasChanged();
         }
@@ -216,5 +242,10 @@ public partial class IdentifyDiscItems : ComponentBase
         this.identifiedTitles.Remove(this.currentItem!.Title!);
         this.StateHasChanged();
         await this.episodeDialogObj!.HideAsync();
+    }
+
+    private void SubmitIdentifications(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    {
+        this.NavigationManager.NavigateTo($"/contribution/{this.ContributionId}");
     }
 }

@@ -86,8 +86,6 @@ public class AddItemRequest
     public int SegmentCount { get; set; } = 0;
     public string SegmentMap { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
-    public string? Year { get; set; } = string.Empty;
-    public string FileName { get; set; } = string.Empty;
     public string? Description { get; set; } = string.Empty;
     public string? Season { get; set; } = string.Empty;
     public string? Episode { get; set; } = string.Empty;

@@ -19,18 +19,6 @@ public partial class NavMenu : ComponentBase
     private string? searchQuery;
 #pragma warning restore IDE0044 // Add readonly modifier
 
-    //private async Task OnHandleReadData(AutocompleteReadDataEventArgs autocompleteReadDataEventArgs)
-    //{
-    //    if (!autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
-    //    {
-    //        var results = await this.SearchClient.Search(autocompleteReadDataEventArgs.SearchValue);
-    //        if (!autocompleteReadDataEventArgs.CancellationToken.IsCancellationRequested)
-    //        {
-    //            this.SearchResults = results;
-    //        }
-    //    }
-    //}
-
     public async Task KeyPressed(KeyboardEventArgs e)
     {
         if (e.Code == "Enter" || e.Code == "NumpadEnter")
