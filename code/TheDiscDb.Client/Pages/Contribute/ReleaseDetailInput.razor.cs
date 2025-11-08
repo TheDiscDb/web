@@ -8,9 +8,6 @@ namespace TheDiscDb.Client.Pages.Contribute;
 public partial class ReleaseDetailInput : ComponentBase
 {
     [Parameter]
-    public string? Hash { get; set; }
-
-    [Parameter]
     public string? MediaType { get; set; }
 
     [Parameter]
@@ -29,11 +26,11 @@ public partial class ReleaseDetailInput : ComponentBase
     };
 
     private string releaseDate = string.Empty;
+    private string releaseDateValidationMessage = string.Empty;
 
     protected override Task OnInitializedAsync()
     {
         this.request.MediaType = this.MediaType ?? "Movie";
-        this.request.DiscHash = this.Hash ?? string.Empty;
         this.request.ExternalProvider = "TMDB";
         this.request.ExternalId = this.ExternalId ?? string.Empty;
         return Task.CompletedTask;
@@ -41,6 +38,13 @@ public partial class ReleaseDetailInput : ComponentBase
 
     async Task HandleValidSubmit()
     {
+        if (string.IsNullOrEmpty(this.releaseDate))
+        {
+            // The release date is required. TODO: Show an error message.
+            this.releaseDateValidationMessage = "Release Date is required.";
+            return;
+        }
+
         var response = await this.Client.CreateContribution(userId: string.Empty, this.request);
 
         this.NavigationManager!.NavigateTo($"/contribution/{response.Value.ContributionId}");

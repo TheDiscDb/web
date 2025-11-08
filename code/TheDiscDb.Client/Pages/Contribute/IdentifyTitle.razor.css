@@ -1,0 +1,16 @@
+﻿.thumb {
+    width: 92px;
+}
+
+.media-item-title {
+    margin-left: 10px;
+    vertical-align: top;
+    text-align: left;
+}
+
+.e-ddl.e-input-group.e-control-wrapper .e-ddl-icon::before {
+    content: '\e724';
+    font-family: 'e-icons';
+    font-size: 16px;
+    opacity: 0.4;
+}

@@ -61,7 +61,9 @@ public class UserContributionService : IUserContributionService
             BackImageUrl = request.BackImageUrl,
             Upc = request.Upc,
             ReleaseTitle = request.ReleaseTitle,
-            ReleaseSlug = request.ReleaseSlug
+            ReleaseSlug = request.ReleaseSlug,
+            Locale = request.Locale,
+            RegionCode = request.RegionCode
         };
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -394,6 +396,7 @@ public class UserContributionService : IUserContributionService
             ChapterCount = request.ChapterCount,
             Description = request.Description,
             Duration = request.Duration,
+            Size = request.Size,
             Name = request.Name,
             SegmentCount = request.SegmentCount,
             SegmentMap = request.SegmentMap,

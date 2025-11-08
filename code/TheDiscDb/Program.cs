@@ -117,10 +117,10 @@ builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TheDiscDb.Client.ApiClient>();
 builder.Services.AddScoped<IUserContributionService, TheDiscDb.Services.Server.UserContributionService>();
-builder.Services.AddScoped<TheDiscDb.Client.TmdbClient>();
-builder.Services.AddSingleton<IFileSystemCache, TheDiscDb.Client.NullFileSystemCache>();
+builder.Services.AddSingleton<IFileSystemCache, NullFileSystemCache>();
 builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
 builder.Services.AddScoped<Fantastic.TheMovieDb.TheMovieDbClient>();
+builder.Services.AddScoped<TmdbDataAdaptor>();
 
 var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")!.Split(";");
 var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));

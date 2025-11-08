@@ -9,7 +9,7 @@ using TheDiscDb.Services;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class CalculateHash : ComponentBase
+public partial class AddDisc : ComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }

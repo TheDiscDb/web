@@ -31,16 +31,16 @@ public class ContributionEndpoints
         contribute.MapGet("checkdiskuploadstatus/{discId}", CheckDiskUploadStatus)
             .AllowAnonymous();
 
-        contribute.MapPost("{contributionId}/discs/{discId}/item", AddItemToDisc);
-        contribute.MapDelete("{contributionId}/discs/{discId}/item/{itemId}", DeleteItemFromDisc);
+        contribute.MapPost("{contributionId}/discs/{discId}/items", AddItemToDisc);
+        contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}", DeleteItemFromDisc);
 
-        contribute.MapPost("{contributionId}/discs/{discId}/item/{itemId}/chapter", AddChapterToItem);
-        contribute.MapDelete("{contributionId}/discs/{discId}/item/{itemId}/chapters/{chapterId}", DeleteChapterFromItem);
-        contribute.MapPut("{contributionId}/discs/{discId}/item/{itemId}/chapters/{chapterId}", UpdateChapterInItem);
+        contribute.MapPost("{contributionId}/discs/{discId}/items/{itemId}/chapters", AddChapterToItem);
+        contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}/chapters/{chapterId}", DeleteChapterFromItem);
+        contribute.MapPut("{contributionId}/discs/{discId}/items/{itemId}/chapters/{chapterId}", UpdateChapterInItem);
 
-        contribute.MapPost("{contributionId}/discs/{discId}/item/{itemId}/audiotrack", AddAudioTrackToItem);
-        contribute.MapDelete("{contributionId}/discs/{discId}/item/{itemId}/audiotracks/{audioTrackId}", DeleteAudioTrackFromItem);
-        contribute.MapPut("{contributionId}/discs/{discId}/item/{itemId}/audiotrack/{audioTrackId}", UpdateAudioTrackInItem);
+        contribute.MapPost("{contributionId}/discs/{discId}/items/{itemId}/audiotracks", AddAudioTrackToItem);
+        contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}/audiotracks/{audioTrackId}", DeleteAudioTrackFromItem);
+        contribute.MapPut("{contributionId}/discs/{discId}/items/{itemId}/audiotracks/{audioTrackId}", UpdateAudioTrackInItem);
     }
 
     public async Task<IResult> GetUserContributions(IUserContributionService service, UserManager<TheDiscDbUser> userManager, ClaimsPrincipal user, CancellationToken cancellationToken)

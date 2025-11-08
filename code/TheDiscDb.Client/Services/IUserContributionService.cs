@@ -1,4 +1,5 @@
-﻿using FluentResults;
+﻿using System.ComponentModel.DataAnnotations;
+using FluentResults;
 using MakeMkv;
 using TheDiscDb.Web.Data;
 
@@ -34,18 +35,24 @@ public interface IUserContributionService
 
 public class CreateContributionRequest
 {
-    public string DiscHash { get; set; } = string.Empty;
+    [Required]
     public string MediaType { get; set; } = string.Empty;
     public string ExternalId { get; set; } = string.Empty;
     public string ExternalProvider { get; set; } = string.Empty;
+    [Required]
     public DateTimeOffset ReleaseDate { get; set; }
+    [Required]
     public string Asin { get; set; } = string.Empty;
+    [Required]
     public string Upc { get; set; } = string.Empty;
     public string FrontImageUrl { get; set; } = string.Empty;
     public string BackImageUrl { get; set; } = string.Empty;
     public string ReleaseTitle { get; set; } = string.Empty;
+    [Required]
     public string ReleaseSlug { get; set; } = string.Empty;
+    [Required]
     public string RegionCode { get; set; } = string.Empty;
+    [Required]
     public string Locale { get; set; } = string.Empty;
 }
 
@@ -57,9 +64,13 @@ public class CreateContributionResponse
 public class SaveDiscRequest
 {
     public int Index { get; set; }
+    [Required]
     public string ContentHash { get; set; } = string.Empty;
+    [Required]
     public string Format { get; set; } = string.Empty;
+    [Required]
     public string Name { get; set; } = string.Empty;
+    [Required]
     public string Slug { get; set; } = string.Empty;
 }
 
@@ -84,6 +95,7 @@ public class AddItemRequest
     public string Name { get; set; } = string.Empty;
     public string Source { get; set; } = string.Empty;
     public string Duration { get; set; } = string.Empty;
+    public string Size { get; set; } = string.Empty;
     public int ChapterCount { get; set; } = 0;
     public int SegmentCount { get; set; } = 0;
     public string SegmentMap { get; set; } = string.Empty;

@@ -18,6 +18,12 @@ public class EpisodeIdentification
     public string? Episode { get; set; }
 }
 
+public class ChapterItem
+{
+    public int Index { get; set; }
+    public string? Title { get; set; }
+}
+
 public class ItemIdentification
 {
     public required Title Title { get; set; }
@@ -27,6 +33,7 @@ public class ItemIdentification
     public required string Type { get; set; }
     public EpisodeIdentification? Episode { get; set; }
     public string? DatabaseId { get; set; }
+    public List<ChapterItem> Chapters { get; set; } = new List<ChapterItem>();
 
     public AddItemRequest CreateAddRequest()
     {
@@ -34,7 +41,8 @@ public class ItemIdentification
         {
             ChapterCount = Title.ChapterCount,
             Description = Description,
-            Duration = Title.DisplaySize!,
+            Size = Title.DisplaySize!,
+            Duration = Title.Length!,
             Name = ItemTitle,
             SegmentCount = Title.Segments.Count,
             SegmentMap = Title.SegmentMap!,
@@ -43,6 +51,28 @@ public class ItemIdentification
             Season = Episode != null ? Episode.Season : null,
             Episode = Episode != null ? Episode.Episode : null
         };
+    }
+
+    public void InitializeChapters()
+    {
+        // If there are already chapters, nothing to initialize
+        if (this.Chapters.Count > 0)
+        {
+            return;
+        }
+         
+        if (this.Title.ChapterCount > 0)
+        {
+            this.Chapters = new List<ChapterItem>();
+            for (int i = 0; i < this.Title.ChapterCount; i++)
+            {
+                this.Chapters.Add(new ChapterItem
+                {
+                    Index = i + 1,
+                    Title = ""
+                });
+            }
+        }
     }
 }
 
@@ -66,10 +96,17 @@ public partial class IdentifyDiscItems : ComponentBase
     private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
 
     bool showEpisodeDialog = false;
-    bool showItemDialog = false;
-
     SfDialog? episodeDialogObj;
+
+    bool showItemDialog = false;
     SfDialog? itemDialogObj;
+
+    bool showChapterDialog = false;
+    SfDialog? chapterDialog;
+
+    bool showAudioTrackDialog = false;
+    SfDialog? audioTrackDialog;
+
     SfToast? toast;
     string? toastContent;
     ItemIdentification? currentItem;
@@ -119,6 +156,16 @@ public partial class IdentifyDiscItems : ComponentBase
         return identifiedTitles.ContainsKey(title);
     }
 
+    string Truncate(string? text, int maxLength)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return "";
+        }
+
+        return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
+    }
+
     string GetIdentifyButtonText(Title title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
@@ -137,6 +184,23 @@ public partial class IdentifyDiscItems : ComponentBase
         }
 
         return "";
+    }
+
+    async Task NameAudioTracks(Title title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            this.showAudioTrackDialog = true;
+        }
+    }
+
+    async Task InputChapters(Title title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            item.InitializeChapters();
+            this.showChapterDialog = true;
+        }
     }
 
     async Task RemoveIdentification(Title title)
@@ -183,6 +247,45 @@ public partial class IdentifyDiscItems : ComponentBase
         return Task.CompletedTask;
     }
 
+    public async Task HandleValidChapterSubmit()
+    {
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        foreach (var chapter in this.currentItem.Chapters)
+        {
+            if (!string.IsNullOrEmpty(chapter.Title))
+            {
+                var response = await this.Client.AddChapterToItem(this.ContributionId!, this.DiscId!, this.currentItem.DatabaseId!, new AddChapterRequest
+                {
+                    Index = chapter.Index,
+                    Title = chapter.Title!
+                });
+
+                if (!response.IsSuccess)
+                {
+                    toastContent = "Error adding chapter";
+                    await toast!.ShowAsync();
+                    continue;
+                }
+            }
+        }
+
+        await this.chapterDialog!.HideAsync();
+    }
+
+    public async Task HandleValidAudioTrackSubmit()
+    {
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        await this.audioTrackDialog!.HideAsync();
+    }
+
     public async Task HandleValidItemSubmit()
     {
         if (this.currentItem == null)
@@ -214,6 +317,18 @@ public partial class IdentifyDiscItems : ComponentBase
         await this.itemDialogObj!.HideAsync();
     }
 
+    private async Task ChapterDialogCancelClicked()
+    {
+        this.currentItem!.Chapters.Clear();
+        await this.chapterDialog!.HideAsync();
+        this.StateHasChanged();
+    }
+
+    private async Task AudioTrackDialogCancelClicked()
+    {
+        await this.audioTrackDialog!.HideAsync();
+        this.StateHasChanged();
+    }
 
     public async Task HandleValidEpisodeSubmit()
     {

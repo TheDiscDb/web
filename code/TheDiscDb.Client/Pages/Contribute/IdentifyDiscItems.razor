@@ -13,7 +13,10 @@ else
     <QuickGrid Items="titles">
         <PropertyColumn Property="@(t => t.ChapterCount)" />
         <PropertyColumn Property="@(t => t.DisplaySize)" />
-        <PropertyColumn Property="@(t => t.SegmentMap)" />
+        <PropertyColumn Property="@(t => t.Length)" />
+        <TemplateColumn>
+            <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
+        </TemplateColumn>
         <TemplateColumn Title="Name">
             @GetTitle(context)
         </TemplateColumn>
@@ -22,6 +25,11 @@ else
             {
                 <span>@GetIdentifyButtonText(context)</span>
                 <button @onclick="() => RemoveIdentification(context)">X</button>
+                <button @onclick="() => NameAudioTracks(context)">audio</button>
+                @if (context.ChapterCount > 0)
+                {
+                    <button @onclick="() => InputChapters(context)">chapters</button>
+                }
             }
             else
             {
@@ -101,6 +109,53 @@ else
         </ChildContent>
     </SfDialog>
 }
+
+@if (showChapterDialog)
+{
+    <SfDialog @ref="chapterDialog" Target="body" Width="400px" @bind-Visible="@showChapterDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Input Chapters">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <EditForm Model="@currentItem" OnValidSubmit="@HandleValidChapterSubmit">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                @{int counter = 1;}
+                @foreach (var item in this.currentItem!.Chapters)
+                {
+                    <div>
+                        <span>@counter</span>
+                        <InputText @bind-Value="item.Title" class="form-control" />
+                    </div>
+                    ++counter;
+                }
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="button" class="e-btn e-normal" @onclick="ChapterDialogCancelClicked">Cancel</button>
+                        <button type="submit" class="e-btn e-normal e-primary">Save</button>
+                    </div>
+                </div>
+            </EditForm>
+        </ChildContent>
+    </SfDialog>
+}
+
+@if (showAudioTrackDialog)
+{
+    <SfDialog @ref="audioTrackDialog" Target="body" Width="400px" @bind-Visible="@showAudioTrackDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Input Chapters">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <EditForm Model="@currentItem" OnValidSubmit="@HandleValidAudioTrackSubmit">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="button" class="e-btn e-normal" @onclick="AudioTrackDialogCancelClicked">Cancel</button>
+                        <button type="submit" class="e-btn e-normal e-primary">Save</button>
+                    </div>
+                </div>
+            </EditForm>
+        </ChildContent>
+    </SfDialog>
+}
+
 
 <Syncfusion.Blazor.Popups.SfDialogProvider />
 

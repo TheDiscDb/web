@@ -1,6 +1,18 @@
 ﻿@page "/contribute/{mediaType}"
+@using TheDiscDb.InputModels
 
 @rendermode InteractiveAuto
 
 <h3>What @MediaType would you like to contribute?</h3>
-<input @bind="SearchText" @bind:event="oninput" class="form-control" placeholder="Search for a title..." />
+<SfAutoComplete TValue="MediaItem" TItem="MediaItem" @bind-value="SelectedItem" PopupWidth="500px">
+    <SfDataManager AdaptorInstance="@typeof(TmdbDataAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+    <AutoCompleteFieldSettings Value="Title"></AutoCompleteFieldSettings>
+    <AutoCompleteTemplates TItem="MediaItem">
+        <ItemTemplate>
+            <span class="thumb"><img src="@((context as MediaItem).ImageUrl)" width="92" class="thumb" /></span>
+            <span class="media-item-title">@GetItemDisplayText(context as MediaItem)</span>
+        </ItemTemplate>
+    </AutoCompleteTemplates>
+</SfAutoComplete>
+<a class="btn btn-secondary" href="/contribute">Back</a>
+<button class="btn btn-primary" @onclick="NextClicked" disabled="@IsNextButtonDisabled">Next</button>
