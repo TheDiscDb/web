@@ -36,9 +36,15 @@ else
                 <SfDropDownButton Content="Identify">
                     <DropDownButtonEvents ItemSelected="(args) => ItemSelected(context, args)"></DropDownButtonEvents>
                     <DropDownMenuItems>
-                        <DropDownMenuItem Text="Main Movie" data-type="MainMovie"></DropDownMenuItem>
-                        <DropDownMenuItem Text="Episode" data-type="Episode"></DropDownMenuItem>
+                        @if (this.mediaType != null && this.mediaType.Equals("movie", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            <DropDownMenuItem Text="Main Movie" data-type="MainMovie"></DropDownMenuItem>
+                        }
                         <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
+                        @if (this.mediaType != null && this.mediaType.Equals("movie", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            <DropDownMenuItem Text="Episode" data-type="Episode"></DropDownMenuItem>
+                        }
                         <DropDownMenuItem Text="Deleted Scene" data-type="DeletedScene"></DropDownMenuItem>
                         <DropDownMenuItem Text="Trailer" data-type="Trailer"></DropDownMenuItem>
                     </DropDownMenuItems>
@@ -117,15 +123,14 @@ else
             <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
             <EditForm Model="@currentItem" OnValidSubmit="@HandleValidChapterSubmit">
                 <DataAnnotationsValidator></DataAnnotationsValidator>
-                @{int counter = 1;}
+                <ol>
                 @foreach (var item in this.currentItem!.Chapters)
                 {
-                    <div>
-                        <span>@counter</span>
+                    <li>
                         <InputText @bind-Value="item.Title" class="form-control" />
-                    </div>
-                    ++counter;
+                    </li>
                 }
+                </ol>
                 <div class="e-footer-content">
                     <div class="button-container">
                         <button type="button" class="e-btn e-normal" @onclick="ChapterDialogCancelClicked">Cancel</button>
@@ -139,11 +144,20 @@ else
 
 @if (showAudioTrackDialog)
 {
-    <SfDialog @ref="audioTrackDialog" Target="body" Width="400px" @bind-Visible="@showAudioTrackDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Input Chapters">
+    <SfDialog @ref="audioTrackDialog" Target="body" Width="400px" @bind-Visible="@showAudioTrackDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Name Audio Tracks">
         <ChildContent>
             <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
             <EditForm Model="@currentItem" OnValidSubmit="@HandleValidAudioTrackSubmit">
                 <DataAnnotationsValidator></DataAnnotationsValidator>
+                <ol>
+                    @foreach (var item in this.currentItem!.AudioTracks)
+                    {
+                        <li>
+                            <div>@item.GetDisplayName()</div>
+                            <InputText @bind-Value="item.Title" class="form-control" />
+                        </li>
+                    }
+                </ol>
                 
                 <div class="e-footer-content">
                     <div class="button-container">

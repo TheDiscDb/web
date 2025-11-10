@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Notifications;
 using Syncfusion.Blazor.Popups;
 using Syncfusion.Blazor.SplitButtons;
+using TheDiscDb.ImportModels;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
@@ -24,6 +25,22 @@ public class ChapterItem
     public string? Title { get; set; }
 }
 
+public class AudioTrackItem
+{
+    public int Index { get; set; }
+    public string? Title { get; set; }
+    public Segment? Segment { get; set; }
+    public string GetDisplayName()
+    {
+        if (this.Segment != null)
+        {
+            return $"{Segment.Name} {Segment.AudioType}";
+        }
+
+        return "";
+    }
+}
+
 public class ItemIdentification
 {
     public required Title Title { get; set; }
@@ -34,6 +51,7 @@ public class ItemIdentification
     public EpisodeIdentification? Episode { get; set; }
     public string? DatabaseId { get; set; }
     public List<ChapterItem> Chapters { get; set; } = new List<ChapterItem>();
+    public List<AudioTrackItem> AudioTracks { get; set; } = new List<AudioTrackItem>();
 
     public AddItemRequest CreateAddRequest()
     {
@@ -52,28 +70,6 @@ public class ItemIdentification
             Episode = Episode != null ? Episode.Episode : null
         };
     }
-
-    public void InitializeChapters()
-    {
-        // If there are already chapters, nothing to initialize
-        if (this.Chapters.Count > 0)
-        {
-            return;
-        }
-         
-        if (this.Title.ChapterCount > 0)
-        {
-            this.Chapters = new List<ChapterItem>();
-            for (int i = 0; i < this.Title.ChapterCount; i++)
-            {
-                this.Chapters.Add(new ChapterItem
-                {
-                    Index = i + 1,
-                    Title = ""
-                });
-            }
-        }
-    }
 }
 
 [Authorize]
@@ -91,6 +87,7 @@ public partial class IdentifyDiscItems : ComponentBase
     [Inject]
     private IUserContributionService Client { get; set; } = null!;
 
+    private string? mediaType = null;
     private IQueryable<MakeMkv.Title>? titles = null;
     private UserContributionDisc? disc = null;
     private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
@@ -123,7 +120,7 @@ public partial class IdentifyDiscItems : ComponentBase
             {
                 foreach (var item in disc.Items)
                 {
-                    var title = this.titles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Duration);
+                    var title = this.titles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
                     if (title != null)
                     {
                         var existingItem = new ItemIdentification
@@ -144,9 +141,101 @@ public partial class IdentifyDiscItems : ComponentBase
                             };
                         }
 
+                        InitializeChapters(item, existingItem);
+                        InitializeAudioTracks(item, existingItem, title);
+
                         identifiedTitles[title] = existingItem;
                     }
                 }
+            }
+        }
+
+        if (!string.IsNullOrEmpty(this.ContributionId))
+        {
+            var contribution = await this.Client.GetContribution(this.ContributionId);
+            if (contribution != null && contribution.IsSuccess)
+            {
+                this.mediaType = contribution.Value.MediaType;
+            }
+        }
+    }
+
+    private static void InitializeAudioTracks(UserContributionDiscItem item, ItemIdentification existingItem, Title title)
+    {
+        var audioSegments = title.Segments.Where(s => s.Type != null && s.Type.Equals("Audio", StringComparison.OrdinalIgnoreCase)).ToList();
+        bool hasSavedAudioTracks = item.AudioTracks != null && item.AudioTracks.Count > 0;
+        int i = 1;
+        foreach (var segment in audioSegments)
+        {
+            if (hasSavedAudioTracks)
+            {
+                var existingAudioTrack = item.AudioTracks!.FirstOrDefault(at => at.Index == i);
+                if (existingAudioTrack != null)
+                {
+                    existingItem.AudioTracks.Add(new AudioTrackItem
+                    {
+                        Index = existingAudioTrack.Index,
+                        Title = existingAudioTrack.Title,
+                        Segment = segment
+                    });
+                }
+                else
+                {
+                    existingItem.AudioTracks.Add(new AudioTrackItem
+                    {
+                        Index = i,
+                        Title = "",
+                        Segment = segment
+                    });
+                }
+            }
+            else
+            {
+                existingItem.AudioTracks.Add(new AudioTrackItem
+                {
+                    Index = i,
+                    Title = "",
+                    Segment = segment
+                });
+            }
+            ++i;
+        }
+    }
+
+    private static void InitializeChapters(UserContributionDiscItem item, ItemIdentification existingItem)
+    {
+        if (item.Chapters != null && item.Chapters.Count > 0)
+        {
+            int chapterIndex = 1;
+            foreach (var chapter in item.Chapters)
+            {
+                existingItem.Chapters.Add(new ChapterItem
+                {
+                    Index = chapter.Index,
+                    Title = chapter.Title
+                });
+                ++chapterIndex;
+            }
+
+            // Add empty chapters if needed
+            for (int i = chapterIndex; i <= item.ChapterCount; i++)
+            {
+                existingItem.Chapters.Add(new ChapterItem
+                {
+                    Index = i,
+                    Title = ""
+                });
+            }
+        }
+        else if (item.ChapterCount > 0)
+        {
+            for (int i = 0; i < item.ChapterCount; i++)
+            {
+                existingItem.Chapters.Add(new ChapterItem
+                {
+                    Index = i + 1,
+                    Title = ""
+                });
             }
         }
     }
@@ -190,6 +279,21 @@ public partial class IdentifyDiscItems : ComponentBase
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
+            this.currentItem = item;
+            if (item.AudioTracks.Count == 0)
+            {
+                var audioSegments = title.Segments.Where(s => s.Type != null && s.Type.Equals("Audio", StringComparison.OrdinalIgnoreCase));
+                int i = 1;
+                foreach (var segment in audioSegments)
+                {
+                    item.AudioTracks.Add(new AudioTrackItem
+                    {
+                        Index = i++,
+                        Title = "",
+                        Segment = segment
+                    });
+                }
+            }
             this.showAudioTrackDialog = true;
         }
     }
@@ -198,7 +302,18 @@ public partial class IdentifyDiscItems : ComponentBase
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
-            item.InitializeChapters();
+            this.currentItem = item;
+            if (item.Chapters.Count == 0)
+            {
+                for (int i = 0; i < title.ChapterCount; i++)
+                {
+                    item.Chapters.Add(new ChapterItem
+                    {
+                        Index = i + 1,
+                        Title = ""
+                    });
+                }
+            }
             this.showChapterDialog = true;
         }
     }
@@ -281,6 +396,25 @@ public partial class IdentifyDiscItems : ComponentBase
         if (this.currentItem == null)
         {
             return;
+        }
+
+        foreach (var audioTrack in this.currentItem.AudioTracks)
+        {
+            if (!string.IsNullOrEmpty(audioTrack.Title))
+            {
+                var response = await this.Client.AddAudioTrackToItem(this.ContributionId!, this.DiscId!, this.currentItem.DatabaseId!, new AddAudioTrackRequest
+                {
+                    Index = audioTrack.Index,
+                    Title = audioTrack.Title!
+                });
+
+                if (!response.IsSuccess)
+                {
+                    toastContent = "Error naming audio track";
+                    await toast!.ShowAsync();
+                    continue;
+                }
+            }
         }
 
         await this.audioTrackDialog!.HideAsync();

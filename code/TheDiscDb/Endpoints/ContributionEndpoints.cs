@@ -2,6 +2,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using SixLabors.ImageSharp.Formats.Gif;
 using Sqids;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
@@ -153,8 +154,13 @@ public class ContributionEndpoints
     }
 
 
-    public async Task<IResult> AddChapterToItem(IUserContributionService service, string contributionId, string discId, string itemId, [FromBody] AddChapterRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> AddChapterToItem(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, [FromBody] AddChapterRequest request, CancellationToken cancellationToken)
     {
+        if (Int32.TryParse(itemId, out int parsedItemId))
+        {
+            itemId = idEncoder.Encode(parsedItemId);
+        }
+
         var result = await service.AddChapterToItem(contributionId, discId, itemId, request, cancellationToken);
         return JsonResult(result, $"Failed to add chapter item to disc {discId} for contribution {contributionId}");
     }
@@ -172,8 +178,13 @@ public class ContributionEndpoints
     }
 
 
-    public async Task<IResult> AddAudioTrackToItem(IUserContributionService service, string contributionId, string discId, string itemId, [FromBody] AddAudioTrackRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> AddAudioTrackToItem(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, [FromBody] AddAudioTrackRequest request, CancellationToken cancellationToken)
     {
+        if (Int32.TryParse(itemId, out int parsedItemId))
+        {
+            itemId = idEncoder.Encode(parsedItemId);
+        }
+
         var result = await service.AddAudioTrackToItem(contributionId, discId, itemId, request, cancellationToken);
         return JsonResult(result, $"Failed to add audio track to disc {discId} for contribution {contributionId}");
     }

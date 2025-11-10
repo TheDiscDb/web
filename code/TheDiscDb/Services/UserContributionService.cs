@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Sqids;
 using TheDiscDb.Data.Import;
+using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Services.Server;
@@ -511,8 +512,17 @@ public class UserContributionService : IUserContributionService
             {
                 return Result.Fail($"Item {itemId} not found");
             }
-            
-            item.Chapters.Add(chapter);
+
+            var existingChapter = item.Chapters.FirstOrDefault(c => c.Index == chapter.Index);
+            if (existingChapter != null)
+            {
+                existingChapter.Title = chapter.Title;
+            }
+            else
+            {
+                item.Chapters.Add(chapter);
+            }
+
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
@@ -655,7 +665,16 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Item {itemId} not found");
             }
 
-            item.AudioTracks.Add(audioTrack);
+            var existingTrack = item.AudioTracks.FirstOrDefault(c => c.Index == audioTrack.Index);
+            if (existingTrack != null)
+            {
+                existingTrack.Title = audioTrack.Title;
+            }
+            else
+            {
+                item.AudioTracks.Add(audioTrack);
+            }
+
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
