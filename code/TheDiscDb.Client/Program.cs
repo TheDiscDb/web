@@ -1,3 +1,4 @@
+using Fantastic.TheMovieDb.Caching.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -16,10 +17,10 @@ builder.Services.AddScoped<SfDialogService>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddScoped<ApiClient>();
-builder.Services.AddScoped<TmdbClient>();
 builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
-builder.Services.AddSingleton<Fantastic.TheMovieDb.Caching.FileSystem.IFileSystemCache, NullFileSystemCache>();
+builder.Services.AddSingleton<IFileSystemCache, NullFileSystemCache>();
 builder.Services.AddScoped<Fantastic.TheMovieDb.TheMovieDbClient>();
+builder.Services.AddScoped<TmdbDataAdaptor>();
 
 builder.Services
     .AddTheDiscDbClient()

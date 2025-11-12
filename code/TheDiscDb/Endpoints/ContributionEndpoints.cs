@@ -2,6 +2,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using SixLabors.ImageSharp.Formats.Gif;
 using Sqids;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
@@ -31,16 +32,16 @@ public class ContributionEndpoints
         contribute.MapGet("checkdiskuploadstatus/{discId}", CheckDiskUploadStatus)
             .AllowAnonymous();
 
-        contribute.MapPost("{contributionId}/discs/{discId}/item", AddItemToDisc);
-        contribute.MapDelete("{contributionId}/discs/{discId}/item/{itemId}", DeleteItemFromDisc);
+        contribute.MapPost("{contributionId}/discs/{discId}/items", AddItemToDisc);
+        contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}", DeleteItemFromDisc);
 
-        contribute.MapPost("{contributionId}/discs/{discId}/item/{itemId}/chapter", AddChapterToItem);
-        contribute.MapDelete("{contributionId}/discs/{discId}/item/{itemId}/chapters/{chapterId}", DeleteChapterFromItem);
-        contribute.MapPut("{contributionId}/discs/{discId}/item/{itemId}/chapters/{chapterId}", UpdateChapterInItem);
+        contribute.MapPost("{contributionId}/discs/{discId}/items/{itemId}/chapters", AddChapterToItem);
+        contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}/chapters/{chapterId}", DeleteChapterFromItem);
+        contribute.MapPut("{contributionId}/discs/{discId}/items/{itemId}/chapters/{chapterId}", UpdateChapterInItem);
 
-        contribute.MapPost("{contributionId}/discs/{discId}/item/{itemId}/audiotrack", AddAudioTrackToItem);
-        contribute.MapDelete("{contributionId}/discs/{discId}/item/{itemId}/audiotracks/{audioTrackId}", DeleteAudioTrackFromItem);
-        contribute.MapPut("{contributionId}/discs/{discId}/item/{itemId}/audiotrack/{audioTrackId}", UpdateAudioTrackInItem);
+        contribute.MapPost("{contributionId}/discs/{discId}/items/{itemId}/audiotracks", AddAudioTrackToItem);
+        contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}/audiotracks/{audioTrackId}", DeleteAudioTrackFromItem);
+        contribute.MapPut("{contributionId}/discs/{discId}/items/{itemId}/audiotracks/{audioTrackId}", UpdateAudioTrackInItem);
     }
 
     public async Task<IResult> GetUserContributions(IUserContributionService service, UserManager<TheDiscDbUser> userManager, ClaimsPrincipal user, CancellationToken cancellationToken)
@@ -153,8 +154,13 @@ public class ContributionEndpoints
     }
 
 
-    public async Task<IResult> AddChapterToItem(IUserContributionService service, string contributionId, string discId, string itemId, [FromBody] AddChapterRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> AddChapterToItem(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, [FromBody] AddChapterRequest request, CancellationToken cancellationToken)
     {
+        if (Int32.TryParse(itemId, out int parsedItemId))
+        {
+            itemId = idEncoder.Encode(parsedItemId);
+        }
+
         var result = await service.AddChapterToItem(contributionId, discId, itemId, request, cancellationToken);
         return JsonResult(result, $"Failed to add chapter item to disc {discId} for contribution {contributionId}");
     }
@@ -172,8 +178,13 @@ public class ContributionEndpoints
     }
 
 
-    public async Task<IResult> AddAudioTrackToItem(IUserContributionService service, string contributionId, string discId, string itemId, [FromBody] AddAudioTrackRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> AddAudioTrackToItem(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, [FromBody] AddAudioTrackRequest request, CancellationToken cancellationToken)
     {
+        if (Int32.TryParse(itemId, out int parsedItemId))
+        {
+            itemId = idEncoder.Encode(parsedItemId);
+        }
+
         var result = await service.AddAudioTrackToItem(contributionId, discId, itemId, request, cancellationToken);
         return JsonResult(result, $"Failed to add audio track to disc {discId} for contribution {contributionId}");
     }

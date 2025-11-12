@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Notifications;
 using Syncfusion.Blazor.Popups;
 using Syncfusion.Blazor.SplitButtons;
+using TheDiscDb.ImportModels;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
@@ -18,6 +19,28 @@ public class EpisodeIdentification
     public string? Episode { get; set; }
 }
 
+public class ChapterItem
+{
+    public int Index { get; set; }
+    public string? Title { get; set; }
+}
+
+public class AudioTrackItem
+{
+    public int Index { get; set; }
+    public string? Title { get; set; }
+    public Segment? Segment { get; set; }
+    public string GetDisplayName()
+    {
+        if (this.Segment != null)
+        {
+            return $"{Segment.Name} {Segment.AudioType}";
+        }
+
+        return "";
+    }
+}
+
 public class ItemIdentification
 {
     public required Title Title { get; set; }
@@ -27,6 +50,8 @@ public class ItemIdentification
     public required string Type { get; set; }
     public EpisodeIdentification? Episode { get; set; }
     public string? DatabaseId { get; set; }
+    public List<ChapterItem> Chapters { get; set; } = new List<ChapterItem>();
+    public List<AudioTrackItem> AudioTracks { get; set; } = new List<AudioTrackItem>();
 
     public AddItemRequest CreateAddRequest()
     {
@@ -34,7 +59,8 @@ public class ItemIdentification
         {
             ChapterCount = Title.ChapterCount,
             Description = Description,
-            Duration = Title.DisplaySize!,
+            Size = Title.DisplaySize!,
+            Duration = Title.Length!,
             Name = ItemTitle,
             SegmentCount = Title.Segments.Count,
             SegmentMap = Title.SegmentMap!,
@@ -61,15 +87,23 @@ public partial class IdentifyDiscItems : ComponentBase
     [Inject]
     private IUserContributionService Client { get; set; } = null!;
 
+    private string? mediaType = null;
     private IQueryable<MakeMkv.Title>? titles = null;
     private UserContributionDisc? disc = null;
     private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
 
     bool showEpisodeDialog = false;
-    bool showItemDialog = false;
-
     SfDialog? episodeDialogObj;
+
+    bool showItemDialog = false;
     SfDialog? itemDialogObj;
+
+    bool showChapterDialog = false;
+    SfDialog? chapterDialog;
+
+    bool showAudioTrackDialog = false;
+    SfDialog? audioTrackDialog;
+
     SfToast? toast;
     string? toastContent;
     ItemIdentification? currentItem;
@@ -77,7 +111,7 @@ public partial class IdentifyDiscItems : ComponentBase
     protected override async Task OnInitializedAsync()
     {
         var response = await this.Client.GetDiscLogs(this.ContributionId!, this.DiscId!);
-        if (response?.Value != null)
+        if (response?.Value != null && response.IsSuccess)
         {
             this.titles = response.Value.Info!.Titles.AsQueryable();
             this.disc = response.Value.Disc;
@@ -86,7 +120,7 @@ public partial class IdentifyDiscItems : ComponentBase
             {
                 foreach (var item in disc.Items)
                 {
-                    var title = this.titles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Duration);
+                    var title = this.titles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
                     if (title != null)
                     {
                         var existingItem = new ItemIdentification
@@ -107,9 +141,101 @@ public partial class IdentifyDiscItems : ComponentBase
                             };
                         }
 
+                        InitializeChapters(item, existingItem);
+                        InitializeAudioTracks(item, existingItem, title);
+
                         identifiedTitles[title] = existingItem;
                     }
                 }
+            }
+
+            if (response.Value.Contribution != null)
+            {
+                var contribution = response.Value.Contribution;
+                if (!string.IsNullOrEmpty(contribution.MediaType))
+                {
+                    this.mediaType = contribution.MediaType;
+                }
+            }
+        }
+    }
+
+    private static void InitializeAudioTracks(UserContributionDiscItem item, ItemIdentification existingItem, Title title)
+    {
+        var audioSegments = title.Segments.Where(s => s.Type != null && s.Type.Equals("Audio", StringComparison.OrdinalIgnoreCase)).ToList();
+        bool hasSavedAudioTracks = item.AudioTracks != null && item.AudioTracks.Count > 0;
+        int i = 1;
+        foreach (var segment in audioSegments)
+        {
+            if (hasSavedAudioTracks)
+            {
+                var existingAudioTrack = item.AudioTracks!.FirstOrDefault(at => at.Index == i);
+                if (existingAudioTrack != null)
+                {
+                    existingItem.AudioTracks.Add(new AudioTrackItem
+                    {
+                        Index = existingAudioTrack.Index,
+                        Title = existingAudioTrack.Title,
+                        Segment = segment
+                    });
+                }
+                else
+                {
+                    existingItem.AudioTracks.Add(new AudioTrackItem
+                    {
+                        Index = i,
+                        Title = "",
+                        Segment = segment
+                    });
+                }
+            }
+            else
+            {
+                existingItem.AudioTracks.Add(new AudioTrackItem
+                {
+                    Index = i,
+                    Title = "",
+                    Segment = segment
+                });
+            }
+            ++i;
+        }
+    }
+
+    private static void InitializeChapters(UserContributionDiscItem item, ItemIdentification existingItem)
+    {
+        if (item.Chapters != null && item.Chapters.Count > 0)
+        {
+            int chapterIndex = 1;
+            foreach (var chapter in item.Chapters)
+            {
+                existingItem.Chapters.Add(new ChapterItem
+                {
+                    Index = chapter.Index,
+                    Title = chapter.Title
+                });
+                ++chapterIndex;
+            }
+
+            // Add empty chapters if needed
+            for (int i = chapterIndex; i <= item.ChapterCount; i++)
+            {
+                existingItem.Chapters.Add(new ChapterItem
+                {
+                    Index = i,
+                    Title = ""
+                });
+            }
+        }
+        else if (item.ChapterCount > 0)
+        {
+            for (int i = 0; i < item.ChapterCount; i++)
+            {
+                existingItem.Chapters.Add(new ChapterItem
+                {
+                    Index = i + 1,
+                    Title = ""
+                });
             }
         }
     }
@@ -117,6 +243,16 @@ public partial class IdentifyDiscItems : ComponentBase
     bool IsIdentified(Title title)
     {
         return identifiedTitles.ContainsKey(title);
+    }
+
+    string Truncate(string? text, int maxLength)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return "";
+        }
+
+        return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
     }
 
     string GetIdentifyButtonText(Title title)
@@ -137,6 +273,49 @@ public partial class IdentifyDiscItems : ComponentBase
         }
 
         return "";
+    }
+
+    async Task NameAudioTracks(Title title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            this.currentItem = item;
+            if (item.AudioTracks.Count == 0)
+            {
+                var audioSegments = title.Segments.Where(s => s.Type != null && s.Type.Equals("Audio", StringComparison.OrdinalIgnoreCase));
+                int i = 1;
+                foreach (var segment in audioSegments)
+                {
+                    item.AudioTracks.Add(new AudioTrackItem
+                    {
+                        Index = i++,
+                        Title = "",
+                        Segment = segment
+                    });
+                }
+            }
+            this.showAudioTrackDialog = true;
+        }
+    }
+
+    async Task InputChapters(Title title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            this.currentItem = item;
+            if (item.Chapters.Count == 0)
+            {
+                for (int i = 0; i < title.ChapterCount; i++)
+                {
+                    item.Chapters.Add(new ChapterItem
+                    {
+                        Index = i + 1,
+                        Title = ""
+                    });
+                }
+            }
+            this.showChapterDialog = true;
+        }
     }
 
     async Task RemoveIdentification(Title title)
@@ -183,6 +362,64 @@ public partial class IdentifyDiscItems : ComponentBase
         return Task.CompletedTask;
     }
 
+    public async Task HandleValidChapterSubmit()
+    {
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        foreach (var chapter in this.currentItem.Chapters)
+        {
+            if (!string.IsNullOrEmpty(chapter.Title))
+            {
+                var response = await this.Client.AddChapterToItem(this.ContributionId!, this.DiscId!, this.currentItem.DatabaseId!, new AddChapterRequest
+                {
+                    Index = chapter.Index,
+                    Title = chapter.Title!
+                });
+
+                if (!response.IsSuccess)
+                {
+                    toastContent = "Error adding chapter";
+                    await toast!.ShowAsync();
+                    continue;
+                }
+            }
+        }
+
+        await this.chapterDialog!.HideAsync();
+    }
+
+    public async Task HandleValidAudioTrackSubmit()
+    {
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        foreach (var audioTrack in this.currentItem.AudioTracks)
+        {
+            if (!string.IsNullOrEmpty(audioTrack.Title))
+            {
+                var response = await this.Client.AddAudioTrackToItem(this.ContributionId!, this.DiscId!, this.currentItem.DatabaseId!, new AddAudioTrackRequest
+                {
+                    Index = audioTrack.Index,
+                    Title = audioTrack.Title!
+                });
+
+                if (!response.IsSuccess)
+                {
+                    toastContent = "Error naming audio track";
+                    await toast!.ShowAsync();
+                    continue;
+                }
+            }
+        }
+
+        await this.audioTrackDialog!.HideAsync();
+    }
+
     public async Task HandleValidItemSubmit()
     {
         if (this.currentItem == null)
@@ -214,6 +451,18 @@ public partial class IdentifyDiscItems : ComponentBase
         await this.itemDialogObj!.HideAsync();
     }
 
+    private async Task ChapterDialogCancelClicked()
+    {
+        this.currentItem!.Chapters.Clear();
+        await this.chapterDialog!.HideAsync();
+        this.StateHasChanged();
+    }
+
+    private async Task AudioTrackDialogCancelClicked()
+    {
+        await this.audioTrackDialog!.HideAsync();
+        this.StateHasChanged();
+    }
 
     public async Task HandleValidEpisodeSubmit()
     {

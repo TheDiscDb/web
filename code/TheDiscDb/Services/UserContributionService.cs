@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Sqids;
 using TheDiscDb.Data.Import;
+using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Services.Server;
@@ -61,7 +62,9 @@ public class UserContributionService : IUserContributionService
             BackImageUrl = request.BackImageUrl,
             Upc = request.Upc,
             ReleaseTitle = request.ReleaseTitle,
-            ReleaseSlug = request.ReleaseSlug
+            ReleaseSlug = request.ReleaseSlug,
+            Locale = request.Locale,
+            RegionCode = request.RegionCode
         };
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -237,20 +240,38 @@ public class UserContributionService : IUserContributionService
             var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
             var decodedDiscId = this.idEncoder.Decode(discId).Single();
             UserContributionDisc? disc = null;
+            UserContribution? contribution = null;
             await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
             {
-                disc = await dbContext.UserContributionDiscs
-                    .Include(c => c.Items)
+                contribution = await dbContext.UserContributions
+                    .Include(c => c.Discs)
+                    .ThenInclude(c => c.Items)
                         .ThenInclude(d => d.Chapters)
-                    .Include(c => c.Items)
+                    .Include(c => c.Discs)
+                    .ThenInclude(c => c.Items)
                         .ThenInclude(d => d.AudioTracks)
                     .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
+
+                if (contribution == null)
+                {
+                    return Result.Fail(new FluentResults.Error($"Contribution {contributionId} not found"));
+                }
+
+                disc = contribution.Discs.FirstOrDefault(d => d.Id == decodedDiscId);
+                if (disc == null)
+                {
+                    return Result.Fail(new FluentResults.Error($"Disc {discId} not found"));
+                }
+
+                // No need to send back all the discs?
+                contribution.Discs.Clear();
             }
 
             return Result.Ok(new DiscLogResponse
             {
                 Info = orgainized,
-                Disc = disc
+                Disc = disc,
+                Contribution = contribution
             });
         }
         catch (Exception e)
@@ -394,6 +415,7 @@ public class UserContributionService : IUserContributionService
             ChapterCount = request.ChapterCount,
             Description = request.Description,
             Duration = request.Duration,
+            Size = request.Size,
             Name = request.Name,
             SegmentCount = request.SegmentCount,
             SegmentMap = request.SegmentMap,
@@ -508,8 +530,17 @@ public class UserContributionService : IUserContributionService
             {
                 return Result.Fail($"Item {itemId} not found");
             }
-            
-            item.Chapters.Add(chapter);
+
+            var existingChapter = item.Chapters.FirstOrDefault(c => c.Index == chapter.Index);
+            if (existingChapter != null)
+            {
+                existingChapter.Title = chapter.Title;
+            }
+            else
+            {
+                item.Chapters.Add(chapter);
+            }
+
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
@@ -652,7 +683,16 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Item {itemId} not found");
             }
 
-            item.AudioTracks.Add(audioTrack);
+            var existingTrack = item.AudioTracks.FirstOrDefault(c => c.Index == audioTrack.Index);
+            if (existingTrack != null)
+            {
+                existingTrack.Title = audioTrack.Title;
+            }
+            else
+            {
+                item.AudioTracks.Add(audioTrack);
+            }
+
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 

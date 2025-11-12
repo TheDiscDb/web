@@ -13,7 +13,10 @@ else
     <QuickGrid Items="titles">
         <PropertyColumn Property="@(t => t.ChapterCount)" />
         <PropertyColumn Property="@(t => t.DisplaySize)" />
-        <PropertyColumn Property="@(t => t.SegmentMap)" />
+        <PropertyColumn Property="@(t => t.Length)" />
+        <TemplateColumn>
+            <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
+        </TemplateColumn>
         <TemplateColumn Title="Name">
             @GetTitle(context)
         </TemplateColumn>
@@ -22,15 +25,27 @@ else
             {
                 <span>@GetIdentifyButtonText(context)</span>
                 <button @onclick="() => RemoveIdentification(context)">X</button>
+                <button @onclick="() => NameAudioTracks(context)">audio</button>
+                @if (context.ChapterCount > 0)
+                {
+                    <button @onclick="() => InputChapters(context)">chapters</button>
+                }
             }
             else
             {
                 <SfDropDownButton Content="Identify">
                     <DropDownButtonEvents ItemSelected="(args) => ItemSelected(context, args)"></DropDownButtonEvents>
                     <DropDownMenuItems>
-                        <DropDownMenuItem Text="Main Movie" data-type="MainMovie"></DropDownMenuItem>
-                        <DropDownMenuItem Text="Episode" data-type="Episode"></DropDownMenuItem>
-                        <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
+                        @if (this.mediaType != null && this.mediaType.Equals("movie", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            <DropDownMenuItem Text="Main Movie" data-type="MainMovie"></DropDownMenuItem>
+                            <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
+                        }
+                        @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            <DropDownMenuItem Text="Episode" data-type="Episode"></DropDownMenuItem>
+                            <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
+                        }
                         <DropDownMenuItem Text="Deleted Scene" data-type="DeletedScene"></DropDownMenuItem>
                         <DropDownMenuItem Text="Trailer" data-type="Trailer"></DropDownMenuItem>
                     </DropDownMenuItems>
@@ -101,6 +116,61 @@ else
         </ChildContent>
     </SfDialog>
 }
+
+@if (showChapterDialog)
+{
+    <SfDialog @ref="chapterDialog" Target="body" Width="400px" @bind-Visible="@showChapterDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Input Chapters">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <EditForm Model="@currentItem" OnValidSubmit="@HandleValidChapterSubmit">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <ol>
+                @foreach (var item in this.currentItem!.Chapters)
+                {
+                    <li>
+                        <InputText @bind-Value="item.Title" class="form-control" />
+                    </li>
+                }
+                </ol>
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="button" class="e-btn e-normal" @onclick="ChapterDialogCancelClicked">Cancel</button>
+                        <button type="submit" class="e-btn e-normal e-primary">Save</button>
+                    </div>
+                </div>
+            </EditForm>
+        </ChildContent>
+    </SfDialog>
+}
+
+@if (showAudioTrackDialog)
+{
+    <SfDialog @ref="audioTrackDialog" Target="body" Width="400px" @bind-Visible="@showAudioTrackDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Name Audio Tracks">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <EditForm Model="@currentItem" OnValidSubmit="@HandleValidAudioTrackSubmit">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <ol>
+                    @foreach (var item in this.currentItem!.AudioTracks)
+                    {
+                        <li>
+                            <div>@item.GetDisplayName()</div>
+                            <InputText @bind-Value="item.Title" class="form-control" />
+                        </li>
+                    }
+                </ol>
+                
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="button" class="e-btn e-normal" @onclick="AudioTrackDialogCancelClicked">Cancel</button>
+                        <button type="submit" class="e-btn e-normal e-primary">Save</button>
+                    </div>
+                </div>
+            </EditForm>
+        </ChildContent>
+    </SfDialog>
+}
+
 
 <Syncfusion.Blazor.Popups.SfDialogProvider />
 
