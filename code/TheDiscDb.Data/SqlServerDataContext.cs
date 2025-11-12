@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Core.DiscHash;
 using TheDiscDb.InputModels;
 
 public class SqlServerDataContext : DbContext
@@ -64,10 +65,14 @@ public class SqlServerDataContext : DbContext
         //userContribution.HasOne(x => x.User).WithOne()
         //    .HasForeignKey<UserContribution>(x => x.UserId);
         userContribution.HasMany(x => x.Discs).WithOne(x => x.UserContribution);
+        userContribution.HasMany(x => x.HashItems).WithOne(x => x.UserContribution);
 
         var userDiscContribution = modelBuilder.Entity<UserContributionDisc>();
         userDiscContribution.HasKey(x => x.Id);
         userDiscContribution.HasMany(x => x.Items).WithOne(x => x.Disc);
+
+        var userContributionDiscHashItem = modelBuilder.Entity<UserContributionDiscHashItem>();
+        userContributionDiscHashItem.HasKey(x => x.Id);
 
         var userContributiondiscItem = modelBuilder.Entity<UserContributionDiscItem>();
         userContributiondiscItem.HasKey(x => x.Id);
@@ -221,6 +226,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<UserContributionDiscItem> UserContributionDiscItems { get; set; } = null!;
     public DbSet<UserContributionChapter> UserContributionChapters { get; set; } = null!;
     public DbSet<UserContributionAudioTrack> UserContributionAudioTracks { get; set; } = null!;
+    public DbSet<UserContributionDiscHashItem> UserContributionDiscHashItems { get; set; } = null!;
 }
 
 public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser
@@ -243,6 +249,7 @@ public class UserContribution
     public DateTimeOffset Created { get; set; }
     public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
     public ICollection<UserContributionDisc> Discs { get; set; } = new HashSet<UserContributionDisc>();
+    public ICollection<UserContributionDiscHashItem> HashItems { get; set; } = new HashSet<UserContributionDiscHashItem>();
 
     public string MediaType { get; set; } = string.Empty;
     public string ExternalId { get; set; } = string.Empty;
@@ -290,7 +297,6 @@ public class UserContributionDiscItem
     public string Episode { get; set; } = string.Empty;
     public ICollection<UserContributionChapter> Chapters { get; set; } = new HashSet<UserContributionChapter>();
     public ICollection<UserContributionAudioTrack> AudioTracks { get; set; } = new HashSet<UserContributionAudioTrack>();
-
 }
 
 public class UserContributionChapter
@@ -309,4 +315,16 @@ public class UserContributionAudioTrack
     public string Title { get; set; }
     [JsonIgnore]
     public UserContributionDiscItem Item { get; set; }
+}
+
+public class  UserContributionDiscHashItem
+{
+    public int Id { get; set; }
+    [JsonIgnore]
+    public UserContribution UserContribution { get; set; }
+    public string DiscHash { get; set; }
+    public int Index { get; set; }
+    public string Name { get; set; }
+    public DateTime CreationTime { get; set; }
+    public long Size { get; set; }
 }

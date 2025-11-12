@@ -4,8 +4,8 @@ using MakeMkv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Sqids;
+using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Data.Import;
-using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Services.Server;
@@ -148,6 +148,50 @@ public class UserContributionService : IUserContributionService
         }
 
         return Result.Ok();
+    }
+
+    public async Task<FluentResults.Result<HashDiscResponse>> HashDisc(string contributionId, HashDiscRequest request, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
+        {
+            int id = idEncoder.Decode(contributionId).Single();
+            var contribution = await dbContext.UserContributions
+                .Include(c => c.HashItems)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+            
+            if (contribution == null)
+            {
+                return Result.Fail($"Contribution {contributionId} not found");
+            }
+
+            if (contribution.HashItems != null && contribution.HashItems.Count > 0)
+            {
+                contribution.HashItems.Clear();
+            }
+
+            var hash = request.Files.OrderBy(f => f.Name).CalculateHash();
+
+            foreach (var item in request.Files)
+            {
+                contribution.HashItems!.Add(new UserContributionDiscHashItem
+                {
+                    DiscHash = hash,
+                    CreationTime = item.CreationTime,
+                    Index = item.Index,
+                    Name = item.Name,
+                    Size = item.Size
+                });
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            var response = new HashDiscResponse
+            {
+                DiscHash = hash
+            };
+
+            return response;
+        }
     }
 
     #endregion

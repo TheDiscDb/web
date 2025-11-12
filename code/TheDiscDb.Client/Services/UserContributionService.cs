@@ -83,6 +83,22 @@ public class UserContributionService : ApiClient, IUserContributionService
         return Result.Ok();
     }
 
+    public async Task<Result<HashDiscResponse>> HashDisc(string contributionId, HashDiscRequest request, CancellationToken cancellationToken = default)
+    {
+        var client = GetHttpClient();
+        var response = await client.PostAsJsonAsync($"/api/contribute/{contributionId}/hashdisc", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<HashDiscResponse>(cancellationToken: cancellationToken);
+
+        if (result == null)
+        {
+            return Result.Fail($"Unable to get hash disc response for {contributionId}");
+        }
+
+        return result;
+    }
+
     #endregion
 
     #region Discs

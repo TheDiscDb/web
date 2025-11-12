@@ -13,6 +13,7 @@ public interface IUserContributionService
     Task<Result<UserContribution>> GetContribution(string contributionId, CancellationToken cancellationToken = default);
     Task<Result> DeleteContribution(string contributionId, CancellationToken cancellationToken = default);
     Task<Result> UpdateContribution(string contributionId, CreateContributionRequest request, CancellationToken cancellationToken = default);
+    Task<Result<HashDiscResponse>> HashDisc(string contributionId, HashDiscRequest request, CancellationToken cancellationToken = default);
 
     Task<Result<List<UserContributionDisc>>> GetDiscs(string contributionId, CancellationToken cancellationToken = default);
     Task<Result> SaveDiscLogs(string contributionId, string discId, string logs, CancellationToken cancellationToken = default);
@@ -73,7 +74,6 @@ public class SaveDiscRequest
     public string Name { get; set; } = string.Empty;
     [Required]
     public string Slug { get; set; } = string.Empty;
-    public List<FileHashInfo>? HashItems { get; set; }
 }
 
 public class SaveDiscResponse
@@ -133,4 +133,14 @@ public class AddAudioTrackRequest
 public class AddAudioTrackResponse
 {
     public string AudioTrackId { get; set; } = string.Empty;
+}
+
+public class HashDiscRequest
+{
+    public List<FileHashInfo> Files { get; set; } = new List<FileHashInfo>();
+}
+
+public class HashDiscResponse
+{
+    public string DiscHash { get; set; } = string.Empty;
 }

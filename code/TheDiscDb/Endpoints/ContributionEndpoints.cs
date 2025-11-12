@@ -20,6 +20,7 @@ public class ContributionEndpoints
         contribute.MapGet("{contributionId}", GetContribution);
         contribute.MapDelete("{contributionId}", DeleteContribution);
         contribute.MapPut("{contributionId}", UpdateContribution);
+        contribute.MapPost("{contributionId}/hashdisc", HashDisc);
 
         contribute.MapGet("{contributionId}/discs", GetDiscs);
         contribute.MapPost("{contributionId}/discs/{discId}/logs", SaveDiscLogs)
@@ -115,6 +116,12 @@ public class ContributionEndpoints
     {
         var result = await service.CreateDisc(contributionId, request, cancellationToken);
         return JsonResult(result, $"Unable to create disc for contribution {contributionId}");
+    }
+
+    public async Task<IResult> HashDisc(IUserContributionService service, string contributionId, [FromBody] HashDiscRequest request, CancellationToken cancellation)
+    {
+        var result = await service.HashDisc(contributionId, request, cancellation);
+        return JsonResult(result, $"Unable to calculate hash for contribution {contributionId}");
     }
 
     public async Task<IResult> UpdateDisc(IUserContributionService service, string contributionId, string discId, [FromBody] SaveDiscRequest request, CancellationToken cancellationToken)

@@ -22,9 +22,6 @@ public partial class AddDisc : ComponentBase
     public IJSRuntime Js { get; set; } = default!;
 
     [Inject]
-    public ApiClient ApiClient { get; set; } = default!;
-
-    [Inject]
     public IUserContributionService Client { get; set; } = default!;
 
     [Inject]
@@ -91,18 +88,18 @@ public partial class AddDisc : ComponentBase
 
         if (hashItems != null)
         {
-            var request = new HashRequest
+            var request = new HashDiscRequest
             {
                 Files = hashItems
             };
 
             // TODO: Get a cancellation token
-            var response = await this.ApiClient.HashAsync(request);
-            if (response != null && !string.IsNullOrEmpty(response.Hash))
+            var response = await this.Client.HashDisc(this.ContributionId!, request);
+
+            if (response != null && response.IsSuccess && response.Value != null)
             {
-                hash = response.Hash;
+                hash = response.Value.DiscHash;
                 this.request.ContentHash = hash;
-                this.request.HashItems = this.hashItems;
             }
         }
     }
@@ -124,7 +121,6 @@ public partial class AddDisc : ComponentBase
                     continue;
                 }
 
-                Console.WriteLine($"File: {file.Name}, Size: {fileData.Size}, Created: {fileData.LastModified}");
                 results.Add(new FileHashInfo
                 {
                     Index = index++,
