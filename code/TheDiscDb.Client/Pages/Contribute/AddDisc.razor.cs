@@ -1,4 +1,5 @@
-﻿using KristofferStrube.Blazor.FileSystem;
+﻿using KristofferStrube.Blazor.FileAPI;
+using KristofferStrube.Blazor.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
@@ -32,7 +33,11 @@ public partial class AddDisc : ComponentBase
     FileSystemDirectoryHandleInProcess? handler;
     IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
     string hash = string.Empty;
-    private readonly SaveDiscRequest request = new();
+    List<FileHashInfo>? hashItems = null;
+    private readonly SaveDiscRequest request = new SaveDiscRequest
+    {
+        Format = "Blu-ray"
+    };
     readonly string[] formats = [ "4K", "Blu-ray", "DVD" ];
 
     protected override Task OnInitializedAsync()
@@ -62,36 +67,47 @@ public partial class AddDisc : ComponentBase
         items = await handler!.ValuesAsync();
 
         var bdmv = items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("BDMV", StringComparison.OrdinalIgnoreCase));
+        var videoTs = items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase));
+        
         if (bdmv != default && bdmv is FileSystemDirectoryHandleInProcess bdmvDirectory)
         {
             items = await bdmvDirectory.ValuesAsync();
             var stream = items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("STREAM", StringComparison.OrdinalIgnoreCase));
             if (stream != default && stream is FileSystemDirectoryHandleInProcess streamDirectory)
             {
-                var hashItems = await HashBluray(streamDirectory);
-
-                var request = new HashRequest
-                {
-                    Files = hashItems.ToList()
-                };
-
-                // TODO: Get a cancellation token
-                var response = await this.ApiClient.HashAsync(request);
-                if (response != null && !string.IsNullOrEmpty(response.Hash))
-                {
-                    hash = response.Hash;
-                    this.request.ContentHash = hash;
-                    //this.Navigation.NavigateTo($"/contribution/{ContributionId}/adddisc/{response.Hash}");
-                }
+                hashItems = await GetHashItems(streamDirectory, i => i.Name.EndsWith("m2ts", StringComparison.OrdinalIgnoreCase));
             }
+        }
+        else if (videoTs != default && videoTs is FileSystemDirectoryHandleInProcess videoTsDirectory)
+        {
+            request.Format = "DVD";
+            hashItems = await GetHashItems(videoTsDirectory);
         }
         else
         {
-            hash = "The selected folder does not appear to be a Blu-ray structure (missing BDMV folder). Please select the root folder of a Blu-ray.";
+            // TODO: Show error to user
+            Console.WriteLine("No BDMV or VIDEO_TS folder found.");
+        }
+
+        if (hashItems != null)
+        {
+            var request = new HashRequest
+            {
+                Files = hashItems
+            };
+
+            // TODO: Get a cancellation token
+            var response = await this.ApiClient.HashAsync(request);
+            if (response != null && !string.IsNullOrEmpty(response.Hash))
+            {
+                hash = response.Hash;
+                this.request.ContentHash = hash;
+                this.request.HashItems = this.hashItems;
+            }
         }
     }
 
-    async Task<IEnumerable<FileHashInfo>> HashBluray(FileSystemDirectoryHandleInProcess root)
+    async Task<List<FileHashInfo>> GetHashItems(FileSystemDirectoryHandleInProcess root, Predicate<FileInProcess>? filter = null)
     {
         List<FileHashInfo> results = new();
 
@@ -103,6 +119,11 @@ public partial class AddDisc : ComponentBase
             if (file != null)
             {
                 var fileData = await file.GetFileAsync();
+                if (filter != null && !filter(fileData))
+                {
+                    continue;
+                }
+
                 Console.WriteLine($"File: {file.Name}, Size: {fileData.Size}, Created: {fileData.LastModified}");
                 results.Add(new FileHashInfo
                 {
@@ -114,7 +135,7 @@ public partial class AddDisc : ComponentBase
             }
         }
 
-        return results;
+        return results.ToList();
     }
 
     async Task HandleValidSubmit()

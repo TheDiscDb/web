@@ -240,20 +240,38 @@ public class UserContributionService : IUserContributionService
             var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
             var decodedDiscId = this.idEncoder.Decode(discId).Single();
             UserContributionDisc? disc = null;
+            UserContribution? contribution = null;
             await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
             {
-                disc = await dbContext.UserContributionDiscs
-                    .Include(c => c.Items)
+                contribution = await dbContext.UserContributions
+                    .Include(c => c.Discs)
+                    .ThenInclude(c => c.Items)
                         .ThenInclude(d => d.Chapters)
-                    .Include(c => c.Items)
+                    .Include(c => c.Discs)
+                    .ThenInclude(c => c.Items)
                         .ThenInclude(d => d.AudioTracks)
                     .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
+
+                if (contribution == null)
+                {
+                    return Result.Fail(new FluentResults.Error($"Contribution {contributionId} not found"));
+                }
+
+                disc = contribution.Discs.FirstOrDefault(d => d.Id == decodedDiscId);
+                if (disc == null)
+                {
+                    return Result.Fail(new FluentResults.Error($"Disc {discId} not found"));
+                }
+
+                // No need to send back all the discs?
+                contribution.Discs.Clear();
             }
 
             return Result.Ok(new DiscLogResponse
             {
                 Info = orgainized,
-                Disc = disc
+                Disc = disc,
+                Contribution = contribution
             });
         }
         catch (Exception e)

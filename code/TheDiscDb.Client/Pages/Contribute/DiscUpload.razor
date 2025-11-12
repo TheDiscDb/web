@@ -5,5 +5,30 @@
 <h1>Manage Discs</h1>
 To add add a disc, run the following command on your machine:
 <input type="text" @bind="DriveIndex" ValueChanged="OnValueChanged" />
-<input class="form-control" readonly type="text" @bind="PowershellCommand" />
+
+<SfTab>
+    <TabAnimationSettings>
+        <TabAnimationPrevious Effect="Syncfusion.Blazor.AnimationEffect.None"></TabAnimationPrevious>
+        <TabAnimationNext Effect="Syncfusion.Blazor.AnimationEffect.None"></TabAnimationNext>
+    </TabAnimationSettings>
+    <TabItems>
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="Powershell"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <input class="form-control" readonly type="text" @bind="PowershellCommand" />
+            </ContentTemplate>
+        </TabItem>
+        <TabItem Content="">
+            <ChildContent>
+                <TabHeader Text="Bash"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <input class="form-control" readonly type="text" @bind="BashCommand" />
+            </ContentTemplate>
+        </TabItem>
+    </TabItems>
+</SfTab>
+
 <button type="button" class="btn btn-primary" @onclick="CopyTextToClipboard">Copy</button>

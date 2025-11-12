@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using FluentResults;
 using MakeMkv;
+using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Services;
@@ -72,6 +73,7 @@ public class SaveDiscRequest
     public string Name { get; set; } = string.Empty;
     [Required]
     public string Slug { get; set; } = string.Empty;
+    public List<FileHashInfo>? HashItems { get; set; }
 }
 
 public class SaveDiscResponse
@@ -88,6 +90,7 @@ public class DiscLogResponse
 {
     public DiscInfo? Info { get; set; }
     public UserContributionDisc? Disc { get; set; }
+    public UserContribution? Contribution { get; set; }
 }
 
 public class AddItemRequest

@@ -111,7 +111,7 @@ public partial class IdentifyDiscItems : ComponentBase
     protected override async Task OnInitializedAsync()
     {
         var response = await this.Client.GetDiscLogs(this.ContributionId!, this.DiscId!);
-        if (response?.Value != null)
+        if (response?.Value != null && response.IsSuccess)
         {
             this.titles = response.Value.Info!.Titles.AsQueryable();
             this.disc = response.Value.Disc;
@@ -148,14 +148,14 @@ public partial class IdentifyDiscItems : ComponentBase
                     }
                 }
             }
-        }
 
-        if (!string.IsNullOrEmpty(this.ContributionId))
-        {
-            var contribution = await this.Client.GetContribution(this.ContributionId);
-            if (contribution != null && contribution.IsSuccess)
+            if (response.Value.Contribution != null)
             {
-                this.mediaType = contribution.Value.MediaType;
+                var contribution = response.Value.Contribution;
+                if (!string.IsNullOrEmpty(contribution.MediaType))
+                {
+                    this.mediaType = contribution.MediaType;
+                }
             }
         }
     }

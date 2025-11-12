@@ -24,9 +24,11 @@ public partial class DiscUpload : ComponentBase
     private IUserContributionService Client { get; set; } = null!;
 
     private readonly string powershellCommandTemplate = "Invoke-WebRequest -Uri \"{0}\" -Method POST -ContentType \"text/plain\" -Body ((& '{1}' --minlength=0 --robot info disc:{2}) | Out-String)";
+    private readonly string bashCommandTemplate = "makemkvcon mkv --minlength=0 --robot info disc:{1} 2>&1 | curl -X POST -H \"Content-Type: text/plain\" -d @- {0}";
     //private readonly string powershellLocalCommandTempalte = "Invoke-WebRequest -Uri \"{0}\" -Method POST -ContentType \"text/plain\" -Body ((Get-Content -Path '{1}') | Out-String)";
 
     public string? PowershellCommand { get; set; }
+    public string? BashCommand { get; set; }
 
     public int DriveIndex { get; set; } = 0;
 
@@ -39,7 +41,8 @@ public partial class DiscUpload : ComponentBase
     protected override Task OnInitializedAsync()
     {
         this.PowershellCommand = string.Format(powershellCommandTemplate, GetUri(), GetMakeMkvPath(), this.DriveIndex);
-        this.timer = new Timer(TimerTick!, null, 0, 1000);
+        this.BashCommand = string.Format(bashCommandTemplate, GetUri(), this.DriveIndex);
+        this.timer = new Timer(TimerTick!, null, 0, 2000);
         return Task.CompletedTask;
     }
 
@@ -51,7 +54,6 @@ public partial class DiscUpload : ComponentBase
             {
                 this.timer?.Dispose();
                 JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
-                //this.NavigationManager.NavigateTo($"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
             }
         });
     }

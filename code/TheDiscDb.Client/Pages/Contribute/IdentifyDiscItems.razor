@@ -39,11 +39,12 @@ else
                         @if (this.mediaType != null && this.mediaType.Equals("movie", StringComparison.InvariantCultureIgnoreCase))
                         {
                             <DropDownMenuItem Text="Main Movie" data-type="MainMovie"></DropDownMenuItem>
+                            <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
                         }
-                        <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
-                        @if (this.mediaType != null && this.mediaType.Equals("movie", StringComparison.InvariantCultureIgnoreCase))
+                        @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
                         {
                             <DropDownMenuItem Text="Episode" data-type="Episode"></DropDownMenuItem>
+                            <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
                         }
                         <DropDownMenuItem Text="Deleted Scene" data-type="DeletedScene"></DropDownMenuItem>
                         <DropDownMenuItem Text="Trailer" data-type="Trailer"></DropDownMenuItem>

@@ -4,9 +4,6 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Folder Name="/Nugets/">
-    <Project Path="../../../Fantastic/src/Fantastic.TheMovieDb/Fantastic.TheMovieDb.csproj" />
-  </Folder>
   <Project Path="TheDiscDb.AppHost/TheDiscDb.AppHost.csproj" />
   <Project Path="TheDiscDb.Client/TheDiscDb.Client.csproj" />
   <Project Path="TheDiscDb.Data.Import/TheDiscDb.Data.Import.csproj" />
