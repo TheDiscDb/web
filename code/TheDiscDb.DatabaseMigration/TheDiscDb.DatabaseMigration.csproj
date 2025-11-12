@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>dotnet-TheDiscDb.DatabaseMigration-9e37728f-3286-4ac5-9a23-e4cece43bb38</UserSecretsId>
@@ -11,11 +11,11 @@
     <ItemGroup>
         <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.0.0" />
         <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.0.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.11" />
     </ItemGroup>
 
     <!-- Remove after testing -->
