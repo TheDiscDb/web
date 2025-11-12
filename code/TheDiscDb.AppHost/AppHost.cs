@@ -14,10 +14,8 @@ builder.AddAzureAppServiceEnvironment("prod").ConfigureInfrastructure(infra =>
     };
 });
 
-//var sqlConnectionstring = builder.AddConnectionString("thediscdb-local");
 
 var sql = builder.AddAzureSqlServer("sql")
-    //.WithConnectionStringRedirection(sqlConnectionstring.Resource)
     .RunAsContainer(o => o.WithLifetime(ContainerLifetime.Persistent));
 
 var db = sql.AddDatabase("thediscdb");
@@ -40,6 +38,7 @@ var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
     .WithReference(db)
     .WithReference(blobs)
     .WithReference(migrations)
-    .WaitForCompletion(migrations);
+    .WaitForCompletion(migrations)
+    .WithChildRelationship(migrations);
 
 builder.Build().Run();

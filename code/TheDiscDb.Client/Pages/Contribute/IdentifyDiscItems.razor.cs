@@ -275,7 +275,7 @@ public partial class IdentifyDiscItems : ComponentBase
         return "";
     }
 
-    async Task NameAudioTracks(Title title)
+    void NameAudioTracks(Title title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
@@ -298,7 +298,7 @@ public partial class IdentifyDiscItems : ComponentBase
         }
     }
 
-    async Task InputChapters(Title title)
+    void InputChapters(Title title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
