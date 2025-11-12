@@ -18,14 +18,17 @@ else
         <div class="mb-3">
             <label>Disc Format</label>
             <SfDropDownList TValue="string" TItem="string" DataSource="formats" class="form-control" @bind-Value="request.Format" Placeholder="Select format" />
+            <ValidationMessage For="@(() => request.Format)" />
         </div>
         <div class="mb-3">
             <label>Disc Title</label>
             <InputText class="form-control" @bind-Value="request.Name" @oninput="DiscTitleChanged" />
+            <ValidationMessage For="@(() => request.Name)" />
         </div>
         <div class="mb-3">
             <label>Disc Slug</label>
             <InputText class="form-control" @bind-Value="request.Slug" />
+            <ValidationMessage For="@(() => request.Slug)" />
         </div>
 
         <button type="submit" class="btn btn-primary">Save</button>

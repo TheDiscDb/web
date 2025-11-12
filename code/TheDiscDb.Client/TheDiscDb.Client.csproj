@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
         <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <UserSecretsId>6782684c-6982-45cd-af45-1668dbf88814</UserSecretsId>
     </PropertyGroup>
     <ItemGroup>
         <GraphQL Remove="graphql\GetMediaItemsByGroup.graphql" />
@@ -19,17 +20,19 @@
         <GraphQL Remove="graphql\queries\GetSeries.graphql" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Fantastic.TheMovieDb" Version="1.2.2" />
+        <!--<PackageReference Include="Fantastic.TheMovieDb" Version="2.0.0" />-->
+        <PackageReference Include="Fantastic.TheMovieDb" Version="2.0.0" />
         <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.3.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="9.0.10" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.10" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="9.0.10" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="10.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.0" />
         <PackageReference Include="Sqids" Version="3.1.0" />
         <PackageReference Include="StrawberryShake.Blazor" Version="15.0.3" />
         <PackageReference Include="TheDiscDb.MakeMkv" Version="2.0.0" />
-        <PackageReference Include="Syncfusion.Blazor.Inputs" Version="31.2.3" />
-        <PackageReference Include="Syncfusion.Blazor.Themes" Version="31.2.3" />
-        <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="31.2.3" />
+        <PackageReference Include="Syncfusion.Blazor.Inputs" Version="31.2.5" />
+        <PackageReference Include="Syncfusion.Blazor.Themes" Version="31.2.5" />
+        <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="31.2.5" />
+        <PackageReference Include="Syncfusion.Blazor.Navigations" Version="31.2.5" />
         <PackageReference Include="FluentResults" Version="4.0.0" />
     </ItemGroup>
     <ItemGroup>

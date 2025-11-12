@@ -178,7 +178,7 @@ public class UserContributionService : ApiClient, IUserContributionService
     public async Task<Result<AddItemResponse>> AddItemToDisc(string contributionId, string discId, AddItemRequest request, CancellationToken cancellationToken = default)
     {
         var client = GetHttpClient();
-        var response = await client.PostAsJsonAsync($"/api/contribute/{contributionId}/discs/{discId}/item", request, cancellationToken);
+        var response = await client.PostAsJsonAsync($"/api/contribute/{contributionId}/discs/{discId}/items", request, cancellationToken);
 
         if (response == null || !response.IsSuccessStatusCode)
         {
@@ -192,7 +192,7 @@ public class UserContributionService : ApiClient, IUserContributionService
     public async Task<Result> DeleteItemFromDisc(string contributionId, string discId, string itemId, CancellationToken cancellationToken = default)
     {
         var client = GetHttpClient();
-        var response = await client.DeleteAsync($"/api/contribute/{contributionId}/discs/{discId}/item/{itemId}", cancellationToken);
+        var response = await client.DeleteAsync($"/api/contribute/{contributionId}/discs/{discId}/items/{itemId}", cancellationToken);
 
         if (response == null || !response.IsSuccessStatusCode)
         {

@@ -11,39 +11,48 @@
     <div class="mb-3">
         <label>Release Date</label>
         <InputText class="form-control" @bind-Value="releaseDate" @oninput="ReleaseDateChanged" />
+        <div class="validation-message">@releaseDateValidationMessage</div>
     </div>
     <div class="mb-3">
         <label>ASIN</label>
         <InputText class="form-control" @bind-Value="request.Asin" />
+        <ValidationMessage For="@(() => request.Asin)" />
     </div>
     <div class="mb-3">
         <label>UPC</label>
         <InputText class="form-control" @bind-Value="request.Upc" />
+        <ValidationMessage For="@(() => request.Upc)" />
     </div>
     <div class="mb-3">
         <label>Front Image URL</label>
         <InputText class="form-control" @bind-Value="request.FrontImageUrl" />
+        <ValidationMessage For="@(() => request.FrontImageUrl)" />
     </div>
     <div class="mb-3">
         <label>Back Image URL</label>
         <InputText class="form-control" @bind-Value="request.BackImageUrl" />
+        <ValidationMessage For="@(() => request.BackImageUrl)" />
     </div>
     <div class="mb-3">
         <label>Release Title</label>
         <InputText class="form-control" @bind-Value="request.ReleaseTitle" @oninput="ReleaseTitleChanged" />
+        <ValidationMessage For="@(() => request.ReleaseTitle)" />
     </div>
     <div class="mb-3">
         <label>Release Slug</label>
         <InputText class="form-control" @bind-Value="request.ReleaseSlug" />
+        <ValidationMessage For="@(() => request.ReleaseSlug)" />
     </div>
     <div class="mb-3">
         <label>Locale</label>
         <InputText class="form-control" @bind-Value="request.Locale" />
+        <ValidationMessage For="@(() => request.Locale)" />
     </div>
     <div class="mb-3">
         <label>Region Code</label>
         <InputText class="form-control" @bind-Value="request.RegionCode" />
+        <ValidationMessage For="@(() => request.RegionCode)" />
     </div>
-
+    <a class="btn btn-secondary" href="/contribute/@this.MediaType">Back</a>
     <button type="submit" class="btn btn-primary">Submit</button>
 </EditForm>
