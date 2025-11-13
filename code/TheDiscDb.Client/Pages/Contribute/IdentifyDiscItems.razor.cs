@@ -62,7 +62,7 @@ public class ItemIdentification
             Size = Title.DisplaySize!,
             Duration = Title.Length!,
             Name = ItemTitle,
-            SegmentCount = Title.Segments.Count,
+            SegmentCount = Title.Segments.Count(t => t.Type != null && t.Type.Equals("Video", StringComparison.OrdinalIgnoreCase)),
             SegmentMap = Title.SegmentMap!,
             Source = Title.Playlist!,
             Type = Type,

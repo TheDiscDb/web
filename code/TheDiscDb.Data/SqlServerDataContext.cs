@@ -270,7 +270,7 @@ public class UserContributionDisc
     public int Id { get; set; }
     [JsonIgnore]
     public UserContribution UserContribution { get; set; } = null!;
-    public int Index { get; set; }
+    public int Index { get; set; } // TODO: Remove index. Let order be determined later
     public string ContentHash { get; set; } = string.Empty;
     public string Format { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;

@@ -90,6 +90,7 @@ public class UserContributionService : IUserContributionService
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
                         .ThenInclude(i => i.AudioTracks)
+                .Include(c => c.HashItems)
                 .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
             if (contribution == null)
@@ -164,12 +165,13 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            if (contribution.HashItems != null && contribution.HashItems.Count > 0)
-            {
-                contribution.HashItems.Clear();
-            }
-
             var hash = request.Files.OrderBy(f => f.Name).CalculateHash();
+            var existingItems = contribution.HashItems?.Where(i => i.DiscHash == hash).ToList();
+            foreach (var existing in existingItems ?? Enumerable.Empty<UserContributionDiscHashItem>())
+            {
+                contribution.HashItems!.Remove(existing);
+                dbContext.UserContributionDiscHashItems.Remove(existing);
+            }
 
             foreach (var item in request.Files)
             {

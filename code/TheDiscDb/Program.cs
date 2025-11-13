@@ -199,6 +199,7 @@ builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
 
 builder.Services.AddSingleton<SqidsEncoder<int>>();
+builder.Services.AddScoped<IClipboardService, ServerClipboardService>();
 
 var app = builder.Build();
 
