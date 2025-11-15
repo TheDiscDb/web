@@ -17,9 +17,15 @@ public class ExternalSearchService : ApiClient, IExternalSearchService
     {
         var client = GetHttpClient();
         var response = await client.GetFromJsonAsync<ExternalSearchResponse>($"/api/contribute/externalsearch/movie?query={HttpUtility.UrlEncode(query)}", cancellationToken);
+        
         if (response == null)
         {
             return Result.Fail("Unable to perform external search");
+        }
+
+        if (response.Results.Count == 0)
+        {
+            return Result.Fail("No results found");
         }
 
         return response;
@@ -29,9 +35,15 @@ public class ExternalSearchService : ApiClient, IExternalSearchService
     {
         var client = GetHttpClient();
         var response = await client.GetFromJsonAsync<ExternalSearchResponse>($"/api/contribute/externalsearch/series?query={HttpUtility.UrlEncode(query)}", cancellationToken);
+        
         if (response == null)
         {
             return Result.Fail("Unable to perform external search");
+        }
+
+        if (response.Results.Count == 0)
+        {
+            return Result.Fail("No results found");
         }
 
         return response;

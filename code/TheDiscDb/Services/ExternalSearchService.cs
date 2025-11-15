@@ -1,4 +1,5 @@
 ﻿using Fantastic.TheMovieDb;
+using Fantastic.TheMovieDb.Models;
 
 namespace TheDiscDb.Services.Server;
 
@@ -14,8 +15,21 @@ public class ExternalSearchService : IExternalSearchService
     public async Task<FluentResults.Result<ExternalSearchResponse>> SearchMovies(string query, CancellationToken cancellationToken)
     {
         var results = new List<ExternalSearchResult>();
+        SearchContainer<SearchMovie>? movieResults = null;
 
-        var movieResults = await client.SearchMovieAsync(query, language: "en");
+        try
+        {
+            movieResults = await client.SearchMovieAsync(query, language: "en");
+        }
+        catch (ResponseJsonException jex)
+        {
+            return FluentResults.Result.Fail<ExternalSearchResponse>($"TMDb JSON Response Error: {jex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return FluentResults.Result.Fail<ExternalSearchResponse>($"TMDb Response Error: {ex.Message}");
+        }
+
         if (movieResults != null)
         {
             foreach (var movieResult in movieResults.Results)
@@ -39,8 +53,21 @@ public class ExternalSearchService : IExternalSearchService
     public async Task<FluentResults.Result<ExternalSearchResponse>> SearchSeries(string query, CancellationToken cancellationToken)
     {
         var results = new List<ExternalSearchResult>();
+        SearchContainer<SearchTv>? seriesResults = null;
 
-        var seriesResults = await client.SearchTvShowAsync(query, language: "en");
+        try
+        {
+            seriesResults = await client.SearchTvShowAsync(query, language: "en");
+        }
+        catch (ResponseJsonException jex)
+        {
+            return FluentResults.Result.Fail<ExternalSearchResponse>($"TMDb JSON Response Error: {jex.Message}");
+        }
+        catch (Exception ex)
+        {
+            return FluentResults.Result.Fail<ExternalSearchResponse>($"TMDb Response Error: {ex.Message}");
+        }
+
         if (seriesResults != null)
         {
             foreach (var seriesResult in seriesResults.Results)
