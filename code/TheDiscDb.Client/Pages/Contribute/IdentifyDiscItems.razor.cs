@@ -70,6 +70,24 @@ public class ItemIdentification
             Episode = Episode != null ? Episode.Episode : null
         };
     }
+
+    public EditItemRequest CreateEditRequest()
+    {
+        return new EditItemRequest
+        {
+            ChapterCount = Title.ChapterCount,
+            Description = Description,
+            Size = Title.DisplaySize!,
+            Duration = Title.Length!,
+            Name = ItemTitle,
+            SegmentCount = Title.Segments.Count(t => t.Type != null && t.Type.Equals("Video", StringComparison.OrdinalIgnoreCase)),
+            SegmentMap = Title.SegmentMap!,
+            Source = Title.Playlist!,
+            Type = Type,
+            Season = Episode != null ? Episode.Season : null,
+            Episode = Episode != null ? Episode.Episode : null
+        };
+    }
 }
 
 [Authorize]
@@ -318,6 +336,27 @@ public partial class IdentifyDiscItems : ComponentBase
         }
     }
 
+    Task EditTitle(Title title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            this.currentItem = item;
+
+            if (item.Type.Equals("Episode", StringComparison.OrdinalIgnoreCase))
+            {
+                this.showEpisodeDialog = true;
+            }
+            else
+            {
+                // Pop up dialog to ask for the title and description
+                this.showItemDialog = true;
+            }
+
+        }
+
+        return Task.CompletedTask;
+    }
+
     async Task RemoveIdentification(Title title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
@@ -425,6 +464,26 @@ public partial class IdentifyDiscItems : ComponentBase
         if (this.currentItem == null)
         {
             return;
+        }
+
+        bool isEdit = this.currentItem.DatabaseId != null;
+        if (isEdit)
+        {
+            var updateRequest = currentItem.CreateEditRequest();
+            var updateResponse = await this.Client.EditItemOnDisc(this.ContributionId!, this.DiscId!, currentItem.DatabaseId!, updateRequest);
+            if (updateResponse.IsSuccess)
+            {
+                this.identifiedTitles[currentItem.Title] = currentItem;
+                this.StateHasChanged();
+                await this.itemDialogObj!.HideAsync();
+                return;
+            }
+            else
+            {
+                toastContent = "Error updating identified item";
+                await toast!.ShowAsync();
+                return;
+            }
         }
 
         var response = await this.Client.AddItemToDisc(this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());

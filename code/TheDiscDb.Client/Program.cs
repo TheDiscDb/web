@@ -1,4 +1,5 @@
 using Fantastic.TheMovieDb.Caching.FileSystem;
+using HighlightBlazor;
 using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -20,7 +21,7 @@ builder.Services.AddScoped<ApiClient>();
 builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
 builder.Services.AddSingleton<IFileSystemCache, NullFileSystemCache>();
 builder.Services.AddScoped<Fantastic.TheMovieDb.TheMovieDbClient>();
-builder.Services.AddScoped<TmdbDataAdaptor>();
+builder.Services.AddScoped<ExternalSearchDataAdaptor>();
 
 builder.Services
     .AddTheDiscDbClient()
@@ -30,10 +31,12 @@ builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
 
 builder.Services.AddScoped<IUserContributionService, UserContributionService>();
+builder.Services.AddScoped<IExternalSearchService, ExternalSearchService>();
 
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<AuthenticationStateProvider, PersistentAuthenticationStateProvider>();
 builder.Services.AddScoped<IClipboardService, ClipboardService>();
+builder.Services.AddHighlight();
 
 await builder.Build().RunAsync();

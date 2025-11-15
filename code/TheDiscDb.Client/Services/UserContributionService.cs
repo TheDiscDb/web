@@ -218,6 +218,19 @@ public class UserContributionService : ApiClient, IUserContributionService
         return Result.Ok();
     }
 
+    public async Task<Result> EditItemOnDisc(string contributionId, string discId, string itemId, EditItemRequest request, CancellationToken cancellationToken = default)
+    {
+        var client = GetHttpClient();
+        var response = await client.PutAsJsonAsync<EditItemRequest>($"/api/contribute/{contributionId}/discs/{discId}/items/{itemId}", request, cancellationToken);
+
+        if (response == null || !response.IsSuccessStatusCode)
+        {
+            return Result.Fail($"Unable to edit item {itemId} from disc {discId} for contribution {contributionId}");
+        }
+
+        return Result.Ok();
+    }
+
     #endregion
 
     #region Chapters

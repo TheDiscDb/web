@@ -1,8 +1,8 @@
 using Azure;
 using Azure.Storage.Blobs.Models;
 using Fantastic.TheMovieDb.Caching.FileSystem;
+using HighlightBlazor;
 using KristofferStrube.Blazor.FileSystemAccess;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
@@ -117,10 +117,11 @@ builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TheDiscDb.Client.ApiClient>();
 builder.Services.AddScoped<IUserContributionService, TheDiscDb.Services.Server.UserContributionService>();
+builder.Services.AddScoped<IExternalSearchService, TheDiscDb.Services.Server.ExternalSearchService>();
 builder.Services.AddSingleton<IFileSystemCache, NullFileSystemCache>();
 builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
 builder.Services.AddScoped<Fantastic.TheMovieDb.TheMovieDbClient>();
-builder.Services.AddScoped<TmdbDataAdaptor>();
+builder.Services.AddScoped<ExternalSearchDataAdaptor>();
 
 var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")!.Split(";");
 var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));
@@ -200,6 +201,7 @@ builder.Services.AddFileSystemAccessServiceInProcess();
 
 builder.Services.AddSingleton<SqidsEncoder<int>>();
 builder.Services.AddScoped<IClipboardService, ServerClipboardService>();
+builder.Services.AddHighlight();
 
 var app = builder.Build();
 

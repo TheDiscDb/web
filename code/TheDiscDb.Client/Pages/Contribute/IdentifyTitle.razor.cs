@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using TheDiscDb.InputModels;
+using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -8,7 +8,7 @@ namespace TheDiscDb.Client.Pages.Contribute;
 public partial class IdentifyTitle : ComponentBase
 {
     [Inject]
-    public TmdbDataAdaptor? TmdbAdaptor { get; set; }
+    public ExternalSearchDataAdaptor? DataAdaptor { get; set; }
 
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
@@ -20,19 +20,19 @@ public partial class IdentifyTitle : ComponentBase
 
     public bool IsNextButtonDisabled => SelectedItem == null;
 
-    private MediaItem? SelectedItem { get; set; }
+    private ExternalSearchResult? SelectedItem { get; set; }
 
     override protected void OnInitialized()
     {
-        if (TmdbAdaptor != null)
+        if (DataAdaptor != null)
         {
-            TmdbAdaptor.MediaType = MediaType;
+            DataAdaptor.MediaType = MediaType;
         }
 
         base.OnInitialized();
     }
 
-    string GetItemDisplayText(MediaItem item)
+    string GetItemDisplayText(ExternalSearchResult item)
     {
         return $"{item.Title} ({item.Year})";
     }

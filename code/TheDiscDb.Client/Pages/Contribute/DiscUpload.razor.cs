@@ -32,12 +32,15 @@ public partial class DiscUpload : ComponentBase
     private readonly string bashCommandTemplate = "makemkvcon mkv --minlength=0 --robot info disc:{1} 2>&1 | curl -X POST -H \"Content-Type: text/plain\" -d @- {0}";
     //private readonly string powershellLocalCommandTempalte = "Invoke-WebRequest -Uri \"{0}\" -Method POST -ContentType \"text/plain\" -Body ((Get-Content -Path '{1}') | Out-String)";
 
-    State state = new("Copy", "e-icons e-copy-icon");
+    State state = new("Copy", "e-icons e-copy");
 
-    public string? PowershellCommand { get; set; }
-    public string? BashCommand { get; set; }
+    public string? PowershellCommand => string.Format(powershellCommandTemplate, GetUri(), GetMakeMkvPath(), this.DriveIndex);
+    public string? BashCommand => string.Format(bashCommandTemplate, GetUri(), this.DriveIndex);
 
-    public int DriveIndex { get; set; } = 0;
+    public string DriveIndex { get; set; } = "0";
+
+    int selectedIndex = 0;
+    private readonly string[] driveIndices = Enumerable.Range(0, 8).Select(i => i.ToString()).ToArray();
 
     private string GetUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/discs/{DiscId}/logs";
 
@@ -47,8 +50,6 @@ public partial class DiscUpload : ComponentBase
 
     protected override Task OnInitializedAsync()
     {
-        this.PowershellCommand = string.Format(powershellCommandTemplate, GetUri(), GetMakeMkvPath(), this.DriveIndex);
-        this.BashCommand = string.Format(bashCommandTemplate, GetUri(), this.DriveIndex);
         this.timer = new Timer(TimerTick!, null, 0, 2000);
         return Task.CompletedTask;
     }
@@ -65,21 +66,21 @@ public partial class DiscUpload : ComponentBase
         });
     }
 
-    private void OnDriveIndexChanged(ChangeEventArgs e)
-    {
-        this.PowershellCommand = string.Format(powershellCommandTemplate, GetUri(), GetMakeMkvPath(), this.DriveIndex);
-    }
-
     private async Task CopyTextToClipboard()
     {
-        if (!string.IsNullOrEmpty(this.PowershellCommand))
+        string currentCommand = selectedIndex switch
+        {
+            1 => this.BashCommand ?? string.Empty,
+            _ => this.PowershellCommand ?? string.Empty,
+        };
+
+        if (!string.IsNullOrEmpty(currentCommand))
         {
             var temp = state;
             state = new("Copied", "e-icons e-circle-check", IsDisabled: true);
-            await Clipboard.WriteTextAsync(PowershellCommand);
+            await Clipboard.WriteTextAsync(currentCommand);
             await Task.Delay(TimeSpan.FromSeconds(2));
             state = temp;
-            await Clipboard.WriteTextAsync(PowershellCommand);
         }
     }
 }

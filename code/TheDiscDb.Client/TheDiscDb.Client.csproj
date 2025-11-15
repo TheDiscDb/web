@@ -20,8 +20,7 @@
         <GraphQL Remove="graphql\queries\GetSeries.graphql" />
     </ItemGroup>
     <ItemGroup>
-        <!--<PackageReference Include="Fantastic.TheMovieDb" Version="2.0.0" />-->
-        <PackageReference Include="Fantastic.TheMovieDb" Version="2.0.0" />
+        <PackageReference Include="Fantastic.TheMovieDb" Version="2.0.1" />
         <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.3.0" />
         <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="9.0.11" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.11" />
@@ -34,6 +33,7 @@
         <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="31.2.5" />
         <PackageReference Include="Syncfusion.Blazor.Navigations" Version="31.2.5" />
         <PackageReference Include="FluentResults" Version="4.0.0" />
+        <PackageReference Include="HighlightBlazor" Version="0.1.10" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />

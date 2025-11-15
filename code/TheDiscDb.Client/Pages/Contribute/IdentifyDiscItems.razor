@@ -18,7 +18,7 @@ else
             <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
         </TemplateColumn>
         <TemplateColumn Title="Name">
-            @GetTitle(context)
+            <a title="edit" @onclick="() => EditTitle(context)">@GetTitle(context)</a>
         </TemplateColumn>
         <TemplateColumn>
             @if (IsIdentified(context))

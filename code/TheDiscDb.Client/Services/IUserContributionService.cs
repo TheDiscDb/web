@@ -24,6 +24,7 @@ public interface IUserContributionService
     Task<Result<DiscStatusResponse>> CheckDiskUploadStatus(string discId, CancellationToken cancellationToken = default);
 
     Task<Result<AddItemResponse>> AddItemToDisc(string contributionId, string discId, AddItemRequest request, CancellationToken cancellationToken = default);
+    Task<Result> EditItemOnDisc(string contributionId, string discId, string itemId, EditItemRequest request, CancellationToken cancellationToken = default);
     Task<Result> DeleteItemFromDisc(string contributionId, string discId, string itemId, CancellationToken cancellationToken = default);
 
     Task<Result<AddChapterResponse>> AddChapterToItem(string contributionId, string discId, string itemId, AddChapterRequest request, CancellationToken cancellationToken = default);
@@ -111,6 +112,10 @@ public class AddItemRequest
 public class AddItemResponse
 {
     public string ItemId { get; set; } = string.Empty;
+}
+
+public class EditItemRequest : AddItemRequest
+{
 }
 
 public class AddChapterRequest

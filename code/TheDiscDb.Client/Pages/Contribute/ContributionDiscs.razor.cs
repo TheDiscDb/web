@@ -16,7 +16,7 @@ public partial class ContributionDiscs : ComponentBase
 
     private UserContribution? Contribution { get; set; }
 
-    private IQueryable<UserContributionDisc>? Discs => Contribution?.Discs.OrderBy(d => d.Index).AsQueryable();
+    private IQueryable<UserContributionDisc>? Discs => Contribution?.Discs.AsQueryable();
 
     protected override async Task OnInitializedAsync()
     {

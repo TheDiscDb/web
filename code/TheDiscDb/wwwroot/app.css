@@ -55,3 +55,11 @@ h1:focus {
 .media-item {
 }
 
+pre code {
+    display: block;
+    max-width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    box-sizing: border-box;
+}

@@ -1,12 +1,17 @@
 ﻿@page "/contribution/{contributionId}/discs/{discId}"
+@using HighlightBlazor
 
 @rendermode InteractiveAuto
 
-<h1>Manage Discs</h1>
-To add add a disc, run the following command on your machine:
-<input type="text" @bind="DriveIndex" ValueChanged="OnValueChanged" />
+<h1>Upload Disc Logs</h1>
 
-<SfTab>
+<div class="mb-3">
+    <label>Drive Index</label>
+    <SfDropDownList TValue="string" TItem="string" DataSource="driveIndices" class="form-control" @bind-Value="DriveIndex" />
+</div>
+
+To add add a disc, run the following command on your machine:
+<SfTab @bind-SelectedItem="selectedIndex">
     <TabAnimationSettings>
         <TabAnimationPrevious Effect="Syncfusion.Blazor.AnimationEffect.None"></TabAnimationPrevious>
         <TabAnimationNext Effect="Syncfusion.Blazor.AnimationEffect.None"></TabAnimationNext>
@@ -17,7 +22,7 @@ To add add a disc, run the following command on your machine:
                 <TabHeader Text="Powershell"></TabHeader>
             </ChildContent>
             <ContentTemplate>
-                <input class="form-control" readonly type="text" @bind="PowershellCommand" />
+                <CodeHighlight CodeLanguage="PowerShell" Code="@PowershellCommand" />
             </ContentTemplate>
         </TabItem>
         <TabItem Content="">
@@ -25,7 +30,7 @@ To add add a disc, run the following command on your machine:
                 <TabHeader Text="Bash"></TabHeader>
             </ChildContent>
             <ContentTemplate>
-                <input class="form-control" readonly type="text" @bind="BashCommand" />
+                <CodeHighlight CodeLanguage="Bash" Code="@BashCommand" />
             </ContentTemplate>
         </TabItem>
     </TabItems>

@@ -2,7 +2,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using SixLabors.ImageSharp.Formats.Gif;
 using Sqids;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
@@ -21,6 +20,8 @@ public class ContributionEndpoints
         contribute.MapDelete("{contributionId}", DeleteContribution);
         contribute.MapPut("{contributionId}", UpdateContribution);
         contribute.MapPost("{contributionId}/hashdisc", HashDisc);
+        contribute.MapGet("/externalsearch/{type}", ExternalSearch)
+            .AllowAnonymous();
 
         contribute.MapGet("{contributionId}/discs", GetDiscs);
         contribute.MapPost("{contributionId}/discs/{discId}/logs", SaveDiscLogs)
@@ -34,6 +35,7 @@ public class ContributionEndpoints
             .AllowAnonymous();
 
         contribute.MapPost("{contributionId}/discs/{discId}/items", AddItemToDisc);
+        contribute.MapPut("{contributionId}/discs/{discId}/items/{itemId}", EditItemOnDisc);
         contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}", DeleteItemFromDisc);
 
         contribute.MapPost("{contributionId}/discs/{discId}/items/{itemId}/chapters", AddChapterToItem);
@@ -118,6 +120,22 @@ public class ContributionEndpoints
         return JsonResult(result, $"Unable to create disc for contribution {contributionId}");
     }
 
+    public async Task<IResult> ExternalSearch(IExternalSearchService service, string type, [FromQuery] string query, CancellationToken cancellationToken)
+    {
+        if (type.Equals("movie", StringComparison.OrdinalIgnoreCase))
+        {
+            var response = await service.SearchMovies(query, cancellationToken);
+            return JsonResult<ExternalSearchResponse>(response, $"Unable to search for movies with query {query}");
+        }
+        else if (type.Equals("series", StringComparison.OrdinalIgnoreCase) || type.Equals("tv", StringComparison.OrdinalIgnoreCase))
+        {
+            var results = await service.SearchSeries(query, cancellationToken);
+            return JsonResult(results, $"Unable to search for series with query {query}");
+        }
+
+        return TypedResults.BadRequest($"Unknown external search type {type}");
+    }
+
     public async Task<IResult> HashDisc(IUserContributionService service, string contributionId, [FromBody] HashDiscRequest request, CancellationToken cancellation)
     {
         var result = await service.HashDisc(contributionId, request, cancellation);
@@ -147,6 +165,17 @@ public class ContributionEndpoints
     {
         var result = await service.AddItemToDisc(contributionId, discId, request, cancellationToken);
         return JsonResult(result, $"Failed to add item to disc {discId} for contribution {contributionId}");
+    }
+
+    public async Task<IResult> EditItemOnDisc(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, [FromBody] EditItemRequest request, CancellationToken cancellationToken)
+    {
+        if (Int32.TryParse(itemId, out int parsedItemId))
+        {
+            itemId = idEncoder.Encode(parsedItemId);
+        }
+
+        var result = await service.EditItemOnDisc(contributionId, discId, itemId, request, cancellationToken);
+        return OkOrProblem(result, $"Unable to edit item {itemId} on disc {discId} for contribution {contributionId}");
     }
 
     public async Task<IResult> DeleteItemFromDisc(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, CancellationToken cancellationToken)

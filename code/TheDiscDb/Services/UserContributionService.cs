@@ -219,7 +219,7 @@ public class UserContributionService : IUserContributionService
                 throw new Exception("Contribution not found");
             }
 
-            return contribution.Discs.OrderBy(d => d.Index).ToList();
+            return contribution.Discs.ToList();
         }
     }
 
@@ -331,7 +331,6 @@ public class UserContributionService : IUserContributionService
         var disc = new UserContributionDisc
         {
             ContentHash = request.ContentHash,
-            Index = request.Index,
             Format = request.Format,
             Name = request.Name,
             Slug = request.Slug
@@ -352,7 +351,6 @@ public class UserContributionService : IUserContributionService
             var existingDisc = contribution?.Discs.FirstOrDefault(d => d.ContentHash == disc.ContentHash);
             if (existingDisc != null)
             {
-                existingDisc.Index = request.Index;
                 existingDisc.Format = request.Format;
                 existingDisc.Name = request.Name;
                 existingDisc.Slug = request.Slug;
@@ -389,7 +387,6 @@ public class UserContributionService : IUserContributionService
             }
 
             disc.ContentHash = request.ContentHash;
-            disc.Index = request.Index;
             disc.Format = request.Format;
             disc.Name = request.Name;
             disc.Slug = request.Slug;
@@ -495,6 +492,54 @@ public class UserContributionService : IUserContributionService
         }
 
         return new AddItemResponse { ItemId = this.idEncoder.Encode(item.Id) };
+    }
+
+    public async Task<Result> EditItemOnDisc(string contributionId, string discId, string itemId, EditItemRequest request, CancellationToken cancellationToken = default)
+    {
+        var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+        var decodedDiscId = this.idEncoder.Decode(discId).Single();
+        var decodedItemId = this.idEncoder.Decode(itemId).Single();
+
+        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
+        {
+            var contribution = await dbContext.UserContributions
+                .Include(c => c.Discs.Where(d => d.Id == decodedDiscId))
+                    .ThenInclude(d => d.Items.Where(i => i.Id == decodedItemId))
+                .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
+
+            if (contribution == null)
+            {
+                return Result.Fail($"Contribution {contributionId} not found");
+            }
+
+            var disc = contribution.Discs.FirstOrDefault();
+            if (disc == null)
+            {
+                return Result.Fail($"Disc {discId} not found");
+            }
+
+            var item = disc.Items.FirstOrDefault();
+            if (item == null)
+            {
+                return Result.Fail($"Item {itemId} not found");
+            }
+
+            item.ChapterCount = request.ChapterCount;
+            item.Description = request.Description;
+            item.Duration = request.Duration;
+            item.Size = request.Size;
+            item.Name = request.Name;
+            item.SegmentCount = request.SegmentCount;
+            item.SegmentMap = request.SegmentMap;
+            item.Source = request.Source;
+            item.Type = request.Type;
+            item.Season = request.Season;
+            item.Episode = request.Episode;
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        return Result.Ok();
     }
 
     public async Task<Result> DeleteItemFromDisc(string contributionId, string discId, string itemId, CancellationToken cancellationToken)
