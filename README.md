@@ -12,7 +12,7 @@ To run the site locally, you'll need the following tools installed:
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) configured to run Linux containers
 - [Visual Studio 2022+](https://visualstudio.microsoft.com/) with ASP.NET and container development workloads
-- [.NET SDK 9.0](https://dotnet.microsoft.com/en-us/download)
+- [.NET SDK 10.0](https://dotnet.microsoft.com/en-us/download)
 
 ### Getting Started
 
@@ -38,7 +38,7 @@ To run the site locally, you'll need the following tools installed:
 
 | Layer             | Technology             |
 |-------------------|------------------------|
-| Backend           | ASP.NET Aspire (.NET 9.0) |
+| Backend           | ASP.NET Aspire (.NET 10.0) |
 | Frontend          | Blazor |
 | IDE               | Visual Studio          |
 
