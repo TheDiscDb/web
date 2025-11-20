@@ -14,16 +14,18 @@ public class ContributionEndpoints
     {
         var contribute = app.MapGroup("/api/contribute").RequireAuthorization();
 
-        contribute.MapGet("", GetUserContributions);
+        contribute.MapGet("my", GetUserContributions);
         contribute.MapPost("create", CreateContribution);
         contribute.MapGet("{contributionId}", GetContribution);
         contribute.MapDelete("{contributionId}", DeleteContribution);
         contribute.MapPut("{contributionId}", UpdateContribution);
         contribute.MapPost("{contributionId}/hashdisc", HashDisc);
-        contribute.MapGet("/externalsearch/{type}", ExternalSearch)
-            .AllowAnonymous();
+        contribute.MapGet("/externalsearch/{type}", ExternalSearch);
+        contribute.MapGet("{contributionId}/episodes", GetEpisodeNames);
+        contribute.MapGet("{contributionId}/externalData", GetExternalData);
 
         contribute.MapGet("{contributionId}/discs", GetDiscs);
+        contribute.MapGet("{contributionId}/discsj/{discId}", GetDisc);
         contribute.MapPost("{contributionId}/discs/{discId}/logs", SaveDiscLogs)
             .AllowAnonymous()
             .Accepts<string>("text/plain");
@@ -55,7 +57,7 @@ public class ContributionEndpoints
             return TypedResults.NotFound();
         }
 
-        var result = await service.GetUserContributions(userId, cancellationToken);
+        var result = await service.GetUserContributions(cancellationToken);
         return JsonResult(result, "Failed to add item to disc");
     }
 
@@ -90,11 +92,28 @@ public class ContributionEndpoints
         return OkOrProblem(result, $"Failed to update contribution {contributionId}");
     }
 
+    public async Task<IResult> GetEpisodeNames(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
+    {
+        var result = await service.GetEpisodeNames(contributionId, cancellationToken);
+        return JsonResult(result, $"Unable to get episode names for contribution {contributionId}");
+    }
+
+    public async Task<IResult> GetExternalData(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
+    {
+        var result = await service.GetExternalData(contributionId, cancellationToken);
+        return JsonResult(result, $"Unable to get external data for contribution {contributionId}");
+    }
 
     public async Task<IResult> GetDiscs(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
     {
         var result = await service.GetDiscs(contributionId, cancellationToken);
         return JsonResult(result, $"Unable to get discs for {contributionId}");
+    }
+
+    public async Task<IResult> GetDisc(IUserContributionService service, string contributionId, string discId, CancellationToken cancellationToken)
+    {
+        var result = await service.GetDisc(contributionId, discId, cancellationToken);
+        return JsonResult(result, $"Unable to get disc {discId} for {contributionId}");
     }
 
     public async Task<IResult> SaveDiscLogs(IUserContributionService service, HttpRequest request, string contributionId, string discId, CancellationToken cancellationToken)

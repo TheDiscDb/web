@@ -238,7 +238,8 @@ public enum UserContributionStatus
     Pending,
     Approved,
     ChangesRequested,
-    Rejected
+    Rejected,
+    Imported
 }
 
 public class UserContribution
@@ -263,6 +264,10 @@ public class UserContribution
     public string ReleaseSlug { get; set; } = string.Empty;
     public string Locale { get; set; } = string.Empty;
     public string RegionCode { get; set; } = string.Empty;
+
+    // These two are mostly used for display but not needed to generate the release
+    public string Title { get; set; } = string.Empty;
+    public string Year { get; set; } = string.Empty;
 }
 
 public class UserContributionDisc

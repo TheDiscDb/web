@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using FluentResults;
 using MakeMkv;
+using TheDiscDb.Client;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Web.Data;
 
@@ -8,14 +9,17 @@ namespace TheDiscDb.Services;
 
 public interface IUserContributionService
 {
-    Task<Result<List<UserContribution>>> GetUserContributions(string userId, CancellationToken cancellationToken = default);
+    Task<Result<List<UserContribution>>> GetUserContributions(CancellationToken cancellationToken = default);
     Task<Result<CreateContributionResponse>> CreateContribution(string userId, CreateContributionRequest request, CancellationToken cancellationToken = default);
     Task<Result<UserContribution>> GetContribution(string contributionId, CancellationToken cancellationToken = default);
     Task<Result> DeleteContribution(string contributionId, CancellationToken cancellationToken = default);
     Task<Result> UpdateContribution(string contributionId, CreateContributionRequest request, CancellationToken cancellationToken = default);
     Task<Result<HashDiscResponse>> HashDisc(string contributionId, HashDiscRequest request, CancellationToken cancellationToken = default);
+    Task<Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default);
+    Task<Result<ExternalMetadata>> GetExternalData(string contributionId, CancellationToken cancellationToken = default);
 
     Task<Result<List<UserContributionDisc>>> GetDiscs(string contributionId, CancellationToken cancellationToken = default);
+    Task<Result<UserContributionDisc>> GetDisc(string contributionId, string discId, CancellationToken cancellationToken = default);
     Task<Result> SaveDiscLogs(string contributionId, string discId, string logs, CancellationToken cancellationToken = default);
     Task<Result<DiscLogResponse>> GetDiscLogs(string contributionId, string discId, CancellationToken cancellationToken = default);
     Task<Result<SaveDiscResponse>> CreateDisc(string contributionId, SaveDiscRequest request, CancellationToken cancellationToken = default);
@@ -57,6 +61,9 @@ public class CreateContributionRequest
     public string RegionCode { get; set; } = string.Empty;
     [Required]
     public string Locale { get; set; } = string.Empty;
+
+    public string Title { get; set; } = string.Empty;
+    public string Year { get; set; } = string.Empty;
 }
 
 public class CreateContributionResponse
@@ -66,7 +73,6 @@ public class CreateContributionResponse
 
 public class SaveDiscRequest
 {
-    public int Index { get; set; }
     [Required]
     public string ContentHash { get; set; } = string.Empty;
     [Required]
