@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Notifications;
 using Syncfusion.Blazor.Popups;
 using Syncfusion.Blazor.SplitButtons;
-using TheDiscDb.ImportModels;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
@@ -48,10 +47,11 @@ public class ItemIdentification
     public required string ItemTitle { get; set; }
     public string? Description { get; set; }
     public required string Type { get; set; }
-    public EpisodeIdentification? Episode { get; set; }
+    public EpisodeIdentification? Episode { get; set; } = new EpisodeIdentification();
     public string? DatabaseId { get; set; }
     public List<ChapterItem> Chapters { get; set; } = new List<ChapterItem>();
     public List<AudioTrackItem> AudioTracks { get; set; } = new List<AudioTrackItem>();
+    public bool EpisodeTitleUserEdited { get; set; } = false;
 
     public AddItemRequest CreateAddRequest()
     {
@@ -66,8 +66,8 @@ public class ItemIdentification
             SegmentMap = Title.SegmentMap!,
             Source = Title.Playlist!,
             Type = Type,
-            Season = Episode != null ? Episode.Season : null,
-            Episode = Episode != null ? Episode.Episode : null
+            Season = Episode?.Season ?? null,
+            Episode = Episode?.Episode ?? null
         };
     }
 
@@ -109,6 +109,7 @@ public partial class IdentifyDiscItems : ComponentBase
     private IQueryable<MakeMkv.Title>? titles = null;
     private UserContributionDisc? disc = null;
     private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
+    private SeriesEpisodeNames? episodeNames = null;
 
     bool showEpisodeDialog = false;
     SfDialog? episodeDialogObj;
@@ -175,6 +176,12 @@ public partial class IdentifyDiscItems : ComponentBase
                     this.mediaType = contribution.MediaType;
                 }
             }
+        }
+
+        var episodeResults = await Client.GetEpisodeNames(this.ContributionId!);
+        if (episodeResults != null && episodeResults.IsSuccess)
+        {
+            this.episodeNames = episodeResults.Value;
         }
     }
 
@@ -557,5 +564,41 @@ public partial class IdentifyDiscItems : ComponentBase
     private void SubmitIdentifications(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
         this.NavigationManager.NavigateTo($"/contribution/{this.ContributionId}");
+    }
+
+    private void TrySetEpisodeTitle(ChangeEventArgs args)
+    {
+        if (this.episodeNames == null || 
+            this.currentItem == null ||
+            this.currentItem.EpisodeTitleUserEdited || // if the title has already been filled in, leave it alone
+            string.IsNullOrEmpty(this.currentItem?.Episode?.Episode) || 
+            string.IsNullOrEmpty(this.currentItem?.Episode?.Season))
+        {
+            return;
+        }
+
+        var match = this.episodeNames.TryFind(this.currentItem.Episode.Season, this.currentItem.Episode.Episode);
+        if (match != null)
+        {
+            this.currentItem.ItemTitle = match.EpisodeName;
+        }
+    }
+
+    private void EpisodeTitleKeyPress(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs args)
+    {
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        // Reset user edited if the item becomes empty
+        if (string.IsNullOrEmpty(this.currentItem.ItemTitle))
+        {
+            this.currentItem.EpisodeTitleUserEdited = false;
+        }
+        else
+        {
+            this.currentItem.EpisodeTitleUserEdited = true;
+        }
     }
 }

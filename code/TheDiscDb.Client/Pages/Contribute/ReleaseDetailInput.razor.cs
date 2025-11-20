@@ -28,12 +28,18 @@ public partial class ReleaseDetailInput : ComponentBase
     private string releaseDate = string.Empty;
     private string releaseDateValidationMessage = string.Empty;
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         this.request.MediaType = this.MediaType ?? "Movie";
         this.request.ExternalProvider = "TMDB";
         this.request.ExternalId = this.ExternalId ?? string.Empty;
-        return Task.CompletedTask;
+        
+        var externalData = await this.Client.GetExternalData(this.request.ExternalId);
+        if (externalData != null && externalData.IsSuccess)
+        {
+            this.request.Title = externalData.Value.Title;
+            this.request.Year = externalData.Value.Year.ToString();
+        }
     }
 
     async Task HandleValidSubmit()
@@ -46,6 +52,18 @@ public partial class ReleaseDetailInput : ComponentBase
         }
 
         var response = await this.Client.CreateContribution(userId: string.Empty, this.request);
+
+        if (this.request.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
+        {
+            // Create the episode names for later use
+            var episodeResponse = await this.Client.GetEpisodeNames(response.Value.ContributionId);
+            if (episodeResponse == null || episodeResponse.IsFailed)
+            {
+                // TODO: Show an error message
+                var error = episodeResponse?.Errors.FirstOrDefault();
+                Console.WriteLine("Failed to create episode names. " + error?.Message);
+            }
+        }
 
         this.NavigationManager!.NavigateTo($"/contribution/{response.Value.ContributionId}");
     }

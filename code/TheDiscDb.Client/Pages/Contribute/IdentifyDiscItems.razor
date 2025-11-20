@@ -14,9 +14,10 @@ else
         <PropertyColumn Property="@(t => t.ChapterCount)" />
         <PropertyColumn Property="@(t => t.DisplaySize)" />
         <PropertyColumn Property="@(t => t.Length)" />
-        <TemplateColumn>
+        <TemplateColumn Title="Segment Map">
             <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
         </TemplateColumn>
+        <PropertyColumn Property="@(t => t.Playlist)" />
         <TemplateColumn Title="Name">
             <a title="edit" @onclick="() => EditTitle(context)">@GetTitle(context)</a>
         </TemplateColumn>
@@ -65,16 +66,16 @@ else
             <EditForm Model="@currentItem" OnValidSubmit="@HandleValidEpisodeSubmit">
                 <DataAnnotationsValidator></DataAnnotationsValidator>
                 <div class="field-container name-container">
-                    <SfTextBox CssClass="item-title e-field" Placeholder="Title" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.ItemTitle"></SfTextBox>
-                    <ValidationMessage For="@(() => currentItem!.ItemTitle)" />
-                </div>
-                <div class="field-container name-container">
-                    <SfTextBox CssClass="season-number e-field" Placeholder="Season Number" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.Episode!.Season"></SfTextBox>
+                    <SfTextBox CssClass="season-number e-field" Placeholder="Season Number" OnChange="TrySetEpisodeTitle" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.Episode!.Season"></SfTextBox>
                     <ValidationMessage For="@(() => currentItem!.Episode!.Season)" />
                 </div>
                 <div class="field-container name-container">
-                    <SfTextBox CssClass="episode-number e-field" Placeholder="Episode Number" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Episode.Episode"></SfTextBox>
+                    <SfTextBox CssClass="episode-number e-field" Placeholder="Episode Number" OnChange="TrySetEpisodeTitle" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Episode.Episode"></SfTextBox>
                     <ValidationMessage For="@(() => currentItem.Episode.Episode)" />
+                </div>
+                <div class="field-container name-container">
+                    <SfTextBox CssClass="item-title e-field" Placeholder="Title" FloatLabelType="@FloatLabelType.Always" @onkeypress="EpisodeTitleKeyPress" @bind-Value="@currentItem!.ItemTitle"></SfTextBox>
+                    <ValidationMessage For="@(() => currentItem!.ItemTitle)" />
                 </div>
                 <div class="field-container name-container">
                     <SfTextBox CssClass="episode-description e-field" Placeholder="Description (optional)" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Description"></SfTextBox>

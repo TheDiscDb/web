@@ -39,3 +39,14 @@ To add add a disc, run the following command on your machine:
 <button class="btn btn-primary" @onclick="CopyTextToClipboard" disabled=@state.IsDisabled>
     <i class="@state.IconClassName"></i> @state.Text
 </button>
+
+@if (showSpinner)
+{
+    <div>
+        <div class="lds-ripple" title="Checking for logs"><div></div><div></div></div>
+        <span>Checking for logs...</span>
+        <div>The page will automatically update once the logs are done uploading.</div>
+    </div>
+}
+
+<a href="/contribution/@this.ContributionId/discs/@this.DiscId/edit">Back to disc details</a>

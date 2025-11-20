@@ -99,6 +99,36 @@ public class UserContributionService : ApiClient, IUserContributionService
         return result;
     }
 
+    public async Task<Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default)
+    {
+        var client = GetHttpClient();
+        var response = await client.GetAsync($"/api/contribute/{contributionId}/episodes", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return Result.Fail($"Unable get episode names for contribution {contributionId}");
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<SeriesEpisodeNames>(cancellationToken: cancellationToken);
+
+        return result!;
+    }
+
+    public async Task<Result<ExternalMetadata>> GetExternalData(string contributionId, CancellationToken cancellationToken = default)
+    {
+        var client = GetHttpClient();
+        var response = await client.GetAsync($"/api/contribute/{contributionId}/externalData", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return Result.Fail($"Unable get external data for contribution {contributionId}");
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<ExternalMetadata>(cancellationToken: cancellationToken);
+
+        return result!;
+    }
+
     #endregion
 
     #region Discs
@@ -111,6 +141,19 @@ public class UserContributionService : ApiClient, IUserContributionService
         if (response == null)
         {
             return Result.Fail($"Unable to retrieve discs for {contributionId} from server");
+        }
+
+        return Result.Ok(response);
+    }
+
+    public async Task<Result<UserContributionDisc>> GetDisc(string contributionId, string discId, CancellationToken cancellationToken = default)
+    {
+        var client = GetHttpClient();
+        var response = await client.GetFromJsonAsync<UserContributionDisc>($"/api/contribute/{contributionId}/discs/{discId}", cancellationToken);
+
+        if (response == null)
+        {
+            return Result.Fail($"Unable to retrieve disc {discId} for {contributionId} from server");
         }
 
         return Result.Ok(response);

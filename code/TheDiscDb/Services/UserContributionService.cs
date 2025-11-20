@@ -1,4 +1,7 @@
 ﻿using System.Text;
+using System.Text.Json;
+using Fantastic.TheMovieDb;
+using Fantastic.TheMovieDb.Models;
 using FluentResults;
 using MakeMkv;
 using Microsoft.AspNetCore.Identity;
@@ -16,13 +19,15 @@ public class UserContributionService : IUserContributionService
     private readonly UserManager<TheDiscDbUser> userManager;
     private readonly SqidsEncoder<int> idEncoder;
     private readonly IStaticAssetStore assetStore;
+    private readonly TheMovieDbClient tmdb;
 
-    public UserContributionService(IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, SqidsEncoder<int> idEncoder, IStaticAssetStore assetStore)
+    public UserContributionService(IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, SqidsEncoder<int> idEncoder, IStaticAssetStore assetStore, TheMovieDbClient tmdb)
     {
         this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
         this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         this.idEncoder = idEncoder ?? throw new ArgumentNullException(nameof(idEncoder));
         this.assetStore = assetStore ?? throw new ArgumentNullException(nameof(assetStore));
+        this.tmdb = tmdb ?? throw new ArgumentNullException(nameof(tmdb));
     }
 
     #region Contributions
@@ -196,6 +201,183 @@ public class UserContributionService : IUserContributionService
         }
     }
 
+    public async Task<FluentResults.Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default)
+    {
+        // First check blob storage to see if the episode names file exists
+        string filePath = $"{contributionId}/episode-names.json";
+        bool exists = await this.assetStore.Exists(filePath, cancellationToken);
+        if (exists)
+        {
+            var data = await this.assetStore.Download(filePath, cancellationToken);
+            string json = Encoding.UTF8.GetString(data.ToArray());
+            var results = JsonSerializer.Deserialize<SeriesEpisodeNames>(json);
+            return results!;
+        }
+
+        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
+        {
+            int id = idEncoder.Decode(contributionId).Single();
+            var contribution = await dbContext.UserContributions
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+            if (contribution == null)
+            {
+                return Result.Fail($"Contribution {contributionId} not found");
+            }
+
+            var series = await this.tmdb.GetSeries(contribution.ExternalId, cancellationToken: cancellationToken);
+            if (series == null)
+            {
+                return Result.Fail($"Series with TMDB ID {contribution.ExternalId} not found");
+            }
+
+            var year = series.FirstAirDate.HasValue ? series.FirstAirDate.Value.Year : 0;
+
+            var results = new SeriesEpisodeNames
+            {
+                SeriesTitle = series.Name ?? "Unknown Title",
+                SeriesYear = year.ToString()
+            };
+
+            foreach (var season in series.Seasons)
+            {
+                var fullSeason = await this.tmdb.GetSeason(series.Id, season.SeasonNumber);
+                foreach (var episode in fullSeason.Episodes)
+                {
+                    results.Episodes.Add(new SeriesEpisodeNameEntry
+                    {
+                        SeasonNumber = season.SeasonNumber.ToString(),
+                        EpisodeNumber = episode.EpisodeNumber.ToString(),
+                        EpisodeName = episode.Name ?? "Unknown Title"
+                    });
+                }
+            }
+
+            string json = JsonSerializer.Serialize(results, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+
+            // Save to blob storage
+            await this.assetStore.Save(new MemoryStream(Encoding.UTF8.GetBytes(json)), filePath, ContentTypes.JsonContentType, cancellationToken);
+            return results!;
+        }
+    }
+
+    public async Task<FluentResults.Result<ExternalMetadata>> GetExternalData(string contributionId, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
+        {
+            int id = idEncoder.Decode(contributionId).Single();
+            var contribution = await dbContext.UserContributions
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+            if (contribution == null)
+            {
+                return Result.Fail($"Contribution {contributionId} not found");
+            }
+
+            // First check blob storage to see if the episode names file exists
+            string filePath = $"{contributionId}/tmdb.json";
+            bool exists = await this.assetStore.Exists(filePath, cancellationToken);
+            if (exists)
+            {
+                var data = await this.assetStore.Download(filePath, cancellationToken);
+                string existingJson = Encoding.UTF8.GetString(data.ToArray());
+
+                if (contribution.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
+                {
+                    var series = JsonSerializer.Deserialize<Series>(existingJson);
+                    if (series == null)
+                    {
+                        return Result.Fail("Failed to deserialize series data from blob storage");
+                    }
+
+                    return new ExternalMetadata
+                    {
+                        Id = series.Id,
+                        Title = series.Name ?? "Unknown Title",
+                        Year = series.FirstAirDate.HasValue ? series.FirstAirDate.Value.Year : 0,
+                        ImageUrl = "https://image.tmdb.org/t/p/w500" + series?.PosterPath
+                    };
+                }
+                else
+                {
+                    var movie = JsonSerializer.Deserialize<Movie>(existingJson);
+                    if (movie == null)
+                    {
+                        return Result.Fail("Failed to deserialize movie data from blob storage");
+                    }
+
+                    return new ExternalMetadata
+                    {
+                        Id = movie.Id,
+                        Title = movie.Title ?? "Unknown Title",
+                        Year = movie.ReleaseDate.HasValue ? movie.ReleaseDate.Value.Year : 0,
+                        ImageUrl = "https://image.tmdb.org/t/p/w500" + movie?.PosterPath
+                    };
+                }
+            }
+
+            string? json = null;
+            int? year = null;
+            ExternalMetadata? metadata = null;
+
+            if (contribution.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
+            {
+                var series = await this.tmdb.GetSeries(contribution.ExternalId, cancellationToken: cancellationToken);
+                if (series == null)
+                {
+                    return Result.Fail($"Series with TMDB ID {contribution.ExternalId} not found");
+                }
+
+                year = series.FirstAirDate.HasValue ? series.FirstAirDate.Value.Year : 0;
+                json = JsonSerializer.Serialize(series, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                metadata = new ExternalMetadata
+                {
+                    Id = series.Id,
+                    Title = series.Name ?? "Unknown Title",
+                    Year = year ?? 0,
+                    ImageUrl = "https://image.tmdb.org/t/p/w500" + series?.PosterPath
+                };
+
+            }
+            else
+            {
+                var movie = await this.tmdb.GetMovie(contribution.ExternalId, cancellationToken: cancellationToken);
+                if (movie == null)
+                {
+                    return Result.Fail($"Movie with TMDB ID {contribution.ExternalId} not found");
+                }
+
+                year = movie.ReleaseDate.HasValue ? movie.ReleaseDate.Value.Year : 0;
+                json = JsonSerializer.Serialize(movie, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                metadata = new ExternalMetadata
+                {
+                    Id = movie.Id,
+                    Title = movie.Title ?? "Unknown Title",
+                    Year = year ?? 0,
+                    ImageUrl = "https://image.tmdb.org/t/p/w500" + movie?.PosterPath
+                };
+            }
+
+
+            // Save to blob storage
+            if (!string.IsNullOrEmpty(json))
+            {
+                await this.assetStore.Save(new MemoryStream(Encoding.UTF8.GetBytes(json)), filePath, ContentTypes.JsonContentType, cancellationToken);
+            }
+
+            return metadata;
+        }
+    }
+
     #endregion
 
     #region Discs
@@ -220,6 +402,37 @@ public class UserContributionService : IUserContributionService
             }
 
             return contribution.Discs.ToList();
+        }
+    }
+
+    public async Task<FluentResults.Result<UserContributionDisc>> GetDisc(string contributionId, string discId, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
+        {
+            int id = idEncoder.Decode(contributionId).Single();
+            var contribution = await dbContext.UserContributions
+                .Include(c => c.Discs)
+                    .ThenInclude(d => d.Items)
+                        .ThenInclude(i => i.Chapters)
+                .Include(c => c.Discs)
+                    .ThenInclude(d => d.Items)
+                        .ThenInclude(i => i.AudioTracks)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+            if (contribution == null)
+            {
+                return Result.Fail($"Contribution {contributionId} not found");
+            }
+
+            int realDiscId = idEncoder.Decode(discId).Single();
+            var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
+
+            if (disc == null)
+            {
+                return Result.Fail($"Disc {discId} not found");
+            }
+
+            return disc;
         }
     }
 
@@ -463,7 +676,9 @@ public class UserContributionService : IUserContributionService
             SegmentCount = request.SegmentCount,
             SegmentMap = request.SegmentMap,
             Source = request.Source,
-            Type = request.Type
+            Type = request.Type,
+            Season = request.Season,
+            Episode = request.Episode
         };
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);

@@ -46,21 +46,34 @@ public partial class DiscUpload : ComponentBase
 
     private string GetMakeMkvPath() => "C:\\Program Files (x86)\\MakeMKV\\makemkvcon64.exe";
 
-    private Timer? timer;
+    private Timer? startSpinnerTimer;
+    private Timer? pollUploadedTimer;
+
+    private bool showSpinner;
 
     protected override Task OnInitializedAsync()
     {
-        this.timer = new Timer(TimerTick!, null, 0, 2000);
+        //this.pollUploadedTimer = new Timer(PollTimerTick!, null, 0, 2000);
+        this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
         return Task.CompletedTask;
     }
 
-    private void TimerTick(object state)
+    private void SpinnerTimerTick(object state)
+    {
+        this.showSpinner = true;
+        this.startSpinnerTimer?.Dispose();
+        InvokeAsync(StateHasChanged);
+
+        this.pollUploadedTimer = new Timer(PollTimerTick!, null, 0, 2000);
+    }
+
+    private void PollTimerTick(object state)
     {
         this.Client.CheckDiskUploadStatus(this.DiscId ?? string.Empty).ContinueWith(t =>
         {
             if (t != null && t.Result.Value.LogsUploaded)
             {
-                this.timer?.Dispose();
+                this.pollUploadedTimer?.Dispose();
                 JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
             }
         });
