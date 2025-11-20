@@ -1,0 +1,13 @@
+﻿@page "/contribute/my"
+
+@rendermode InteractiveAuto
+
+<h1>My Contributions</h1>
+<QuickGrid Items="Contributions">
+    <TemplateColumn Title="Name">
+        <a href="/contributions/@context.Id">@context.ReleaseTitle</a>
+    </TemplateColumn>
+    <PropertyColumn Property="@(c => c.Title)" />
+    <PropertyColumn Property="@(c => c.MediaType)" />
+    <PropertyColumn Property="@(c => c.Status)" />
+</QuickGrid>

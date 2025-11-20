@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Security.Claims;
+using System.Security.Principal;
+using System.Text;
 using System.Text.Json;
 using Fantastic.TheMovieDb;
 using Fantastic.TheMovieDb.Models;
@@ -13,18 +15,37 @@ using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Services.Server;
 
+public interface IPrincipalProvider
+{
+    ClaimsPrincipal? Principal { get; }
+}
+
+public class PrincipalProvider : IPrincipalProvider
+{
+    private readonly IHttpContextAccessor httpContextAccessor;
+
+    public PrincipalProvider(IHttpContextAccessor httpContextAccessor)
+    {
+        this.httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+    }
+
+    public ClaimsPrincipal? Principal => this.httpContextAccessor.HttpContext?.User;
+}
+
 public class UserContributionService : IUserContributionService
 {
     private readonly IDbContextFactory<SqlServerDataContext> dbContextFactory;
     private readonly UserManager<TheDiscDbUser> userManager;
+    private readonly IPrincipalProvider principalProvider;
     private readonly SqidsEncoder<int> idEncoder;
     private readonly IStaticAssetStore assetStore;
     private readonly TheMovieDbClient tmdb;
 
-    public UserContributionService(IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, SqidsEncoder<int> idEncoder, IStaticAssetStore assetStore, TheMovieDbClient tmdb)
+    public UserContributionService(IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, IPrincipalProvider principalProvider, SqidsEncoder<int> idEncoder, IStaticAssetStore assetStore, TheMovieDbClient tmdb)
     {
         this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
         this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+        this.principalProvider = principalProvider ?? throw new ArgumentNullException(nameof(principalProvider));
         this.idEncoder = idEncoder ?? throw new ArgumentNullException(nameof(idEncoder));
         this.assetStore = assetStore ?? throw new ArgumentNullException(nameof(assetStore));
         this.tmdb = tmdb ?? throw new ArgumentNullException(nameof(tmdb));
@@ -32,8 +53,22 @@ public class UserContributionService : IUserContributionService
 
     #region Contributions
 
-    public async Task<FluentResults.Result<List<UserContribution>>> GetUserContributions(string userId, CancellationToken cancellationToken)
+    public async Task<FluentResults.Result<List<UserContribution>>> GetUserContributions(CancellationToken cancellationToken)
     {
+        var user = this.principalProvider.Principal;
+        if (user == null)
+        {
+            // TODO: Figure out how to return a 401 from here
+            return Result.Fail("User not authenticated");
+        }
+
+        var userId = userManager.GetUserId(user);
+        if (string.IsNullOrEmpty(userId))
+        {
+            // TODO: Figure out how to return a 401 from here
+            return Result.Fail("User ID not found");
+        }
+
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
             var contributions = await dbContext.UserContributions
@@ -69,17 +104,31 @@ public class UserContributionService : IUserContributionService
             ReleaseTitle = request.ReleaseTitle,
             ReleaseSlug = request.ReleaseSlug,
             Locale = request.Locale,
-            RegionCode = request.RegionCode
+            RegionCode = request.RegionCode,
+            Title = request.Title,
+            Year = request.Year
         };
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
             dbContext.UserContributions.Add(contribution);
             await dbContext.SaveChangesAsync(cancellationToken);
+
+
+            // Now that we have a contributionId, we can get the external data which will save it in blob storage
+            if (string.IsNullOrEmpty(contribution.Title) || string.IsNullOrEmpty(contribution.Year))
+            {
+                var externalData = await this.GetExternalData(this.idEncoder.Encode(contribution.Id), cancellationToken);
+                if (externalData.IsSuccess)
+                {
+                    contribution.Title = externalData.Value.Title;
+                    contribution.Year = externalData.Value.Year.ToString();
+                    await dbContext.SaveChangesAsync(cancellationToken);
+                }
+            }
         }
 
-        // Save images to blob storage? (or just store the url and do that later)
-
+        // TODO: Save images to blob storage? (or just store the url and do that later)
         return new CreateContributionResponse { ContributionId = this.idEncoder.Encode(contribution.Id) };
     }
 

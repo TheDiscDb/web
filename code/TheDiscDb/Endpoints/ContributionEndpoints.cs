@@ -14,7 +14,7 @@ public class ContributionEndpoints
     {
         var contribute = app.MapGroup("/api/contribute").RequireAuthorization();
 
-        contribute.MapGet("", GetUserContributions);
+        contribute.MapGet("my", GetUserContributions);
         contribute.MapPost("create", CreateContribution);
         contribute.MapGet("{contributionId}", GetContribution);
         contribute.MapDelete("{contributionId}", DeleteContribution);
@@ -57,7 +57,7 @@ public class ContributionEndpoints
             return TypedResults.NotFound();
         }
 
-        var result = await service.GetUserContributions(userId, cancellationToken);
+        var result = await service.GetUserContributions(cancellationToken);
         return JsonResult(result, "Failed to add item to disc");
     }
 

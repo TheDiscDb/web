@@ -19,6 +19,7 @@ using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Search;
 using TheDiscDb.Services;
+using TheDiscDb.Services.Server;
 using TheDiscDb.Web;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
@@ -83,6 +84,7 @@ builder.Services.AddIdentity<TheDiscDbUser, IdentityRole>()
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthenticationStateDeserialization();
+builder.Services.AddSingleton<IPrincipalProvider, PrincipalProvider>();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()

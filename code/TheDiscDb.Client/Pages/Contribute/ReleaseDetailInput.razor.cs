@@ -33,13 +33,6 @@ public partial class ReleaseDetailInput : ComponentBase
         this.request.MediaType = this.MediaType ?? "Movie";
         this.request.ExternalProvider = "TMDB";
         this.request.ExternalId = this.ExternalId ?? string.Empty;
-        
-        var externalData = await this.Client.GetExternalData(this.request.ExternalId);
-        if (externalData != null && externalData.IsSuccess)
-        {
-            this.request.Title = externalData.Value.Title;
-            this.request.Year = externalData.Value.Year.ToString();
-        }
     }
 
     async Task HandleValidSubmit()

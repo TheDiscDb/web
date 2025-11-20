@@ -110,6 +110,8 @@ public partial class IdentifyDiscItems : ComponentBase
     private UserContributionDisc? disc = null;
     private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
     private SeriesEpisodeNames? episodeNames = null;
+    private ExternalMetadata? ExternalMetadata = null;
+
 
     bool showEpisodeDialog = false;
     SfDialog? episodeDialogObj;
@@ -178,10 +180,19 @@ public partial class IdentifyDiscItems : ComponentBase
             }
         }
 
-        var episodeResults = await Client.GetEpisodeNames(this.ContributionId!);
-        if (episodeResults != null && episodeResults.IsSuccess)
+        if (!string.IsNullOrEmpty(this.mediaType) && this.mediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
         {
-            this.episodeNames = episodeResults.Value;
+            var episodeResults = await Client.GetEpisodeNames(this.ContributionId!);
+            if (episodeResults != null && episodeResults.IsSuccess)
+            {
+                this.episodeNames = episodeResults.Value;
+            }
+        }
+
+        var externalMetadataResponse = await Client.GetExternalData(this.ContributionId!);
+        if (externalMetadataResponse != null && externalMetadataResponse.IsSuccess)
+        {
+            this.ExternalMetadata = externalMetadataResponse.Value;
         }
     }
 
@@ -401,6 +412,12 @@ public partial class IdentifyDiscItems : ComponentBase
         }
         else
         {
+            if (type.Equals("MainMovie", StringComparison.OrdinalIgnoreCase) && this.ExternalMetadata != null)
+            {
+                this.currentItem.ItemTitle = this.ExternalMetadata.Title;
+                // TODO: Should there be a year on the current item?
+            }
+
             // Pop up dialog to ask for the title and description
             this.showItemDialog = true;
         }

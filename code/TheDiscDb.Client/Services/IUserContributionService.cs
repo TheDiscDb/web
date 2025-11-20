@@ -9,7 +9,7 @@ namespace TheDiscDb.Services;
 
 public interface IUserContributionService
 {
-    Task<Result<List<UserContribution>>> GetUserContributions(string userId, CancellationToken cancellationToken = default);
+    Task<Result<List<UserContribution>>> GetUserContributions(CancellationToken cancellationToken = default);
     Task<Result<CreateContributionResponse>> CreateContribution(string userId, CreateContributionRequest request, CancellationToken cancellationToken = default);
     Task<Result<UserContribution>> GetContribution(string contributionId, CancellationToken cancellationToken = default);
     Task<Result> DeleteContribution(string contributionId, CancellationToken cancellationToken = default);

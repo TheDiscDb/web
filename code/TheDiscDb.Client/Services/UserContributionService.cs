@@ -15,10 +15,10 @@ public class UserContributionService : ApiClient, IUserContributionService
 
     #region Contributions
 
-    public async Task<Result<List<UserContribution>>> GetUserContributions(string userId, CancellationToken cancellationToken = default)
+    public async Task<Result<List<UserContribution>>> GetUserContributions(CancellationToken cancellationToken = default)
     {
         var client = GetHttpClient();
-        var response = await client.GetFromJsonAsync<List<UserContribution>>("/api/contribute", cancellationToken);
+        var response = await client.GetFromJsonAsync<List<UserContribution>>("/api/contribute/my", cancellationToken);
 
         if (response == null)
         {
