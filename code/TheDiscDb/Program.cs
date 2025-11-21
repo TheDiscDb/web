@@ -202,6 +202,7 @@ builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
 
 builder.Services.AddSingleton<SqidsEncoder<int>>();
+builder.Services.AddSingleton<IdEncoder>();
 builder.Services.AddScoped<IClipboardService, ServerClipboardService>();
 builder.Services.AddHighlight();
 

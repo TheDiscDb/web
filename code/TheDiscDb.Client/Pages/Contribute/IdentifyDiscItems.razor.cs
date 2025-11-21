@@ -52,6 +52,7 @@ public class ItemIdentification
     public List<ChapterItem> Chapters { get; set; } = new List<ChapterItem>();
     public List<AudioTrackItem> AudioTracks { get; set; } = new List<AudioTrackItem>();
     public bool EpisodeTitleUserEdited { get; set; } = false;
+    public Dictionary<UserContributionDisc, IEnumerable<UserContributionDiscItem>> ChapterMatches { get; set; } = new Dictionary<UserContributionDisc, IEnumerable<UserContributionDiscItem>>();
 
     public AddItemRequest CreateAddRequest()
     {
@@ -111,13 +112,13 @@ public partial class IdentifyDiscItems : ComponentBase
     private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
     private SeriesEpisodeNames? episodeNames = null;
     private ExternalMetadata? ExternalMetadata = null;
-
+    private UserContribution? contribution;
 
     bool showEpisodeDialog = false;
-    SfDialog? episodeDialogObj;
+    SfDialog? episodeDialog;
 
     bool showItemDialog = false;
-    SfDialog? itemDialogObj;
+    SfDialog? itemDialog;
 
     bool showChapterDialog = false;
     SfDialog? chapterDialog;
@@ -136,6 +137,7 @@ public partial class IdentifyDiscItems : ComponentBase
         {
             this.titles = response.Value.Info!.Titles.AsQueryable();
             this.disc = response.Value.Disc;
+            this.contribution = response.Value.Contribution;
 
             if (disc?.Items != null)
             {
@@ -146,7 +148,7 @@ public partial class IdentifyDiscItems : ComponentBase
                     {
                         var existingItem = new ItemIdentification
                         {
-                            DatabaseId = item.Id.ToString(),
+                            DatabaseId = item.EncodedId,
                             Title = title,
                             Type = item.Type,
                             ItemTitle = item.Name,
@@ -350,6 +352,23 @@ public partial class IdentifyDiscItems : ComponentBase
                     });
                 }
             }
+
+            // search for chapters on other discs in the same contribution
+            if (this.disc != null)
+            {
+                foreach (var disc in this.contribution!.Discs)
+                {
+                    if (disc.EncodedId != this.disc.EncodedId)
+                    {
+                        var matchingItems = disc.Items.Where(it => it.Chapters.Count == item.Chapters.Count);
+                        if (matchingItems.Any())
+                        {
+                            item.ChapterMatches[disc] = matchingItems;
+                        }
+                    }
+                }
+            }
+
             this.showChapterDialog = true;
         }
     }
@@ -499,7 +518,7 @@ public partial class IdentifyDiscItems : ComponentBase
             {
                 this.identifiedTitles[currentItem.Title] = currentItem;
                 this.StateHasChanged();
-                await this.itemDialogObj!.HideAsync();
+                await this.itemDialog!.HideAsync();
                 return;
             }
             else
@@ -524,14 +543,14 @@ public partial class IdentifyDiscItems : ComponentBase
             await toast!.ShowAsync();
         }
 
-        await this.itemDialogObj!.HideAsync();
+        await this.itemDialog!.HideAsync();
     }
 
     private async Task ItemDialogCancelClicked()
     {
         this.identifiedTitles.Remove(this.currentItem!.Title!);
         this.StateHasChanged();
-        await this.itemDialogObj!.HideAsync();
+        await this.itemDialog!.HideAsync();
     }
 
     private async Task ChapterDialogCancelClicked()
@@ -568,14 +587,14 @@ public partial class IdentifyDiscItems : ComponentBase
             await toast!.ShowAsync();
         }
 
-        await this.episodeDialogObj!.HideAsync();
+        await this.episodeDialog!.HideAsync();
     }
 
     private async Task EpisodeDialogCancelClicked()
     {
         this.identifiedTitles.Remove(this.currentItem!.Title!);
         this.StateHasChanged();
-        await this.episodeDialogObj!.HideAsync();
+        await this.episodeDialog!.HideAsync();
     }
 
     private void SubmitIdentifications(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
@@ -616,6 +635,29 @@ public partial class IdentifyDiscItems : ComponentBase
         else
         {
             this.currentItem.EpisodeTitleUserEdited = true;
+        }
+    }
+
+    private void CopyChapters(MenuEventArgs args)
+    {
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        Int32.TryParse(args.Item.HtmlAttributes["data-matchIndex"].ToString(), out int matchIndex);
+        Int32.TryParse(args.Item.HtmlAttributes["data-ItemIndex"].ToString(), out int itemIndex);
+        var match = this.currentItem.ChapterMatches.Keys.ElementAtOrDefault(matchIndex);
+        var item = this.currentItem.ChapterMatches[match!].ElementAtOrDefault(itemIndex);
+        if (item != null)
+        {
+            for (int i = 0; i < item.Chapters.Count; i++)
+            {
+                if (i < this.currentItem.Chapters.Count)
+                {
+                    this.currentItem.Chapters[i].Title = item.Chapters.ElementAt(i).Title;
+                }
+            }
         }
     }
 }

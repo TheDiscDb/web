@@ -1,6 +1,4 @@
-﻿using System.Security.Claims;
-using System.Security.Principal;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using Fantastic.TheMovieDb;
 using Fantastic.TheMovieDb.Models;
@@ -8,40 +6,22 @@ using FluentResults;
 using MakeMkv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Sqids;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Services.Server;
 
-public interface IPrincipalProvider
-{
-    ClaimsPrincipal? Principal { get; }
-}
-
-public class PrincipalProvider : IPrincipalProvider
-{
-    private readonly IHttpContextAccessor httpContextAccessor;
-
-    public PrincipalProvider(IHttpContextAccessor httpContextAccessor)
-    {
-        this.httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
-    }
-
-    public ClaimsPrincipal? Principal => this.httpContextAccessor.HttpContext?.User;
-}
-
 public class UserContributionService : IUserContributionService
 {
     private readonly IDbContextFactory<SqlServerDataContext> dbContextFactory;
     private readonly UserManager<TheDiscDbUser> userManager;
     private readonly IPrincipalProvider principalProvider;
-    private readonly SqidsEncoder<int> idEncoder;
+    private readonly IdEncoder idEncoder;
     private readonly IStaticAssetStore assetStore;
     private readonly TheMovieDbClient tmdb;
 
-    public UserContributionService(IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, IPrincipalProvider principalProvider, SqidsEncoder<int> idEncoder, IStaticAssetStore assetStore, TheMovieDbClient tmdb)
+    public UserContributionService(IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, IPrincipalProvider principalProvider, IdEncoder idEncoder, IStaticAssetStore assetStore, TheMovieDbClient tmdb)
     {
         this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
         this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
@@ -82,6 +62,8 @@ public class UserContributionService : IUserContributionService
                         .ThenInclude(i => i.AudioTracks)
                 .OrderByDescending(c => c.Created)
                 .ToListAsync(cancellationToken);
+
+            this.idEncoder.EncodeInPlace(contributions);
             return contributions;
         }
     }
@@ -136,7 +118,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            int id = idEncoder.Decode(contributionId).Single();
+            int id = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -152,6 +134,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
+            this.idEncoder.EncodeInPlace(contribution);
             return contribution;
         }
     }
@@ -160,7 +143,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
 
@@ -180,7 +163,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
             if (contribution == null)
@@ -209,7 +192,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            int id = idEncoder.Decode(contributionId).Single();
+            int id = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.HashItems)
                 .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
@@ -265,7 +248,7 @@ public class UserContributionService : IUserContributionService
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            int id = idEncoder.Decode(contributionId).Single();
+            int id = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
             if (contribution == null)
@@ -316,7 +299,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            int id = idEncoder.Decode(contributionId).Single();
+            int id = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
             if (contribution == null)
@@ -435,7 +418,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            int id = idEncoder.Decode(contributionId).Single();
+            int id = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -450,6 +433,7 @@ public class UserContributionService : IUserContributionService
                 throw new Exception("Contribution not found");
             }
 
+            this.idEncoder.EncodeInPlace(contribution);
             return contribution.Discs.ToList();
         }
     }
@@ -458,7 +442,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            int id = idEncoder.Decode(contributionId).Single();
+            int id = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -473,7 +457,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
             if (disc == null)
@@ -481,6 +465,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Disc {discId} not found");
             }
 
+            this.idEncoder.EncodeInPlace(disc);
             return disc;
         }
     }
@@ -489,7 +474,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            int id = idEncoder.Decode(contributionId).Single();
+            int id = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                 .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
@@ -499,7 +484,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
             if (disc == null)
@@ -545,8 +530,8 @@ public class UserContributionService : IUserContributionService
             var parsed = LogParser.Parse(lines);
             var orgainized = LogParser.Organize(parsed);
 
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
-            var decodedDiscId = this.idEncoder.Decode(discId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
+            var decodedDiscId = this.idEncoder.Decode(discId);
             UserContributionDisc? disc = null;
             UserContribution? contribution = null;
             await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -570,11 +555,10 @@ public class UserContributionService : IUserContributionService
                 {
                     return Result.Fail(new FluentResults.Error($"Disc {discId} not found"));
                 }
-
-                // No need to send back all the discs?
-                contribution.Discs.Clear();
             }
 
+            this.idEncoder.EncodeInPlace(disc);
+            this.idEncoder.EncodeInPlace(contribution);
             return Result.Ok(new DiscLogResponse
             {
                 Info = orgainized,
@@ -600,7 +584,7 @@ public class UserContributionService : IUserContributionService
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                 .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
@@ -632,7 +616,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                 .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
@@ -641,7 +625,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
             if (disc == null)
             {
@@ -662,7 +646,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                 .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
@@ -672,7 +656,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
             if (disc == null)
@@ -692,7 +676,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = await dbContext.UserContributionDiscs
                 .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Id == realDiscId, cancellationToken);
@@ -732,7 +716,7 @@ public class UserContributionService : IUserContributionService
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -743,7 +727,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
             if (disc == null)
@@ -760,9 +744,9 @@ public class UserContributionService : IUserContributionService
 
     public async Task<Result> EditItemOnDisc(string contributionId, string discId, string itemId, EditItemRequest request, CancellationToken cancellationToken = default)
     {
-        var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
-        var decodedDiscId = this.idEncoder.Decode(discId).Single();
-        var decodedItemId = this.idEncoder.Decode(itemId).Single();
+        var decodedContributionId = this.idEncoder.Decode(contributionId);
+        var decodedDiscId = this.idEncoder.Decode(discId);
+        var decodedItemId = this.idEncoder.Decode(itemId);
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
@@ -810,7 +794,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -821,7 +805,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
             if (disc == null)
@@ -829,7 +813,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Disc {discId} not found");
             }
 
-            int realItemId = idEncoder.Decode(itemId).Single();
+            int realItemId = this.idEncoder.Decode(itemId);
             var item = disc.Items.FirstOrDefault(i => i.Id == realItemId);
 
             if (item == null)
@@ -858,7 +842,7 @@ public class UserContributionService : IUserContributionService
         };
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -870,7 +854,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
             
             if (disc == null)
@@ -878,7 +862,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Disc {discId} not found");
             }
 
-            int realItemId = idEncoder.Decode(itemId).Single();
+            int realItemId = this.idEncoder.Decode(itemId);
             var item = disc.Items.FirstOrDefault(i => i.Id == realItemId);
             
             if (item == null)
@@ -906,7 +890,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -916,7 +900,7 @@ public class UserContributionService : IUserContributionService
             {
                 return Result.Fail($"Contribution {contributionId} not found");
             }
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
             if (disc == null)
@@ -924,7 +908,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Disc {discId} not found");
             }
 
-            int realItemId = idEncoder.Decode(itemId).Single();
+            int realItemId = this.idEncoder.Decode(itemId);
             var item = disc.Items.FirstOrDefault(i => i.Id == realItemId);
 
             if (item == null)
@@ -932,7 +916,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Item {itemId} not found");
             }
 
-            int realChapterId = idEncoder.Decode(chapterId).Single();
+            int realChapterId = this.idEncoder.Decode(chapterId);
             var chapter = item.Chapters.FirstOrDefault(c => c.Id == realChapterId);
 
             if (chapter == null)
@@ -952,7 +936,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -964,7 +948,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
             if (disc == null)
@@ -972,7 +956,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Disc {discId} not found");
             }
 
-            int realItemId = idEncoder.Decode(itemId).Single();
+            int realItemId = this.idEncoder.Decode(itemId);
             var item = disc.Items.FirstOrDefault(i => i.Id == realItemId);
 
             if (item == null)
@@ -980,7 +964,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Item {itemId} not found");
             }
 
-            int realChapterId = idEncoder.Decode(chapterId).Single();
+            int realChapterId = this.idEncoder.Decode(chapterId);
             var chapter = item.Chapters.FirstOrDefault(c => c.Id == realChapterId);
 
             if (chapter == null)
@@ -1010,7 +994,7 @@ public class UserContributionService : IUserContributionService
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -1022,7 +1006,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
             if (disc == null)
@@ -1030,7 +1014,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Disc {discId} not found");
             }
 
-            int realItemId = idEncoder.Decode(itemId).Single();
+            int realItemId = this.idEncoder.Decode(itemId);
             var item = disc.Items.FirstOrDefault(i => i.Id == realItemId);
 
             if (item == null)
@@ -1058,7 +1042,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -1070,7 +1054,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
             if (disc == null)
@@ -1078,7 +1062,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Disc {discId} not found");
             }
 
-            int realItemId = idEncoder.Decode(itemId).Single();
+            int realItemId = this.idEncoder.Decode(itemId);
             var item = disc.Items.FirstOrDefault(i => i.Id == realItemId);
 
             if (item == null)
@@ -1086,7 +1070,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Item {itemId} not found");
             }
 
-            int realAudioTrackId = idEncoder.Decode(audioTrackId).Single();
+            int realAudioTrackId = this.idEncoder.Decode(audioTrackId);
             var audioTrack = item.AudioTracks.FirstOrDefault(a => a.Id == realAudioTrackId);
 
             if (audioTrack == null)
@@ -1106,7 +1090,7 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
-            var decodedContributionId = this.idEncoder.Decode(contributionId).Single();
+            var decodedContributionId = this.idEncoder.Decode(contributionId);
             var contribution = await dbContext.UserContributions
                 .Include(c => c.Discs)
                     .ThenInclude(d => d.Items)
@@ -1118,7 +1102,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Contribution {contributionId} not found");
             }
 
-            int realDiscId = idEncoder.Decode(discId).Single();
+            int realDiscId = this.idEncoder.Decode(discId);
             var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
             if (disc == null)
@@ -1126,7 +1110,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Disc {discId} not found");
             }
 
-            int realItemId = idEncoder.Decode(itemId).Single();
+            int realItemId = this.idEncoder.Decode(itemId);
             var item = disc.Items.FirstOrDefault(i => i.Id == realItemId);
 
             if (item == null)
@@ -1134,7 +1118,7 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Item {itemId} not found");
             }
 
-            int realAudioTrackId = idEncoder.Decode(audioTrackId).Single();
+            int realAudioTrackId = this.idEncoder.Decode(audioTrackId);
             var audioTrack = item.AudioTracks.FirstOrDefault(a => a.Id == realAudioTrackId);
 
             if (audioTrack == null)

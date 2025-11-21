@@ -5,7 +5,7 @@
 <h1>My Contributions</h1>
 <QuickGrid Items="Contributions">
     <TemplateColumn Title="Name">
-        <a href="/contributions/@context.Id">@context.ReleaseTitle</a>
+        <a href="/contribution/@context.EncodedId">@context.ReleaseTitle</a>
     </TemplateColumn>
     <PropertyColumn Property="@(c => c.Title)" />
     <PropertyColumn Property="@(c => c.MediaType)" />

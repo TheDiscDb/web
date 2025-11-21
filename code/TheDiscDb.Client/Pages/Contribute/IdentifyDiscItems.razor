@@ -60,7 +60,7 @@ else
 
 @if (showEpisodeDialog)
 {
-    <SfDialog @ref="episodeDialogObj" Target="body" Width="390px" @bind-Visible="@showEpisodeDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Identify Episode">
+    <SfDialog @ref="episodeDialog" Target="body" Width="390px" @bind-Visible="@showEpisodeDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Identify Episode">
         <ChildContent>
             <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
             <EditForm Model="@currentItem" OnValidSubmit="@HandleValidEpisodeSubmit">
@@ -94,7 +94,7 @@ else
 
 @if (showItemDialog)
 {
-    <SfDialog @ref="itemDialogObj" Target="body" Width="390px" @bind-Visible="@showItemDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Identify Item">
+    <SfDialog @ref="itemDialog" Target="body" Width="390px" @bind-Visible="@showItemDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Identify Item">
         <ChildContent>
             <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
             <EditForm Model="@currentItem" OnValidSubmit="@HandleValidItemSubmit">
@@ -125,6 +125,24 @@ else
             <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
             <EditForm Model="@currentItem" OnValidSubmit="@HandleValidChapterSubmit">
                 <DataAnnotationsValidator></DataAnnotationsValidator>
+                @if (this.currentItem != null && this.currentItem.ChapterMatches.Any())
+                {
+                    <SfDropDownButton Content="Copy From...">
+                        <DropDownButtonEvents ItemSelected="(args) => CopyChapters(args)"></DropDownButtonEvents>
+                        <DropDownMenuItems>
+                            @for (int i = 0; i < this.currentItem.ChapterMatches.Count; i++)
+                            {
+                                var match = this.currentItem.ChapterMatches.ElementAt(i);
+                                for (int j = 0; j < match.Value.Count(); j++)
+                                {
+                                    var discItem = match.Value.ElementAt(j);
+                                    var name = $"{match.Key.Name} {discItem.Name}";
+                                    <DropDownMenuItem Text="@name" data-matchIndex="@i" data-ItemIndex="@j"></DropDownMenuItem>
+                                }
+                            }
+                        </DropDownMenuItems>
+                    </SfDropDownButton>
+                }
                 <ol>
                 @foreach (var item in this.currentItem!.Chapters)
                 {

@@ -40,6 +40,10 @@ To add add a disc, run the following command on your machine:
     <i class="@state.IconClassName"></i> @state.Text
 </button>
 
+<SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".txt" ShowFileList="false">
+    <UploaderEvents ValueChange="ValueChange"></UploaderEvents>
+</SfUploader>
+
 @if (showSpinner)
 {
     <div>

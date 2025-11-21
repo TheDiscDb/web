@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using Syncfusion.Blazor.Inputs;
 using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -27,6 +28,9 @@ public partial class DiscUpload : ComponentBase
 
     [Inject]
     private IUserContributionService Client { get; set; } = null!;
+
+    [Inject]
+    private HttpClient HttpClient { get; set; } = null!;
 
     private readonly string powershellCommandTemplate = "Invoke-WebRequest -Uri \"{0}\" -Method POST -ContentType \"text/plain\" -Body ((& '{1}' --minlength=0 --robot info disc:{2}) | Out-String)";
     private readonly string bashCommandTemplate = "makemkvcon mkv --minlength=0 --robot info disc:{1} 2>&1 | curl -X POST -H \"Content-Type: text/plain\" -d @- {0}";
@@ -94,6 +98,27 @@ public partial class DiscUpload : ComponentBase
             await Clipboard.WriteTextAsync(currentCommand);
             await Task.Delay(TimeSpan.FromSeconds(2));
             state = temp;
+        }
+    }
+
+    private async Task ValueChange(UploadChangeEventArgs args)
+    {
+        try
+        {
+            var file = args.Files.FirstOrDefault();
+            if (file != null)
+            {
+                using (var stream = file.File.OpenReadStream(long.MaxValue))
+                {
+                    using var reader = new StreamReader(stream);
+                    string contents = await reader.ReadToEndAsync();
+                    await HttpClient.PostAsync(GetUri(), new StringContent(contents));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
         }
     }
 }

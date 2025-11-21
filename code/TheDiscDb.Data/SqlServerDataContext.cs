@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -244,9 +245,14 @@ public enum UserContributionStatus
 
 public class UserContribution
 {
+    [JsonIgnore]
     public int Id { get; set; }
+    [NotMapped]
+    public string EncodedId { get; set; }
+    [JsonIgnore]
     public string UserId { get; set; }
     //public TheDiscDbUser User { get; set; } = null!;
+
     public DateTimeOffset Created { get; set; }
     public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
     public ICollection<UserContributionDisc> Discs { get; set; } = new HashSet<UserContributionDisc>();
@@ -272,7 +278,10 @@ public class UserContribution
 
 public class UserContributionDisc
 {
+    [JsonIgnore]
     public int Id { get; set; }
+    [NotMapped]
+    public string EncodedId { get; set; }
     [JsonIgnore]
     public UserContribution UserContribution { get; set; } = null!;
     public string ContentHash { get; set; } = string.Empty;
@@ -285,7 +294,10 @@ public class UserContributionDisc
 
 public class UserContributionDiscItem
 {
+    [JsonIgnore]
     public int Id { get; set; }
+    [NotMapped]
+    public string EncodedId { get; set; }
     [JsonIgnore]
     public UserContributionDisc Disc { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -305,7 +317,10 @@ public class UserContributionDiscItem
 
 public class UserContributionChapter
 {
+    [JsonIgnore]
     public int Id { get; set; }
+    [NotMapped]
+    public string EncodedId { get; set; }
     public int Index { get; set; }
     public string Title { get; set; }
     [JsonIgnore]
@@ -314,7 +329,10 @@ public class UserContributionChapter
 
 public class UserContributionAudioTrack
 {
+    [JsonIgnore]
     public int Id { get; set; }
+    [NotMapped]
+    public string EncodedId { get; set; }
     public int Index { get; set; }
     public string Title { get; set; }
     [JsonIgnore]
@@ -323,7 +341,10 @@ public class UserContributionAudioTrack
 
 public class  UserContributionDiscHashItem
 {
+    [JsonIgnore]
     public int Id { get; set; }
+    [NotMapped]
+    public string EncodedId { get; set; }
     [JsonIgnore]
     public UserContribution UserContribution { get; set; }
     public string DiscHash { get; set; }
