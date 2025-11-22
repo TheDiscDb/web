@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Sqids;
+using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
@@ -47,6 +48,17 @@ public class ContributionEndpoints
         contribute.MapPost("{contributionId}/discs/{discId}/items/{itemId}/audiotracks", AddAudioTrackToItem);
         contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}/audiotracks/{audioTrackId}", DeleteAudioTrackFromItem);
         contribute.MapPut("{contributionId}/discs/{discId}/items/{itemId}/audiotracks/{audioTrackId}", UpdateAudioTrackInItem);
+
+        contribute.MapPost("images/front/upload/{id:guid}", UploadFrontImage)
+            .WithMetadata(new DisableRequestSizeLimitAttribute())
+            .DisableAntiforgery();
+        contribute.MapPost("images/front/remove/{id:guid}", RemoveFrontImage)
+            .DisableAntiforgery();
+        contribute.MapPost("images/back/upload/{id:guid}", UploadBackImage)
+            .WithMetadata(new DisableRequestSizeLimitAttribute())
+            .DisableAntiforgery();
+        contribute.MapPost("images/back/remove/{id:guid}", RemoveBackImage)
+            .DisableAntiforgery();
     }
 
     public async Task<IResult> GetUserContributions(IUserContributionService service, UserManager<TheDiscDbUser> userManager, ClaimsPrincipal user, CancellationToken cancellationToken)
@@ -255,6 +267,47 @@ public class ContributionEndpoints
         var result = await service.UpdateAudioTrackInItem(contributionId, discId, itemId, audioTrackId, request, cancellationToken);
         return OkOrProblem(result, $"Unable to update audio track {audioTrackId} from item {itemId} from disc {discId} for contribution {contributionId}");
     }
+
+    #region Image Upload
+
+    public async Task<IResult> RemoveFrontImage(Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+        => await RemoveImage(id, "front", service, cancellationToken);
+
+    public async Task<IResult> UploadFrontImage(IFormFileCollection myFiles, Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+        => await UploadImage(myFiles, id, "front", service, cancellationToken);
+
+    public async Task<IResult> RemoveBackImage(Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+        => await RemoveImage(id, "back", service, cancellationToken);
+
+    public async Task<IResult> UploadBackImage(IFormFileCollection myFiles, Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+        => await UploadImage(myFiles, id, "back", service, cancellationToken);
+
+    public async Task<IResult> RemoveImage(Guid id, string name, IStaticAssetStore service, CancellationToken cancellationToken)
+    {
+        var path = $"_releaseImages/{id}/{name}.jpg";
+        await service.Delete(path, cancellationToken);
+        return TypedResults.Ok();
+    }
+
+    private async Task<IResult> UploadImage(IFormFileCollection myFiles, Guid id, string name, IStaticAssetStore service, CancellationToken cancellationToken)
+    {
+        var file = myFiles.FirstOrDefault();
+
+        if (file == null || file.Length == 0)
+        {
+            return Results.BadRequest("No file uploaded.");
+        }
+
+        var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream, cancellationToken);
+
+        memoryStream.Position = 0;
+        var result = await service.Save(memoryStream, $"_releaseImages/{id}/{name}.jpg", file.ContentType, cancellationToken);
+
+        return TypedResults.Ok();
+    }
+
+    #endregion
 
     private IResult OkOrProblem(FluentResults.Result result, string problemMessage)
     {

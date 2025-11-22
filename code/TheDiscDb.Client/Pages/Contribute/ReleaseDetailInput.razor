@@ -24,13 +24,21 @@
         <ValidationMessage For="@(() => request.Upc)" />
     </div>
     <div class="mb-3">
-        <label>Front Image URL</label>
-        <InputText class="form-control" @bind-Value="request.FrontImageUrl" />
+        <label>Front Image</label>
+        <SfUploader AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
+            <UploaderButtons Browse="Browse"></UploaderButtons>
+            <UploaderEvents FileSelected="FrontImageSelected" OnRemove="FrontImageRemoved"></UploaderEvents>
+            <UploaderAsyncSettings SaveUrl="@frontImageUploadUrl" RemoveUrl="@frontImageRemoveUrl"></UploaderAsyncSettings>
+        </SfUploader>
         <ValidationMessage For="@(() => request.FrontImageUrl)" />
     </div>
     <div class="mb-3">
-        <label>Back Image URL</label>
-        <InputText class="form-control" @bind-Value="request.BackImageUrl" />
+        <label>Back Image</label>
+        <SfUploader AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
+            <UploaderButtons Browse="Browse"></UploaderButtons>
+            <UploaderEvents FileSelected="BackImageSelected" OnRemove="BackImageRemoved"></UploaderEvents>
+            <UploaderAsyncSettings SaveUrl="@backImageUploadUrl" RemoveUrl="@backImageRemoveUrl"></UploaderAsyncSettings>
+        </SfUploader>
         <ValidationMessage For="@(() => request.BackImageUrl)" />
     </div>
     <div class="mb-3">

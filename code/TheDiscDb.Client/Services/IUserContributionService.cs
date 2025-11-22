@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using FluentResults;
 using MakeMkv;
+using Syncfusion.Blazor.Inputs;
 using TheDiscDb.Client;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Web.Data;
@@ -52,8 +53,10 @@ public class CreateContributionRequest
     public string Asin { get; set; } = string.Empty;
     [Required]
     public string Upc { get; set; } = string.Empty;
-    public string FrontImageUrl { get; set; } = string.Empty;
-    public string BackImageUrl { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Front Image is required")]
+    public string? FrontImageUrl { get; set; }
+    public string? BackImageUrl { get; set; } = string.Empty;
     public string ReleaseTitle { get; set; } = string.Empty;
     [Required]
     public string ReleaseSlug { get; set; } = string.Empty;

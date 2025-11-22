@@ -12,11 +12,17 @@
         Task<bool> Exists(string remotePath, CancellationToken cancellationToken = default);
         string ContainerName { get; set; }
         Task<BinaryData> Download(string remotePath, CancellationToken cancellationToken = default);
+        Task Delete(string remotePath, CancellationToken cancellationToken = default);
     }
 
     public class NullStaticAssetStore : IStaticAssetStore
     {
         public string ContainerName { get; set; } = "";
+
+        public Task Delete(string remotePath, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
 
         public Task<BinaryData> Download(string remotePath, CancellationToken cancellationToken = default)
         {

@@ -112,5 +112,11 @@
             var response = await blobClient.DownloadContentAsync(cancellationToken);
             return response.Value.Content;
         }
+
+        public async Task Delete(string remotePath, CancellationToken cancellationToken = default)
+        {
+            var blobClient = GetClient(remotePath);
+            await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
+        }
     }
 }

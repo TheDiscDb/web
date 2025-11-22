@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Syncfusion.Blazor.Inputs;
 using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -27,6 +28,11 @@ public partial class ReleaseDetailInput : ComponentBase
 
     private string releaseDate = string.Empty;
     private string releaseDateValidationMessage = string.Empty;
+    private readonly Guid id = Guid.NewGuid();
+    private string frontImageUploadUrl => $"/api/contribute/images/front/upload/{id}";
+    private string frontImageRemoveUrl => $"/api/contribute/images/front/remove/{id}";
+    private string backImageUploadUrl => $"/api/contribute/images/back/upload/{id}";
+    private string backImageRemoveUrl => $"/api/contribute/images/back/remove/{id}";
 
     protected override async Task OnInitializedAsync()
     {
@@ -126,5 +132,25 @@ public partial class ReleaseDetailInput : ComponentBase
         }
 
         return slug;
+    }
+
+    private void FrontImageSelected(SelectedEventArgs args)
+    {
+        this.request.FrontImageUrl = $"{this.id}/front.jpg";
+    }
+
+    private void FrontImageRemoved(RemovingEventArgs args)
+    {
+        this.request.FrontImageUrl = null;
+    }
+
+    private void BackImageSelected(SelectedEventArgs args)
+    {
+        this.request.BackImageUrl = $"{this.id}/back.jpg";
+    }
+
+    private void BackImageRemoved(RemovingEventArgs args)
+    {
+        this.request.BackImageUrl = null;
     }
 }
