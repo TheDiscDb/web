@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Services;
+using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -31,15 +32,22 @@ public partial class AddDisc : ComponentBase
     IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
     string hash = string.Empty;
     List<FileHashInfo>? hashItems = null;
+    UserContribution? contribution = null;
+
     private readonly SaveDiscRequest request = new SaveDiscRequest
     {
         Format = "Blu-ray"
     };
+
     readonly string[] formats = [ "4K", "Blu-ray", "DVD" ];
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
-        return Task.CompletedTask;
+        var response = await this.Client.GetContribution(ContributionId!);
+        if (response.IsSuccess)
+        {
+            this.contribution = response.Value;
+        }
     }
 
     async Task OpenFolderAsync()

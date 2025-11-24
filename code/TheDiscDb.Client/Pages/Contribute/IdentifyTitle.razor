@@ -1,7 +1,11 @@
 ﻿@page "/contribute/{mediaType}"
 @using TheDiscDb.Services
 
-@rendermode InteractiveAuto
+@rendermode @(new InteractiveAutoRenderMode(prerender:false))
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@BreadcrumbText" Items="[
+    GetRootContributionLink()
+]" />
 
 <h3>What @MediaType would you like to contribute?</h3>
 <SfAutoComplete TValue="ExternalSearchResult" TItem="ExternalSearchResult" @bind-value="SelectedItem" PopupWidth="500px">

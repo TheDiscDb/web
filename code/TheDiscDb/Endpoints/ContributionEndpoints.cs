@@ -21,9 +21,10 @@ public class ContributionEndpoints
         contribute.MapDelete("{contributionId}", DeleteContribution);
         contribute.MapPut("{contributionId}", UpdateContribution);
         contribute.MapPost("{contributionId}/hashdisc", HashDisc);
-        contribute.MapGet("/externalsearch/{type}", ExternalSearch);
+        contribute.MapGet("externalsearch/{type}", ExternalSearch);
         contribute.MapGet("{contributionId}/episodes", GetEpisodeNames);
         contribute.MapGet("{contributionId}/externalData", GetExternalData);
+        contribute.MapGet("externalData/{provider}/{mediaType}/{externalId}", GetExternalDataByExternalId);
 
         contribute.MapGet("{contributionId}/discs", GetDiscs);
         contribute.MapGet("{contributionId}/discsj/{discId}", GetDisc);
@@ -108,6 +109,12 @@ public class ContributionEndpoints
     {
         var result = await service.GetEpisodeNames(contributionId, cancellationToken);
         return JsonResult(result, $"Unable to get episode names for contribution {contributionId}");
+    }
+
+    public async Task<IResult> GetExternalDataByExternalId(IUserContributionService service, string provider, string mediaType, string externalId, CancellationToken cancellationToken)
+    {
+        var result = await service.GetExternalData(provider, mediaType, provider, cancellationToken);
+        return JsonResult(result, $"Unable to get external data for externalId {externalId} from {provider}");
     }
 
     public async Task<IResult> GetExternalData(IUserContributionService service, string contributionId, CancellationToken cancellationToken)

@@ -2,6 +2,13 @@
 
 @rendermode InteractiveAuto
 
+@if (this.externalData != null)
+{
+    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@BreadcrumbText" Items="[
+        GetRootContributionLink()
+    ]" />
+}
+
 <h3>Create Release</h3>
 
 <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">

@@ -1,8 +1,29 @@
 ﻿using TheDiscDb.InputModels;
+using TheDiscDb.Web.Data;
 
 namespace TheDiscDb;
 
-public static class BreadCrumbHelper
+public static partial class BreadCrumbHelper
+{
+    public static (string Text, string Url) GetRootContributionLink() => (Text: "Contribute", Url: "/contribute");
+
+    public static (string Text, string Url) GetContributionLink(UserContribution contribution)
+    {
+        return (Text: GetContributionLinkText(contribution), Url: $"/contribution/{contribution.EncodedId}");
+    }
+
+    public static (string Text, string Url) GetContributionDiscLink(UserContribution contribution, UserContributionDisc disc)
+    {
+        return (Text: $"{disc.Name} ({disc.Format})", Url: $"/contribution/{contribution.EncodedId}/discs/{disc.EncodedId}");
+    }
+
+    public static string GetContributionLinkText(UserContribution contribution)
+    {
+        return $"{contribution.Title} ({contribution.Year}) - {contribution.ReleaseTitle}";
+    }
+}
+
+public static partial class BreadCrumbHelper
 {
     public static (string Text, string Url) GetRootLink(IDisplayItem item)
     {

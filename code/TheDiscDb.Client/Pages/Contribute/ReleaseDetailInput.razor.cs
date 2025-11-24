@@ -28,17 +28,25 @@ public partial class ReleaseDetailInput : ComponentBase
 
     private string releaseDate = string.Empty;
     private string releaseDateValidationMessage = string.Empty;
+    private ExternalMetadata? externalData;
     private readonly Guid id = Guid.NewGuid();
     private string frontImageUploadUrl => $"/api/contribute/images/front/upload/{id}";
     private string frontImageRemoveUrl => $"/api/contribute/images/front/remove/{id}";
     private string backImageUploadUrl => $"/api/contribute/images/back/upload/{id}";
     private string backImageRemoveUrl => $"/api/contribute/images/back/remove/{id}";
+    private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
 
     protected override async Task OnInitializedAsync()
     {
         this.request.MediaType = this.MediaType ?? "Movie";
         this.request.ExternalProvider = "TMDB";
         this.request.ExternalId = this.ExternalId ?? string.Empty;
+
+        var response = await this.Client.GetExternalData(this.request.ExternalId, this.request.MediaType, this.request.ExternalProvider);
+        if (response != null && response.IsSuccess)
+        {
+            this.externalData = response.Value;
+        }
     }
 
     async Task HandleValidSubmit()

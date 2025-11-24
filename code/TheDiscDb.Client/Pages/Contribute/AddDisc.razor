@@ -1,6 +1,14 @@
 ﻿@page "/contribution/{contributionId}/adddisc"
 
-@rendermode InteractiveWebAssembly
+@rendermode @(new InteractiveAutoRenderMode(prerender:true))
+
+@if (this.contribution != null)
+{
+    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Add Disc" Items="[
+        GetRootContributionLink(),
+        GetContributionLink(this.contribution)
+    ]" />
+}
 
 <h3>Add Disc to Contribution</h3>
 

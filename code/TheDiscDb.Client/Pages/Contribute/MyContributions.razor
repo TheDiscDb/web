@@ -2,6 +2,10 @@
 
 @rendermode InteractiveAuto
 
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="My Contributions" Items="[
+    GetRootContributionLink()
+]" />
+
 <h1>My Contributions</h1>
 <QuickGrid Items="Contributions">
     <TemplateColumn Title="Name">

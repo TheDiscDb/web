@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using System.Web;
 using FluentResults;
 using Microsoft.AspNetCore.Components;
 using TheDiscDb.Client;
@@ -117,11 +118,26 @@ public class UserContributionService : ApiClient, IUserContributionService
     public async Task<Result<ExternalMetadata>> GetExternalData(string contributionId, CancellationToken cancellationToken = default)
     {
         var client = GetHttpClient();
-        var response = await client.GetAsync($"/api/contribute/{contributionId}/externalData", cancellationToken);
+        var response = await client.GetAsync($"/api/contribute/{HttpUtility.UrlEncode(contributionId)}/externalData", cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {
             return Result.Fail($"Unable get external data for contribution {contributionId}");
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<ExternalMetadata>(cancellationToken: cancellationToken);
+
+        return result!;
+    }
+
+    public async Task<Result<ExternalMetadata>> GetExternalData(string externalId, string mediaType, string provider, CancellationToken cancellationToken = default)
+    {
+        var client = GetHttpClient();
+        var response = await client.GetAsync($"/api/contribute/externalData/{HttpUtility.UrlEncode(provider)}/{HttpUtility.UrlEncode(mediaType)}/{HttpUtility.UrlEncode(externalId)}", cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return Result.Fail($"Unable get external data for externalId {externalId} from {provider}");
         }
 
         var result = await response.Content.ReadFromJsonAsync<ExternalMetadata>(cancellationToken: cancellationToken);

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Syncfusion.Blazor.Inputs;
 using TheDiscDb.Services;
+using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -37,6 +38,7 @@ public partial class DiscUpload : ComponentBase
     //private readonly string powershellLocalCommandTempalte = "Invoke-WebRequest -Uri \"{0}\" -Method POST -ContentType \"text/plain\" -Body ((Get-Content -Path '{1}') | Out-String)";
 
     State state = new("Copy", "e-icons e-copy");
+    UserContribution? contribution;
 
     public string? PowershellCommand => string.Format(powershellCommandTemplate, GetUri(), GetMakeMkvPath(), this.DriveIndex);
     public string? BashCommand => string.Format(bashCommandTemplate, GetUri(), this.DriveIndex);
@@ -55,11 +57,16 @@ public partial class DiscUpload : ComponentBase
 
     private bool showSpinner;
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         //this.pollUploadedTimer = new Timer(PollTimerTick!, null, 0, 2000);
         this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
-        return Task.CompletedTask;
+        
+        var response = await this.Client.GetContribution(this.ContributionId ?? string.Empty);
+        if (response != null && response.IsSuccess)
+        {
+            this.contribution = response.Value;
+        }
     }
 
     private void SpinnerTimerTick(object state)

@@ -1,6 +1,13 @@
 ﻿@page "/contribution/{contributionId}"
 @rendermode InteractiveAuto
 
+@if (this.Contribution != null)
+{
+    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@GetContributionLinkText(this.Contribution)" Items="[
+        GetRootContributionLink()
+    ]" />
+}
+
 <h2>User Contribution</h2>
 @if (this.Contribution != null)
 {

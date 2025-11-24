@@ -410,6 +410,51 @@ public class UserContributionService : IUserContributionService
         }
     }
 
+    public async Task<FluentResults.Result<ExternalMetadata>> GetExternalData(string externalId, string mediaType, string provider, CancellationToken cancellationToken = default)
+    {
+        int? year = null;
+        ExternalMetadata? metadata = null;
+        if (mediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
+        {
+            var series = await this.tmdb.GetSeries(externalId, cancellationToken: cancellationToken);
+            if (series == null)
+            {
+                return Result.Fail($"Series with TMDB ID {externalId} not found");
+            }
+
+            year = series.FirstAirDate.HasValue ? series.FirstAirDate.Value.Year : 0;
+
+            metadata = new ExternalMetadata
+            {
+                Id = series.Id,
+                Title = series.Name ?? "Unknown Title",
+                Year = year ?? 0,
+                ImageUrl = "https://image.tmdb.org/t/p/w500" + series?.PosterPath
+            };
+
+        }
+        else
+        {
+            var movie = await this.tmdb.GetMovie(externalId, cancellationToken: cancellationToken);
+            if (movie == null)
+            {
+                return Result.Fail($"Movie with TMDB ID {externalId} not found");
+            }
+
+            year = movie.ReleaseDate.HasValue ? movie.ReleaseDate.Value.Year : 0;
+
+            metadata = new ExternalMetadata
+            {
+                Id = movie.Id,
+                Title = movie.Title ?? "Unknown Title",
+                Year = year ?? 0,
+                ImageUrl = "https://image.tmdb.org/t/p/w500" + movie?.PosterPath
+            };
+        }
+
+        return metadata;
+    }
+
     #endregion
 
     #region Discs

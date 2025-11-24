@@ -16,6 +16,8 @@ public partial class IdentifyTitle : ComponentBase
     [Parameter]
     public string? MediaType { get; set; }
 
+    string BreadcrumbText => $"Find {MediaType}";
+
     public string? SearchText { get; set; }
 
     public bool IsNextButtonDisabled => SelectedItem == null;

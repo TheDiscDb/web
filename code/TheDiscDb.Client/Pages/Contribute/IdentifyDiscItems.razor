@@ -2,6 +2,15 @@
 
 @rendermode @(new InteractiveAutoRenderMode(prerender:false))
 
+@if (this.disc != null && this.contribution != null)
+{
+    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Identify" Items="[
+    GetRootContributionLink(),
+    GetContributionLink(this.contribution),
+    GetContributionDiscLink(this.contribution, this.disc)
+]" />
+}
+
 <h1>Indentify Items</h1>
 
 @if (titles is null)
@@ -18,6 +27,7 @@ else
             <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
         </TemplateColumn>
         <PropertyColumn Property="@(t => t.Playlist)" />
+        <PropertyColumn Property="@(t => t.JavaComment)" Title="Comment" />
         <TemplateColumn Title="Name">
             <a title="edit" @onclick="() => EditTitle(context)">@GetTitle(context)</a>
         </TemplateColumn>

@@ -1,7 +1,15 @@
 ﻿@page "/contribution/{contributionId}/discs/{discId}"
 @using HighlightBlazor
 
-@rendermode InteractiveAuto
+@rendermode @(new InteractiveAutoRenderMode(prerender:false))
+
+@if (this.contribution != null)
+{
+    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Upload Disc Logs" Items="[
+        GetRootContributionLink(),
+        GetContributionLink(this.contribution)
+    ]" />
+}
 
 <h1>Upload Disc Logs</h1>
 
@@ -25,12 +33,22 @@ To add add a disc, run the following command on your machine:
                 <CodeHighlight CodeLanguage="PowerShell" Code="@PowershellCommand" />
             </ContentTemplate>
         </TabItem>
-        <TabItem Content="">
+        <TabItem>
             <ChildContent>
                 <TabHeader Text="Bash"></TabHeader>
             </ChildContent>
             <ContentTemplate>
                 <CodeHighlight CodeLanguage="Bash" Code="@BashCommand" />
+            </ContentTemplate>
+        </TabItem>
+        <TabItem>
+            <ChildContent>
+                <TabHeader Text="Manual Upload"></TabHeader>
+            </ChildContent>
+            <ContentTemplate>
+                <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".txt" ShowFileList="false">
+                    <UploaderEvents ValueChange="ValueChange"></UploaderEvents>
+                </SfUploader>
             </ContentTemplate>
         </TabItem>
     </TabItems>
@@ -39,10 +57,6 @@ To add add a disc, run the following command on your machine:
 <button class="btn btn-primary" @onclick="CopyTextToClipboard" disabled=@state.IsDisabled>
     <i class="@state.IconClassName"></i> @state.Text
 </button>
-
-<SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".txt" ShowFileList="false">
-    <UploaderEvents ValueChange="ValueChange"></UploaderEvents>
-</SfUploader>
 
 @if (showSpinner)
 {
