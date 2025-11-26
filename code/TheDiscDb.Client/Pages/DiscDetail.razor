@@ -1,7 +1,7 @@
 ﻿@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndexString}"
 @page "/disc/{contentHash}"
 
-@rendermode InteractiveAuto
+@rendermode @(new InteractiveAutoRenderMode(prerender:false))
 
 @if (Item == null || Disc == null || Release == null)
 {
@@ -27,37 +27,19 @@ else
         Show all titles
     </SfSwitch>
 
-    <table>
-        <theader>
-            <th style="cursor: pointer;" @onclick="@(e => SortTable("SourceFile"))">Source File</th>
-            <th Style="cursor: pointer;" @onclick="@(e => SortTable("Description"))">Description</th>
-            <th Style="cursor: pointer;" @onclick="@(e => SortTable("ItemType"))">Type</th>
-            @if (this.Item!.Type!.Equals("series", StringComparison.OrdinalIgnoreCase))
-            {
-                <th Style="cursor: pointer;" @onclick="@(e => SortTable("Season"))">Season</th>
-                <th Style="cursor: pointer;" @onclick="@(e => SortTable("Episode"))">Episode</th>
-            }
-            <th Style="cursor: pointer;" @onclick="@(e => SortTable("SegmentMap"))">Segment Map</th>
-            <th Style="cursor: pointer;" @onclick="@(e => SortTable("Duration"))">Length</th>
-            <th Style="cursor: pointer;" @onclick="@(e => SortTable("DisplaySize"))">Size</th>
-        </theader>
-        <tbody>
-            @foreach (var title in FilteredTitles)
-            {
-                <tr>
-                    <td><a href="@TitleDetailUrl(title)">@title.SourceFile</a></td>
-                    <td>@title.Description</td>
-                    <td>@title.ItemType</td>
-                    @if (this.Item!.Type!.Equals("series", StringComparison.OrdinalIgnoreCase))
-                    {
-                        <td>@title.Season</td>
-                        <td>@title.Episode</td>
-                    }
-                    <td>@title.SegmentMap</td>
-                    <td>@title.Duration</td>
-                    <td>@title.DisplaySize</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <QuickGrid Items="FilteredTitles">
+        <TemplateColumn Title="Source File" Sortable="true" SortBy="SortSourceFile">
+            <a href="@TitleDetailUrl(context)">@context.SourceFile</a>
+        </TemplateColumn>
+        <PropertyColumn Property="@(t => t.Description)" Sortable="true" />
+        <PropertyColumn Property="@(t => t.ItemType)" Title="Type" Sortable="true" />
+        @if (this.Item!.Type!.Equals("series", StringComparison.OrdinalIgnoreCase))
+        {
+            <PropertyColumn Property="@(t => t.Season)" Sortable="true" />
+            <PropertyColumn Property="@(t => t.Episode)" Sortable="true" />
+        }
+        <PropertyColumn Property="@(t => t.SegmentMap)" Sortable="true" />
+        <PropertyColumn Property="@(t => t.Duration)" Sortable="true" />
+        <PropertyColumn Property="@(t => t.DisplaySize)" Sortable="true" />
+    </QuickGrid>
 }

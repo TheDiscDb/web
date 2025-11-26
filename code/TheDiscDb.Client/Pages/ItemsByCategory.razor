@@ -1,7 +1,7 @@
 ﻿@page "/g/{slug}"
 @using System.Web
 
-@rendermode InteractiveAuto
+@rendermode @(new InteractiveAutoRenderMode(prerender:false))
 @using TheDiscDb.Components.InfiniteScrolling
 
 <PageTitle>Items related to '@Name' - TheDiscDb</PageTitle>

@@ -1,6 +1,6 @@
 ﻿@page "/boxsets"
 
-@rendermode InteractiveAuto
+@rendermode @(new InteractiveAutoRenderMode(prerender:false))
 @using TheDiscDb.Components.InfiniteScrolling
 
 <PageTitle>All Boxsets - TheDiscDb</PageTitle>

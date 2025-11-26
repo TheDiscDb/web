@@ -624,7 +624,8 @@ public class UserContributionService : IUserContributionService
             ContentHash = request.ContentHash,
             Format = request.Format,
             Name = request.Name,
-            Slug = request.Slug
+            Slug = request.Slug,
+            ExistingDiscPath = request.ExistingDiscPath
         };
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -645,6 +646,7 @@ public class UserContributionService : IUserContributionService
                 existingDisc.Format = request.Format;
                 existingDisc.Name = request.Name;
                 existingDisc.Slug = request.Slug;
+                existingDisc.ExistingDiscPath = request.ExistingDiscPath;
             }
             else
             {

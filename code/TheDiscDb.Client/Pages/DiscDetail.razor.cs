@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.QuickGrid;
 using StrawberryShake;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.InputModels;
@@ -43,7 +44,8 @@ public partial class DiscDetail : ComponentBase
     private IDisc? Disc { get; set; }
 
     private IEnumerable<IDiscItem> AllTitles { get; set; } = new List<IDiscItem>();
-    private IEnumerable<IDiscItem> FilteredTitles { get; set; } = new List<IDiscItem>();
+    private IQueryable<IDiscItem> FilteredTitles { get; set; } = new List<IDiscItem>().AsQueryable();
+    private readonly GridSort<IDiscItem> SortSourceFile = GridSort<IDiscItem>.ByAscending(u => u.SourceFile);
 
     protected override async Task OnInitializedAsync()
     {
@@ -81,7 +83,7 @@ public partial class DiscDetail : ComponentBase
                     if (Disc != null)
                     {
                         AllTitles = disc!.Titles!;
-                        FilteredTitles = AllTitles.Where(t => t.HasItem);
+                        FilteredTitles = AllTitles.Where(t => t.HasItem).AsQueryable();
                     }
                 }
             }
@@ -109,7 +111,7 @@ public partial class DiscDetail : ComponentBase
                     if (Disc != null)
                     {
                         AllTitles = disc!.Titles!;
-                        FilteredTitles = AllTitles.Where(t => t.HasItem);
+                        FilteredTitles = AllTitles.Where(t => t.HasItem).AsQueryable();
                     }
                 }
             }
@@ -136,7 +138,7 @@ public partial class DiscDetail : ComponentBase
                     if (Disc != null)
                     {
                         AllTitles = disc!.Titles!;
-                        FilteredTitles = AllTitles.Where(t => t.HasItem);
+                        FilteredTitles = AllTitles.Where(t => t.HasItem).AsQueryable();
                     }
                 }
             }
@@ -147,11 +149,11 @@ public partial class DiscDetail : ComponentBase
     {
         if (args.Checked)
         {
-            FilteredTitles = AllTitles;
+            FilteredTitles = AllTitles.AsQueryable();
         }
         else
         {
-            FilteredTitles = AllTitles.Where(t => t.HasItem);
+            FilteredTitles = AllTitles.Where(t => t.HasItem).AsQueryable();
         }
 
         this.StateHasChanged();
@@ -191,7 +193,7 @@ public partial class DiscDetail : ComponentBase
         }
 
         lastSortDirection = direction;
-        FilteredTitles = Helper.OrderByDynamic(FilteredTitles, column, direction).ToList();
+        FilteredTitles = Helper.OrderByDynamic(FilteredTitles, column, direction).AsQueryable();
     }
 }
 

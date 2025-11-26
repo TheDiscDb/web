@@ -36,4 +36,18 @@ public partial class ContributionDiscs : ComponentBase
     {
         await Task.Delay(1);
     }
+
+    private string GetStatusBadgeClass()
+    {
+        if (Contribution == null)
+            return "secondary";
+
+        return Contribution.Status switch
+        {
+            UserContributionStatus.Pending => "info",
+            UserContributionStatus.Approved => "success",
+            UserContributionStatus.Rejected => "danger",
+            _ => "secondary"
+        };
+    }
 }

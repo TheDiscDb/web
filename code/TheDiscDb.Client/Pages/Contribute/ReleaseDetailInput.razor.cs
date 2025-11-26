@@ -81,7 +81,7 @@ public partial class ReleaseDetailInput : ComponentBase
         {
             string title = args.Value.ToString()!;
             int? year = null;
-            if (this.request.ReleaseDate.Year > 1980)
+            if (this.request.ReleaseDate.Year > 1980 && !title.Contains(this.request.ReleaseDate.Year.ToString()))
             {
                 year = this.request.ReleaseDate.Year;
             }

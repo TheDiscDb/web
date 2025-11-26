@@ -4,7 +4,9 @@ using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using Syncfusion.Blazor.Popups;
 using TheDiscDb.Core.DiscHash;
+using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
@@ -27,6 +29,12 @@ public partial class AddDisc : ComponentBase
 
     [Inject]
     public NavigationManager Navigation { get; set; } = default!;
+
+    [Inject]
+    public GetDiscDetailByContentHashQuery? Query { get; set; }
+
+    [Inject]
+    public SfDialogService DialogService { get; set; } = default!;
 
     FileSystemDirectoryHandleInProcess? handler;
     IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
@@ -108,6 +116,29 @@ public partial class AddDisc : ComponentBase
             {
                 hash = response.Value.DiscHash;
                 this.request.ContentHash = hash;
+
+                var result = await Query!.ExecuteAsync(hash);
+                if (result.Data?.MediaItems?.Nodes != null)
+                {
+                    if (result.Data?.MediaItems?.Nodes.Count > 0)
+                    {
+                        bool copyDisc = await DialogService.ConfirmAsync("This disc is already found in another release. Would you like to copy that disc into this contribution?", "Copy Existing Disc");
+                        if (copyDisc)
+                        {
+                            var source = result.Data?.MediaItems?.Nodes.First();
+                            this.request.Slug = source!.Slug!;
+                            this.request.Name = source!.Title!;
+                            this.request.Format = source!.Type!;
+                            this.request.ExistingDiscPath = SaveDiscRequest.GenerateDiscPath(this.contribution!.MediaType, this.contribution!.ExternalId, this.contribution.ReleaseSlug, source!.Slug!);
+
+                            var createDiscResponse = await this.Client.CreateDisc(this.ContributionId!, this.request);
+                            if (createDiscResponse.IsSuccess)
+                            {
+                                this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
+                            }
+                        }
+                    }
+                }
             }
         }
     }

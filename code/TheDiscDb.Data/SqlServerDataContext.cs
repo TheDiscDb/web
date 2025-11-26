@@ -283,12 +283,14 @@ public class UserContributionDisc
     [NotMapped]
     public string EncodedId { get; set; }
     [JsonIgnore]
-    public UserContribution UserContribution { get; set; } = null!;
+    public UserContribution UserContribution { get; set; } = null;
     public string ContentHash { get; set; } = string.Empty;
     public string Format { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public bool LogsUploaded { get; set; } = false;
+    // mediatype/title-slug/release-slug/disc-slug
+    public string ExistingDiscPath { get; set; } = null;
     public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();
 }
 

@@ -1,6 +1,6 @@
 ﻿@page "/series"
 
-@rendermode InteractiveAuto
+@rendermode @(new InteractiveAutoRenderMode(prerender:false))
 @using TheDiscDb.Components.InfiniteScrolling
 
 <PageTitle>All TV Series - TheDiscDb</PageTitle>

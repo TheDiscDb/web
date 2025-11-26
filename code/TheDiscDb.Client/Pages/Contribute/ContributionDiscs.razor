@@ -11,16 +11,93 @@
 <h2>User Contribution</h2>
 @if (this.Contribution != null)
 {
-    <QuickGrid Items="Discs">
-        <TemplateColumn Title="Name">
-            <a href="/contribution/@ContributionId/disc/@context.Id/identify" title="Edit Disc">@context.Name</a>
-        </TemplateColumn>
-        <PropertyColumn Property="@(t => t.Format)" />
-        <PropertyColumn Property="@(t => t.LogsUploaded)" />
-        <TemplateColumn>
-            <a @onclick="args => DeleteDisc(context)" title="Remove disc from release"><SfIcon Name="IconName.DeleteRow" /></a>
-        </TemplateColumn>
-    </QuickGrid>
+    <section>
+        <h3>@this.Contribution.Title (@this.Contribution.Year) - @this.Contribution.ReleaseTitle</h3>
+        
+        <div class="row mt-3">
+            <div class="col-md-8">
+                <dl class="row">
+                    <dt class="col-sm-4">Status:</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge bg-@GetStatusBadgeClass()">@this.Contribution.Status</span>
+                    </dd>
+                    
+                    <dt class="col-sm-4">Created:</dt>
+                    <dd class="col-sm-8">@this.Contribution.Created.ToString("yyyy-MM-dd HH:mm")</dd>
+                    
+                    <dt class="col-sm-4">Media Type:</dt>
+                    <dd class="col-sm-8">@this.Contribution.MediaType</dd>
+                    
+                    <dt class="col-sm-4">Release Date:</dt>
+                    <dd class="col-sm-8">@this.Contribution.ReleaseDate.ToString("yyyy-MM-dd")</dd>
+                    
+                    <dt class="col-sm-4">Locale:</dt>
+                    <dd class="col-sm-8">@this.Contribution.Locale</dd>
+                    
+                    <dt class="col-sm-4">Region Code:</dt>
+                    <dd class="col-sm-8">@(!string.IsNullOrEmpty(this.Contribution.RegionCode) ? this.Contribution.RegionCode : "N/A")</dd>
+                    
+                    @if (!string.IsNullOrEmpty(this.Contribution.Asin))
+                    {
+                        <dt class="col-sm-4">ASIN:</dt>
+                        <dd class="col-sm-8">@this.Contribution.Asin</dd>
+                    }
+                    
+                    @if (!string.IsNullOrEmpty(this.Contribution.Upc))
+                    {
+                        <dt class="col-sm-4">UPC:</dt>
+                        <dd class="col-sm-8">@this.Contribution.Upc</dd>
+                    }
+                    
+                    @if (!string.IsNullOrEmpty(this.Contribution.ExternalProvider))
+                    {
+                        <dt class="col-sm-4">External Provider:</dt>
+                        <dd class="col-sm-8">@this.Contribution.ExternalProvider (@this.Contribution.ExternalId)</dd>
+                    }
+                </dl>
+            </div>
+            
+            <div class="col-md-4">
+                @if (!string.IsNullOrEmpty(this.Contribution.FrontImageUrl))
+                {
+                    <div class="mb-3">
+                        <h5>Front Cover</h5>
+                        <img src="@this.Contribution.FrontImageUrl" alt="Front Cover" class="img-fluid rounded" />
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(this.Contribution.BackImageUrl))
+                {
+                    <div>
+                        <h5>Back Cover</h5>
+                        <img src="@this.Contribution.BackImageUrl" alt="Back Cover" class="img-fluid rounded" />
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h3>Discs</h3>
+        <QuickGrid Items="Discs">
+            <TemplateColumn Title="Name">
+                <a href="/contribution/@ContributionId/disc/@context.EncodedId/identify" title="Edit Disc">@context.Name</a>
+            </TemplateColumn>
+            <PropertyColumn Property="@(t => t.Format)" />
+            <TemplateColumn Title="Logs Uploaded">
+                @if (!string.IsNullOrEmpty(context.ExistingDiscPath))
+                {
+                    <span>Copied from another disc</span>
+                }
+                else
+                {
+                    <span>@context.LogsUploaded</span>
+                }
+            </TemplateColumn>
+            <TemplateColumn>
+                <a @onclick="args => DeleteDisc(context)" title="Remove disc from release"><SfIcon Name="IconName.TableDelete" /></a>
+            </TemplateColumn>
+        </QuickGrid>
+    </section>
 }
 else
 {
