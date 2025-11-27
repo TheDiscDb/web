@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb.Core.DiscHash;
-using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
@@ -126,15 +125,21 @@ public partial class AddDisc : ComponentBase
                         if (copyDisc)
                         {
                             var source = result.Data?.MediaItems?.Nodes.First();
-                            this.request.Slug = source!.Slug!;
-                            this.request.Name = source!.Title!;
-                            this.request.Format = source!.Type!;
-                            this.request.ExistingDiscPath = SaveDiscRequest.GenerateDiscPath(this.contribution!.MediaType, this.contribution!.ExternalId, this.contribution.ReleaseSlug, source!.Slug!);
-
-                            var createDiscResponse = await this.Client.CreateDisc(this.ContributionId!, this.request);
-                            if (createDiscResponse.IsSuccess)
+                            if (source != null)
                             {
-                                this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
+                                this.request.Slug = source.Slug!;
+                                this.request.Name = source.Title!;
+                                this.request.Format = source.Type!;
+
+                                var actualDisc = source.Releases.First().Discs.First();
+
+                                this.request.ExistingDiscPath = UserContributionDisc.GenerateDiscPath(this.contribution!.MediaType, source.Externalids.Tmdb, this.contribution.ReleaseSlug, actualDisc!.Slug!);
+
+                                var createDiscResponse = await this.Client.CreateDisc(this.ContributionId!, this.request);
+                                if (createDiscResponse.IsSuccess)
+                                {
+                                    this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
+                                }
                             }
                         }
                     }

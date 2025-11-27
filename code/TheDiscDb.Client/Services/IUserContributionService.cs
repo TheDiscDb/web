@@ -86,23 +86,6 @@ public class SaveDiscRequest
     [Required]
     public string Slug { get; set; } = string.Empty;
     public string? ExistingDiscPath { get; set; }
-
-    public static string GenerateDiscPath(string mediaType, string externalId, string releaseSlug, string discSlug) => $"{mediaType}/{externalId}/{releaseSlug}/{discSlug}";
-    public static (string MediaType, string ExternalId, string ReleaseSlug, string DiscSlug) ParseDiscPath(string discPath)
-    {
-        if (string.IsNullOrEmpty(discPath))
-        {
-            throw new ArgumentException("Disc path cannot be null or empty", nameof(discPath));
-        }
-
-        var parts = discPath.Split('/');
-        if (parts.Length != 4)
-        {
-            throw new ArgumentException("Invalid disc path format", nameof(discPath));
-        }
-
-        return (parts[0], parts[1], parts[2], parts[3]);
-    }
 }
 
 public class SaveDiscResponse

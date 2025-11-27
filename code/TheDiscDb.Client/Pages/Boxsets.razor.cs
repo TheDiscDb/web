@@ -2,7 +2,6 @@
 using StrawberryShake;
 using TheDiscDb.Client.Controls;
 using TheDiscDb.Components.InfiniteScrolling;
-using TheDiscDb.Data.GraphQL;
 using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Client.Pages;

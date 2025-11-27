@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
 using StrawberryShake;
-using TheDiscDb.Data.GraphQL;
 using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Client.Pages;

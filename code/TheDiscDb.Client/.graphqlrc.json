@@ -4,8 +4,7 @@
   "extensions": {
     "strawberryShake": {
       "name": "TheDiscDbClient",
-      "namespace": "TheDiscDb.Data.GraphQL",
-      "url": "https://localhost:64622/graphql/",
+      "url": "https://localhost:65110/graphql",
       "records": {
         "inputs": false,
         "entities": false

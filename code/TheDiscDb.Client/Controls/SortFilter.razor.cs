@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Buttons;
-using TheDiscDb.Data.GraphQL;
 
 namespace TheDiscDb.Client.Controls;
 

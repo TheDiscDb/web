@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using TheDiscDb.Data.GraphQL;
 using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Client.Pages.Contribute;

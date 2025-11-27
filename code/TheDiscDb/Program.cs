@@ -113,6 +113,7 @@ builder.Services
     .AddSorting()
     .AddProjections()
     .RegisterDbContextFactory<SqlServerDataContext>()
+    .DisableIntrospection(false)
     .AddQueryType<Query>();
 
 builder.Services.AddHttpClient();

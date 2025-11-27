@@ -80,7 +80,7 @@ public class UserContributionService : IUserContributionService
             MediaType = request.MediaType,
             ReleaseDate = request.ReleaseDate,
             Status = UserContributionStatus.Pending,
-            //FrontImageUrl = request.FrontImageUrl,
+            FrontImageUrl = request.FrontImageUrl,
             BackImageUrl = request.BackImageUrl,
             Upc = request.Upc,
             ReleaseTitle = request.ReleaseTitle,

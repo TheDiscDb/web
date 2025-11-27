@@ -11,6 +11,10 @@ query GetDiscDetailByContentHash($hash: String) {
       slug
       imageUrl
       type
+      externalids {
+         tmdb
+         imdb
+      }
       releases {
         slug
         isbn
@@ -25,6 +29,7 @@ query GetDiscDetailByContentHash($hash: String) {
           name
           format
           slug
+          contentHash
           titles(order: { index: ASC }) {
             index
             duration

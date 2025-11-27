@@ -1,10 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.QuickGrid;
 using StrawberryShake;
-using TheDiscDb.Data.GraphQL;
 using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Client.Pages;

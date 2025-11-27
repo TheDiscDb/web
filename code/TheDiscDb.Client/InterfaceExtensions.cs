@@ -1,42 +1,17 @@
 ﻿using StrawberryShake;
 using TheDiscDb.InputModels;
 
-namespace TheDiscDb.Data.GraphQL;
+namespace TheDiscDb.Client;
 
 public partial interface IGetMovies_MediaItems_Nodes : IDisplayItem
 {
 }
 
-// Not used
-public partial interface IGetMovies_MediaItems_PageInfo : IPageInfo
-{
-}
-
-// Not used
-public partial interface IGetMoviesQuery : IGraphQlQuery<IGetMoviesResult>
+public partial interface IGetBoxsets_Boxsets_Nodes : IDisplayItem
 {
 }
 
 public partial interface IGetSeries_MediaItems_Nodes : IDisplayItem
-{
-}
-
-// Not used
-public partial interface IGetSeries_MediaItems_PageInfo : IPageInfo
-{
-}
-
-// Not used
-public partial interface IGetSeriesQuery : IGraphQlQuery<IGetSeriesResult>
-{
-}
-
-// Not used
-public partial interface IGetBoxsets_Boxsets_PageInfo : IPageInfo
-{
-}
-
-public partial interface IGetBoxsets_Boxsets_Nodes : IDisplayItem
 {
 }
 
@@ -150,6 +125,18 @@ public partial class GetBoxsetDiscs_Boxsets_Nodes_Boxset
 }
 
 public partial interface IGetMediaItemsByGroup_MediaItemsByGroup_PageInfo : IPageInfo
+{
+}
+
+public partial interface IGetSeries_MediaItems_PageInfo : IPageInfo
+{
+}
+
+public partial interface IGetMovies_MediaItems_PageInfo : IPageInfo
+{
+}
+
+public partial interface IGetBoxsets_Boxsets_PageInfo : IPageInfo
 {
 }
 
