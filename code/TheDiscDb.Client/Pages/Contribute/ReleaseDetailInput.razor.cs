@@ -35,6 +35,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private string backImageUploadUrl => $"/api/contribute/images/back/upload/{id}";
     private string backImageRemoveUrl => $"/api/contribute/images/back/remove/{id}";
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
+    private bool ImportFromAmazonDisabled => string.IsNullOrEmpty(this.request.Asin);
 
     protected override async Task OnInitializedAsync()
     {
@@ -160,5 +161,9 @@ public partial class ReleaseDetailInput : ComponentBase
     private void BackImageRemoved(RemovingEventArgs args)
     {
         this.request.BackImageUrl = null;
+    }
+
+    private async Task ImportFromAmazon(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    {
     }
 }

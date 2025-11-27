@@ -16,19 +16,20 @@
     <ValidationSummary />
 
     <div class="mb-3">
-        <label>Release Date<span class="required">*</span></label>
-        <InputText class="form-control" @bind-Value="releaseDate" @oninput="ReleaseDateChanged" />
-        <div class="validation-message">@releaseDateValidationMessage</div>
-    </div>
-    <div class="mb-3">
         <label>ASIN<span class="required">*</span></label>
         <InputText class="form-control" @bind-Value="request.Asin" />
         <ValidationMessage For="@(() => request.Asin)" />
+        <SfButton title="Import from Amazon" Disabled="ImportFromAmazonDisabled" OnClick="ImportFromAmazon">I</SfButton>
     </div>
     <div class="mb-3">
         <label>UPC<span class="required">*</span></label>
         <InputText class="form-control" @bind-Value="request.Upc" />
         <ValidationMessage For="@(() => request.Upc)" />
+    </div>
+    <div class="mb-3">
+        <label>Release Date<span class="required">*</span></label>
+        <InputText class="form-control" @bind-Value="releaseDate" @oninput="ReleaseDateChanged" />
+        <div class="validation-message">@releaseDateValidationMessage</div>
     </div>
     <div class="mb-3">
         <label>Front Image<span class="required">*</span></label>

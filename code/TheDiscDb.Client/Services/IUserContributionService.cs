@@ -19,6 +19,7 @@ public interface IUserContributionService
     Task<Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default);
     Task<Result<ExternalMetadata>> GetExternalData(string contributionId, CancellationToken cancellationToken = default);
     Task<Result<ExternalMetadata>> GetExternalData(string externalId, string mediaType, string provider, CancellationToken cancellationToken = default);
+    Task<Result<ImportReleaseDetailsResponse>> ImportReleaseDetails(string asin, CancellationToken cancellationToken = default);
 
     Task<Result<List<UserContributionDisc>>> GetDiscs(string contributionId, CancellationToken cancellationToken = default);
     Task<Result<UserContributionDisc>> GetDisc(string contributionId, string discId, CancellationToken cancellationToken = default);
@@ -159,4 +160,15 @@ public class HashDiscRequest
 public class HashDiscResponse
 {
     public string DiscHash { get; set; } = string.Empty;
+}
+
+public class ImportReleaseDetailsResponse
+{
+    public string Title { get; set; } = string.Empty;
+    public string RegionCode { get; set; } = string.Empty;
+    public string Locale { get; set; } = string.Empty;
+    public DateTimeOffset ReleaseDate { get; set; }
+    public string Upc { get; set; } = string.Empty;
+    public string FrontImageUrl { get; set; } = string.Empty;
+    public string BackImageUrl { get; set; } = string.Empty;
 }

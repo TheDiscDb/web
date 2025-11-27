@@ -25,6 +25,7 @@ public class ContributionEndpoints
         contribute.MapGet("{contributionId}/episodes", GetEpisodeNames);
         contribute.MapGet("{contributionId}/externalData", GetExternalData);
         contribute.MapGet("externalData/{provider}/{mediaType}/{externalId}", GetExternalDataByExternalId);
+        contribute.MapGet("importMetadata/{asin}", ImportMetadata);
 
         contribute.MapGet("{contributionId}/discs", GetDiscs);
         contribute.MapGet("{contributionId}/discsj/{discId}", GetDisc);
@@ -121,6 +122,12 @@ public class ContributionEndpoints
     {
         var result = await service.GetExternalData(contributionId, cancellationToken);
         return JsonResult(result, $"Unable to get external data for contribution {contributionId}");
+    }
+
+    public async Task<IResult> ImportMetadata(IUserContributionService service, string asin,  CancellationToken cancellationToken)
+    {
+        var result = await service.ImportReleaseDetails(asin, cancellationToken);
+        return JsonResult(result, $"Unable to import metadata for ASIN {asin}");
     }
 
     public async Task<IResult> GetDiscs(IUserContributionService service, string contributionId, CancellationToken cancellationToken)

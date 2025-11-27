@@ -145,6 +145,20 @@ public class UserContributionService : ApiClient, IUserContributionService
         return result!;
     }
 
+    public async Task<Result<ImportReleaseDetailsResponse>> ImportReleaseDetails(string asin, CancellationToken cancellationToken = default)
+    {
+        var client = GetHttpClient();
+        
+        var response = await client.GetAsync($"/api/contribute/importMetadata/{HttpUtility.UrlEncode(asin)}", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return Result.Fail($"Unable to import release details for ASIN {asin}");
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<ImportReleaseDetailsResponse>(cancellationToken: cancellationToken);
+        return result!;
+    }
+
     #endregion
 
     #region Discs
