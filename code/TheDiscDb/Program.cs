@@ -206,6 +206,7 @@ builder.Services.AddSingleton<SqidsEncoder<int>>();
 builder.Services.AddSingleton<IdEncoder>();
 builder.Services.AddScoped<IClipboardService, ServerClipboardService>();
 builder.Services.AddHighlight();
+builder.Services.AddSingleton<IAmazonImporter, AmazonImporter>();
 
 var app = builder.Build();
 

@@ -164,11 +164,11 @@ public class HashDiscResponse
 
 public class ImportReleaseDetailsResponse
 {
-    public string Title { get; set; } = string.Empty;
-    public string RegionCode { get; set; } = string.Empty;
-    public string Locale { get; set; } = string.Empty;
-    public DateTimeOffset ReleaseDate { get; set; }
-    public string Upc { get; set; } = string.Empty;
-    public string FrontImageUrl { get; set; } = string.Empty;
-    public string BackImageUrl { get; set; } = string.Empty;
+    public string? Title { get; set; } = string.Empty;
+    public string? RegionCode { get; set; } = string.Empty;
+    public string? Locale { get; set; } = string.Empty;
+    public DateTimeOffset? ReleaseDate { get; set; }
+    public string? Upc { get; set; } = string.Empty;
+    public string? FrontImageUrl { get; set; } = string.Empty;
+    public string? BackImageUrl { get; set; } = string.Empty;
 }

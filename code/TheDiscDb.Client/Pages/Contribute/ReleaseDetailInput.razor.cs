@@ -165,5 +165,25 @@ public partial class ReleaseDetailInput : ComponentBase
 
     private async Task ImportFromAmazon(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
+        if (string.IsNullOrEmpty(this.request.Asin))
+        {
+            return;
+        }
+
+        var response = await this.Client.ImportReleaseDetails(this.request.Asin);
+        if (response == null || response.IsFailed)
+        {
+            return;
+        }
+
+        var details = response.Value;
+        this.request.Title = details.Title ?? "";
+        this.request.RegionCode = details.RegionCode ?? "1";
+        this.request.Locale = details.Locale ?? "en-us";
+        if (details.ReleaseDate.HasValue)
+        {
+            this.request.ReleaseDate = details.ReleaseDate.Value;
+            this.releaseDate = details.ReleaseDate.Value.ToString("MM-dd-yyyy");
+        }
     }
 }

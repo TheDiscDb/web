@@ -7,8 +7,8 @@
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.0.0" />
-        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.0.0" />
+        <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.0.1" />
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.0.1" />
         <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
@@ -22,6 +22,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.0" />
         <PackageReference Include="System.ServiceModel.Syndication" Version="10.0.0" />
         <PackageReference Include="FluentResults.Extensions.AspNetCore" Version="0.2.0" />
+        <PackageReference Include="ScrapySharp" Version="3.0.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Client\TheDiscDb.Client.csproj" />
