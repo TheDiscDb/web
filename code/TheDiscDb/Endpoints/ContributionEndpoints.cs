@@ -287,14 +287,14 @@ public class ContributionEndpoints
     public async Task<IResult> RemoveFrontImage(Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
         => await RemoveImage(id, "front", service, cancellationToken);
 
-    public async Task<IResult> UploadFrontImage(IFormFileCollection myFiles, Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
-        => await UploadImage(myFiles, id, "front", service, cancellationToken);
+    public async Task<IResult> UploadFrontImage(IFormFileCollection files, Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+        => await UploadImage(files, id, "front", service, cancellationToken);
 
     public async Task<IResult> RemoveBackImage(Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
         => await RemoveImage(id, "back", service, cancellationToken);
 
-    public async Task<IResult> UploadBackImage(IFormFileCollection myFiles, Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
-        => await UploadImage(myFiles, id, "back", service, cancellationToken);
+    public async Task<IResult> UploadBackImage(IFormFileCollection files, Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+        => await UploadImage(files, id, "back", service, cancellationToken);
 
     public async Task<IResult> RemoveImage(Guid id, string name, IStaticAssetStore service, CancellationToken cancellationToken)
     {
@@ -303,9 +303,9 @@ public class ContributionEndpoints
         return TypedResults.Ok();
     }
 
-    private async Task<IResult> UploadImage(IFormFileCollection myFiles, Guid id, string name, IStaticAssetStore service, CancellationToken cancellationToken)
+    private async Task<IResult> UploadImage(IFormFileCollection files, Guid id, string name, IStaticAssetStore service, CancellationToken cancellationToken)
     {
-        var file = myFiles.FirstOrDefault();
+        var file = files.FirstOrDefault();
 
         if (file == null || file.Length == 0)
         {

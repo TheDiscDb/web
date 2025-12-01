@@ -33,6 +33,12 @@ public class AmazonImporter : IAmazonImporter
         }
 
         var imageData = GetImageData(html.RawResponse.ToString());
+
+        if (imageData == null)
+        {
+            return Task.FromResult<AmazonProductMetadata?>(null);
+        }
+
         var front = imageData.Initial
             .FirstOrDefault(i => i.Variant!.Equals("FRNT", StringComparison.OrdinalIgnoreCase));
         if (front == null)
@@ -56,13 +62,19 @@ public class AmazonImporter : IAmazonImporter
         return Task.FromResult<AmazonProductMetadata?>(result);
     }
 
-    private AmazonColorImages GetImageData(string html)
+    private AmazonColorImages? GetImageData(string html)
     {
         string json = Regex.Match(html, @"var data = \{\s+'colorImages'\:\s+(.*)")
             .Groups[1].Value
             .TrimEnd(",")
             .ToString()
             .Replace("'initial'", "\"initial\"");
+
+        if (string.IsNullOrEmpty(json))
+        {
+            return default;
+        }
+
         return JsonSerializer.Deserialize<AmazonColorImages>(json)!;
     }
 

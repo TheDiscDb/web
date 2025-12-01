@@ -5,6 +5,13 @@ using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
+public class FileList
+{
+    public string Name { get; set; } = string.Empty;
+    public double Size { get; set; }
+    public string Type { get; set; } = string.Empty;
+}
+
 [Authorize]
 public partial class ReleaseDetailInput : ComponentBase
 {
@@ -19,6 +26,9 @@ public partial class ReleaseDetailInput : ComponentBase
 
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject]
+    public HttpClient HttpClient { get; set; } = default!;
 
     private readonly CreateContributionRequest request = new CreateContributionRequest
     {
@@ -36,6 +46,8 @@ public partial class ReleaseDetailInput : ComponentBase
     private string backImageRemoveUrl => $"/api/contribute/images/back/remove/{id}";
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
     private bool ImportFromAmazonDisabled => string.IsNullOrEmpty(this.request.Asin);
+    //private SfUploader frontImageUploader;
+    public List<FileList> files { get; set; } = new List<FileList>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -180,10 +192,43 @@ public partial class ReleaseDetailInput : ComponentBase
         this.request.Title = details.Title ?? "";
         this.request.RegionCode = details.RegionCode ?? "1";
         this.request.Locale = details.Locale ?? "en-us";
+        this.request.Upc = details.Upc ?? "";
+
         if (details.ReleaseDate.HasValue)
         {
             this.request.ReleaseDate = details.ReleaseDate.Value;
             this.releaseDate = details.ReleaseDate.Value.ToString("MM-dd-yyyy");
+
+            if (!string.IsNullOrEmpty(details.MediaFormat) && string.IsNullOrEmpty(this.request.ReleaseTitle))
+            {
+                this.request.ReleaseTitle = $"{details.ReleaseDate.Value.Year} {details.MediaFormat}";
+                this.request.ReleaseSlug = this.request.ReleaseTitle.Slugify();
+            }
         }
+
+        if (!string.IsNullOrEmpty(details.FrontImageUrl))
+        {
+            var data = await this.HttpClient.GetByteArrayAsync(details.FrontImageUrl);
+            var content = new MultipartFormDataContent();
+            content.Add(new ByteArrayContent(data), "front", "front.jpg");
+            var uploadResponse = await this.HttpClient.PostAsync(this.frontImageUploadUrl, content);
+            if (uploadResponse != null && uploadResponse.IsSuccessStatusCode)
+            {
+                Console.WriteLine("Uploaded Image - adding to file list");
+                this.request.FrontImageUrl = $"{this.id}/front.jpg";
+                this.files.Add(new FileList
+                {
+                    Name = "front.jpg",
+                    Size = data.Length,
+                    Type = "image/jpeg"
+                });
+                this.StateHasChanged();
+            }
+            else
+            {
+                Console.WriteLine("Failed to upload front image " + uploadResponse?.StatusCode);
+            }
+        }
+
     }
 }

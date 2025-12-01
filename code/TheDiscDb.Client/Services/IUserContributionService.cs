@@ -1,8 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using FluentResults;
 using MakeMkv;
-using Syncfusion.Blazor.Inputs;
-using TheDiscDb.Client;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Web.Data;
 
@@ -164,11 +162,12 @@ public class HashDiscResponse
 
 public class ImportReleaseDetailsResponse
 {
-    public string? Title { get; set; } = string.Empty;
-    public string? RegionCode { get; set; } = string.Empty;
-    public string? Locale { get; set; } = string.Empty;
+    public string? Title { get; set; }
+    public string? RegionCode { get; set; }
+    public string? Locale { get; set; }
     public DateTimeOffset? ReleaseDate { get; set; }
-    public string? Upc { get; set; } = string.Empty;
-    public string? FrontImageUrl { get; set; } = string.Empty;
-    public string? BackImageUrl { get; set; } = string.Empty;
+    public string? Upc { get; set; }
+    public string? FrontImageUrl { get; set; }
+    public string? BackImageUrl { get; set; }
+    public string? MediaFormat { get; set; }
 }

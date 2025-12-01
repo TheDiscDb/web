@@ -471,7 +471,8 @@ public class UserContributionService : IUserContributionService
             ReleaseDate = details.ReleaseDate,
             Upc = details.Upc,
             FrontImageUrl = details.FrontImageUrl,
-            BackImageUrl = details.BackImageUrl
+            BackImageUrl = details.BackImageUrl,
+            MediaFormat = details.MediaFormat
         };
     }
 
