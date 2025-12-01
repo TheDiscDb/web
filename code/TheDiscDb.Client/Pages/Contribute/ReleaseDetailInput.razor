@@ -33,19 +33,10 @@
     </div>
     <div class="mb-3">
         <label>Front Image<span class="required">*</span></label>
-        <SfUploader ID="frontImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
+        <SfUploader @ref="frontImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
             <UploaderButtons Browse="Browse"></UploaderButtons>
             <UploaderEvents FileSelected="FrontImageSelected" OnRemove="FrontImageRemoved"></UploaderEvents>
             <UploaderAsyncSettings SaveUrl="@frontImageUploadUrl" RemoveUrl="@frontImageRemoveUrl"></UploaderAsyncSettings>
-            <UploaderUploadedFiles>
-                @if (files != null && files.Count > 0)
-                {
-                    @foreach (var item in files)
-                    {
-                        <UploaderUploadedFiles Name="@item.Name" Size="@item.Size" Type="@item.Type"></UploaderUploadedFiles>
-                    }
-                }
-            </UploaderUploadedFiles>
         </SfUploader>
         <ValidationMessage For="@(() => request.FrontImageUrl)" />
     </div>

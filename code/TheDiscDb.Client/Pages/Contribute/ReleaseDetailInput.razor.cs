@@ -5,13 +5,6 @@ using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
-public class FileList
-{
-    public string Name { get; set; } = string.Empty;
-    public double Size { get; set; }
-    public string Type { get; set; } = string.Empty;
-}
-
 [Authorize]
 public partial class ReleaseDetailInput : ComponentBase
 {
@@ -46,8 +39,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private string backImageRemoveUrl => $"/api/contribute/images/back/remove/{id}";
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
     private bool ImportFromAmazonDisabled => string.IsNullOrEmpty(this.request.Asin);
-    //private SfUploader frontImageUploader;
-    public List<FileList> files { get; set; } = new List<FileList>();
+    private SfUploader? frontImageUploader;
 
     protected override async Task OnInitializedAsync()
     {
@@ -146,7 +138,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private static string CreateSlug(string title, int? year)
     {
         string slug = title.Slugify();
-        
+
         if (year.HasValue)
         {
             slug = $"{year.Value}-{slug}";
@@ -208,27 +200,43 @@ public partial class ReleaseDetailInput : ComponentBase
 
         if (!string.IsNullOrEmpty(details.FrontImageUrl))
         {
-            var data = await this.HttpClient.GetByteArrayAsync(details.FrontImageUrl);
-            var content = new MultipartFormDataContent();
-            content.Add(new ByteArrayContent(data), "front", "front.jpg");
-            var uploadResponse = await this.HttpClient.PostAsync(this.frontImageUploadUrl, content);
-            if (uploadResponse != null && uploadResponse.IsSuccessStatusCode)
-            {
-                Console.WriteLine("Uploaded Image - adding to file list");
-                this.request.FrontImageUrl = $"{this.id}/front.jpg";
-                this.files.Add(new FileList
-                {
-                    Name = "front.jpg",
-                    Size = data.Length,
-                    Type = "image/jpeg"
-                });
-                this.StateHasChanged();
-            }
-            else
-            {
-                Console.WriteLine("Failed to upload front image " + uploadResponse?.StatusCode);
-            }
+            await UploadImage(details.FrontImageUrl, this.frontImageUploadUrl, "front");
         }
 
+        if (!string.IsNullOrEmpty(details.BackImageUrl))
+        {
+            await UploadImage(details.BackImageUrl, this.backImageUploadUrl, "back");
+        }
+    }
+
+    private async Task UploadImage(string url, string uploadUrl, string name)
+    {
+        var data = await this.HttpClient.GetByteArrayAsync(url);
+        var content = new MultipartFormDataContent
+            {
+                { new ByteArrayContent(data), name, $"{name}.jpg" }
+            };
+        var uploadResponse = await this.HttpClient.PostAsync(this.frontImageUploadUrl, content);
+        if (uploadResponse != null && uploadResponse.IsSuccessStatusCode)
+        {
+            this.request.FrontImageUrl = $"{this.id}/{name}.jpg";
+
+            if (this.frontImageUploader != null)
+            {
+                await this.frontImageUploader.CreateFileList(
+                [
+                    new Syncfusion.Blazor.Inputs.FileInfo
+                        {
+                            Name = $"{name}.jpg",
+                            Size = data.Length,
+                            Type = "image/jpeg"
+                        }
+                ]);
+            }
+        }
+        else
+        {
+            Console.WriteLine("Failed to upload image " + uploadResponse?.StatusCode);
+        }
     }
 }
