@@ -19,7 +19,7 @@
         <label>ASIN<span class="required">*</span></label>
         <InputText class="form-control" @bind-Value="request.Asin" />
         <ValidationMessage For="@(() => request.Asin)" />
-        <SfButton title="Import from Amazon" Disabled="ImportFromAmazonDisabled" OnClick="ImportFromAmazon">I</SfButton>
+        <button type="button" class="btn btn-secondary" @onclick="ImportFromAmazon">Import</button>
     </div>
     <div class="mb-3">
         <label>UPC<span class="required">*</span></label>
@@ -33,7 +33,7 @@
     </div>
     <div class="mb-3">
         <label>Front Image<span class="required">*</span></label>
-        <SfUploader AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
+        <SfUploader @ref="frontImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
             <UploaderButtons Browse="Browse"></UploaderButtons>
             <UploaderEvents FileSelected="FrontImageSelected" OnRemove="FrontImageRemoved"></UploaderEvents>
             <UploaderAsyncSettings SaveUrl="@frontImageUploadUrl" RemoveUrl="@frontImageRemoveUrl"></UploaderAsyncSettings>

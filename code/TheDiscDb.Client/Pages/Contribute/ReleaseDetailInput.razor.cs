@@ -20,6 +20,9 @@ public partial class ReleaseDetailInput : ComponentBase
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
 
+    [Inject]
+    public HttpClient HttpClient { get; set; } = default!;
+
     private readonly CreateContributionRequest request = new CreateContributionRequest
     {
         Locale = "en-us",
@@ -36,6 +39,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private string backImageRemoveUrl => $"/api/contribute/images/back/remove/{id}";
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
     private bool ImportFromAmazonDisabled => string.IsNullOrEmpty(this.request.Asin);
+    private SfUploader? frontImageUploader;
 
     protected override async Task OnInitializedAsync()
     {
@@ -134,7 +138,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private static string CreateSlug(string title, int? year)
     {
         string slug = title.Slugify();
-        
+
         if (year.HasValue)
         {
             slug = $"{year.Value}-{slug}";
@@ -180,10 +184,59 @@ public partial class ReleaseDetailInput : ComponentBase
         this.request.Title = details.Title ?? "";
         this.request.RegionCode = details.RegionCode ?? "1";
         this.request.Locale = details.Locale ?? "en-us";
+        this.request.Upc = details.Upc ?? "";
+
         if (details.ReleaseDate.HasValue)
         {
             this.request.ReleaseDate = details.ReleaseDate.Value;
             this.releaseDate = details.ReleaseDate.Value.ToString("MM-dd-yyyy");
+
+            if (!string.IsNullOrEmpty(details.MediaFormat) && string.IsNullOrEmpty(this.request.ReleaseTitle))
+            {
+                this.request.ReleaseTitle = $"{details.ReleaseDate.Value.Year} {details.MediaFormat}";
+                this.request.ReleaseSlug = this.request.ReleaseTitle.Slugify();
+            }
+        }
+
+        if (!string.IsNullOrEmpty(details.FrontImageUrl))
+        {
+            await UploadImage(details.FrontImageUrl, this.frontImageUploadUrl, "front");
+        }
+
+        if (!string.IsNullOrEmpty(details.BackImageUrl))
+        {
+            await UploadImage(details.BackImageUrl, this.backImageUploadUrl, "back");
+        }
+    }
+
+    private async Task UploadImage(string url, string uploadUrl, string name)
+    {
+        var data = await this.HttpClient.GetByteArrayAsync(url);
+        var content = new MultipartFormDataContent
+            {
+                { new ByteArrayContent(data), name, $"{name}.jpg" }
+            };
+        var uploadResponse = await this.HttpClient.PostAsync(this.frontImageUploadUrl, content);
+        if (uploadResponse != null && uploadResponse.IsSuccessStatusCode)
+        {
+            this.request.FrontImageUrl = $"{this.id}/{name}.jpg";
+
+            if (this.frontImageUploader != null)
+            {
+                await this.frontImageUploader.CreateFileList(
+                [
+                    new Syncfusion.Blazor.Inputs.FileInfo
+                        {
+                            Name = $"{name}.jpg",
+                            Size = data.Length,
+                            Type = "image/jpeg"
+                        }
+                ]);
+            }
+        }
+        else
+        {
+            Console.WriteLine("Failed to upload image " + uploadResponse?.StatusCode);
         }
     }
 }
