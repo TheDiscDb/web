@@ -40,6 +40,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
     private bool ImportFromAmazonDisabled => string.IsNullOrEmpty(this.request.Asin);
     private SfUploader? frontImageUploader;
+    private SfUploader? backImageUploader;
 
     protected override async Task OnInitializedAsync()
     {
@@ -155,6 +156,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private void FrontImageRemoved(RemovingEventArgs args)
     {
         this.request.FrontImageUrl = null;
+        this.frontImagePreviewUrl = "";
     }
 
     private void BackImageSelected(SelectedEventArgs args)
@@ -165,6 +167,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private void BackImageRemoved(RemovingEventArgs args)
     {
         this.request.BackImageUrl = null;
+        this.backImagePreviewUrl = "";
     }
 
     private async Task ImportFromAmazon(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
@@ -200,16 +203,21 @@ public partial class ReleaseDetailInput : ComponentBase
 
         if (!string.IsNullOrEmpty(details.FrontImageUrl))
         {
-            await UploadImage(details.FrontImageUrl, this.frontImageUploadUrl, "front");
+            await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
+            this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/front.jpg?width=156&height=231";
         }
 
         if (!string.IsNullOrEmpty(details.BackImageUrl))
         {
-            await UploadImage(details.BackImageUrl, this.backImageUploadUrl, "back");
+            await UploadImage(this.id.ToString(), details.BackImageUrl, this.backImageUploadUrl, "back", backImageUploader);
+            this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/back.jpg?width=156&height=231";
         }
     }
 
-    private async Task UploadImage(string url, string uploadUrl, string name)
+    string frontImagePreviewUrl = "";
+    string backImagePreviewUrl = "";
+
+    private async Task UploadImage(string id, string url, string uploadUrl, string name, SfUploader? uploader)
     {
         var data = await this.HttpClient.GetByteArrayAsync(url);
         var content = new MultipartFormDataContent
@@ -221,16 +229,20 @@ public partial class ReleaseDetailInput : ComponentBase
         {
             this.request.FrontImageUrl = $"{this.id}/{name}.jpg";
 
-            if (this.frontImageUploader != null)
+            if (uploader != null)
             {
-                await this.frontImageUploader.CreateFileList(
+                await uploader.CreateFileList(
                 [
                     new Syncfusion.Blazor.Inputs.FileInfo
-                        {
-                            Name = $"{name}.jpg",
-                            Size = data.Length,
-                            Type = "image/jpeg"
-                        }
+                    {
+                        Id = id,
+                        Name = $"{name}.jpg",
+                        Size = data.Length,
+                        Type = "image/jpeg",
+                        StatusCode = "Uploaded",
+                        Status = "File uploaded successfully",
+                        LastModifiedDate = DateTime.UtcNow
+                    }
                 ]);
             }
         }

@@ -114,6 +114,9 @@ public partial class IdentifyDiscItems : ComponentBase
     private ExternalMetadata? ExternalMetadata = null;
     private UserContribution? contribution;
 
+    // A hacky way to prevent multiple network calls at once
+    private bool callInProgress = false;
+
     bool showEpisodeDialog = false;
     SfDialog? episodeDialog;
 
@@ -446,7 +449,7 @@ public partial class IdentifyDiscItems : ComponentBase
 
     public async Task HandleValidChapterSubmit()
     {
-        if (this.currentItem == null)
+        if (this.currentItem == null || this.callInProgress)
         {
             return;
         }
@@ -455,11 +458,13 @@ public partial class IdentifyDiscItems : ComponentBase
         {
             if (!string.IsNullOrEmpty(chapter.Title))
             {
+                this.callInProgress = true;
                 var response = await this.Client.AddChapterToItem(this.ContributionId!, this.DiscId!, this.currentItem.DatabaseId!, new AddChapterRequest
                 {
                     Index = chapter.Index,
                     Title = chapter.Title!
                 });
+                this.callInProgress = false;
 
                 if (!response.IsSuccess)
                 {
@@ -475,7 +480,7 @@ public partial class IdentifyDiscItems : ComponentBase
 
     public async Task HandleValidAudioTrackSubmit()
     {
-        if (this.currentItem == null)
+        if (this.currentItem == null || this.callInProgress)
         {
             return;
         }
@@ -484,11 +489,13 @@ public partial class IdentifyDiscItems : ComponentBase
         {
             if (!string.IsNullOrEmpty(audioTrack.Title))
             {
+                this.callInProgress = true;
                 var response = await this.Client.AddAudioTrackToItem(this.ContributionId!, this.DiscId!, this.currentItem.DatabaseId!, new AddAudioTrackRequest
                 {
                     Index = audioTrack.Index,
                     Title = audioTrack.Title!
                 });
+                this.callInProgress = false;
 
                 if (!response.IsSuccess)
                 {
@@ -504,7 +511,7 @@ public partial class IdentifyDiscItems : ComponentBase
 
     public async Task HandleValidItemSubmit()
     {
-        if (this.currentItem == null)
+        if (this.currentItem == null || callInProgress)
         {
             return;
         }
@@ -512,10 +519,17 @@ public partial class IdentifyDiscItems : ComponentBase
         bool isEdit = this.currentItem.DatabaseId != null;
         if (isEdit)
         {
+            Console.WriteLine($"Is Edit: {this.currentItem.DatabaseId}");
+            callInProgress = true;
             var updateRequest = currentItem.CreateEditRequest();
+
+            Console.WriteLine($"Update Request: {System.Text.Json.JsonSerializer.Serialize(updateRequest)}");
             var updateResponse = await this.Client.EditItemOnDisc(this.ContributionId!, this.DiscId!, currentItem.DatabaseId!, updateRequest);
+            callInProgress = false;
+
             if (updateResponse.IsSuccess)
             {
+                Console.WriteLine("Update successful");
                 this.identifiedTitles[currentItem.Title] = currentItem;
                 this.StateHasChanged();
                 await this.itemDialog!.HideAsync();
@@ -529,10 +543,19 @@ public partial class IdentifyDiscItems : ComponentBase
             }
         }
 
+        if (callInProgress)
+        {
+            return;
+        }
+
+        Console.WriteLine($"Adding item to disc: {this.ContributionId}, {this.DiscId}");
+        callInProgress = true;
         var response = await this.Client.AddItemToDisc(this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());
+        callInProgress = false;
 
         if (response.IsSuccess)
         {
+            Console.WriteLine($"Add successful {response.Value.ItemId}");
             currentItem.DatabaseId = response.Value.ItemId;
             this.identifiedTitles[currentItem.Title] = currentItem;
             this.StateHasChanged();
@@ -568,12 +591,14 @@ public partial class IdentifyDiscItems : ComponentBase
 
     public async Task HandleValidEpisodeSubmit()
     {
-        if (this.currentItem == null)
+        if (this.currentItem == null || this.callInProgress)
         {
             return;
         }
 
+        this.callInProgress = true;
         var response = await this.Client.AddItemToDisc(this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());
+        this.callInProgress = false;
 
         if (response.IsSuccess)
         {

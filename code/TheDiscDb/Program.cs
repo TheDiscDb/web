@@ -168,6 +168,16 @@ builder.Services.AddSingleton<IOptions<BlobStorageOptions>>(provider =>
 
 builder.Services.AddSingleton<IStaticAssetStore, BlobStorageStaticAssetStore>();
 
+builder.Services.AddKeyedSingleton<IStaticAssetStore>(KeyedServiceNames.ImagesAssetStore, (provider, _) =>
+{
+    var blobServiceClient = provider.GetRequiredService<Azure.Storage.Blobs.BlobServiceClient>();
+    return new BlobStorageStaticAssetStore(blobServiceClient, Options.Create(new BlobStorageOptions
+    {
+        ConnectionString = blobConnectionString,
+        ContainerName = blobContainerName
+    }));
+});
+
 var searchApiKey = builder.Configuration["Search:ApiKey"];
 bool searchEnabled = !string.IsNullOrEmpty(searchApiKey);
 

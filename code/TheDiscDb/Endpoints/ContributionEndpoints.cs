@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Sqids;
+using TheDiscDb.Client;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
@@ -114,7 +115,7 @@ public class ContributionEndpoints
 
     public async Task<IResult> GetExternalDataByExternalId(IUserContributionService service, string provider, string mediaType, string externalId, CancellationToken cancellationToken)
     {
-        var result = await service.GetExternalData(provider, mediaType, provider, cancellationToken);
+        var result = await service.GetExternalData(externalId, mediaType, provider, cancellationToken);
         return JsonResult(result, $"Unable to get external data for externalId {externalId} from {provider}");
     }
 
@@ -284,21 +285,21 @@ public class ContributionEndpoints
 
     #region Image Upload
 
-    public async Task<IResult> RemoveFrontImage(Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+    public async Task<IResult> RemoveFrontImage(Guid id, [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore service, CancellationToken cancellationToken)
         => await RemoveImage(id, "front", service, cancellationToken);
 
-    public async Task<IResult> UploadFrontImage(IFormFileCollection files, Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+    public async Task<IResult> UploadFrontImage(IFormFileCollection files, Guid id, [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore service, CancellationToken cancellationToken)
         => await UploadImage(files, id, "front", service, cancellationToken);
 
-    public async Task<IResult> RemoveBackImage(Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+    public async Task<IResult> RemoveBackImage(Guid id, [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore service, CancellationToken cancellationToken)
         => await RemoveImage(id, "back", service, cancellationToken);
 
-    public async Task<IResult> UploadBackImage(IFormFileCollection files, Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+    public async Task<IResult> UploadBackImage(IFormFileCollection files, Guid id, [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore service, CancellationToken cancellationToken)
         => await UploadImage(files, id, "back", service, cancellationToken);
 
     public async Task<IResult> RemoveImage(Guid id, string name, IStaticAssetStore service, CancellationToken cancellationToken)
     {
-        var path = $"_releaseImages/{id}/{name}.jpg";
+        var path = GetReleaseImagePath(id, name);
         await service.Delete(path, cancellationToken);
         return TypedResults.Ok();
     }
@@ -316,10 +317,13 @@ public class ContributionEndpoints
         await file.CopyToAsync(memoryStream, cancellationToken);
 
         memoryStream.Position = 0;
-        var result = await service.Save(memoryStream, $"_releaseImages/{id}/{name}.jpg", file.ContentType, cancellationToken);
+        string path = GetReleaseImagePath(id, name);
+        var result = await service.Save(memoryStream, path, file.ContentType, cancellationToken);
 
         return TypedResults.Ok();
     }
+
+    private static string GetReleaseImagePath(Guid id, string name) => $"Contributions/releaseImages/{id}/{name}.jpg";
 
     #endregion
 

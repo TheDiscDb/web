@@ -39,15 +39,17 @@
             <UploaderAsyncSettings SaveUrl="@frontImageUploadUrl" RemoveUrl="@frontImageRemoveUrl"></UploaderAsyncSettings>
         </SfUploader>
         <ValidationMessage For="@(() => request.FrontImageUrl)" />
+        <img src="@frontImagePreviewUrl" />
     </div>
     <div class="mb-3">
         <label>Back Image</label>
-        <SfUploader AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
+        <SfUploader @ref="backImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
             <UploaderButtons Browse="Browse"></UploaderButtons>
             <UploaderEvents FileSelected="BackImageSelected" OnRemove="BackImageRemoved"></UploaderEvents>
             <UploaderAsyncSettings SaveUrl="@backImageUploadUrl" RemoveUrl="@backImageRemoveUrl"></UploaderAsyncSettings>
         </SfUploader>
         <ValidationMessage For="@(() => request.BackImageUrl)" />
+        <img src="@backImagePreviewUrl" />
     </div>
     <div class="mb-3">
         <label>Release Title<span class="required">*</span></label>
