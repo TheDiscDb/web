@@ -519,17 +519,14 @@ public partial class IdentifyDiscItems : ComponentBase
         bool isEdit = this.currentItem.DatabaseId != null;
         if (isEdit)
         {
-            Console.WriteLine($"Is Edit: {this.currentItem.DatabaseId}");
             callInProgress = true;
             var updateRequest = currentItem.CreateEditRequest();
 
-            Console.WriteLine($"Update Request: {System.Text.Json.JsonSerializer.Serialize(updateRequest)}");
             var updateResponse = await this.Client.EditItemOnDisc(this.ContributionId!, this.DiscId!, currentItem.DatabaseId!, updateRequest);
             callInProgress = false;
 
             if (updateResponse.IsSuccess)
             {
-                Console.WriteLine("Update successful");
                 this.identifiedTitles[currentItem.Title] = currentItem;
                 this.StateHasChanged();
                 await this.itemDialog!.HideAsync();
@@ -548,14 +545,12 @@ public partial class IdentifyDiscItems : ComponentBase
             return;
         }
 
-        Console.WriteLine($"Adding item to disc: {this.ContributionId}, {this.DiscId}");
         callInProgress = true;
         var response = await this.Client.AddItemToDisc(this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());
         callInProgress = false;
 
         if (response.IsSuccess)
         {
-            Console.WriteLine($"Add successful {response.Value.ItemId}");
             currentItem.DatabaseId = response.Value.ItemId;
             this.identifiedTitles[currentItem.Title] = currentItem;
             this.StateHasChanged();

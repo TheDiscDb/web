@@ -16,10 +16,21 @@ public class AmazonImporter : IAmazonImporter
         this.browser = new ScrapingBrowser();
     }
 
-    public Task<AmazonProductMetadata?> GetProductMetadataAsync(string asin, CancellationToken cancellationToken = default)
+    public async Task<FluentResults.Result<AmazonProductMetadata?>> GetProductMetadataAsync(string asin, CancellationToken cancellationToken = default)
     {
         AmazonProductMetadata result = new AmazonProductMetadata();
-        WebPage html = browser.NavigateToPage(GetUrl(asin));
+        WebPage html = await browser.NavigateToPageAsync(GetUrl(asin));
+
+        if (html.RawResponse.StatusCode < 200 || html.RawResponse.StatusCode > 299)
+        {
+            return FluentResults.Result.Fail($"Could not retrieve Amazon page for ASIN {asin}. Status code: {html.RawResponse.StatusCode}");
+        }
+
+        if (string.IsNullOrEmpty(html.Content))
+        {
+            return FluentResults.Result.Fail($"Could not retrieve Amazon page for ASIN {asin}. Empty content.");
+        }
+
         var nodes = html.Html.CssSelect("div#detailBullets_feature_div");
         var node = nodes.FirstOrDefault();
         if (node != null)
@@ -31,12 +42,16 @@ public class AmazonImporter : IAmazonImporter
             var details = ParseDetails(listItems);
             result = BuildMetadata(details);
         }
+        else
+        {
+            return FluentResults.Result.Fail("Could not find detail bullets on Amazon page.");
+        }
 
         var imageData = GetImageData(html.RawResponse.ToString());
 
         if (imageData == null)
         {
-            return Task.FromResult<AmazonProductMetadata?>(null);
+            return FluentResults.Result.Fail("Could not find image data on Amazon page.");
         }
 
         var front = imageData.Initial
@@ -59,7 +74,7 @@ public class AmazonImporter : IAmazonImporter
             result.BackImageUrl = back.HiRes;
         }
 
-        return Task.FromResult<AmazonProductMetadata?>(result);
+        return result;
     }
 
     private AmazonColorImages? GetImageData(string html)

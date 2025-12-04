@@ -459,20 +459,25 @@ public class UserContributionService : IUserContributionService
 
     public async Task<FluentResults.Result<ImportReleaseDetailsResponse>> ImportReleaseDetails(string asin, CancellationToken cancellationToken = default)
     {
-        var details = await this.amazon.GetProductMetadataAsync(asin, cancellationToken);
-        if (details == null)
+        var result = await this.amazon.GetProductMetadataAsync(asin, cancellationToken);
+        if (result == null)
         {
             return Result.Fail($"Amazon product with ASIN {asin} not found");
         }
 
+        if (result.IsFailed)
+        {
+            return Result.Fail(result.Errors);
+        }
+
         return new ImportReleaseDetailsResponse
         {
-            Title = details.Title,
-            ReleaseDate = details.ReleaseDate,
-            Upc = details.Upc,
-            FrontImageUrl = details.FrontImageUrl,
-            BackImageUrl = details.BackImageUrl,
-            MediaFormat = details.MediaFormat
+            Title = result.Value?.Title,
+            ReleaseDate = result.Value?.ReleaseDate,
+            Upc = result.Value?.Upc,
+            FrontImageUrl = result.Value?.FrontImageUrl,
+            BackImageUrl = result.Value?.BackImageUrl,
+            MediaFormat = result.Value?.MediaFormat
         };
     }
 

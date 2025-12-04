@@ -180,6 +180,10 @@ public partial class ReleaseDetailInput : ComponentBase
         var response = await this.Client.ImportReleaseDetails(this.request.Asin);
         if (response == null || response.IsFailed)
         {
+            foreach (var error in response?.Errors ?? [])
+            {
+                Console.WriteLine("Failed to import release details " + error.Message);
+            }
             return;
         }
 

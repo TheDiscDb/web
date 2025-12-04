@@ -2,7 +2,7 @@
 
 public interface IAmazonImporter
 {
-    Task<AmazonProductMetadata?> GetProductMetadataAsync(string asin, CancellationToken cancellationToken = default);
+    Task<FluentResults.Result<AmazonProductMetadata?>> GetProductMetadataAsync(string asin, CancellationToken cancellationToken = default);
 }
 
 public class AmazonProductMetadata
