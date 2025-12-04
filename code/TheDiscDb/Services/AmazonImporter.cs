@@ -4,16 +4,33 @@ using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using ScrapySharp.Extensions;
 using ScrapySharp.Network;
+using TheDiscDb.Data.Import;
 
 namespace TheDiscDb.Services;
 
 public class AmazonImporter : IAmazonImporter
 {
     private readonly ScrapingBrowser browser;
+    private readonly IStaticAssetStore assets;
 
-    public AmazonImporter()
+    public AmazonImporter(IStaticAssetStore assets)
     {
         this.browser = new ScrapingBrowser();
+        this.assets = assets ?? throw new ArgumentNullException(nameof(assets));
+    }
+
+    private async Task SaveResponse(string response, string fileName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            MemoryStream stream = new MemoryStream();
+            StreamWriter writer = new StreamWriter(stream);
+            await writer.WriteAsync(response);
+            await this.assets.Save(stream, $"logs/{fileName}", ContentTypes.TextContentType, cancellationToken);
+        }
+        catch (Exception)
+        {
+        }
     }
 
     public async Task<FluentResults.Result<AmazonProductMetadata?>> GetProductMetadataAsync(string asin, CancellationToken cancellationToken = default)
@@ -46,6 +63,7 @@ public class AmazonImporter : IAmazonImporter
             }
             else
             {
+                await SaveResponse(html.RawResponse.ToString(), $"{asin}-{Guid.NewGuid()}.html", cancellationToken);
                 return FluentResults.Result.Fail("Could not find detail bullets on Amazon page.");
             }
 
@@ -53,6 +71,7 @@ public class AmazonImporter : IAmazonImporter
 
             if (imageData == null)
             {
+                await SaveResponse(html.RawResponse.ToString(), $"{asin}-{Guid.NewGuid()}.html", cancellationToken);
                 return FluentResults.Result.Fail("Could not find image data on Amazon page.");
             }
 
