@@ -335,7 +335,15 @@ public class ContributionEndpoints
         }
         else
         {
-            return TypedResults.Problem(problemMessage);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(problemMessage);
+            sb.AppendLine("Errors:");
+            foreach (var error in result.Errors)
+            {
+                sb.AppendLine($"- {error.Message}");
+            }
+
+            return TypedResults.Problem(sb.ToString());
         }
     }
 
@@ -347,7 +355,15 @@ public class ContributionEndpoints
         }
         else
         {
-            return TypedResults.Problem(problemMessage);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(problemMessage);
+            sb.AppendLine("Errors:");
+            foreach (var error in result.Errors)
+            {
+                sb.AppendLine($"- {error.Message}");
+            }
+
+            return TypedResults.Problem(sb.ToString());
         }
     }
 }

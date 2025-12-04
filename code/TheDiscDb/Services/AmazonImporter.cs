@@ -18,63 +18,70 @@ public class AmazonImporter : IAmazonImporter
 
     public async Task<FluentResults.Result<AmazonProductMetadata?>> GetProductMetadataAsync(string asin, CancellationToken cancellationToken = default)
     {
-        AmazonProductMetadata result = new AmazonProductMetadata();
-        WebPage html = await browser.NavigateToPageAsync(GetUrl(asin));
-
-        if (html.RawResponse.StatusCode < 200 || html.RawResponse.StatusCode > 299)
+        try
         {
-            return FluentResults.Result.Fail($"Could not retrieve Amazon page for ASIN {asin}. Status code: {html.RawResponse.StatusCode}");
-        }
+            AmazonProductMetadata result = new AmazonProductMetadata();
+            WebPage html = await browser.NavigateToPageAsync(GetUrl(asin));
 
-        if (string.IsNullOrEmpty(html.Content))
+            if (html.RawResponse.StatusCode < 200 || html.RawResponse.StatusCode > 299)
+            {
+                return FluentResults.Result.Fail($"Could not retrieve Amazon page for ASIN {asin}. Status code: {html.RawResponse.StatusCode}");
+            }
+
+            if (string.IsNullOrEmpty(html.Content))
+            {
+                return FluentResults.Result.Fail($"Could not retrieve Amazon page for ASIN {asin}. Empty content.");
+            }
+
+            var nodes = html.Html.CssSelect("div#detailBullets_feature_div");
+            var node = nodes.FirstOrDefault();
+            if (node != null)
+            {
+                var listItems = node.Descendants()
+                    .Where(n => n.Name == "li")
+                    .ToList();
+
+                var details = ParseDetails(listItems);
+                result = BuildMetadata(details);
+            }
+            else
+            {
+                return FluentResults.Result.Fail("Could not find detail bullets on Amazon page.");
+            }
+
+            var imageData = GetImageData(html.RawResponse.ToString());
+
+            if (imageData == null)
+            {
+                return FluentResults.Result.Fail("Could not find image data on Amazon page.");
+            }
+
+            var front = imageData.Initial
+                .FirstOrDefault(i => i.Variant!.Equals("FRNT", StringComparison.OrdinalIgnoreCase));
+            if (front == null)
+            {
+                front = imageData.Initial
+                    .FirstOrDefault(i => i.Variant!.Equals("MAIN", StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (front != null)
+            {
+                result.FrontImageUrl = front.HiRes;
+            }
+
+            var back = imageData.Initial
+                .FirstOrDefault(i => i.Variant!.Equals("BACK", StringComparison.OrdinalIgnoreCase));
+            if (back != null)
+            {
+                result.BackImageUrl = back.HiRes;
+            }
+
+            return result;
+        }
+        catch (Exception ex)
         {
-            return FluentResults.Result.Fail($"Could not retrieve Amazon page for ASIN {asin}. Empty content.");
+            return FluentResults.Result.Fail($"An error occurred while retrieving Amazon product metadata for ASIN {asin}: {ex.Message}");
         }
-
-        var nodes = html.Html.CssSelect("div#detailBullets_feature_div");
-        var node = nodes.FirstOrDefault();
-        if (node != null)
-        {
-            var listItems = node.Descendants()
-                .Where(n => n.Name == "li")
-                .ToList();
-
-            var details = ParseDetails(listItems);
-            result = BuildMetadata(details);
-        }
-        else
-        {
-            return FluentResults.Result.Fail("Could not find detail bullets on Amazon page.");
-        }
-
-        var imageData = GetImageData(html.RawResponse.ToString());
-
-        if (imageData == null)
-        {
-            return FluentResults.Result.Fail("Could not find image data on Amazon page.");
-        }
-
-        var front = imageData.Initial
-            .FirstOrDefault(i => i.Variant!.Equals("FRNT", StringComparison.OrdinalIgnoreCase));
-        if (front == null)
-        {
-            front = imageData.Initial
-                .FirstOrDefault(i => i.Variant!.Equals("MAIN", StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (front != null)
-        {
-            result.FrontImageUrl = front.HiRes;
-        }
-
-        var back = imageData.Initial
-            .FirstOrDefault(i => i.Variant!.Equals("BACK", StringComparison.OrdinalIgnoreCase));
-        if (back != null)
-        {
-            result.BackImageUrl = back.HiRes;
-        }
-
-        return result;
     }
 
     private AmazonColorImages? GetImageData(string html)
