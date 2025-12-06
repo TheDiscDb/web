@@ -107,7 +107,8 @@ public partial class IdentifyDiscItems : ComponentBase
     private IUserContributionService Client { get; set; } = null!;
 
     private string? mediaType = null;
-    private IQueryable<MakeMkv.Title>? titles = null;
+    private IQueryable<MakeMkv.Title>? filteredTitles = null;
+    private IQueryable<MakeMkv.Title>? allTitles = null;
     private UserContributionDisc? disc = null;
     private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
     private SeriesEpisodeNames? episodeNames = null;
@@ -132,21 +133,22 @@ public partial class IdentifyDiscItems : ComponentBase
     SfToast? toast;
     string? toastContent;
     ItemIdentification? currentItem;
-
+    
     protected override async Task OnInitializedAsync()
     {
         var response = await this.Client.GetDiscLogs(this.ContributionId!, this.DiscId!);
         if (response?.Value != null && response.IsSuccess)
         {
-            this.titles = response.Value.Info!.Titles.AsQueryable();
+            this.allTitles = response.Value.Info!.Titles.AsQueryable();
+            this.filteredTitles = allTitles;
             this.disc = response.Value.Disc;
             this.contribution = response.Value.Contribution;
 
-            if (disc?.Items != null)
+            if (allTitles != null && disc?.Items != null)
             {
                 foreach (var item in disc.Items)
                 {
-                    var title = this.titles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
+                    var title = this.allTitles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
                     if (title != null)
                     {
                         var existingItem = new ItemIdentification

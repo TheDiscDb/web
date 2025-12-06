@@ -63,16 +63,18 @@ public class AmazonImporter : IAmazonImporter
             }
             else
             {
-                await SaveResponse(html.RawResponse.ToString(), $"{asin}-{Guid.NewGuid()}.html", cancellationToken);
-                return FluentResults.Result.Fail("Could not find detail bullets on Amazon page.");
+                string logPath = $"logs/{asin}-{Guid.NewGuid()}.html";
+                await SaveResponse(html.RawResponse.ToString(), logPath, cancellationToken);
+                return FluentResults.Result.Fail("Could not find detail bullets on Amazon page. " + logPath);
             }
 
             var imageData = GetImageData(html.RawResponse.ToString());
 
             if (imageData == null)
             {
-                await SaveResponse(html.RawResponse.ToString(), $"{asin}-{Guid.NewGuid()}.html", cancellationToken);
-                return FluentResults.Result.Fail("Could not find image data on Amazon page.");
+                string logPath = $"logs/{asin}-{Guid.NewGuid()}.html";
+                await SaveResponse(html.RawResponse.ToString(), logPath, cancellationToken);
+                return FluentResults.Result.Fail("Could not find image data on Amazon page. " + logPath);
             }
 
             var front = imageData.Initial

@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Reflection.Metadata;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Inputs;
+using Syncfusion.Blazor.Notifications;
 using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -37,10 +39,16 @@ public partial class ReleaseDetailInput : ComponentBase
     private string frontImageRemoveUrl => $"/api/contribute/images/front/remove/{id}";
     private string backImageUploadUrl => $"/api/contribute/images/back/upload/{id}";
     private string backImageRemoveUrl => $"/api/contribute/images/back/remove/{id}";
+    string frontImagePreviewUrl = "";
+    string backImagePreviewUrl = "";
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
     private bool ImportFromAmazonDisabled => string.IsNullOrEmpty(this.request.Asin);
+    private bool IsAmazonImportInProgress = false;
+
     private SfUploader? frontImageUploader;
     private SfUploader? backImageUploader;
+    SfToast? toast;
+    string? toastContent;
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,12 +185,16 @@ public partial class ReleaseDetailInput : ComponentBase
             return;
         }
 
+        IsAmazonImportInProgress = true;
+
         var response = await this.Client.ImportReleaseDetails(this.request.Asin);
         if (response == null || response.IsFailed)
         {
             foreach (var error in response?.Errors ?? [])
             {
                 Console.WriteLine("Failed to import release details " + error.Message);
+                toastContent = "Unable to import from Amazon. Details must be entered manually.";
+                await toast!.ShowAsync();
             }
             return;
         }
@@ -216,18 +228,18 @@ public partial class ReleaseDetailInput : ComponentBase
             await UploadImage(this.id.ToString(), details.BackImageUrl, this.backImageUploadUrl, "back", backImageUploader);
             this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/back.jpg?width=156&height=231";
         }
-    }
 
-    string frontImagePreviewUrl = "";
-    string backImagePreviewUrl = "";
+        IsAmazonImportInProgress = false;
+    }
 
     private async Task UploadImage(string id, string url, string uploadUrl, string name, SfUploader? uploader)
     {
         var data = await this.HttpClient.GetByteArrayAsync(url);
         var content = new MultipartFormDataContent
-            {
-                { new ByteArrayContent(data), name, $"{name}.jpg" }
-            };
+        {
+            { new ByteArrayContent(data), name, $"{name}.jpg" }
+        };
+
         var uploadResponse = await this.HttpClient.PostAsync(this.frontImageUploadUrl, content);
         if (uploadResponse != null && uploadResponse.IsSuccessStatusCode)
         {
@@ -255,4 +267,26 @@ public partial class ReleaseDetailInput : ComponentBase
             Console.WriteLine("Failed to upload image " + uploadResponse?.StatusCode);
         }
     }
+    private async Task BeforeFrontImageRemove(BeforeRemoveEventArgs args)
+    {
+        if (frontImageUploader != null)
+        {
+            await frontImageUploader.ClearAllAsync();
+            await this.HttpClient.PostAsync(this.frontImageRemoveUrl, null);
+            this.request.FrontImageUrl = null;
+            this.frontImagePreviewUrl = "";
+        }
+    }
+
+    private async Task BeforeBackImageRemove(BeforeRemoveEventArgs args)
+    {
+        if (backImageUploader != null)
+        {
+            await backImageUploader.ClearAllAsync();
+            await this.HttpClient.PostAsync(this.backImageRemoveUrl, null);
+            this.request.BackImageUrl = null;
+            this.backImagePreviewUrl = "";
+        }
+    }
+
 }
