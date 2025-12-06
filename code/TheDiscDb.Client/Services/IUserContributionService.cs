@@ -1,8 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using FluentResults;
 using MakeMkv;
-using Syncfusion.Blazor.Inputs;
-using TheDiscDb.Client;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Web.Data;
 
@@ -19,6 +17,7 @@ public interface IUserContributionService
     Task<Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default);
     Task<Result<ExternalMetadata>> GetExternalData(string contributionId, CancellationToken cancellationToken = default);
     Task<Result<ExternalMetadata>> GetExternalData(string externalId, string mediaType, string provider, CancellationToken cancellationToken = default);
+    Task<Result<ImportReleaseDetailsResponse>> ImportReleaseDetails(string asin, CancellationToken cancellationToken = default);
 
     Task<Result<List<UserContributionDisc>>> GetDiscs(string contributionId, CancellationToken cancellationToken = default);
     Task<Result<UserContributionDisc>> GetDisc(string contributionId, string discId, CancellationToken cancellationToken = default);
@@ -159,4 +158,16 @@ public class HashDiscRequest
 public class HashDiscResponse
 {
     public string DiscHash { get; set; } = string.Empty;
+}
+
+public class ImportReleaseDetailsResponse
+{
+    public string? Title { get; set; }
+    public string? RegionCode { get; set; }
+    public string? Locale { get; set; }
+    public DateTimeOffset? ReleaseDate { get; set; }
+    public string? Upc { get; set; }
+    public string? FrontImageUrl { get; set; }
+    public string? BackImageUrl { get; set; }
+    public string? MediaFormat { get; set; }
 }

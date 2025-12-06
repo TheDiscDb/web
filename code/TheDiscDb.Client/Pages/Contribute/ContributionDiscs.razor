@@ -80,7 +80,7 @@
         <h3>Discs</h3>
         <QuickGrid Items="Discs">
             <TemplateColumn Title="Name">
-                <a href="/contribution/@ContributionId/disc/@context.EncodedId/identify" title="Edit Disc">@context.Name</a>
+                <a href="/contribution/@ContributionId/discs/@context.EncodedId/identify" title="Edit Disc">@context.Name</a>
             </TemplateColumn>
             <PropertyColumn Property="@(t => t.Format)" />
             <TemplateColumn Title="Logs Uploaded">

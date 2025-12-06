@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Sqids;
+using TheDiscDb.Client;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
@@ -25,6 +26,7 @@ public class ContributionEndpoints
         contribute.MapGet("{contributionId}/episodes", GetEpisodeNames);
         contribute.MapGet("{contributionId}/externalData", GetExternalData);
         contribute.MapGet("externalData/{provider}/{mediaType}/{externalId}", GetExternalDataByExternalId);
+        contribute.MapGet("importMetadata/{asin}", ImportMetadata);
 
         contribute.MapGet("{contributionId}/discs", GetDiscs);
         contribute.MapGet("{contributionId}/discsj/{discId}", GetDisc);
@@ -113,7 +115,7 @@ public class ContributionEndpoints
 
     public async Task<IResult> GetExternalDataByExternalId(IUserContributionService service, string provider, string mediaType, string externalId, CancellationToken cancellationToken)
     {
-        var result = await service.GetExternalData(provider, mediaType, provider, cancellationToken);
+        var result = await service.GetExternalData(externalId, mediaType, provider, cancellationToken);
         return JsonResult(result, $"Unable to get external data for externalId {externalId} from {provider}");
     }
 
@@ -121,6 +123,12 @@ public class ContributionEndpoints
     {
         var result = await service.GetExternalData(contributionId, cancellationToken);
         return JsonResult(result, $"Unable to get external data for contribution {contributionId}");
+    }
+
+    public async Task<IResult> ImportMetadata(IUserContributionService service, string asin,  CancellationToken cancellationToken)
+    {
+        var result = await service.ImportReleaseDetails(asin, cancellationToken);
+        return JsonResult(result, $"Unable to import metadata for ASIN {asin}");
     }
 
     public async Task<IResult> GetDiscs(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
@@ -277,28 +285,28 @@ public class ContributionEndpoints
 
     #region Image Upload
 
-    public async Task<IResult> RemoveFrontImage(Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+    public async Task<IResult> RemoveFrontImage(Guid id, [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore service, CancellationToken cancellationToken)
         => await RemoveImage(id, "front", service, cancellationToken);
 
-    public async Task<IResult> UploadFrontImage(IFormFileCollection myFiles, Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
-        => await UploadImage(myFiles, id, "front", service, cancellationToken);
+    public async Task<IResult> UploadFrontImage(IFormFileCollection files, Guid id, [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore service, CancellationToken cancellationToken)
+        => await UploadImage(files, id, "front", service, cancellationToken);
 
-    public async Task<IResult> RemoveBackImage(Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
+    public async Task<IResult> RemoveBackImage(Guid id, [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore service, CancellationToken cancellationToken)
         => await RemoveImage(id, "back", service, cancellationToken);
 
-    public async Task<IResult> UploadBackImage(IFormFileCollection myFiles, Guid id, IStaticAssetStore service, CancellationToken cancellationToken)
-        => await UploadImage(myFiles, id, "back", service, cancellationToken);
+    public async Task<IResult> UploadBackImage(IFormFileCollection files, Guid id, [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore service, CancellationToken cancellationToken)
+        => await UploadImage(files, id, "back", service, cancellationToken);
 
     public async Task<IResult> RemoveImage(Guid id, string name, IStaticAssetStore service, CancellationToken cancellationToken)
     {
-        var path = $"_releaseImages/{id}/{name}.jpg";
+        var path = GetReleaseImagePath(id, name);
         await service.Delete(path, cancellationToken);
         return TypedResults.Ok();
     }
 
-    private async Task<IResult> UploadImage(IFormFileCollection myFiles, Guid id, string name, IStaticAssetStore service, CancellationToken cancellationToken)
+    private async Task<IResult> UploadImage(IFormFileCollection files, Guid id, string name, IStaticAssetStore service, CancellationToken cancellationToken)
     {
-        var file = myFiles.FirstOrDefault();
+        var file = files.FirstOrDefault();
 
         if (file == null || file.Length == 0)
         {
@@ -309,10 +317,13 @@ public class ContributionEndpoints
         await file.CopyToAsync(memoryStream, cancellationToken);
 
         memoryStream.Position = 0;
-        var result = await service.Save(memoryStream, $"_releaseImages/{id}/{name}.jpg", file.ContentType, cancellationToken);
+        string path = GetReleaseImagePath(id, name);
+        var result = await service.Save(memoryStream, path, file.ContentType, cancellationToken);
 
         return TypedResults.Ok();
     }
+
+    private static string GetReleaseImagePath(Guid id, string name) => $"Contributions/releaseImages/{id}/{name}.jpg";
 
     #endregion
 
@@ -324,7 +335,15 @@ public class ContributionEndpoints
         }
         else
         {
-            return TypedResults.Problem(problemMessage);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(problemMessage);
+            sb.AppendLine("Errors:");
+            foreach (var error in result.Errors)
+            {
+                sb.AppendLine($"- {error.Message}");
+            }
+
+            return TypedResults.Problem(sb.ToString());
         }
     }
 
@@ -336,7 +355,15 @@ public class ContributionEndpoints
         }
         else
         {
-            return TypedResults.Problem(problemMessage);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(problemMessage);
+            sb.AppendLine("Errors:");
+            foreach (var error in result.Errors)
+            {
+                sb.AppendLine($"- {error.Message}");
+            }
+
+            return TypedResults.Problem(sb.ToString());
         }
     }
 }

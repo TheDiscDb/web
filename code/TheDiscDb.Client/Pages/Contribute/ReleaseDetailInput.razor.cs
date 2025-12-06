@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Reflection.Metadata;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Inputs;
+using Syncfusion.Blazor.Notifications;
 using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -20,6 +22,9 @@ public partial class ReleaseDetailInput : ComponentBase
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
 
+    [Inject]
+    public HttpClient HttpClient { get; set; } = default!;
+
     private readonly CreateContributionRequest request = new CreateContributionRequest
     {
         Locale = "en-us",
@@ -34,7 +39,16 @@ public partial class ReleaseDetailInput : ComponentBase
     private string frontImageRemoveUrl => $"/api/contribute/images/front/remove/{id}";
     private string backImageUploadUrl => $"/api/contribute/images/back/upload/{id}";
     private string backImageRemoveUrl => $"/api/contribute/images/back/remove/{id}";
+    string frontImagePreviewUrl = "";
+    string backImagePreviewUrl = "";
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
+    private bool ImportFromAmazonDisabled => string.IsNullOrEmpty(this.request.Asin);
+    private bool IsAmazonImportInProgress = false;
+
+    private SfUploader? frontImageUploader;
+    private SfUploader? backImageUploader;
+    SfToast? toast;
+    string? toastContent;
 
     protected override async Task OnInitializedAsync()
     {
@@ -133,7 +147,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private static string CreateSlug(string title, int? year)
     {
         string slug = title.Slugify();
-        
+
         if (year.HasValue)
         {
             slug = $"{year.Value}-{slug}";
@@ -150,6 +164,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private void FrontImageRemoved(RemovingEventArgs args)
     {
         this.request.FrontImageUrl = null;
+        this.frontImagePreviewUrl = "";
     }
 
     private void BackImageSelected(SelectedEventArgs args)
@@ -160,5 +175,118 @@ public partial class ReleaseDetailInput : ComponentBase
     private void BackImageRemoved(RemovingEventArgs args)
     {
         this.request.BackImageUrl = null;
+        this.backImagePreviewUrl = "";
     }
+
+    private async Task ImportFromAmazon(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    {
+        if (string.IsNullOrEmpty(this.request.Asin))
+        {
+            return;
+        }
+
+        IsAmazonImportInProgress = true;
+
+        var response = await this.Client.ImportReleaseDetails(this.request.Asin);
+        if (response == null || response.IsFailed)
+        {
+            foreach (var error in response?.Errors ?? [])
+            {
+                Console.WriteLine("Failed to import release details " + error.Message);
+                toastContent = "Unable to import from Amazon. Details must be entered manually.";
+                await toast!.ShowAsync();
+            }
+            return;
+        }
+
+        var details = response.Value;
+        this.request.Title = details.Title ?? "";
+        this.request.RegionCode = details.RegionCode ?? "1";
+        this.request.Locale = details.Locale ?? "en-us";
+        this.request.Upc = details.Upc ?? "";
+
+        if (details.ReleaseDate.HasValue)
+        {
+            this.request.ReleaseDate = details.ReleaseDate.Value;
+            this.releaseDate = details.ReleaseDate.Value.ToString("MM-dd-yyyy");
+
+            if (!string.IsNullOrEmpty(details.MediaFormat) && string.IsNullOrEmpty(this.request.ReleaseTitle))
+            {
+                this.request.ReleaseTitle = $"{details.ReleaseDate.Value.Year} {details.MediaFormat}";
+                this.request.ReleaseSlug = this.request.ReleaseTitle.Slugify();
+            }
+        }
+
+        if (!string.IsNullOrEmpty(details.FrontImageUrl))
+        {
+            await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
+            this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/front.jpg?width=156&height=231";
+        }
+
+        if (!string.IsNullOrEmpty(details.BackImageUrl))
+        {
+            await UploadImage(this.id.ToString(), details.BackImageUrl, this.backImageUploadUrl, "back", backImageUploader);
+            this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/back.jpg?width=156&height=231";
+        }
+
+        IsAmazonImportInProgress = false;
+    }
+
+    private async Task UploadImage(string id, string url, string uploadUrl, string name, SfUploader? uploader)
+    {
+        var data = await this.HttpClient.GetByteArrayAsync(url);
+        var content = new MultipartFormDataContent
+        {
+            { new ByteArrayContent(data), name, $"{name}.jpg" }
+        };
+
+        var uploadResponse = await this.HttpClient.PostAsync(this.frontImageUploadUrl, content);
+        if (uploadResponse != null && uploadResponse.IsSuccessStatusCode)
+        {
+            this.request.FrontImageUrl = $"{this.id}/{name}.jpg";
+
+            if (uploader != null)
+            {
+                await uploader.CreateFileList(
+                [
+                    new Syncfusion.Blazor.Inputs.FileInfo
+                    {
+                        Id = id,
+                        Name = $"{name}.jpg",
+                        Size = data.Length,
+                        Type = "image/jpeg",
+                        StatusCode = "Uploaded",
+                        Status = "File uploaded successfully",
+                        LastModifiedDate = DateTime.UtcNow
+                    }
+                ]);
+            }
+        }
+        else
+        {
+            Console.WriteLine("Failed to upload image " + uploadResponse?.StatusCode);
+        }
+    }
+    private async Task BeforeFrontImageRemove(BeforeRemoveEventArgs args)
+    {
+        if (frontImageUploader != null)
+        {
+            await frontImageUploader.ClearAllAsync();
+            await this.HttpClient.PostAsync(this.frontImageRemoveUrl, null);
+            this.request.FrontImageUrl = null;
+            this.frontImagePreviewUrl = "";
+        }
+    }
+
+    private async Task BeforeBackImageRemove(BeforeRemoveEventArgs args)
+    {
+        if (backImageUploader != null)
+        {
+            await backImageUploader.ClearAllAsync();
+            await this.HttpClient.PostAsync(this.backImageRemoveUrl, null);
+            this.request.BackImageUrl = null;
+            this.backImagePreviewUrl = "";
+        }
+    }
+
 }

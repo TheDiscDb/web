@@ -20,8 +20,9 @@ public class UserContributionService : IUserContributionService
     private readonly IdEncoder idEncoder;
     private readonly IStaticAssetStore assetStore;
     private readonly TheMovieDbClient tmdb;
+    private readonly IAmazonImporter amazon;
 
-    public UserContributionService(IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, IPrincipalProvider principalProvider, IdEncoder idEncoder, IStaticAssetStore assetStore, TheMovieDbClient tmdb)
+    public UserContributionService(IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, IPrincipalProvider principalProvider, IdEncoder idEncoder, IStaticAssetStore assetStore, TheMovieDbClient tmdb, IAmazonImporter amazon)
     {
         this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
         this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
@@ -29,6 +30,7 @@ public class UserContributionService : IUserContributionService
         this.idEncoder = idEncoder ?? throw new ArgumentNullException(nameof(idEncoder));
         this.assetStore = assetStore ?? throw new ArgumentNullException(nameof(assetStore));
         this.tmdb = tmdb ?? throw new ArgumentNullException(nameof(tmdb));
+        this.amazon = amazon ?? throw new ArgumentNullException(nameof(amazon));
     }
 
     #region Contributions
@@ -453,6 +455,30 @@ public class UserContributionService : IUserContributionService
         }
 
         return metadata;
+    }
+
+    public async Task<FluentResults.Result<ImportReleaseDetailsResponse>> ImportReleaseDetails(string asin, CancellationToken cancellationToken = default)
+    {
+        var result = await this.amazon.GetProductMetadataAsync(asin, cancellationToken);
+        if (result == null)
+        {
+            return Result.Fail($"Amazon product with ASIN {asin} not found");
+        }
+
+        if (result.IsFailed)
+        {
+            return Result.Fail(result.Errors);
+        }
+
+        return new ImportReleaseDetailsResponse
+        {
+            Title = result.Value?.Title,
+            ReleaseDate = result.Value?.ReleaseDate,
+            Upc = result.Value?.Upc,
+            FrontImageUrl = result.Value?.FrontImageUrl,
+            BackImageUrl = result.Value?.BackImageUrl,
+            MediaFormat = result.Value?.MediaFormat
+        };
     }
 
     #endregion

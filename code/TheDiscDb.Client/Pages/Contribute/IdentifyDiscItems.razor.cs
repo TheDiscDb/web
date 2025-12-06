@@ -107,12 +107,16 @@ public partial class IdentifyDiscItems : ComponentBase
     private IUserContributionService Client { get; set; } = null!;
 
     private string? mediaType = null;
-    private IQueryable<MakeMkv.Title>? titles = null;
+    private IQueryable<MakeMkv.Title>? filteredTitles = null;
+    private IQueryable<MakeMkv.Title>? allTitles = null;
     private UserContributionDisc? disc = null;
     private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
     private SeriesEpisodeNames? episodeNames = null;
     private ExternalMetadata? ExternalMetadata = null;
     private UserContribution? contribution;
+
+    // A hacky way to prevent multiple network calls at once
+    private bool callInProgress = false;
 
     bool showEpisodeDialog = false;
     SfDialog? episodeDialog;
@@ -129,21 +133,22 @@ public partial class IdentifyDiscItems : ComponentBase
     SfToast? toast;
     string? toastContent;
     ItemIdentification? currentItem;
-
+    
     protected override async Task OnInitializedAsync()
     {
         var response = await this.Client.GetDiscLogs(this.ContributionId!, this.DiscId!);
         if (response?.Value != null && response.IsSuccess)
         {
-            this.titles = response.Value.Info!.Titles.AsQueryable();
+            this.allTitles = response.Value.Info!.Titles.AsQueryable();
+            this.filteredTitles = allTitles;
             this.disc = response.Value.Disc;
             this.contribution = response.Value.Contribution;
 
-            if (disc?.Items != null)
+            if (allTitles != null && disc?.Items != null)
             {
                 foreach (var item in disc.Items)
                 {
-                    var title = this.titles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
+                    var title = this.allTitles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
                     if (title != null)
                     {
                         var existingItem = new ItemIdentification
@@ -446,7 +451,7 @@ public partial class IdentifyDiscItems : ComponentBase
 
     public async Task HandleValidChapterSubmit()
     {
-        if (this.currentItem == null)
+        if (this.currentItem == null || this.callInProgress)
         {
             return;
         }
@@ -455,11 +460,13 @@ public partial class IdentifyDiscItems : ComponentBase
         {
             if (!string.IsNullOrEmpty(chapter.Title))
             {
+                this.callInProgress = true;
                 var response = await this.Client.AddChapterToItem(this.ContributionId!, this.DiscId!, this.currentItem.DatabaseId!, new AddChapterRequest
                 {
                     Index = chapter.Index,
                     Title = chapter.Title!
                 });
+                this.callInProgress = false;
 
                 if (!response.IsSuccess)
                 {
@@ -475,7 +482,7 @@ public partial class IdentifyDiscItems : ComponentBase
 
     public async Task HandleValidAudioTrackSubmit()
     {
-        if (this.currentItem == null)
+        if (this.currentItem == null || this.callInProgress)
         {
             return;
         }
@@ -484,11 +491,13 @@ public partial class IdentifyDiscItems : ComponentBase
         {
             if (!string.IsNullOrEmpty(audioTrack.Title))
             {
+                this.callInProgress = true;
                 var response = await this.Client.AddAudioTrackToItem(this.ContributionId!, this.DiscId!, this.currentItem.DatabaseId!, new AddAudioTrackRequest
                 {
                     Index = audioTrack.Index,
                     Title = audioTrack.Title!
                 });
+                this.callInProgress = false;
 
                 if (!response.IsSuccess)
                 {
@@ -504,7 +513,7 @@ public partial class IdentifyDiscItems : ComponentBase
 
     public async Task HandleValidItemSubmit()
     {
-        if (this.currentItem == null)
+        if (this.currentItem == null || callInProgress)
         {
             return;
         }
@@ -512,8 +521,12 @@ public partial class IdentifyDiscItems : ComponentBase
         bool isEdit = this.currentItem.DatabaseId != null;
         if (isEdit)
         {
+            callInProgress = true;
             var updateRequest = currentItem.CreateEditRequest();
+
             var updateResponse = await this.Client.EditItemOnDisc(this.ContributionId!, this.DiscId!, currentItem.DatabaseId!, updateRequest);
+            callInProgress = false;
+
             if (updateResponse.IsSuccess)
             {
                 this.identifiedTitles[currentItem.Title] = currentItem;
@@ -529,7 +542,14 @@ public partial class IdentifyDiscItems : ComponentBase
             }
         }
 
+        if (callInProgress)
+        {
+            return;
+        }
+
+        callInProgress = true;
         var response = await this.Client.AddItemToDisc(this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());
+        callInProgress = false;
 
         if (response.IsSuccess)
         {
@@ -568,12 +588,14 @@ public partial class IdentifyDiscItems : ComponentBase
 
     public async Task HandleValidEpisodeSubmit()
     {
-        if (this.currentItem == null)
+        if (this.currentItem == null || this.callInProgress)
         {
             return;
         }
 
+        this.callInProgress = true;
         var response = await this.Client.AddItemToDisc(this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());
+        this.callInProgress = false;
 
         if (response.IsSuccess)
         {

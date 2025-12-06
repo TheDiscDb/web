@@ -126,3 +126,15 @@ pre code {
     }
 }
 
+
+.striped-grid tbody tr:nth-child(odd) {
+    background-color: #eee;
+}
+
+.striped-grid tbody tr:nth-child(even) {
+    background-color: #ffffff;
+}
+
+.striped-grid tbody tr:hover {
+    background-color: #e9ecef;
+}
