@@ -6,6 +6,7 @@ using FluentResults;
 using MakeMkv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Client;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Web.Data;
@@ -19,16 +20,18 @@ public class UserContributionService : IUserContributionService
     private readonly IPrincipalProvider principalProvider;
     private readonly IdEncoder idEncoder;
     private readonly IStaticAssetStore assetStore;
+    private readonly IStaticAssetStore imageStore;
     private readonly TheMovieDbClient tmdb;
     private readonly IAmazonImporter amazon;
 
-    public UserContributionService(IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, IPrincipalProvider principalProvider, IdEncoder idEncoder, IStaticAssetStore assetStore, TheMovieDbClient tmdb, IAmazonImporter amazon)
+    public UserContributionService(IDbContextFactory<SqlServerDataContext> dbContextFactory, UserManager<TheDiscDbUser> userManager, IPrincipalProvider principalProvider, IdEncoder idEncoder, IStaticAssetStore assetStore, [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore imageStore, TheMovieDbClient tmdb, IAmazonImporter amazon)
     {
         this.dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
         this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         this.principalProvider = principalProvider ?? throw new ArgumentNullException(nameof(principalProvider));
         this.idEncoder = idEncoder ?? throw new ArgumentNullException(nameof(idEncoder));
         this.assetStore = assetStore ?? throw new ArgumentNullException(nameof(assetStore));
+        this.imageStore = imageStore ?? throw new ArgumentNullException(nameof(imageStore));
         this.tmdb = tmdb ?? throw new ArgumentNullException(nameof(tmdb));
         this.amazon = amazon ?? throw new ArgumentNullException(nameof(amazon));
     }
@@ -98,11 +101,12 @@ public class UserContributionService : IUserContributionService
             dbContext.UserContributions.Add(contribution);
             await dbContext.SaveChangesAsync(cancellationToken);
 
+            this.idEncoder.EncodeInPlace(contribution);
 
             // Now that we have a contributionId, we can get the external data which will save it in blob storage
             if (string.IsNullOrEmpty(contribution.Title) || string.IsNullOrEmpty(contribution.Year))
             {
-                var externalData = await this.GetExternalData(this.idEncoder.Encode(contribution.Id), cancellationToken);
+                var externalData = await this.GetExternalData(contribution.EncodedId, cancellationToken);
                 if (externalData.IsSuccess)
                 {
                     contribution.Title = externalData.Value.Title;
@@ -110,10 +114,48 @@ public class UserContributionService : IUserContributionService
                     await dbContext.SaveChangesAsync(cancellationToken);
                 }
             }
+
+            //Now move the uploaded assets from temp storage to the contribution folder
+            await MoveImages(dbContext, contribution, request.FrontImageUrl ?? string.Empty, "front", (c, url) => c.FrontImageUrl = url, cancellationToken);
+            await MoveImages(dbContext, contribution, request.BackImageUrl ?? string.Empty, "back", (c, url) => c.BackImageUrl = url, cancellationToken);
         }
 
-        // TODO: Save images to blob storage? (or just store the url and do that later)
         return new CreateContributionResponse { ContributionId = this.idEncoder.Encode(contribution.Id) };
+    }
+
+    private async Task MoveImages(SqlServerDataContext dbContext, UserContribution contribution, string currentImageUrl, string name, Action<UserContribution, string> updateUrl, CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrEmpty(currentImageUrl) && currentImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            // This shouldn't happen but just in case, we don't want to try and move an external URL
+            return;
+        }
+
+        string remotePath = $"Contributions/releaseImages/{currentImageUrl}";
+        if (await imageStore.Exists(remotePath, cancellationToken))
+        {
+            var data = await imageStore.Download(remotePath, cancellationToken);
+            // Move the image to a folder based on the contribution id
+            if (data != null)
+            {
+                var memoryStream = new MemoryStream(data.ToArray());
+
+                string imageStoreRemotePath = $"Contributions/{contribution.EncodedId}/{name}.jpg";
+                await imageStore.Save(memoryStream, imageStoreRemotePath, ContentTypes.ImageContentType, cancellationToken);
+
+                memoryStream.Position = 0;
+                string assetStoreRemotePath = $"{contribution.EncodedId}/{name}.jpg";
+                await this.assetStore.Save(memoryStream, assetStoreRemotePath, ContentTypes.ImageContentType, cancellationToken);
+
+                updateUrl(contribution, $"/images/Contributions/{contribution.EncodedId}/{name}.jpg");
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                // Delete from the old old location
+                await imageStore.Delete(remotePath, cancellationToken);
+
+                memoryStream.Dispose();
+            }
+        }
     }
 
     public async Task<FluentResults.Result<UserContribution>> GetContribution(string contributionId, CancellationToken cancellationToken)
@@ -156,6 +198,8 @@ public class UserContributionService : IUserContributionService
 
             dbContext.UserContributions.Remove(contribution);
             await dbContext.SaveChangesAsync(cancellationToken);
+
+            // TODO: Delete images and blobs associated with this contribution
         }
 
         return Result.Ok();
@@ -178,11 +222,13 @@ public class UserContributionService : IUserContributionService
             contribution.ExternalProvider = request.ExternalProvider;
             contribution.MediaType = request.MediaType;
             contribution.ReleaseDate = request.ReleaseDate;
-            //contribution.FrontImageUrl = request.FrontImageUrl;
-            contribution.BackImageUrl = request.BackImageUrl;
             contribution.Upc = request.Upc;
             contribution.ReleaseTitle = request.ReleaseTitle;
             contribution.ReleaseSlug = request.ReleaseSlug;
+
+            // TODO: Handle images being updated before re-enabling this
+            //contribution.FrontImageUrl = request.FrontImageUrl;
+            //contribution.BackImageUrl = request.BackImageUrl;
 
             await dbContext.SaveChangesAsync(cancellationToken);
         }

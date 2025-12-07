@@ -81,6 +81,8 @@ builder.Services.AddIdentity<TheDiscDbUser, IdentityRole>()
     .AddEntityFrameworkStores<SqlServerDataContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddQuickGridEntityFrameworkAdapter();
+
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthenticationStateDeserialization();

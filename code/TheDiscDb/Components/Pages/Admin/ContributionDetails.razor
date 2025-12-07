@@ -1,0 +1,19 @@
+﻿@page "/admin/contribution/{contributionId}"
+@using System.Web
+@using TheDiscDb.Client.Controls
+
+<PageTitle>Admin - Contribution Details</PageTitle>
+
+<h1>Contribution Details</h1>
+@if (this.Contribution != null)
+{
+    <h2>@this.Contribution.Title (@this.Contribution.Year) - @this.Contribution.ReleaseTitle</h2>
+    if(!string.IsNullOrEmpty(this.Contribution.FrontImageUrl))
+    {
+        
+    }
+    if (this.User != null)
+    {
+        <a href="/admin/user/@this.Contribution.UserId">@this.User.UserName</a>
+    }
+}

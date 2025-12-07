@@ -67,6 +67,7 @@ public class CreateContributionRequest
 
     public string Title { get; set; } = string.Empty;
     public string Year { get; set; } = string.Empty;
+    public Guid StorageId { get; set; } = Guid.Empty;
 }
 
 public class CreateContributionResponse

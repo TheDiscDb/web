@@ -1,4 +1,5 @@
 using Fantastic.FileSystem;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Data.Import;
 using TheDiscDb.DatabaseMigration;
@@ -20,6 +21,11 @@ builder.AddSqlServerDbContext<SqlServerDataContext>("thediscdb", configureDbCont
     });
 });
 builder.Services.AddScoped<IDbContextFactory<SqlServerDataContext>, SingletonDbContextFactory>();
+
+builder.Services.AddIdentity<TheDiscDbUser, IdentityRole>()
+    .AddEntityFrameworkStores<SqlServerDataContext>()
+    .AddDefaultTokenProviders();
+//builder.Services.AddAuthorizationCore();
 
 builder.AddAzureBlobServiceClient("blobs");
 builder.Services.Configure<BlobStorageOptions>(builder.Configuration.GetSection("BlobStorage"));

@@ -1,6 +1,8 @@
 using Fantastic.FileSystem;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using TheDiscDb.Data.Import;
+using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.DatabaseMigration;
 
@@ -9,12 +11,16 @@ public class DataSeeder
     private readonly DataImporter dataImporter;
     private readonly IFileSystem fileSystem;
     private readonly IOptions<DatabaseMigrationOptions> options;
+    private readonly RoleManager<IdentityRole> roleManager;
+    private readonly UserManager<TheDiscDbUser> userManager;
 
-    public DataSeeder(DataImporter dataImporter, IFileSystem fileSystem, IOptions<DatabaseMigrationOptions> options)
+    public DataSeeder(DataImporter dataImporter, IFileSystem fileSystem, IOptions<DatabaseMigrationOptions> options, RoleManager<IdentityRole> roleManager, UserManager<TheDiscDbUser> userManager)
     {
         this.dataImporter = dataImporter ?? throw new ArgumentNullException(nameof(dataImporter));
         this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
         this.options = options ?? throw new ArgumentNullException(nameof(options));
+        this.roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
+        this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
     }
 
     public async Task SeedDataAsync(CancellationToken cancellationToken)
@@ -38,5 +44,29 @@ public class DataSeeder
         var subDirectories = await this.fileSystem.Directory.GetDirectories(directory, cancellationToken);
         var randomized = subDirectories.OrderBy(i => Guid.NewGuid()).Take(max);
         return randomized;
+    }
+
+    public async Task SeedUsers(CancellationToken cancellationToken)
+    {
+        string[] roles = { DefaultRoles.Administrator, DefaultRoles.Contributor };
+
+        foreach (var role in roles)
+        {
+            if (!await roleManager.RoleExistsAsync(role))
+            {
+                await roleManager.CreateAsync(new IdentityRole(role));
+            }
+        }
+
+        var adminUser = await userManager.FindByEmailAsync("luke@foust.com");
+        if (adminUser != null)
+        {
+            bool isAdmin = await userManager.IsInRoleAsync(adminUser, DefaultRoles.Administrator);
+
+            if (!isAdmin)
+            {
+                await userManager.AddToRoleAsync(adminUser, DefaultRoles.Administrator);
+            }
+        }
     }
 }

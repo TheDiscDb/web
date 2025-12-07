@@ -6,7 +6,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using TheDiscDb.Core.DiscHash;
 using TheDiscDb.InputModels;
 
 public class SqlServerDataContext : DbContext
@@ -370,4 +369,10 @@ public class  UserContributionDiscHashItem
     public string Name { get; set; }
     public DateTime CreationTime { get; set; }
     public long Size { get; set; }
+}
+
+public static class DefaultRoles
+{
+    public const string Administrator = nameof(Administrator);
+    public const string Contributor = nameof(Contributor);
 }

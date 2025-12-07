@@ -1,0 +1,20 @@
+﻿@page "/admin"
+@using System.Web
+@using TheDiscDb.Client.Controls
+
+<PageTitle>Admin Home</PageTitle>
+
+<h2>Pending Contributions</h2>
+<QuickGrid Items="PendingContributions" Class="striped-grid">
+    <TemplateColumn Title="Item">
+        <a href="/admin/contribution/@context.Id">@context.Title (@context.Year) @context.ReleaseTitle</a>
+    </TemplateColumn>
+    <PropertyColumn Property="@(c => c.Title)" Sortable="true" />
+    <PropertyColumn Property="@(c => c.Created)" Sortable="true" Format="MM/dd/yyyy" />
+    <TemplateColumn Title="User">
+        <a href="/admin/user/@context.UserId">@HttpUtility.UrlEncode(context.UserId.Split('-')[^1])</a>
+    </TemplateColumn>
+    <PropertyColumn Property="@(c => c.Status)" Sortable="true" />
+    <PropertyColumn Property="@(c => c.Discs.Count)" Title="Discs" Sortable="true" />
+    <PropertyColumn Property="@(c => !string.IsNullOrEmpty(c.FrontImageUrl))" Title="Cover Image" Sortable="true" />
+</QuickGrid>

@@ -26,11 +26,13 @@ public class Worker(
             await RunMigrationAsync(dbContext, cancellationToken);
 
             bool hasData = await dbContext.MediaItems.AnyAsync();
+            var dataSeeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
             if (!hasData || !options.Value.SkipMigrationIfDataExists)
             {
-                var dataSeeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
                 await dataSeeder.SeedDataAsync(cancellationToken);
             }
+
+            await dataSeeder.SeedUsers(cancellationToken);
         }
         catch (Exception ex)
         {

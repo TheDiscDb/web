@@ -55,6 +55,7 @@ public partial class ReleaseDetailInput : ComponentBase
         this.request.MediaType = this.MediaType ?? "Movie";
         this.request.ExternalProvider = "TMDB";
         this.request.ExternalId = this.ExternalId ?? string.Empty;
+        this.request.StorageId = this.id;
 
         var response = await this.Client.GetExternalData(this.request.ExternalId, this.request.MediaType, this.request.ExternalProvider);
         if (response != null && response.IsSuccess)
@@ -219,20 +220,20 @@ public partial class ReleaseDetailInput : ComponentBase
 
         if (!string.IsNullOrEmpty(details.FrontImageUrl))
         {
-            await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
+            request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
             this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/front.jpg?width=156&height=231";
         }
 
         if (!string.IsNullOrEmpty(details.BackImageUrl))
         {
-            await UploadImage(this.id.ToString(), details.BackImageUrl, this.backImageUploadUrl, "back", backImageUploader);
+            request.BackImageUrl = await UploadImage(this.id.ToString(), details.BackImageUrl, this.backImageUploadUrl, "back", backImageUploader);
             this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/back.jpg?width=156&height=231";
         }
 
         IsAmazonImportInProgress = false;
     }
 
-    private async Task UploadImage(string id, string url, string uploadUrl, string name, SfUploader? uploader)
+    private async Task<string?> UploadImage(string id, string url, string uploadUrl, string name, SfUploader? uploader)
     {
         var data = await this.HttpClient.GetByteArrayAsync(url);
         var content = new MultipartFormDataContent
@@ -240,11 +241,9 @@ public partial class ReleaseDetailInput : ComponentBase
             { new ByteArrayContent(data), name, $"{name}.jpg" }
         };
 
-        var uploadResponse = await this.HttpClient.PostAsync(this.frontImageUploadUrl, content);
+        var uploadResponse = await this.HttpClient.PostAsync(uploadUrl, content);
         if (uploadResponse != null && uploadResponse.IsSuccessStatusCode)
         {
-            this.request.FrontImageUrl = $"{this.id}/{name}.jpg";
-
             if (uploader != null)
             {
                 await uploader.CreateFileList(
@@ -261,12 +260,17 @@ public partial class ReleaseDetailInput : ComponentBase
                     }
                 ]);
             }
+
+            return $"{this.id}/{name}.jpg";
         }
         else
         {
             Console.WriteLine("Failed to upload image " + uploadResponse?.StatusCode);
         }
+
+        return null;
     }
+
     private async Task BeforeFrontImageRemove(BeforeRemoveEventArgs args)
     {
         if (frontImageUploader != null)
