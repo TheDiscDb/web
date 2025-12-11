@@ -118,6 +118,8 @@ public partial class IdentifyDiscItems : ComponentBase
     // A hacky way to prevent multiple network calls at once
     private bool callInProgress = false;
 
+    private bool commentColumnVisible = false;
+
     bool showEpisodeDialog = false;
     SfDialog? episodeDialog;
 
@@ -173,6 +175,11 @@ public partial class IdentifyDiscItems : ComponentBase
                         InitializeAudioTracks(item, existingItem, title);
 
                         identifiedTitles[title] = existingItem;
+
+                        if (!string.IsNullOrEmpty(title.JavaComment))
+                        {
+                            this.commentColumnVisible = true;
+                        }
                     }
                 }
             }
@@ -313,6 +320,26 @@ public partial class IdentifyDiscItems : ComponentBase
         if (identifiedTitles.TryGetValue(title, out var item))
         {
             return item.ItemTitle;
+        }
+
+        return "";
+    }
+
+    string GetSeason(Title title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            return item?.Episode?.Season ?? "";
+        }
+
+        return "";
+    }
+
+    string GetEpisode(Title title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            return item?.Episode?.Episode ?? "";
         }
 
         return "";
@@ -568,22 +595,49 @@ public partial class IdentifyDiscItems : ComponentBase
 
     private async Task ItemDialogCancelClicked()
     {
-        this.identifiedTitles.Remove(this.currentItem!.Title!);
-        this.StateHasChanged();
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        bool isEdit = this.currentItem.DatabaseId != null;
+        if (!isEdit)
+        {
+            this.identifiedTitles.Remove(this.currentItem!.Title!);
+        }
         await this.itemDialog!.HideAsync();
     }
 
     private async Task ChapterDialogCancelClicked()
     {
-        this.currentItem!.Chapters.Clear();
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        bool isEdit = this.currentItem.DatabaseId != null;
+        if (!isEdit)
+        {
+            this.currentItem!.Chapters.Clear();
+        }
+
         await this.chapterDialog!.HideAsync();
-        this.StateHasChanged();
     }
 
     private async Task AudioTrackDialogCancelClicked()
     {
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        bool isEdit = this.currentItem.DatabaseId != null;
+        if (!isEdit)
+        {
+            this.currentItem!.AudioTracks.Clear();
+        }
+
         await this.audioTrackDialog!.HideAsync();
-        this.StateHasChanged();
     }
 
     public async Task HandleValidEpisodeSubmit()

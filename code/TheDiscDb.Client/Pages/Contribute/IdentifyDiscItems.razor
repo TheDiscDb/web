@@ -27,10 +27,22 @@ else
             <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
         </TemplateColumn>
         <PropertyColumn Property="@(t => t.Playlist)" />
-        <PropertyColumn Property="@(t => t.JavaComment)" Title="Comment" />
+        @if (this.commentColumnVisible)
+        {
+            <PropertyColumn Property="@(t => t.JavaComment)" Title="Comment" />
+        }
         <TemplateColumn Title="Name">
-            <a title="edit" @onclick="() => EditTitle(context)">@GetTitle(context)</a>
+            <a title="edit" style="cursor:pointer" @onclick="() => EditTitle(context)">@GetTitle(context)</a>
         </TemplateColumn>
+        @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
+        {
+            <TemplateColumn Title="Season">
+                @GetSeason(context)
+            </TemplateColumn>
+            <TemplateColumn Title="Season">
+                @GetEpisode(context)
+            </TemplateColumn>
+        }
         <TemplateColumn>
             @if (IsIdentified(context))
             {
@@ -113,6 +125,17 @@ else
                     <SfTextBox CssClass="item-title e-field" Placeholder="Title" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.ItemTitle"></SfTextBox>
                     <ValidationMessage For="@(() => currentItem!.ItemTitle)" />
                 </div>
+                @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    <div class="field-container name-container">
+                        <SfTextBox CssClass="season-number e-field" Placeholder="Season Number (optional)" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.Episode!.Season"></SfTextBox>
+                        <ValidationMessage For="@(() => currentItem!.Episode!.Season)" />
+                    </div>
+                    <div class="field-container name-container">
+                        <SfTextBox CssClass="episode-number e-field" Placeholder="Episode Number (optional)" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Episode.Episode"></SfTextBox>
+                        <ValidationMessage For="@(() => currentItem.Episode.Episode)" />
+                    </div>
+                }
                 <div class="field-container name-container">
                     <SfTextBox CssClass="item-description e-field" Placeholder="Description (optional)" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Description"></SfTextBox>
                     <ValidationMessage For="@(() => currentItem.Description)" />

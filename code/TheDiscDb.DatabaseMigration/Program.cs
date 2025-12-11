@@ -25,7 +25,6 @@ builder.Services.AddScoped<IDbContextFactory<SqlServerDataContext>, SingletonDbC
 builder.Services.AddIdentity<TheDiscDbUser, IdentityRole>()
     .AddEntityFrameworkStores<SqlServerDataContext>()
     .AddDefaultTokenProviders();
-//builder.Services.AddAuthorizationCore();
 
 builder.AddAzureBlobServiceClient("blobs");
 builder.Services.Configure<BlobStorageOptions>(builder.Configuration.GetSection("BlobStorage"));
