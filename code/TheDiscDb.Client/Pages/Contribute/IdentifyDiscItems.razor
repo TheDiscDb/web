@@ -36,10 +36,10 @@ else
         </TemplateColumn>
         @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
         {
-            <TemplateColumn Title="Season">
+            <TemplateColumn Title="Season" Align="Align.Center">
                 @GetSeason(context)
             </TemplateColumn>
-            <TemplateColumn Title="Season">
+            <TemplateColumn Title="Episode" Align="Align.Center">
                 @GetEpisode(context)
             </TemplateColumn>
         }
@@ -47,12 +47,6 @@ else
             @if (IsIdentified(context))
             {
                 <span>@GetIdentifyButtonText(context)</span>
-                <button @onclick="() => RemoveIdentification(context)">X</button>
-                <button @onclick="() => NameAudioTracks(context)">audio</button>
-                @if (context.ChapterCount > 0)
-                {
-                    <button @onclick="() => InputChapters(context)">chapters</button>
-                }
             }
             else
             {
@@ -73,6 +67,36 @@ else
                         <DropDownMenuItem Text="Trailer" data-type="Trailer"></DropDownMenuItem>
                     </DropDownMenuItems>
                 </SfDropDownButton>
+            }
+        </TemplateColumn>
+        <TemplateColumn Align="Align.Center">
+            @if (IsIdentified(context))
+            {
+                <SfButton IconCss="e-icons e-circle-remove" OnClick="() => RemoveIdentification(context)" title="Remove Identification" />
+            }
+            else
+            {
+                <span>&nbsp;</span>
+            }
+        </TemplateColumn>
+        <TemplateColumn Align="Align.Center">
+            @if (IsIdentified(context))
+            {
+                <SfButton IconCss="e-icons e-audio" OnClick="() => NameAudioTracks(context)" title="Label Audio Tracks" />
+            }
+            else
+            {
+                <span>&nbsp;</span>
+            }
+        </TemplateColumn>
+        <TemplateColumn Align="Align.Center">
+            @if (IsIdentified(context) && context.ChapterCount > 0)
+            {
+                <SfButton IconCss="e-icons e-changes-track" OnClick="() => InputChapters(context)" title="Label Chapters" />
+            }
+            else
+            {
+                <span>&nbsp;</span>
             }
         </TemplateColumn>
     </QuickGrid>
