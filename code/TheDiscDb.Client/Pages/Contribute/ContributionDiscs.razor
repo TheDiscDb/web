@@ -1,5 +1,5 @@
 ﻿@page "/contribution/{contributionId}"
-@rendermode InteractiveAuto
+@rendermode @(new InteractiveAutoRenderMode(prerender:false))
 
 @if (this.Contribution != null)
 {

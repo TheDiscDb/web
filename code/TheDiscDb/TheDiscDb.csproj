@@ -10,6 +10,7 @@
         <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.0.2" />
         <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.0.2" />
         <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
+        <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="15.1.11" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.MicrosoftAccount" Version="10.0.0" />

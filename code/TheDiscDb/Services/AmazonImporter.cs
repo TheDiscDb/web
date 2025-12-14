@@ -19,14 +19,16 @@ public class AmazonImporter : IAmazonImporter
         this.assets = assets ?? throw new ArgumentNullException(nameof(assets));
     }
 
-    private async Task SaveResponse(string response, string fileName, CancellationToken cancellationToken = default)
+    private async Task SaveResponse(string response, string remotePath, CancellationToken cancellationToken = default)
     {
         try
         {
-            MemoryStream stream = new MemoryStream();
-            StreamWriter writer = new StreamWriter(stream);
-            await writer.WriteAsync(response);
-            await this.assets.Save(stream, $"logs/{fileName}", ContentTypes.TextContentType, cancellationToken);
+            using MemoryStream stream = new MemoryStream();
+            using (StreamWriter writer = new StreamWriter(stream))
+            {
+                await writer.WriteAsync(response);
+                await this.assets.Save(stream, remotePath, ContentTypes.TextContentType, cancellationToken);
+            }
         }
         catch (Exception)
         {

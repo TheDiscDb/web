@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using HotChocolate;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
@@ -247,6 +248,7 @@ public class UserContribution
     [JsonIgnore]
     public int Id { get; set; }
     [NotMapped]
+    [GraphQLIgnore]
     public string EncodedId { get; set; }
     [JsonIgnore]
     public string UserId { get; set; }
@@ -270,9 +272,10 @@ public class UserContribution
     public string Locale { get; set; } = string.Empty;
     public string RegionCode { get; set; } = string.Empty;
 
-    // These two are mostly used for display but not needed to generate the release
+    // These are mostly used for display and lookup but are redundant data
     public string Title { get; set; } = string.Empty;
     public string Year { get; set; } = string.Empty;
+    public string TitleSlug { get; set; } = string.Empty;
 }
 
 public class UserContributionDisc
@@ -280,6 +283,7 @@ public class UserContributionDisc
     [JsonIgnore]
     public int Id { get; set; }
     [NotMapped]
+    [GraphQLIgnore]
     public string EncodedId { get; set; }
     [JsonIgnore]
     public UserContribution UserContribution { get; set; } = null;
@@ -314,6 +318,7 @@ public class UserContributionDiscItem
     [JsonIgnore]
     public int Id { get; set; }
     [NotMapped]
+    [GraphQLIgnore]
     public string EncodedId { get; set; }
     [JsonIgnore]
     public UserContributionDisc Disc { get; set; }
@@ -337,6 +342,7 @@ public class UserContributionChapter
     [JsonIgnore]
     public int Id { get; set; }
     [NotMapped]
+    [GraphQLIgnore]
     public string EncodedId { get; set; }
     public int Index { get; set; }
     public string Title { get; set; }
@@ -349,6 +355,7 @@ public class UserContributionAudioTrack
     [JsonIgnore]
     public int Id { get; set; }
     [NotMapped]
+    [GraphQLIgnore]
     public string EncodedId { get; set; }
     public int Index { get; set; }
     public string Title { get; set; }
@@ -361,6 +368,7 @@ public class  UserContributionDiscHashItem
     [JsonIgnore]
     public int Id { get; set; }
     [NotMapped]
+    [GraphQLIgnore]
     public string EncodedId { get; set; }
     [JsonIgnore]
     public UserContribution UserContribution { get; set; }

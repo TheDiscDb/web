@@ -5,13 +5,21 @@
 @if (this.disc != null && this.contribution != null)
 {
     <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Identify" Items="[
-    GetRootContributionLink(),
-    GetContributionLink(this.contribution),
-    GetContributionDiscLink(this.contribution, this.disc)
-]" />
+        GetRootContributionLink(),
+        GetContributionLink(this.contribution),
+        GetContributionDiscLink(this.contribution, this.disc)
+    ]" />
 }
 
-<h1>Indentify Items</h1>
+<h1>Indentify Disc Items</h1>
+<article>
+    <p>
+        Please identify the items on this disc by providing titles and other information.
+    </p>
+    <p>
+        You can edit the title by clicking on the title link. Once you have identified all items, click the "Done Identifying" button.
+    </p>
+</article>
 
 @if (allTitles is null)
 {
@@ -201,12 +209,12 @@ else
                     </SfDropDownButton>
                 }
                 <ol>
-                @foreach (var item in this.currentItem!.Chapters)
-                {
-                    <li>
-                        <InputText @bind-Value="item.Title" class="form-control" />
-                    </li>
-                }
+                    @foreach (var item in this.currentItem!.Chapters)
+                    {
+                        <li>
+                            <InputText @bind-Value="item.Title" class="form-control" />
+                        </li>
+                    }
                 </ol>
                 <div class="e-footer-content">
                     <div class="button-container">
@@ -235,7 +243,7 @@ else
                         </li>
                     }
                 </ol>
-                
+
                 <div class="e-footer-content">
                     <div class="button-container">
                         <button type="button" class="e-btn e-normal" @onclick="AudioTrackDialogCancelClicked">Cancel</button>

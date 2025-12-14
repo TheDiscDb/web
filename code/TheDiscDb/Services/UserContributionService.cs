@@ -93,7 +93,8 @@ public class UserContributionService : IUserContributionService
             Locale = request.Locale,
             RegionCode = request.RegionCode,
             Title = request.Title,
-            Year = request.Year
+            Year = request.Year,
+            TitleSlug = CreateSlug(request.Title, request.Year)
         };
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -121,6 +122,16 @@ public class UserContributionService : IUserContributionService
         }
 
         return new CreateContributionResponse { ContributionId = this.idEncoder.Encode(contribution.Id) };
+
+        static string CreateSlug(string name, string year)
+        {
+            if (!string.IsNullOrEmpty(year))
+            {
+                return string.Format("{0}-{1}", name.Slugify(), year);
+            }
+
+            return name.Slugify();
+        }
     }
 
     private async Task MoveImages(SqlServerDataContext dbContext, UserContribution contribution, string currentImageUrl, string name, Action<UserContribution, string> updateUrl, CancellationToken cancellationToken)

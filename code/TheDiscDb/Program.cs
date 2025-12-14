@@ -83,7 +83,10 @@ builder.Services.AddIdentity<TheDiscDbUser, IdentityRole>()
 
 builder.Services.AddQuickGridEntityFrameworkAdapter();
 
-builder.Services.AddAuthorizationCore();
+builder.Services.AddAuthorizationCore(b =>
+{
+    b.AddPolicy("Admin", policy => policy.RequireRole(DefaultRoles.Administrator));
+});
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthenticationStateDeserialization();
 builder.Services.AddSingleton<IPrincipalProvider, PrincipalProvider>();
@@ -106,7 +109,7 @@ builder.EnrichSqlServerDbContext<SqlServerDataContext>();
 builder.Services.AddScoped<SqlServerDataContext>(p => p.GetRequiredService<IDbContextFactory<SqlServerDataContext>>().CreateDbContext());
 
 builder.Services
-.AddGraphQLServer()
+    .AddGraphQLServer()
     .ModifyCostOptions(o =>
     {
         o.EnforceCostLimits = false;
@@ -117,6 +120,20 @@ builder.Services
     .RegisterDbContextFactory<SqlServerDataContext>()
     .DisableIntrospection(false)
     .AddQueryType<Query>();
+
+builder.Services
+    .AddGraphQLServer("ContributionSchema")
+    .ModifyCostOptions(o =>
+    {
+        o.EnforceCostLimits = false;
+    })
+    .AddFiltering()
+    .AddSorting()
+    .AddProjections()
+    .RegisterDbContextFactory<SqlServerDataContext>()
+    .DisableIntrospection(false)
+    .AddAuthorization()
+    .AddQueryType<ContributionQuery>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
@@ -250,6 +267,9 @@ app.MapGraphQL();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema")
+   .RequireAuthorization();
 
 app.MapControllers();
 app.UseAntiforgery();
