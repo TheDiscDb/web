@@ -1,4 +1,5 @@
-﻿using TheDiscDb.InputModels;
+﻿using TheDiscDb.Client.Contributions;
+using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb;
@@ -18,6 +19,11 @@ public static partial class BreadCrumbHelper
     }
 
     public static string GetContributionLinkText(UserContribution contribution)
+    {
+        return $"{contribution.Title} ({contribution.Year}) - {contribution.ReleaseTitle}";
+    }
+
+    public static string GetContributionLinkText(IContributionDiscs_MyContributions_Nodes contribution)
     {
         return $"{contribution.Title} ({contribution.Year}) - {contribution.ReleaseTitle}";
     }

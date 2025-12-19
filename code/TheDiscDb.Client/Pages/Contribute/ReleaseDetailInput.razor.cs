@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Inputs;
 using Syncfusion.Blazor.Notifications;
+using TheDiscDb.Client.Contributions;
 using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -20,12 +21,15 @@ public partial class ReleaseDetailInput : ComponentBase
     public IUserContributionService Client { get; set; } = default!;
 
     [Inject]
+    public IAddContributionMutation Mutation { get; set; } = default!;
+
+    [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
 
     [Inject]
     public HttpClient HttpClient { get; set; } = default!;
 
-    private readonly CreateContributionRequest request = new CreateContributionRequest
+    private readonly CreateContributionRequestInput request = new CreateContributionRequestInput
     {
         Locale = "en-us",
         RegionCode = "1"
@@ -73,12 +77,12 @@ public partial class ReleaseDetailInput : ComponentBase
             return;
         }
 
-        var response = await this.Client.CreateContribution(userId: string.Empty, this.request);
+        var result = await this.Mutation.ExecuteAsync(this.request);
 
         if (this.request.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
         {
             // Create the episode names for later use
-            var episodeResponse = await this.Client.GetEpisodeNames(response.Value.ContributionId);
+            var episodeResponse = await this.Client.GetEpisodeNames(result.Data!.AddContribution.ContributionId);
             if (episodeResponse == null || episodeResponse.IsFailed)
             {
                 // TODO: Show an error message
@@ -87,7 +91,7 @@ public partial class ReleaseDetailInput : ComponentBase
             }
         }
 
-        this.NavigationManager!.NavigateTo($"/contribution/{response.Value.ContributionId}");
+        this.NavigationManager!.NavigateTo($"/contribution/{result.Data!.AddContribution.ContributionId}");
     }
 
     private void ReleaseTitleChanged(ChangeEventArgs args)
@@ -164,7 +168,7 @@ public partial class ReleaseDetailInput : ComponentBase
 
     private void FrontImageRemoved(RemovingEventArgs args)
     {
-        this.request.FrontImageUrl = null;
+        this.request.FrontImageUrl = "";
         this.frontImagePreviewUrl = "";
     }
 
@@ -220,7 +224,7 @@ public partial class ReleaseDetailInput : ComponentBase
 
         if (!string.IsNullOrEmpty(details.FrontImageUrl))
         {
-            request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
+            request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader) ?? "";
             this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/front.jpg?width=156&height=231";
         }
 
@@ -277,7 +281,7 @@ public partial class ReleaseDetailInput : ComponentBase
         {
             await frontImageUploader.ClearAllAsync();
             await this.HttpClient.PostAsync(this.frontImageRemoveUrl, null);
-            this.request.FrontImageUrl = null;
+            this.request.FrontImageUrl = "";
             this.frontImagePreviewUrl = "";
         }
     }

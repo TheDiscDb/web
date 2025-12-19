@@ -1,0 +1,14 @@
+query GetCurrentUserContributions {
+  myContributions {
+    nodes {
+      encodedId,
+      title
+      releaseTitle
+      year
+      mediaType,
+      status,
+      frontImageUrl,
+      created
+    }
+  }
+}

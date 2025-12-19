@@ -1,0 +1,5 @@
+mutation AddContribution($request: CreateContributionRequestInput!) {
+  addContribution(request: $request) {
+    contributionId
+  }
+}

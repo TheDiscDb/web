@@ -243,7 +243,12 @@ public enum UserContributionStatus
     Imported
 }
 
-public class UserContribution
+public interface IHasId
+{
+    int Id { get; set; }
+}
+
+public class UserContribution : IHasId
 {
     [JsonIgnore]
     public int Id { get; set; }
@@ -278,7 +283,7 @@ public class UserContribution
     public string TitleSlug { get; set; } = string.Empty;
 }
 
-public class UserContributionDisc
+public class UserContributionDisc : IHasId
 {
     [JsonIgnore]
     public int Id { get; set; }
@@ -313,7 +318,7 @@ public class UserContributionDisc
     }
 }
 
-public class UserContributionDiscItem
+public class UserContributionDiscItem : IHasId
 {
     [JsonIgnore]
     public int Id { get; set; }
@@ -337,7 +342,7 @@ public class UserContributionDiscItem
     public ICollection<UserContributionAudioTrack> AudioTracks { get; set; } = new HashSet<UserContributionAudioTrack>();
 }
 
-public class UserContributionChapter
+public class UserContributionChapter : IHasId
 {
     [JsonIgnore]
     public int Id { get; set; }
@@ -350,7 +355,7 @@ public class UserContributionChapter
     public UserContributionDiscItem Item { get; set; }
 }
 
-public class UserContributionAudioTrack
+public class UserContributionAudioTrack : IHasId
 {
     [JsonIgnore]
     public int Id { get; set; }
@@ -363,7 +368,7 @@ public class UserContributionAudioTrack
     public UserContributionDiscItem Item { get; set; }
 }
 
-public class  UserContributionDiscHashItem
+public class UserContributionDiscHashItem : IHasId
 {
     [JsonIgnore]
     public int Id { get; set; }

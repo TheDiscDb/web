@@ -28,6 +28,10 @@ builder.Services
     .AddTheDiscDbClient()
     .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{builder.HostEnvironment.BaseAddress}graphql"));
 
+builder.Services
+    .AddContributionClient()
+    .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{builder.HostEnvironment.BaseAddress}graphql/contributions"));
+
 builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
 

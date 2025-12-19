@@ -80,11 +80,11 @@
         <h3>Discs</h3>
         <QuickGrid Items="Discs">
             <TemplateColumn Title="Name">
-                <a href="/contribution/@ContributionId/discs/@context.EncodedId/identify" title="Edit Disc">@context.Name</a>
+                <a href="/contribution/@ContributionId/discs/@context!.EncodedId/identify" title="Edit Disc">@context.Name</a>
             </TemplateColumn>
-            <PropertyColumn Property="@(t => t.Format)" />
+            <PropertyColumn Property="@(t => t!.Format)" />
             <TemplateColumn Title="Logs Uploaded">
-                @if (!string.IsNullOrEmpty(context.ExistingDiscPath))
+                @if (!string.IsNullOrEmpty(context!.ExistingDiscPath))
                 {
                     <span>Copied from another disc</span>
                 }
@@ -94,7 +94,7 @@
                 }
             </TemplateColumn>
             <TemplateColumn>
-                <a @onclick="args => DeleteDisc(context)" title="Remove disc from release"><SfIcon Name="IconName.TableDelete" /></a>
+                <a @onclick="args => DeleteDisc(context!)" title="Remove disc from release"><SfIcon Name="IconName.TableDelete" /></a>
             </TemplateColumn>
         </QuickGrid>
     </section>

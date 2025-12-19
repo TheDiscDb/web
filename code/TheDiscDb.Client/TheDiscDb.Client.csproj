@@ -9,7 +9,10 @@
         <UserSecretsId>6782684c-6982-45cd-af45-1668dbf88814</UserSecretsId>
     </PropertyGroup>
     <ItemGroup>
-        <GraphQL Remove="graphql\GetMediaItemsByGroup.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\CreateContribution.graphql" />
+        <GraphQL Remove="contributiongraphql\queries\ContributionDiscs.graphql" />
+        <GraphQL Remove="ContributionGraphQL\Queries\GetCurrentUserContributionsGetCurrentUserContributions.graphql" />
+        <GraphQL Remove="graphql\queries\GetMediaItemsByGroup.graphql" />
         <GraphQL Remove="graphql\queries\GetBoxsetDiscs.graphql" />
         <GraphQL Remove="graphql\queries\GetBoxsets.graphql" />
         <GraphQL Remove="graphql\queries\GetDiscDetail.graphql" />
@@ -38,5 +41,9 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="ContributionGraphQL\Generated\" />
+      <Folder Include="ContributionGraphQL\Mutations\" />
     </ItemGroup>
 </Project>

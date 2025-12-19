@@ -17,7 +17,7 @@ public class ContributionQuery
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    [Authorize("Admin")]
+    //[Authorize("Admin")]
     public IQueryable<UserContribution> GetContributions(SqlServerDataContext context) => context.UserContributions;
 
     [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize)]

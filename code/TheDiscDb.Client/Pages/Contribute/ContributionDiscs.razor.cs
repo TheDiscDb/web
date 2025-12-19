@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using TheDiscDb.Services;
-using TheDiscDb.Web.Data;
+using StrawberryShake;
+using TheDiscDb.Client.Contributions;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -12,27 +12,21 @@ public partial class ContributionDiscs : ComponentBase
     public string? ContributionId { get; set; }
 
     [Inject]
-    IUserContributionService? ContributionService { get; set; }
+    ContributionDiscsQuery Query { get; set; } = null!;
 
-    private UserContribution? Contribution { get; set; }
-
-    private IQueryable<UserContributionDisc>? Discs => Contribution?.Discs.AsQueryable();
+    private IContributionDiscs_MyContributions_Nodes? Contribution { get; set; }
+    private IQueryable<IContributionDiscs_MyContributions_Nodes_Discs?> Discs => Contribution!.Discs!.AsQueryable();
 
     protected override async Task OnInitializedAsync()
     {
-        if (this.ContributionService == null)
+        var results = await Query.ExecuteAsync(this.ContributionId);
+        if (results != null && results.IsSuccessResult())
         {
-            throw new Exception("Contribution Service was not injected");
-        }
-
-        var result = await this.ContributionService.GetContribution(ContributionId!);
-        if (result.IsSuccess)
-        {
-            this.Contribution = result.Value;
+            this.Contribution = results.Data!.MyContributions!.Nodes!.FirstOrDefault();
         }
     }
 
-    private async Task DeleteDisc(UserContributionDisc disc)
+    private async Task DeleteDisc(IContributionDiscs_MyContributions_Nodes_Discs disc)
     {
         await Task.Delay(1);
     }
