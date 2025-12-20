@@ -368,6 +368,58 @@ public partial class IdentifyDiscItems : ComponentBase
         }
     }
 
+    string GetChapterIconCss(Title title)
+    {
+        string css = "e-icons e-changes-track";
+        
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            if (item.Chapters != null && item.Chapters.Any(c => !string.IsNullOrEmpty(c.Title)))
+            {
+                return css + " iconIndicator";
+            }
+        }
+
+        return css;
+    }
+
+    string GetChapterButtonToolTip(Title title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            if (item.Chapters != null && item.Chapters.Any(c => !string.IsNullOrEmpty(c.Title)))
+            {
+                return "Edit Chapter Labels";
+            }
+        }
+
+        return "Label Chapters";
+    }
+
+    bool HasAudioTracks(Title title) => identifiedTitles.TryGetValue(title, out var item) && item.AudioTracks != null && item.AudioTracks.Any(c => !string.IsNullOrEmpty(c.Title));
+
+    string GetAudioIconCss(Title title)
+    {
+        string css = "e-icons e-audio";
+
+        if (HasAudioTracks(title))
+        {
+            return css + " iconIndicator";
+        }
+
+        return css;
+    }
+
+    string GetAudioButtonToolTip(Title title)
+    {
+        if (HasAudioTracks(title))
+        {
+            return "Edit Audio Track Labels";
+        }
+
+        return "Label Audio Tracks";
+    }
+
     void InputChapters(Title title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))

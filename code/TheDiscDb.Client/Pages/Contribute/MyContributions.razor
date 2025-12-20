@@ -1,6 +1,6 @@
 ﻿@page "/contribute/my"
 
-@rendermode InteractiveAuto
+@rendermode @(new InteractiveAutoRenderMode(prerender:false))
 
 <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="My Contributions" Items="[
     GetRootContributionLink()

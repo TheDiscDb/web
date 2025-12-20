@@ -623,6 +623,10 @@ public class UserContributionService : IUserContributionService
             // TODO: Parse the logs and clean them of PII (like drive serial numbers etc)
             // Also validate the logs are from makemkv and not something else
 
+            // Convert any LF line endings to CRLF
+            logs = logs.Replace("\r\n", "\n") // normalize any CRLF to LF first
+                .Replace("\n", "\r\n"); // then convert LF to CRLF
+
             //Save the logs in blob storage
             byte[] byteArray = Encoding.UTF8.GetBytes(logs);
             using (MemoryStream memoryStream = new MemoryStream(byteArray))

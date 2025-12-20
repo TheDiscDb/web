@@ -138,3 +138,8 @@ pre code {
 .striped-grid tbody tr:hover {
     background-color: #e9ecef;
 }
+
+.iconIndicator {
+    color: #26b050;
+    font-weight: bold;
+}
