@@ -6,25 +6,56 @@
     <link rel="canonical" href="https://thediscdb.com/about" />
 </HeadContent>
 
-<h1>About Us</h1>
-<article>
-    <h2>What is this site for?</h2>
-    <p>For those who enjoy building their own digital movie collection from their physical movie colletion, <a href="https://makemkv.com" target="_blank" rel="noreferrer" title="Makemkv official site">MakeMkv</a> is an invaluable tool.</p> 
-    <p>This site aims to simplify the process of creating your own digital library from physical discs by allowing the community to share the layout of the discs. This will help you know which files on the disc correspond to which movies, episodes, or special features.</p>
-</article>
-<article>
-    <h2>How do I use this site?</h2>
-    <p>coming soon...</p>
-</article>
-<article>
-    <h2>Finding the correct episode order on a TV Show or Series Blu-ray disc</h2>
-    <p>coming soon...</p>
-</article>
-<article>
-    <h2>Want to contribute?</h2>
-    <p>You can start with the <a href="https://github.com/lfoust/thediscdb-data/wiki/Contribution-Guidelines" target="_blank" rel="noreferrer" title="Contribution Guidelines on Github">contribution guidelines</a>. Feel free to contact us for further assistance.</p>
-</article>
-<article>
-    <h2>Contact Us</h2>
-    <p><a href="mailto:web@thediscdb.com">web@thediscdb.com</a></p>
-</article>
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="About" Items='[("Home", "/")]' />
+
+<div class="contribute-layout about-page">
+    <section class="contribute-hero compact about-hero">
+        <h1>About TheDiscDb</h1>
+        <p>
+            We help movie collectors turn shelves of discs into organized digital libraries by sharing
+            accurate playlist mappings and metadata captured by the community.
+        </p>
+    </section>
+
+    <section class="info-grid">
+        <article class="info-card">
+            <h2>What is this site for?</h2>
+            <p>
+                For anyone building a digital movie collection, <a href="https://makemkv.com" target="_blank"
+                rel="noreferrer" title="Makemkv official site">MakeMKV</a> is indispensable. TheDiscDb extends
+                that workflow by letting collectors share disc layouts so you always know which playlists
+                contain movies, episodes, or extras.
+            </p>
+        </article>
+
+        <article class="info-card">
+            <h2>How it helps</h2>
+            <p>
+                Instead of guessing which title is the real movie or which playlist holds the finale of a season,
+                you can see what other contributors discovered, verify logs, and rip once with confidence.
+            </p>
+        </article>
+    </section>
+
+    <section class="info-card contribute-cta-card">
+        <h2>Want to contribute?</h2>
+        <p>
+            Start with the <a href="/contribute">contribution flow</a> to identify a release, hash the discs, upload
+            MakeMKV logs, and map playlists. When you share the layout of your discs with the community - everyone benefits.
+        </p>
+    </section>
+
+    <section class="info-card contact-card">
+        <h2>Contact us</h2>
+        <p>
+            Need help, need to correct metadata, or want to partner? Email us at
+            <a href="mailto:web@thediscdb.com">web@thediscdb.com</a> or open a discussion on GitHub.
+        </p>
+        <div class="cta-row">
+            <a class="btn btn-secondary" href="mailto:web@thediscdb.com">Email support</a>
+            <a class="btn btn-primary" href="https://github.com/orgs/TheDiscDb/discussions" target="_blank" rel="noopener noreferrer">
+                Join the discussion
+            </a>
+        </div>
+    </section>
+</div>

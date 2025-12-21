@@ -9,7 +9,12 @@
     ]" />
 }
 
-<h3>Create Release</h3>
+<div class="contribute-layout identify-title-page">
+    <section class="contribute-hero compact">
+        <p class="eyebrow">Step 2 · Add Release Details</p>
+        <h1>Release Details</h1>
+        <p>We recommend getting most of these details from the Amazon product page for this release if you can.</p>
+    </section>
 
 <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
@@ -19,7 +24,7 @@
         <label>ASIN<span class="required">*</span></label>
         <InputText class="form-control" @bind-Value="request.Asin" />
         <ValidationMessage For="@(() => request.Asin)" />
-        <button type="button" class="btn btn-secondary" disabled="@ImportFromAmazonDisabled" @onclick="ImportFromAmazon">Import</button>
+        @* <button type="button" class="btn btn-secondary" disabled="@ImportFromAmazonDisabled" @onclick="ImportFromAmazon">Import</button> *@
     </div>
     <div class="mb-3">
         <label>UPC<span class="required">*</span></label>
@@ -29,6 +34,7 @@
     <div class="mb-3">
         <label>Release Date<span class="required">*</span></label>
         <InputText class="form-control" @bind-Value="releaseDate" @oninput="ReleaseDateChanged" />
+        @* <SfDatePicker TValue="DateTimeOffset" class="form-control" Placeholder='Choose a Release Date or paste from Amazon' @bind-Value="request.ReleaseDate" OnInput="ReleaseDateChanged"></SfDatePicker> *@
         <div class="validation-message">@releaseDateValidationMessage</div>
     </div>
     <div class="mb-3">
@@ -79,8 +85,10 @@
         <InputText class="form-control" @bind-Value="request.RegionCode" />
         <ValidationMessage For="@(() => request.RegionCode)" />
     </div>
-    <a class="btn btn-secondary" href="/contribute/@this.MediaType">Back</a>
-    <button type="submit" class="btn btn-primary">Submit</button>
+    <div class="cta-row split">
+        <a class="btn btn-secondary" href="/contribute/@this.MediaType">Back</a>
+        <button type="submit" class="btn btn-primary">Save Release Details</button>
+    </div>
 </EditForm>
 
 <div id="container">
@@ -92,4 +100,5 @@
     <SfToast ID="toast_default" @ref="toast" Title="User Message" Content="@toastContent" Timeout="5000" Icon="e-meeting">
         <ToastPosition X="Right"></ToastPosition>
     </SfToast>
+</div>
 </div>

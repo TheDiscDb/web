@@ -19,18 +19,21 @@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/boxsets" Match="NavLinkMatch.All">Boxsets</NavLink>
                 </li>
-                <AuthorizeView>
-                    <Authorized>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/contribute" Match="NavLinkMatch.All">Contribute</NavLink>
                 </li>
-                    </Authorized>
-                </AuthorizeView>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/about" Match="NavLinkMatch.All">About</NavLink>
                 </li>
             </ul>
             <input type="text" placeholder="Search..." data-permanent @bind-value="searchQuery" class="form-control main-search-box" @onkeydown="KeyPressed"></input>
+            <AuthorizeView>
+                <Authorized>
+                    <span class="user-avatar d-none d-lg-block">
+                    <a href="/contribute/my" title="@this.DisplayName"><div class="e-avatar e-avatar-circle image">@this.ShortName</div></a>
+                    </span>
+                </Authorized>
+            </AuthorizeView>
         </div>
     </div>
 </nav>

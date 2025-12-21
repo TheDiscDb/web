@@ -116,6 +116,8 @@ public partial class AddDisc : ComponentBase
                 hash = response.Value.DiscHash;
                 this.request.ContentHash = hash;
 
+                // TODO: Check for this disc in the current user's submissions
+
                 var result = await Query!.ExecuteAsync(hash);
                 if (result.Data?.MediaItems?.Nodes != null)
                 {

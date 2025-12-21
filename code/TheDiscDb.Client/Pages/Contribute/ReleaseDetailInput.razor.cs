@@ -1,10 +1,11 @@
 ﻿using System.Reflection.Metadata;
+using System.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Inputs;
 using Syncfusion.Blazor.Notifications;
-using TheDiscDb.Client.Contributions;
 using TheDiscDb.Services;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -21,15 +22,12 @@ public partial class ReleaseDetailInput : ComponentBase
     public IUserContributionService Client { get; set; } = default!;
 
     [Inject]
-    public IAddContributionMutation Mutation { get; set; } = default!;
-
-    [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
 
     [Inject]
     public HttpClient HttpClient { get; set; } = default!;
 
-    private readonly CreateContributionRequestInput request = new CreateContributionRequestInput
+    private readonly CreateContributionRequest request = new CreateContributionRequest
     {
         Locale = "en-us",
         RegionCode = "1"
@@ -66,6 +64,12 @@ public partial class ReleaseDetailInput : ComponentBase
         {
             this.externalData = response.Value;
         }
+        else
+        {
+            this.NavigationManager.NavigateTo($"/contribution/externalIdNotFound/{this.request.ExternalId}");
+        }
+
+        // TODO: Check for other releases in the database for this ExternalId - then prompt or redirect?
     }
 
     async Task HandleValidSubmit()
@@ -77,12 +81,23 @@ public partial class ReleaseDetailInput : ComponentBase
             return;
         }
 
-        var result = await this.Mutation.ExecuteAsync(this.request);
+        bool releaseDateParsed = DateTimeOffset.TryParse(this.releaseDate, out DateTimeOffset date);
+        if (!releaseDateParsed)
+        {
+            this.releaseDateValidationMessage = $"'{this.releaseDate}' is not a valid date.";
+            return;
+        }
+        else
+        {
+            this.request.ReleaseDate = date;
+        }
+
+        var response = await this.Client.CreateContribution(userId: string.Empty, this.request);
 
         if (this.request.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
         {
             // Create the episode names for later use
-            var episodeResponse = await this.Client.GetEpisodeNames(result.Data!.AddContribution.ContributionId);
+            var episodeResponse = await this.Client.GetEpisodeNames(response.Value.ContributionId);
             if (episodeResponse == null || episodeResponse.IsFailed)
             {
                 // TODO: Show an error message
@@ -91,7 +106,7 @@ public partial class ReleaseDetailInput : ComponentBase
             }
         }
 
-        this.NavigationManager!.NavigateTo($"/contribution/{result.Data!.AddContribution.ContributionId}");
+        this.NavigationManager!.NavigateTo($"/contribution/{response.Value.ContributionId}");
     }
 
     private void ReleaseTitleChanged(ChangeEventArgs args)
@@ -105,7 +120,7 @@ public partial class ReleaseDetailInput : ComponentBase
                 year = this.request.ReleaseDate.Year;
             }
 
-            this.request.ReleaseSlug = CreateSlug(title, year);
+            this.request.ReleaseSlug = HttpUtility.UrlEncode(CreateSlug(title, year));
         }
     }
 
@@ -113,11 +128,11 @@ public partial class ReleaseDetailInput : ComponentBase
     {
         if (args?.Value != null)
         {
-            if (DateTimeOffset.TryParse(args.Value.ToString(), out var date))
+            // First, try the format on Amazon
+            if (DateTimeOffset.TryParseExact(args.Value.ToString(), "MMMM d, yyyy", null, System.Globalization.DateTimeStyles.None, out var parsedDate))
             {
-                this.request.ReleaseDate = date;
-                this.releaseDate = date.ToString("MM-dd-yyyy");
-
+                this.request.ReleaseDate = parsedDate;
+                this.releaseDate = parsedDate.ToString("MM-dd-yyyy");
                 if (!string.IsNullOrEmpty(request.ReleaseTitle))
                 {
                     int? year = null;
@@ -133,6 +148,32 @@ public partial class ReleaseDetailInput : ComponentBase
                     this.request.ReleaseSlug = "";
                 }
             }
+            else
+            {
+                this.releaseDate = args.Value.ToString() ?? ""; // just set the value to be validated on submit
+                this.request.ReleaseDate = DateTimeOffset.MinValue;
+            }
+
+            //if (DateTimeOffset.TryParse(args.Value.ToString(), out var date))
+            //{
+            //    this.request.ReleaseDate = date;
+            //    this.releaseDate = date.ToString("MM-dd-yyyy");
+
+            //    if (!string.IsNullOrEmpty(request.ReleaseTitle))
+            //    {
+            //        int? year = null;
+            //        if (this.request.ReleaseDate.Year > 1980)
+            //        {
+            //            year = this.request.ReleaseDate.Year;
+            //        }
+
+            //        this.request.ReleaseSlug = CreateSlug(request.ReleaseTitle, year);
+            //    }
+            //    else
+            //    {
+            //        this.request.ReleaseSlug = "";
+            //    }
+            //}
         }
         else
         {
@@ -168,7 +209,7 @@ public partial class ReleaseDetailInput : ComponentBase
 
     private void FrontImageRemoved(RemovingEventArgs args)
     {
-        this.request.FrontImageUrl = "";
+        this.request.FrontImageUrl = null;
         this.frontImagePreviewUrl = "";
     }
 
@@ -224,7 +265,7 @@ public partial class ReleaseDetailInput : ComponentBase
 
         if (!string.IsNullOrEmpty(details.FrontImageUrl))
         {
-            request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader) ?? "";
+            request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
             this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/front.jpg?width=156&height=231";
         }
 
@@ -281,7 +322,7 @@ public partial class ReleaseDetailInput : ComponentBase
         {
             await frontImageUploader.ClearAllAsync();
             await this.HttpClient.PostAsync(this.frontImageRemoveUrl, null);
-            this.request.FrontImageUrl = "";
+            this.request.FrontImageUrl = null;
             this.frontImagePreviewUrl = "";
         }
     }

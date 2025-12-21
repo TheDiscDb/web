@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using StrawberryShake;
-using TheDiscDb.Client.Contributions;
+using TheDiscDb.Services;
+using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -12,23 +12,29 @@ public partial class ContributionDiscs : ComponentBase
     public string? ContributionId { get; set; }
 
     [Inject]
-    ContributionDiscsQuery Query { get; set; } = null!;
+    IUserContributionService? ContributionService { get; set; }
 
-    private IContributionDiscs_MyContributions_Nodes? Contribution { get; set; }
-    private IQueryable<IContributionDiscs_MyContributions_Nodes_Discs?> Discs => Contribution!.Discs!.AsQueryable();
+    [Inject]
+    public NavigationManager NavigationManager { get; set; } = default!;
+
+    private UserContribution? Contribution { get; set; }
+
+    private IQueryable<UserContributionDisc>? Discs => Contribution?.Discs.AsQueryable();
+
+    public bool IsCompleteButtonDisabled => Discs == null || !Discs.Any();
 
     protected override async Task OnInitializedAsync()
     {
-        var results = await Query.ExecuteAsync(this.ContributionId);
-        if (results != null && results.IsSuccessResult())
+        if (this.ContributionService == null)
         {
-            this.Contribution = results.Data!.MyContributions!.Nodes!.FirstOrDefault();
+            throw new Exception("Contribution Service was not injected");
         }
-    }
 
-    private async Task DeleteDisc(IContributionDiscs_MyContributions_Nodes_Discs disc)
-    {
-        await Task.Delay(1);
+        var result = await this.ContributionService.GetContribution(ContributionId!);
+        if (result.IsSuccess)
+        {
+            this.Contribution = result.Value;
+        }
     }
 
     private string GetStatusBadgeClass()
@@ -44,4 +50,7 @@ public partial class ContributionDiscs : ComponentBase
             _ => "secondary"
         };
     }
+
+    private void NavigateToReview()
+        => NavigationManager.NavigateTo($"/contribution/{ContributionId}/review");
 }

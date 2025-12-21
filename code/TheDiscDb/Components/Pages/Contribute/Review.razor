@@ -1,0 +1,50 @@
+﻿@page "/contribution/{contributionId}/review"
+@using TheDiscDb.Validation.Contribution
+
+@rendermode InteractiveServer
+@if (Contribution is not null)
+{
+    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Review" Items="[GetRootContributionLink(), GetContributionLink(this.Contribution)]" />
+
+    <div class="contribute-layout contribution-review-page">
+        <section class="contribute-hero compact">
+            <h1>Review Your Contribution</h1>
+            <p>Thank you for your contribution - now for some final checks.</p>
+        </section>
+
+        @if (Validators is not null && Validators.Any())
+        {
+            <section class="info-card validation-summary-card">
+                <header>
+                    <p class="eyebrow">Contribution Validation</p>
+                </header>
+
+                <ul class="validation-summary-list">
+                    @foreach (var validator in Validators)
+                    {
+                        <li class="@GetResultCssClass(validator)">
+                            <span class="icon-wrapper">
+                                <SfIcon Name="@GetIcon(validator)" />
+                            </span>
+                            <span class="label">@validator.DisplayName</span>
+                            <span class="description">@GetFailureSummary(validator)</span>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+
+
+        <div class="cta-row split">
+            <a class="btn btn-secondary" href="/contribution/@Contribution.EncodedId">Back to Contribution</a>
+            <button class="btn btn-primary" @onclick="SubmitContribution" disabled="@IsSubmitForReviewButtonDisabled">Submit For Review</button>
+        </div>
+
+        <section class="callout">
+            <h3>What Is Next?</h3>
+            <p>
+                Email us at <a href="mailto:web@thediscdb.com">web@thediscdb.com</a> or create a discussion on <a href="https://github.com/orgs/TheDiscDb/discussions" target="_blank" rel="noopener noreferrer">Github</a>.
+            </p>
+        </section>
+    </div>
+}

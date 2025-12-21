@@ -1,13 +1,13 @@
 ﻿@page "/contribute/my"
 
-@rendermode InteractiveAuto
+@rendermode @(new InteractiveAutoRenderMode(prerender:false))
 
 <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="My Contributions" Items="[
     GetRootContributionLink()
 ]" />
 
 <h1>My Contributions</h1>
-<QuickGrid Items="Contributions">
+<QuickGrid Items="Contributions" Class="striped-grid">
     <TemplateColumn Title="Name">
         <a href="/contribution/@context.EncodedId">@context.ReleaseTitle</a>
     </TemplateColumn>
