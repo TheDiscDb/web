@@ -65,20 +65,30 @@ public class SqlServerDataContext : DbContext
             .HasConversion<string>();
         //userContribution.HasOne(x => x.User).WithOne()
         //    .HasForeignKey<UserContribution>(x => x.UserId);
-        userContribution.HasMany(x => x.Discs).WithOne(x => x.UserContribution);
-        userContribution.HasMany(x => x.HashItems).WithOne(x => x.UserContribution);
+        userContribution.HasMany(x => x.Discs)
+            .WithOne(x => x.UserContribution)
+            .OnDelete(DeleteBehavior.Cascade);
+        userContribution.HasMany(x => x.HashItems)
+            .WithOne(x => x.UserContribution)
+            .OnDelete(DeleteBehavior.Cascade);
 
         var userDiscContribution = modelBuilder.Entity<UserContributionDisc>();
         userDiscContribution.HasKey(x => x.Id);
-        userDiscContribution.HasMany(x => x.Items).WithOne(x => x.Disc);
+        userDiscContribution.HasMany(x => x.Items)
+            .WithOne(x => x.Disc)
+            .OnDelete(DeleteBehavior.Cascade);
 
         var userContributionDiscHashItem = modelBuilder.Entity<UserContributionDiscHashItem>();
         userContributionDiscHashItem.HasKey(x => x.Id);
 
         var userContributiondiscItem = modelBuilder.Entity<UserContributionDiscItem>();
         userContributiondiscItem.HasKey(x => x.Id);
-        userContributiondiscItem.HasMany(x => x.Chapters).WithOne(x => x.Item);
-        userContributiondiscItem.HasMany(x => x.AudioTracks).WithOne(x => x.Item);
+        userContributiondiscItem.HasMany(x => x.Chapters)
+            .WithOne(x => x.Item)
+            .OnDelete(DeleteBehavior.Cascade);
+        userContributiondiscItem.HasMany(x => x.AudioTracks)
+            .WithOne(x => x.Item)
+            .OnDelete(DeleteBehavior.Cascade);
 
         var userContributionAudioTrack = modelBuilder.Entity<UserContributionAudioTrack>();
         var userContributionChapter = modelBuilder.Entity<UserContributionChapter>();
@@ -237,6 +247,7 @@ public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser
 public enum UserContributionStatus
 {
     Pending,
+    ReadyForReview,
     Approved,
     ChangesRequested,
     Rejected,

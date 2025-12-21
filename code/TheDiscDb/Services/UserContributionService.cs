@@ -236,6 +236,7 @@ public class UserContributionService : IUserContributionService
             contribution.Upc = request.Upc;
             contribution.ReleaseTitle = request.ReleaseTitle;
             contribution.ReleaseSlug = request.ReleaseSlug;
+            contribution.Status = request.Status;
 
             // TODO: Handle images being updated before re-enabling this
             //contribution.FrontImageUrl = request.FrontImageUrl;
@@ -620,18 +621,39 @@ public class UserContributionService : IUserContributionService
                 return Result.Fail($"Disc {discId} not found");
             }
 
-            // TODO: Parse the logs and clean them of PII (like drive serial numbers etc)
-            // Also validate the logs are from makemkv and not something else
-
             // Convert any LF line endings to CRLF
             logs = logs.Replace("\r\n", "\n") // normalize any CRLF to LF first
                 .Replace("\n", "\r\n"); // then convert LF to CRLF
 
-            //Save the logs in blob storage
             byte[] byteArray = Encoding.UTF8.GetBytes(logs);
             using (MemoryStream memoryStream = new MemoryStream(byteArray))
             {
-                memoryStream.Position = 0; // Reset position to the beginning
+                // Validate the logs are from makemkv and not something else
+                memoryStream.Position = 0;
+                List<string> allLines = new();
+                using (StreamReader reader = new StreamReader(memoryStream, Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
+                {
+                    string? line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        allLines.Add(line);
+                    }
+
+                    try
+                    {
+                        _ = LogParser.Parse(allLines);
+                        
+                    }
+                    catch (Exception)
+                    {
+                        return Result.Fail($"Could not parse log file");
+                    }
+                }
+
+                // TODO: if the logs have changed, rewrite the memorystream
+
+                //Save the logs in blob storage
+                memoryStream.Position = 0;
                 await this.assetStore.Save(memoryStream, $"{contributionId}/{this.idEncoder.Encode(disc.Id)}-logs.txt", ContentTypes.TextContentType, cancellationToken);
             }
 
@@ -734,6 +756,8 @@ public class UserContributionService : IUserContributionService
                 existingDisc.Name = request.Name;
                 existingDisc.Slug = request.Slug;
                 existingDisc.ExistingDiscPath = request.ExistingDiscPath;
+                await dbContext.SaveChangesAsync(cancellationToken);
+                return new SaveDiscResponse { DiscId = this.idEncoder.Encode(existingDisc.Id) };
             }
             else
             {
@@ -810,7 +834,18 @@ public class UserContributionService : IUserContributionService
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
+            if (string.IsNullOrEmpty(discId))
+            {
+                return Result.Fail("Disc ID is required");
+            }
+
             int realDiscId = this.idEncoder.Decode(discId);
+
+            if (realDiscId == 0)
+            {
+                return Result.Fail("Invalid disc ID");
+            }
+
             var disc = await dbContext.UserContributionDiscs
                 .AsNoTracking()
                 .FirstOrDefaultAsync(d => d.Id == realDiscId, cancellationToken);

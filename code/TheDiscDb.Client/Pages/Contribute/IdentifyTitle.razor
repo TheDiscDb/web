@@ -3,20 +3,47 @@
 
 @rendermode @(new InteractiveAutoRenderMode(prerender:false))
 
-<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@BreadcrumbText" Items="[
-    GetRootContributionLink()
-]" />
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@BreadcrumbText" Items="[GetRootContributionLink()]" />
 
-<h3>What @MediaType would you like to contribute?</h3>
-<SfAutoComplete TValue="ExternalSearchResult" TItem="ExternalSearchResult" @bind-value="SelectedItem" PopupWidth="500px">
-    <SfDataManager AdaptorInstance="@typeof(ExternalSearchDataAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-    <AutoCompleteFieldSettings Value="Title"></AutoCompleteFieldSettings>
-    <AutoCompleteTemplates TItem="ExternalSearchResult">
-        <ItemTemplate>
-            <span class="thumb"><img src="@((context as ExternalSearchResult).ImageUrl)" width="92" class="thumb" /></span>
-            <span class="media-item-title">@GetItemDisplayText(context as ExternalSearchResult)</span>
-        </ItemTemplate>
-    </AutoCompleteTemplates>
-</SfAutoComplete>
-<a class="btn btn-secondary" href="/contribute">Back</a>
-<button class="btn btn-primary" @onclick="NextClicked" disabled="@IsNextButtonDisabled">Next</button>
+<div class="contribute-layout identify-title-page">
+    <section class="contribute-hero compact">
+        <p class="eyebrow">Step 1 · Identify the release</p>
+        <h1>Which @MediaType are you adding?</h1>
+        <p>Search The Movie Database or paste the TMDB ID so we can pull baseline metadata before you capture discs.</p>
+        <SfButton OnClick="SwitchMediaType">@SwitchButtonText</SfButton>
+    </section>
+
+    <section class="info-grid">
+        <article class="info-card">
+            <h2>Search @PluralMediaType</h2>
+            <SfAutoComplete TValue="ExternalSearchResult" TItem="ExternalSearchResult" @bind-value="SelectedItem" PopupWidth="500px">
+                <SfDataManager AdaptorInstance="@typeof(ExternalSearchDataAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+                <AutoCompleteFieldSettings Value="Title"></AutoCompleteFieldSettings>
+                <AutoCompleteTemplates TItem="ExternalSearchResult">
+                    <ItemTemplate>
+                        <span class="thumb"><img src="@((context as ExternalSearchResult).ImageUrl)" width="92" class="thumb" /></span>
+                        <span class="media-item-title">@GetItemDisplayText(context as ExternalSearchResult)</span>
+                    </ItemTemplate>
+                </AutoCompleteTemplates>
+            </SfAutoComplete>
+            @if (this.SelectedItem != null)
+            {
+            <div id="SelectedItemPreview">
+                <div><em>@this.SelectedItem.Title (@this.SelectedItem.Year)</em></div>
+                <div><img src="@this.SelectedItem.ImageUrl" /></div>
+            </div>
+            }
+        </article>
+
+        <article class="info-card">
+            <h2>Have the TMDB ID?</h2>
+            <p class="helper-text">Paste the numeric ID (e.g., <code>603</code> for The Matrix) if you have already confirmed the match.</p>
+            <SfTextBox @bind-Value="ManualTmdbId" Placeholder="Enter TMDB ID"></SfTextBox>
+        </article>
+    </section>
+
+    <div class="cta-row split">
+        <a class="btn btn-secondary" href="/contribute">Back</a>
+        <button class="btn btn-primary" @onclick="NextClicked" disabled="@IsNextButtonDisabled">Next</button>
+    </div>
+</div>

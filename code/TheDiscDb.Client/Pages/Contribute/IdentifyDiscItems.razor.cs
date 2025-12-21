@@ -114,6 +114,7 @@ public partial class IdentifyDiscItems : ComponentBase
     private SeriesEpisodeNames? episodeNames = null;
     private ExternalMetadata? ExternalMetadata = null;
     private UserContribution? contribution;
+    private bool IsDoneButtonDisabled => identifiedTitles == null || identifiedTitles.Count == 0;
 
     // A hacky way to prevent multiple network calls at once
     private bool callInProgress = false;

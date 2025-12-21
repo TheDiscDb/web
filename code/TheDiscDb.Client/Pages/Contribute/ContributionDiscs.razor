@@ -1,108 +1,105 @@
 ﻿@page "/contribution/{contributionId}"
 @rendermode @(new InteractiveAutoRenderMode(prerender:false))
 
-@if (this.Contribution != null)
+@if (Contribution is not null)
 {
-    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@GetContributionLinkText(this.Contribution)" Items="[
-        GetRootContributionLink()
-    ]" />
-}
+    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@GetContributionLinkText(Contribution)" Items="[GetRootContributionLink()]" />
 
-<h2>User Contribution</h2>
-@if (this.Contribution != null)
-{
-    <section>
-        <h3>@this.Contribution.Title (@this.Contribution.Year) - @this.Contribution.ReleaseTitle</h3>
-        
-        <div class="row mt-3">
-            <div class="col-md-8">
-                <dl class="row">
-                    <dt class="col-sm-4">Status:</dt>
-                    <dd class="col-sm-8">
-                        <span class="badge bg-@GetStatusBadgeClass()">@this.Contribution.Status</span>
-                    </dd>
-                    
-                    <dt class="col-sm-4">Created:</dt>
-                    <dd class="col-sm-8">@this.Contribution.Created.ToString("yyyy-MM-dd HH:mm")</dd>
-                    
-                    <dt class="col-sm-4">Media Type:</dt>
-                    <dd class="col-sm-8">@this.Contribution.MediaType</dd>
-                    
-                    <dt class="col-sm-4">Release Date:</dt>
-                    <dd class="col-sm-8">@this.Contribution.ReleaseDate.ToString("yyyy-MM-dd")</dd>
-                    
-                    <dt class="col-sm-4">Locale:</dt>
-                    <dd class="col-sm-8">@this.Contribution.Locale</dd>
-                    
-                    <dt class="col-sm-4">Region Code:</dt>
-                    <dd class="col-sm-8">@(!string.IsNullOrEmpty(this.Contribution.RegionCode) ? this.Contribution.RegionCode : "N/A")</dd>
-                    
-                    @if (!string.IsNullOrEmpty(this.Contribution.Asin))
-                    {
-                        <dt class="col-sm-4">ASIN:</dt>
-                        <dd class="col-sm-8">@this.Contribution.Asin</dd>
-                    }
-                    
-                    @if (!string.IsNullOrEmpty(this.Contribution.Upc))
-                    {
-                        <dt class="col-sm-4">UPC:</dt>
-                        <dd class="col-sm-8">@this.Contribution.Upc</dd>
-                    }
-                    
-                    @if (!string.IsNullOrEmpty(this.Contribution.ExternalProvider))
-                    {
-                        <dt class="col-sm-4">External Provider:</dt>
-                        <dd class="col-sm-8">@this.Contribution.ExternalProvider (@this.Contribution.ExternalId)</dd>
-                    }
-                </dl>
-            </div>
-            
-            <div class="col-md-4">
-                @if (!string.IsNullOrEmpty(this.Contribution.FrontImageUrl))
-                {
-                    <div class="mb-3">
-                        <h5>Front Cover</h5>
-                        <img src="@this.Contribution.FrontImageUrl" alt="Front Cover" class="img-fluid rounded" />
+    <div class="contribute-layout contribution-discs-page">
+        <section class="contribute-hero compact">
+            <h1>@Contribution.Title (@Contribution.Year)</h1>
+            <p>Review the release summary, manage discs, and complete the submission when everything looks good.</p>
+        </section>
+
+        <section class="info-grid single-column">
+            <article class="info-card release-summary-card">
+                <div class="release-summary">
+                    <div class="cover-stack">
+                        @if (!string.IsNullOrEmpty(Contribution.FrontImageUrl))
+                        {
+                            <img src="@Contribution.FrontImageUrl?width=180&height=260" alt="Front cover" class="cover" />
+                        }
+                        @if (!string.IsNullOrEmpty(Contribution.BackImageUrl))
+                        {
+                            <img src="@Contribution.BackImageUrl?width=120&height=170" alt="Back cover" class="cover secondary" />
+                        }
                     </div>
-                }
-                @if (!string.IsNullOrEmpty(this.Contribution.BackImageUrl))
-                {
-                    <div>
-                        <h5>Back Cover</h5>
-                        <img src="@this.Contribution.BackImageUrl" alt="Back Cover" class="img-fluid rounded" />
-                    </div>
-                }
+                    <dl>
+                        <dt>Release title</dt>
+                        <dd>@Contribution.ReleaseTitle</dd>
+
+                        <dt>Release date</dt>
+                        <dd>@string.Format("{0:yyyy-MM-dd}", Contribution.ReleaseDate)</dd>
+
+                        <dt>Locale / Region</dt>
+                        <dd>@Contribution.Locale · @(string.IsNullOrEmpty(Contribution.RegionCode) ? "N/A" : Contribution.RegionCode)</dd>
+
+                        @if (!string.IsNullOrEmpty(Contribution.Asin))
+                        {
+                            <dt>ASIN</dt>
+                            <dd>@Contribution.Asin</dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Contribution.Upc))
+                        {
+                            <dt>UPC</dt>
+                            <dd>@Contribution.Upc</dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Contribution.ExternalProvider))
+                        {
+                            <dt>External provider</dt>
+                            <dd>@Contribution.ExternalProvider (@Contribution.ExternalId)</dd>
+                        }
+
+                        <dt>Status</dt>
+                        <dd><span class="badge bg-@GetStatusBadgeClass()">@Contribution.Status</span></dd>
+                    </dl>
+                </div>
+            </article>
+        </section>
+
+        <section class="info-card discs-card">
+            <div class="section-header">
+                <h2>Discs in this release</h2>
+                <a class="btn btn-accent btn-large" href="/contribution/@ContributionId/AddDisc">
+                    <span class="btn-icon">+</span>
+                    Add Disc
+                </a>
             </div>
+
+            <QuickGrid Items="Discs" class="striped-grid contribute-grid">
+                <TemplateColumn Title="Name">
+                    <div class="disc-name">
+                        <a href="/contribution/@ContributionId/discs/@context.EncodedId/identify" title="Edit Disc">@context.Name</a>
+                    </div>
+                </TemplateColumn>
+                <PropertyColumn Property="d => d.Format"></PropertyColumn>
+                <TemplateColumn Title="Logs">
+                    @if (!string.IsNullOrEmpty(context.ExistingDiscPath))
+                    {
+                        <span class="badge bg-light text-dark">Copied from another disc</span>
+                    }
+                    else
+                    {
+                        <span>@(context.LogsUploaded ? "Uploaded" : "Pending")</span>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
+        </section>
+
+        <div class="cta-row split">
+            <a class="btn btn-secondary" href="/contribute/@Contribution.MediaType.ToLowerInvariant()">Back to release details</a>
+            <button class="btn btn-primary" @onclick="NavigateToReview" disabled="@IsCompleteButtonDisabled">Complete Contribution</button>
         </div>
-    </section>
-
-    <section>
-        <h3>Discs</h3>
-        <QuickGrid Items="Discs">
-            <TemplateColumn Title="Name">
-                <a href="/contribution/@ContributionId/discs/@context.EncodedId/identify" title="Edit Disc">@context.Name</a>
-            </TemplateColumn>
-            <PropertyColumn Property="@(t => t.Format)" />
-            <TemplateColumn Title="Logs Uploaded">
-                @if (!string.IsNullOrEmpty(context.ExistingDiscPath))
-                {
-                    <span>Copied from another disc</span>
-                }
-                else
-                {
-                    <span>@context.LogsUploaded</span>
-                }
-            </TemplateColumn>
-            <TemplateColumn>
-                <a @onclick="args => DeleteDisc(context)" title="Remove disc from release"><SfIcon Name="IconName.TableDelete" /></a>
-            </TemplateColumn>
-        </QuickGrid>
-    </section>
+    </div>
 }
 else
 {
-    <div>Couldn't find @ContributionId</div>
+    <div class="contribute-layout">
+        <section class="contribute-hero compact">
+            <h1>Contribution not found</h1>
+            <p>We couldn’t load contribution <strong>@ContributionId</strong>. Please check the link or return to the contributions dashboard.</p>
+        </section>
+    </div>
 }
-
-<a class="btn btn-primary" href="/contribution/@ContributionId/AddDisc">Add Disc</a>
-<a class="btn btn-primary" href="/contribution/@ContributionId/review">Complete Contribution</a>

@@ -3,68 +3,93 @@
 
 @rendermode @(new InteractiveAutoRenderMode(prerender:false))
 
-@if (this.contribution != null)
+@if (contribution is not null)
 {
     <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Upload Disc Logs" Items="[
         GetRootContributionLink(),
-        GetContributionLink(this.contribution)
+        GetContributionLink(contribution)
     ]" />
-}
 
-<h1>Upload Disc Logs</h1>
+    <div class="contribute-layout disc-upload-page">
+        <section class="contribute-hero compact">
+            <p class="eyebrow">Upload Logs</p>
+            <h1>@contribution.Title (@contribution.Year)</h1>
+            <p>Provide the MakeMKV log for this disc so we can analyze the structure and allow you to identify items.</p>
+        </section>
 
-<div class="mb-3">
-    <label>Drive Index</label>
-    <SfDropDownList TValue="string" TItem="string" DataSource="driveIndices" class="form-control" @bind-Value="DriveIndex" />
-</div>
+        @if (showSpinner)
+        {
+            <div class="log-status">
+                <div class="lds-ripple" title="Checking for logs"><div></div><div></div></div>
+                <div>
+                    <strong>Checking for logs…</strong>
+                    <p>The page will refresh automatically once the upload finishes.</p>
+                </div>
+            </div>
+        }
 
-To add add a disc, run the following command on your machine:
-<SfTab @bind-SelectedItem="selectedIndex">
-    <TabAnimationSettings>
-        <TabAnimationPrevious Effect="Syncfusion.Blazor.AnimationEffect.None"></TabAnimationPrevious>
-        <TabAnimationNext Effect="Syncfusion.Blazor.AnimationEffect.None"></TabAnimationNext>
-    </TabAnimationSettings>
-    <TabItems>
-        <TabItem>
-            <ChildContent>
-                <TabHeader Text="Powershell"></TabHeader>
-            </ChildContent>
-            <ContentTemplate>
-                <CodeHighlight CodeLanguage="PowerShell" Code="@PowershellCommand" />
-            </ContentTemplate>
-        </TabItem>
-        <TabItem>
-            <ChildContent>
-                <TabHeader Text="Bash"></TabHeader>
-            </ChildContent>
-            <ContentTemplate>
-                <CodeHighlight CodeLanguage="Bash" Code="@BashCommand" />
-            </ContentTemplate>
-        </TabItem>
-        <TabItem>
-            <ChildContent>
-                <TabHeader Text="Manual Upload"></TabHeader>
-            </ChildContent>
-            <ContentTemplate>
-                <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".txt" ShowFileList="false">
-                    <UploaderEvents ValueChange="ValueChange"></UploaderEvents>
-                </SfUploader>
-            </ContentTemplate>
-        </TabItem>
-    </TabItems>
-</SfTab>
+        <section class="info-card upload-instructions">
+            <h2>Choose how you want to upload</h2>
+            <SfTab @bind-SelectedItem="selectedIndex">
+                <TabAnimationSettings>
+                    <TabAnimationPrevious Effect="Syncfusion.Blazor.AnimationEffect.None" />
+                    <TabAnimationNext Effect="Syncfusion.Blazor.AnimationEffect.None" />
+                </TabAnimationSettings>
+                <TabItems>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="PowerShell" />
+                        </ChildContent>
+                        <ContentTemplate>
+                            <CodeHighlight CodeLanguage="PowerShell" Code="@PowershellCommand" />
+                        </ContentTemplate>
+                    </TabItem>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="Bash" />
+                        </ChildContent>
+                        <ContentTemplate>
+                            <CodeHighlight CodeLanguage="Bash" Code="@BashCommand" />
+                        </ContentTemplate>
+                    </TabItem>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="Manual Upload" />
+                        </ChildContent>
+                        <ContentTemplate>
+                            <div class="manual-upload">
+                                <p>Have a log file already? Upload the <code>.txt</code> output directly.</p>
+                                <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".txt" ShowFileList="false">
+                                    <UploaderEvents ValueChange="ValueChange" />
+                                </SfUploader>
+                            </div>
+                        </ContentTemplate>
+                    </TabItem>
+                </TabItems>
+            </SfTab>
 
-<button class="btn btn-primary" @onclick="CopyTextToClipboard" disabled=@state.IsDisabled>
-    <i class="@state.IconClassName"></i> @state.Text
-</button>
+            <button class="btn btn-primary copy-command" @onclick="CopyTextToClipboard" disabled="@state.IsDisabled">
+                <i class="@state.IconClassName"></i>
+                <span>@state.Text</span>
+            </button>
 
-@if (showSpinner)
-{
-    <div>
-        <div class="lds-ripple" title="Checking for logs"><div></div><div></div></div>
-        <span>Checking for logs...</span>
-        <div>The page will automatically update once the logs are done uploading.</div>
+            <section class="info-card">
+                <h2>Select drive</h2>
+                <p class="helper-text">If you have multiple drives, choose the index where the disc is mounted. This value is injected into the command below. Most users do not need to change this.</p>
+                <div class="form-control-block">
+                    <SfDropDownList TValue="string" TItem="string" DataSource="driveIndices" class="form-control" @bind-Value="DriveIndex" Placeholder="Select drive index" />
+                </div>
+            </section>
+        </section>
     </div>
 }
-
-<a href="/contribution/@this.ContributionId/discs/@this.DiscId/edit">Back to disc details</a>
+else
+{
+    <div class="contribute-layout">
+        <section class="contribute-hero compact">
+            <h1>Disc not found</h1>
+            <p>We couldn’t load the requested disc. Please return to the contribution overview.</p>
+            <a class="btn btn-secondary" href="/contribution/@ContributionId">Back to contribution</a>
+        </section>
+    </div>
+}

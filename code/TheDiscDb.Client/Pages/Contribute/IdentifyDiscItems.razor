@@ -5,112 +5,113 @@
 @if (this.disc != null && this.contribution != null)
 {
     <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Identify" Items="[
-        GetRootContributionLink(),
-        GetContributionLink(this.contribution),
-        GetContributionDiscLink(this.contribution, this.disc)
-    ]" />
+                                                                         GetRootContributionLink(),
+                                                                         GetContributionLink(this.contribution),
+                                                                         GetContributionDiscLink(this.contribution, this.disc)
+                                                                     ]" />
 }
 
-<h1>Indentify Disc Items</h1>
-<article>
-    <p>
-        Please identify the items on this disc by providing titles and other information.
-    </p>
-    <p>
-        You can edit the title by clicking on the title link. Once you have identified all items, click the "Done Identifying" button.
-    </p>
-</article>
+<div class="contribute-layout identify-title-page">
+    <section class="contribute-hero compact">
+        <h1>Indentify Disc Items</h1>
+        <p>Identify the items on this disc by providing titles and other information.</p>
+        <p>You can edit the title by clicking on the title link. Once you have identified all items, click the "Done Identifying" button.</p>
+    </section>
 
-@if (allTitles is null)
-{
-    <p><em>Loading...</em></p>
-}
-else
-{
-    <QuickGrid Items="filteredTitles" Class="striped-grid">
-        <PropertyColumn Property="@(t => t.ChapterCount)" />
-        <PropertyColumn Property="@(t => t.DisplaySize)" />
-        <PropertyColumn Property="@(t => t.Length)" />
-        <TemplateColumn Title="Segment Map">
-            <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
-        </TemplateColumn>
-        <PropertyColumn Property="@(t => t.Playlist)" />
-        @if (this.commentColumnVisible)
-        {
-            <PropertyColumn Property="@(t => t.JavaComment)" Title="Comment" />
-        }
-        <TemplateColumn Title="Name">
-            <a title="edit" style="cursor:pointer" @onclick="() => EditTitle(context)">@GetTitle(context)</a>
-        </TemplateColumn>
-        @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
-        {
-            <TemplateColumn Title="Season" Align="Align.Center">
-                @GetSeason(context)
+    @if (allTitles is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        <QuickGrid Items="filteredTitles" Class="striped-grid">
+            <PropertyColumn Property="@(t => t.ChapterCount)" />
+            <PropertyColumn Property="@(t => t.DisplaySize)" />
+            <PropertyColumn Property="@(t => t.Length)" />
+            <TemplateColumn Title="Segment Map">
+                <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
             </TemplateColumn>
-            <TemplateColumn Title="Episode" Align="Align.Center">
-                @GetEpisode(context)
+            <PropertyColumn Property="@(t => t.Playlist)" />
+            @if (this.commentColumnVisible)
+            {
+                <PropertyColumn Property="@(t => t.JavaComment)" Title="Comment" />
+            }
+            <TemplateColumn Title="Name">
+                <a title="edit" style="cursor:pointer" @onclick="() => EditTitle(context)">@GetTitle(context)</a>
             </TemplateColumn>
-        }
-        <TemplateColumn>
-            @if (IsIdentified(context))
+            @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
             {
-                <span>@GetIdentifyButtonText(context)</span>
+                <TemplateColumn Title="Season" Align="Align.Center">
+                    @GetSeason(context)
+                </TemplateColumn>
+                <TemplateColumn Title="Episode" Align="Align.Center">
+                    @GetEpisode(context)
+                </TemplateColumn>
             }
-            else
-            {
-                <SfDropDownButton Content="Identify">
-                    <DropDownButtonEvents ItemSelected="(args) => ItemSelected(context, args)"></DropDownButtonEvents>
-                    <DropDownMenuItems>
-                        @if (this.mediaType != null && this.mediaType.Equals("movie", StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            <DropDownMenuItem Text="Main Movie" data-type="MainMovie"></DropDownMenuItem>
-                            <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
-                        }
-                        @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
-                        {
-                            <DropDownMenuItem Text="Episode" data-type="Episode"></DropDownMenuItem>
-                            <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
-                        }
-                        <DropDownMenuItem Text="Deleted Scene" data-type="DeletedScene"></DropDownMenuItem>
-                        <DropDownMenuItem Text="Trailer" data-type="Trailer"></DropDownMenuItem>
-                    </DropDownMenuItems>
-                </SfDropDownButton>
-            }
-        </TemplateColumn>
-        <TemplateColumn Align="Align.Center">
-            @if (IsIdentified(context))
-            {
-                <SfButton IconCss="e-icons e-circle-remove" OnClick="() => RemoveIdentification(context)" title="Remove Identification" />
-            }
-            else
-            {
-                <span>&nbsp;</span>
-            }
-        </TemplateColumn>
-        <TemplateColumn Align="Align.Center">
-            @if (HasAudioTracks(context))
-            {
-                <SfButton IconCss="@GetAudioIconCss(context)" OnClick="() => NameAudioTracks(context)" title="@GetAudioButtonToolTip(context)" />
-            }
-            else
-            {
-                <span>&nbsp;</span>
-            }
-        </TemplateColumn>
-        <TemplateColumn Align="Align.Center">
-            @if (IsIdentified(context) && context.ChapterCount > 1)
-            {
-                <SfButton IconCss="@GetChapterIconCss(context)" OnClick="() => InputChapters(context)" title="@GetChapterButtonToolTip(context)" />
-            }
-            else
-            {
-                <span>&nbsp;</span>
-            }
-        </TemplateColumn>
-    </QuickGrid>
+            <TemplateColumn>
+                @if (IsIdentified(context))
+                {
+                    <span>@GetIdentifyButtonText(context)</span>
+                }
+                else
+                {
+                    <SfDropDownButton Content="Identify">
+                        <DropDownButtonEvents ItemSelected="(args) => ItemSelected(context, args)"></DropDownButtonEvents>
+                        <DropDownMenuItems>
+                            @if (this.mediaType != null && this.mediaType.Equals("movie", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                <DropDownMenuItem Text="Main Movie" data-type="MainMovie"></DropDownMenuItem>
+                                <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
+                            }
+                            @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                <DropDownMenuItem Text="Episode" data-type="Episode"></DropDownMenuItem>
+                                <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
+                            }
+                            <DropDownMenuItem Text="Deleted Scene" data-type="DeletedScene"></DropDownMenuItem>
+                            <DropDownMenuItem Text="Trailer" data-type="Trailer"></DropDownMenuItem>
+                        </DropDownMenuItems>
+                    </SfDropDownButton>
+                }
+            </TemplateColumn>
+            <TemplateColumn Align="Align.Center">
+                @if (IsIdentified(context))
+                {
+                    <SfButton IconCss="e-icons e-circle-remove" OnClick="() => RemoveIdentification(context)" title="Remove Identification" />
+                }
+                else
+                {
+                    <span>&nbsp;</span>
+                }
+            </TemplateColumn>
+            <TemplateColumn Align="Align.Center">
+                @if (HasAudioTracks(context))
+                {
+                    <SfButton IconCss="@GetAudioIconCss(context)" OnClick="() => NameAudioTracks(context)" title="@GetAudioButtonToolTip(context)" />
+                }
+                else
+                {
+                    <span>&nbsp;</span>
+                }
+            </TemplateColumn>
+            <TemplateColumn Align="Align.Center">
+                @if (IsIdentified(context) && context.ChapterCount > 1)
+                {
+                    <SfButton IconCss="@GetChapterIconCss(context)" OnClick="() => InputChapters(context)" title="@GetChapterButtonToolTip(context)" />
+                }
+                else
+                {
+                    <span>&nbsp;</span>
+                }
+            </TemplateColumn>
+        </QuickGrid>
 
-    <button class="e-btn e-primary" @onclick="SubmitIdentifications">Done Identifying</button>
-}
+        <div class="cta-row split">
+            <button class="e-btn e-primary" @onclick="SubmitIdentifications" disabled="@IsDoneButtonDisabled">Done Identifying</button>
+        </div>
+    }
+</div>
+
 
 @if (showEpisodeDialog)
 {

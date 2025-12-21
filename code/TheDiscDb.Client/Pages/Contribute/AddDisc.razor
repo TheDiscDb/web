@@ -2,45 +2,75 @@
 
 @rendermode @(new InteractiveAutoRenderMode(prerender:true))
 
-@if (this.contribution != null)
+@if (contribution is not null)
 {
     <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Add Disc" Items="[
         GetRootContributionLink(),
-        GetContributionLink(this.contribution)
+        GetContributionLink(contribution)
     ]" />
-}
 
-<h3>Add Disc to Contribution</h3>
+    <div class="contribute-layout add-disc-page">
+        <section class="contribute-hero compact">
+            <p class="eyebrow">Add a Disc</p>
+            <h1>@contribution.Title (@contribution.Year)</h1>
+            <p>Ensure the disc you would like to add is in your optical drive.</p>
+        </section>
 
-@if (handler is null)
-{
-    <div>Make sure the disc you want to add is in your disc drive. Next, select the root folder of the disc by using the 'Pick Directory' button below. This allows the disc hash to be calculated so we can determine if that disc is already in the database. You may be prompted to allow file system access by your browser.</div>
-    <button class="btn btn-primary" @onclick="OpenFolderAsync">Select Disc Root Folder</button>
+        @if (handler is null)
+        {
+            <section class="info-card">
+                <p>
+                    Insert the disc you want to add, then select its root folder (usually the drive letter). We’ll hash it to see if it already exists
+                    in the database. Your browser may request file-system access.
+                </p>
+                <button class="btn btn-primary" @onclick="OpenFolderAsync">Select Disc Root Folder</button>
+            </section>
+        }
+        else
+        {
+            <section class="info-card add-disc-form-card">
+                <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="form-grid">
+                        <div class="mb-3">
+                            <label>Disc Format</label>
+                            <SfDropDownList TValue="string" TItem="string" DataSource="formats" class="form-control" @bind-Value="request.Format" Placeholder="Select format" />
+                            <ValidationMessage For="@(() => request.Format)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Disc Title</label>
+                            <InputText class="form-control" @bind-Value="request.Name" @oninput="DiscTitleChanged" />
+                            <ValidationMessage For="@(() => request.Name)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Disc Slug</label>
+                            <InputText class="form-control" @bind-Value="request.Slug" />
+                            <ValidationMessage For="@(() => request.Slug)" />
+                        </div>
+                    </div>
+
+                    <div class="cta-row split">
+                        <a class="btn btn-secondary" href="/contribution/@ContributionId">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Disc</button>
+                    </div>
+                </EditForm>
+            </section>
+        }
+    </div>
 }
 else
 {
-    <div>Hash: @hash</div>
-    <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-
-        <div class="mb-3">
-            <label>Disc Format</label>
-            <SfDropDownList TValue="string" TItem="string" DataSource="formats" class="form-control" @bind-Value="request.Format" Placeholder="Select format" />
-            <ValidationMessage For="@(() => request.Format)" />
-        </div>
-        <div class="mb-3">
-            <label>Disc Title</label>
-            <InputText class="form-control" @bind-Value="request.Name" @oninput="DiscTitleChanged" />
-            <ValidationMessage For="@(() => request.Name)" />
-        </div>
-        <div class="mb-3">
-            <label>Disc Slug</label>
-            <InputText class="form-control" @bind-Value="request.Slug" />
-            <ValidationMessage For="@(() => request.Slug)" />
-        </div>
-
-        <button type="submit" class="btn btn-primary">Save</button>
-    </EditForm>
+    <div class="contribute-layout">
+        <section class="contribute-hero compact">
+            <h1>Contribution not found</h1>
+            <p>We couldn’t load contribution <strong>@this.ContributionId</strong>. Please check the link or return to the contributions dashboard.</p>
+            <a class="btn btn-secondary" href="/contribute">Back to Contribute</a>
+        </section>
+    </div>
 }
+
 <Syncfusion.Blazor.Popups.SfDialogProvider />

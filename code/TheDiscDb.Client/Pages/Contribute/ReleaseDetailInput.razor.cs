@@ -1,9 +1,11 @@
 ﻿using System.Reflection.Metadata;
+using System.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Syncfusion.Blazor.Inputs;
 using Syncfusion.Blazor.Notifications;
 using TheDiscDb.Services;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -62,6 +64,12 @@ public partial class ReleaseDetailInput : ComponentBase
         {
             this.externalData = response.Value;
         }
+        else
+        {
+            this.NavigationManager.NavigateTo($"/contribution/externalIdNotFound/{this.request.ExternalId}");
+        }
+
+        // TODO: Check for other releases in the database for this ExternalId - then prompt or redirect?
     }
 
     async Task HandleValidSubmit()
@@ -71,6 +79,17 @@ public partial class ReleaseDetailInput : ComponentBase
             // The release date is required. TODO: Show an error message.
             this.releaseDateValidationMessage = "Release Date is required.";
             return;
+        }
+
+        bool releaseDateParsed = DateTimeOffset.TryParse(this.releaseDate, out DateTimeOffset date);
+        if (!releaseDateParsed)
+        {
+            this.releaseDateValidationMessage = $"'{this.releaseDate}' is not a valid date.";
+            return;
+        }
+        else
+        {
+            this.request.ReleaseDate = date;
         }
 
         var response = await this.Client.CreateContribution(userId: string.Empty, this.request);
@@ -101,7 +120,7 @@ public partial class ReleaseDetailInput : ComponentBase
                 year = this.request.ReleaseDate.Year;
             }
 
-            this.request.ReleaseSlug = CreateSlug(title, year);
+            this.request.ReleaseSlug = HttpUtility.UrlEncode(CreateSlug(title, year));
         }
     }
 
@@ -109,11 +128,11 @@ public partial class ReleaseDetailInput : ComponentBase
     {
         if (args?.Value != null)
         {
-            if (DateTimeOffset.TryParse(args.Value.ToString(), out var date))
+            // First, try the format on Amazon
+            if (DateTimeOffset.TryParseExact(args.Value.ToString(), "MMMM d, yyyy", null, System.Globalization.DateTimeStyles.None, out var parsedDate))
             {
-                this.request.ReleaseDate = date;
-                this.releaseDate = date.ToString("MM-dd-yyyy");
-
+                this.request.ReleaseDate = parsedDate;
+                this.releaseDate = parsedDate.ToString("MM-dd-yyyy");
                 if (!string.IsNullOrEmpty(request.ReleaseTitle))
                 {
                     int? year = null;
@@ -129,6 +148,32 @@ public partial class ReleaseDetailInput : ComponentBase
                     this.request.ReleaseSlug = "";
                 }
             }
+            else
+            {
+                this.releaseDate = args.Value.ToString() ?? ""; // just set the value to be validated on submit
+                this.request.ReleaseDate = DateTimeOffset.MinValue;
+            }
+
+            //if (DateTimeOffset.TryParse(args.Value.ToString(), out var date))
+            //{
+            //    this.request.ReleaseDate = date;
+            //    this.releaseDate = date.ToString("MM-dd-yyyy");
+
+            //    if (!string.IsNullOrEmpty(request.ReleaseTitle))
+            //    {
+            //        int? year = null;
+            //        if (this.request.ReleaseDate.Year > 1980)
+            //        {
+            //            year = this.request.ReleaseDate.Year;
+            //        }
+
+            //        this.request.ReleaseSlug = CreateSlug(request.ReleaseTitle, year);
+            //    }
+            //    else
+            //    {
+            //        this.request.ReleaseSlug = "";
+            //    }
+            //}
         }
         else
         {

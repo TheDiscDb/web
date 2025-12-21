@@ -33,6 +33,7 @@
         <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="31.2.16" />
         <PackageReference Include="Syncfusion.Blazor.Navigations" Version="31.2.16" />
         <PackageReference Include="Syncfusion.Blazor.Spinner" Version="31.2.16" />
+        <PackageReference Include="Syncfusion.Blazor.Calendars" Version="31.2.16" />
         <PackageReference Include="FluentResults" Version="4.0.0" />
         <PackageReference Include="HighlightBlazor" Version="0.1.10" />
     </ItemGroup>

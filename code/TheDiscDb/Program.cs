@@ -15,11 +15,13 @@ using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb;
 using TheDiscDb.Client;
+using TheDiscDb.Client.Pages.Contribute;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Search;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
+using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Web;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
@@ -236,6 +238,11 @@ builder.Services.AddSingleton<IdEncoder>();
 builder.Services.AddScoped<IClipboardService, ServerClipboardService>();
 builder.Services.AddHighlight();
 builder.Services.AddSingleton<IAmazonImporter, AmazonImporter>();
+
+builder.Services.AddSingleton<IContributionValidation, UniqueReleaseSlugValidation>();
+builder.Services.AddSingleton<IContributionValidation, UniqueDiscSlugValidation>();
+builder.Services.AddSingleton<IContributionValidation, ReleaseHasDiscsValidation>();
+builder.Services.AddSingleton<IContributionValidation, ReleaseImageValidation>();
 
 var app = builder.Build();
 

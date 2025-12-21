@@ -14,9 +14,14 @@ public partial class ContributionDiscs : ComponentBase
     [Inject]
     IUserContributionService? ContributionService { get; set; }
 
+    [Inject]
+    public NavigationManager NavigationManager { get; set; } = default!;
+
     private UserContribution? Contribution { get; set; }
 
     private IQueryable<UserContributionDisc>? Discs => Contribution?.Discs.AsQueryable();
+
+    public bool IsCompleteButtonDisabled => Discs == null || !Discs.Any();
 
     protected override async Task OnInitializedAsync()
     {
@@ -32,11 +37,6 @@ public partial class ContributionDiscs : ComponentBase
         }
     }
 
-    private async Task DeleteDisc(UserContributionDisc disc)
-    {
-        await Task.Delay(1);
-    }
-
     private string GetStatusBadgeClass()
     {
         if (Contribution == null)
@@ -50,4 +50,7 @@ public partial class ContributionDiscs : ComponentBase
             _ => "secondary"
         };
     }
+
+    private void NavigateToReview()
+        => NavigationManager.NavigateTo($"/contribution/{ContributionId}/review");
 }

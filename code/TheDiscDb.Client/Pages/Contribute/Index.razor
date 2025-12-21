@@ -2,12 +2,45 @@
 
 @rendermode InteractiveAuto
 
-<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Contribute" Items="[]" />
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Contribute" Items='[("Home", "/")]' />
 
-<h1>Contribute</h1>
-<article>Thank you for contributing to TheDiscDb. We will walk you through the process. In order to complete this process, you must have MakeMkv installed on your system and you must have a disc drive that can read the disc you are trying to contribute.</article>
-<article>Place the first disc into your drive and lets get started.</article>
-<h2>What type of media are you contributing?</h2>
-<a class="btn btn-primary" href="/contribute/Movie">Movie</a>
-or
-<a class="btn btn-primary" href="/contribute/Series">Series / TV Show</a>
+<div class="contribute-layout">
+    <section class="contribute-hero">
+        <h1>Contribute to TheDiscDb</h1>
+        <p>Thank you for contributing to TheDiscDb - We will step you through the process</p>
+    </section>
+
+    <section class="info-grid">
+        <article class="info-card">
+            <h2>What you’ll need</h2>
+            <ul>
+                <li>A computer with a compatible disc drive.</li>
+                <li><a href="https://www.makemkv.com/download/" target="_blank" rel="noopener noreferrer">MakeMKV</a> installed.</li>
+                <li>A browser that supports File System Access (Chrome or Edge).</li>
+            </ul>
+        </article>
+        <article class="info-card">
+            <h2>Information Needed</h2>
+            <ul>
+                <li>The UPC found on the disc packaging</li>
+                <li>The ASIN and Release Date (Normally found on Amazon)</li>
+                <li>Cover images for the box art (Also from Amazon)</li>
+            </ul>
+        </article>
+    </section>
+
+    <section class="step-section">
+        <h2>Ready to Start?</h2>
+        <div class="cta-row">
+            <a class="btn btn-primary" href="/contribute/Movie">Contribute a Movie</a>
+            <a class="btn btn-primary" href="/contribute/Series">Contribute a Series / TV Show</a>
+        </div>
+    </section>
+
+    <section class="callout">
+        <h3>Need a hand?</h3>
+        <p>
+            Email us at <a href="mailto:web@thediscdb.com">web@thediscdb.com</a> or create a discussion on <a href="https://github.com/orgs/TheDiscDb/discussions" target="_blank" rel="noopener noreferrer">Github</a>.
+        </p>
+    </section>
+</div>
