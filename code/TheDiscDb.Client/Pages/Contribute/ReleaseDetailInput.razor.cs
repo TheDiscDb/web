@@ -27,7 +27,7 @@ public partial class ReleaseDetailInput : ComponentBase
     [Inject]
     public HttpClient HttpClient { get; set; } = default!;
 
-    private readonly CreateContributionRequest request = new CreateContributionRequest
+    private readonly ContributionMutationRequest request = new ContributionMutationRequest
     {
         Locale = "en-us",
         RegionCode = "1"

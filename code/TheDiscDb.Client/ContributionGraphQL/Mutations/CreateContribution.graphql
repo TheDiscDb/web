@@ -1,5 +1,5 @@
-mutation AddContribution($request: CreateContributionRequestInput!) {
-  addContribution(request: $request) {
+mutation AddContribution($input: CreateContributionRequestInput!) {
+  addContribution(input: $input) {
     contributionId
   }
 }

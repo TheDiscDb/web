@@ -145,6 +145,7 @@ builder.Services
     .AddTypeExtension<UserContributionDiscHashItemTypeExtension>()
     .AddType<EncodedIdType>()
     .AddQueryType<ContributionQuery>()
+    .AddMutationConventions(applyToAllMutations: true)
     .AddMutationType<Mutation>();
 
 builder.Services.AddHttpClient();

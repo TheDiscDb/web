@@ -29,7 +29,7 @@ public class UserContributionService : ApiClient, IUserContributionService
         return response;
     }
 
-    public async Task<Result<CreateContributionResponse>> CreateContribution(string userId, CreateContributionRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result<CreateContributionResponse>> CreateContribution(string userId, ContributionMutationRequest request, CancellationToken cancellationToken = default)
     {
         var client = GetHttpClient();
         var response = await client.PostAsJsonAsync("/api/contribute/create", request, cancellationToken);
@@ -71,7 +71,7 @@ public class UserContributionService : ApiClient, IUserContributionService
         return Result.Ok();
     }
 
-    public async Task<Result> UpdateContribution(string contributionId, CreateContributionRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result> UpdateContribution(string contributionId, ContributionMutationRequest request, CancellationToken cancellationToken = default)
     {
         var client = GetHttpClient();
         var response = await client.PutAsJsonAsync($"/api/contribute/{contributionId}", request, cancellationToken);

@@ -76,7 +76,7 @@ public class ContributionEndpoints
         return JsonResult(result, "Failed to add item to disc");
     }
 
-    public async Task<IResult> CreateContribution(IUserContributionService service, UserManager<TheDiscDbUser> userManager, [FromBody] CreateContributionRequest request, ClaimsPrincipal user, CancellationToken cancellationToken)
+    public async Task<IResult> CreateContribution(IUserContributionService service, UserManager<TheDiscDbUser> userManager, [FromBody] ContributionMutationRequest request, ClaimsPrincipal user, CancellationToken cancellationToken)
     {
         var userId = userManager.GetUserId(user);
         //var user = await this.userManager.FindByIdAsync(userId!);
@@ -101,7 +101,7 @@ public class ContributionEndpoints
         return OkOrProblem(result, $"Failed to delete contribution {contributionId}");
     }
 
-    public async Task<IResult> UpdateContribution(IUserContributionService service, string contributionId, [FromBody] CreateContributionRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> UpdateContribution(IUserContributionService service, string contributionId, [FromBody] ContributionMutationRequest request, CancellationToken cancellationToken)
     {
         var result = await service.UpdateContribution(contributionId, request, cancellationToken);
         return OkOrProblem(result, $"Failed to update contribution {contributionId}");

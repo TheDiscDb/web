@@ -11,7 +11,8 @@ type ContributionQuery {
 }
 
 type Mutation {
-  addContribution(request: CreateContributionRequestInput!): CreateContributionResponse!
+  addContribution(input: AddContributionInput!): AddContributionPayload!
+  hashDisc(input: HashDiscInput!): HashDiscPayload!
 }
 
 "The `DateTime` scalar represents an ISO-8601 compliant date time type."
@@ -19,6 +20,7 @@ scalar DateTime
 
 enum UserContributionStatus {
   PENDING
+  READY_FOR_REVIEW
   APPROVED
   CHANGES_REQUESTED
   REJECTED
@@ -180,6 +182,10 @@ type MyContributionsConnection {
   nodes: [UserContribution!]
 }
 
+type ContributionNotFoundError implements Error {
+  message: String!
+}
+
 input EncodedIdOperationFilterInput {
   and: [EncodedIdOperationFilterInput!]
   or: [EncodedIdOperationFilterInput!]
@@ -269,6 +275,10 @@ type MyContributionsEdge {
   cursor: String!
   "The item at the end of the edge."
   node: UserContribution!
+}
+
+interface Error {
+  message: String!
 }
 
 scalar EncodedIdFilter
@@ -393,7 +403,15 @@ input UserContributionAudioTrackFilterInput {
   item: UserContributionDiscItemFilterInput
 }
 
-input CreateContributionRequestInput {
+input HashDiscRequestInput {
+  files: [FileHashInfoInput!]!
+}
+
+type HashDiscResponse {
+  discHash: String!
+}
+
+input ContributionMutationRequestInput {
   mediaType: String!
   externalId: String!
   externalProvider: String!
@@ -409,13 +427,37 @@ input CreateContributionRequestInput {
   title: String!
   year: String!
   storageId: UUID!
-}
-
-type CreateContributionResponse {
-  contributionId: String!
+  status: UserContributionStatus!
 }
 
 scalar UUID
+
+input FileHashInfoInput {
+  index: Int!
+  name: String
+  creationTime: DateTime!
+  size: Long!
+}
+
+input AddContributionInput {
+  input: ContributionMutationRequestInput!
+}
+
+type AddContributionPayload {
+  userContribution: UserContribution
+}
+
+input HashDiscInput {
+  contributionId: String!
+  input: HashDiscRequestInput!
+}
+
+union HashDiscError = ContributionNotFoundError
+
+type HashDiscPayload {
+  hashDiscResponse: HashDiscResponse
+  errors: [HashDiscError!]
+}
 
 "The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."
 directive @cost("The `weight` argument defines what value to add to the overall cost for every appearance, or possible appearance, of a type, field, argument, etc." weight: String!) on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM | INPUT_FIELD_DEFINITION

@@ -9,10 +9,10 @@ namespace TheDiscDb.Services;
 public interface IUserContributionService
 {
     Task<Result<List<UserContribution>>> GetUserContributions(CancellationToken cancellationToken = default);
-    Task<Result<CreateContributionResponse>> CreateContribution(string userId, CreateContributionRequest request, CancellationToken cancellationToken = default);
+    Task<Result<CreateContributionResponse>> CreateContribution(string userId, ContributionMutationRequest request, CancellationToken cancellationToken = default);
     Task<Result<UserContribution>> GetContribution(string contributionId, CancellationToken cancellationToken = default);
     Task<Result> DeleteContribution(string contributionId, CancellationToken cancellationToken = default);
-    Task<Result> UpdateContribution(string contributionId, CreateContributionRequest request, CancellationToken cancellationToken = default);
+    Task<Result> UpdateContribution(string contributionId, ContributionMutationRequest request, CancellationToken cancellationToken = default);
     Task<Result<HashDiscResponse>> HashDisc(string contributionId, HashDiscRequest request, CancellationToken cancellationToken = default);
     Task<Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default);
     Task<Result<ExternalMetadata>> GetExternalData(string contributionId, CancellationToken cancellationToken = default);
@@ -41,7 +41,7 @@ public interface IUserContributionService
     Task<Result> UpdateAudioTrackInItem(string contributionId, string discId, string itemId, string audioTrackId, AddAudioTrackRequest request, CancellationToken cancellationToken = default);
 }
 
-public class CreateContributionRequest
+public class ContributionMutationRequest
 {
     [Required]
     public string MediaType { get; set; } = string.Empty;
@@ -72,9 +72,9 @@ public class CreateContributionRequest
     public Guid StorageId { get; set; } = Guid.Empty;
     public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
 
-    public CreateContributionRequest() { }
+    public ContributionMutationRequest() { }
 
-    public CreateContributionRequest(UserContribution contribution)
+    public ContributionMutationRequest(UserContribution contribution)
     {
         this.MediaType = contribution.MediaType;
         this.ExternalId = contribution.ExternalId ?? string.Empty;

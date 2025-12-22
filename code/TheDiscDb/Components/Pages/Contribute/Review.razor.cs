@@ -113,7 +113,7 @@ public partial class Review : ComponentBase
         {
             this.Contribution.Status = UserContributionStatus.ReadyForReview;
 
-            var request = new CreateContributionRequest(this.Contribution);
+            var request = new ContributionMutationRequest(this.Contribution);
 
             var response = await this.Client.UpdateContribution(this.Contribution.EncodedId, request);
             if (response != null && response.IsSuccess)

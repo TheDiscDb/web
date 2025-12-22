@@ -1,13 +1,22 @@
 ﻿using Azure.Core;
+using FluentResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client;
+using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.GraphQL;
+
+public class ContributionNotFoundException : Exception
+{
+    public ContributionNotFoundException(string encodedId) : base($"Contribution with id {encodedId} not found")
+    {
+    }
+}
 
 public class Mutation
 {
@@ -28,7 +37,7 @@ public class Mutation
         this.imageStore = imageStore ?? throw new ArgumentNullException(nameof(imageStore));
     }
 
-    public async Task<CreateContributionResponse> AddContribution(CreateContributionRequest input, SqlServerDataContext database, CancellationToken cancellationToken)
+    public async Task<UserContribution> AddContribution(ContributionMutationRequest input, SqlServerDataContext database, CancellationToken cancellationToken)
     {
         var user = principal.Principal ?? throw new InvalidOperationException("No user principal available.");
         var userId = userManager.GetUserId(user);
@@ -73,8 +82,9 @@ public class Mutation
         //Now move the uploaded assets from temp storage to the contribution folder
         await MoveImages(database, contribution, input.FrontImageUrl ?? string.Empty, "front", (c, url) => c.FrontImageUrl = url, cancellationToken);
         await MoveImages(database, contribution, input.BackImageUrl ?? string.Empty, "back", (c, url) => c.BackImageUrl = url, cancellationToken);
-
-        return new CreateContributionResponse { ContributionId = this.idEncoder.Encode(contribution.Id) };
+        
+        idEncoder.EncodeInPlace(contribution);
+        return contribution;
 
         static string CreateSlug(string name, string year)
         {
@@ -120,5 +130,48 @@ public class Mutation
                 memoryStream.Dispose();
             }
         }
+    }
+
+    [Error(typeof(ContributionNotFoundException))]
+    public async Task<HashDiscResponse> HashDisc(string contributionId, HashDiscRequest input, SqlServerDataContext database, CancellationToken cancellationToken = default)
+    {
+        int id = this.idEncoder.Decode(contributionId);
+        var contribution = await database.UserContributions
+            .Include(c => c.HashItems)
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+        if (contribution == null)
+        {
+            throw new ContributionNotFoundException(contributionId);
+        }
+
+        var hash = input.Files.OrderBy(f => f.Name).CalculateHash();
+        var existingItems = contribution.HashItems?.Where(i => i.DiscHash == hash).ToList();
+        foreach (var existing in existingItems ?? Enumerable.Empty<UserContributionDiscHashItem>())
+        {
+            contribution.HashItems!.Remove(existing);
+            database.UserContributionDiscHashItems.Remove(existing);
+        }
+
+        foreach (var item in input.Files)
+        {
+            contribution.HashItems!.Add(new UserContributionDiscHashItem
+            {
+                DiscHash = hash,
+                CreationTime = item.CreationTime,
+                Index = item.Index,
+                Name = item.Name,
+                Size = item.Size
+            });
+        }
+
+        await database.SaveChangesAsync(cancellationToken);
+
+        var response = new HashDiscResponse
+        {
+            DiscHash = hash
+        };
+
+        return response;
     }
 }

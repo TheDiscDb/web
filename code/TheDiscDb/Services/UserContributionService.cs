@@ -73,7 +73,7 @@ public class UserContributionService : IUserContributionService
         }
     }
 
-    public async Task<FluentResults.Result<CreateContributionResponse>> CreateContribution(string userId, CreateContributionRequest request, CancellationToken cancellationToken)
+    public async Task<FluentResults.Result<CreateContributionResponse>> CreateContribution(string userId, ContributionMutationRequest request, CancellationToken cancellationToken)
     {
         var contribution = new UserContribution
         {
@@ -216,7 +216,7 @@ public class UserContributionService : IUserContributionService
         return Result.Ok();
     }
 
-    public async Task<Result> UpdateContribution(string contributionId, CreateContributionRequest request, CancellationToken cancellationToken)
+    public async Task<Result> UpdateContribution(string contributionId, ContributionMutationRequest request, CancellationToken cancellationToken)
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
