@@ -75,6 +75,11 @@ public class UserContributionService : IUserContributionService
 
     public async Task<FluentResults.Result<CreateContributionResponse>> CreateContribution(string userId, CreateContributionRequest request, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Result.Fail("User ID is required");
+        }
+
         var contribution = new UserContribution
         {
             UserId = userId,

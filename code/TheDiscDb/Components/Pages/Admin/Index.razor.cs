@@ -21,7 +21,7 @@ public partial class Index : ComponentBase, IAsyncDisposable
             this.database = await DbFactory.CreateDbContextAsync();
 
             PendingContributions = database.UserContributions
-                .Where(uc => uc.Status == UserContributionStatus.Pending)
+                .Where(uc => uc.Status == UserContributionStatus.ReadyForReview)
                 .OrderBy(uc => uc.Created);
         }
     }

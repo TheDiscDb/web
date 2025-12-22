@@ -53,7 +53,7 @@ public class CreateContributionRequest
     [RegularExpression(@"\w{10}", ErrorMessage = "ASIN must be a combination 10 characters or numbers")]
     public string Asin { get; set; } = string.Empty;
     [Required]
-    [RegularExpression(@"\d{12}", ErrorMessage = "UPC must be exactly 12 digits")]
+    [RegularExpression(@"\d{12,13}", ErrorMessage = "UPC must be exactly 12 digits")]
     public string Upc { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Front Image is required")]
