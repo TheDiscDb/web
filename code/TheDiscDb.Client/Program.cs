@@ -37,7 +37,7 @@ builder.Services.AddScoped<IExternalSearchService, ExternalSearchService>();
 
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddSingleton<AuthenticationStateProvider, PersistentAuthenticationStateProvider>();
+builder.Services.AddAuthenticationStateDeserialization();
 builder.Services.AddScoped<IClipboardService, ClipboardService>();
 builder.Services.AddHighlight();
 builder.Services.AddSingleton<IAmazonImporter, AmazonImporter>();

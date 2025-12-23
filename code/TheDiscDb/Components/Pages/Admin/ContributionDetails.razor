@@ -1,8 +1,13 @@
 ﻿@page "/admin/contribution/{contributionId}"
 @using System.Web
 @using TheDiscDb.Client.Controls
+@using HighlightBlazor
+
+@rendermode InteractiveServer
 
 <PageTitle>Admin - Contribution Details</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink()]" PrimaryText="@this.Contribution?.Title" />
 
 <h1>Contribution Details</h1>
 @if (this.Contribution != null)
@@ -10,10 +15,111 @@
     <h2>@this.Contribution.Title (@this.Contribution.Year) - @this.Contribution.ReleaseTitle</h2>
     if(!string.IsNullOrEmpty(this.Contribution.FrontImageUrl))
     {
+        <section class="info-grid single-column">
+            <article class="info-card release-summary-card">
+                <div class="release-summary">
+                    <div class="cover-stack">
+                        @if (!string.IsNullOrEmpty(Contribution.FrontImageUrl))
+                        {
+                            <a href="@Contribution.FrontImageUrl" target="_blank"><img src="@Contribution.FrontImageUrl?width=180&height=260" alt="Front cover" class="cover" /></a>
+                        }
+                        @if (!string.IsNullOrEmpty(Contribution.BackImageUrl))
+                        {
+                            <a href="@Contribution.BackImageUrl" target="_blank"><img src="@Contribution.BackImageUrl?width=120&height=170" alt="Back cover" class="cover secondary" /></a>
+                        }
+                    </div>
+                    <dl>
+                        <dt>Release title</dt>
+                        <dd>@Contribution.ReleaseTitle</dd>
+
+                        <dt>Release date</dt>
+                        <dd>@string.Format("{0:yyyy-MM-dd}", Contribution.ReleaseDate)</dd>
+
+                        <dt>Locale / Region</dt>
+                        <dd>@Contribution.Locale · @(string.IsNullOrEmpty(Contribution.RegionCode) ? "N/A" : Contribution.RegionCode)</dd>
+
+                        @if (!string.IsNullOrEmpty(Contribution.Asin))
+                        {
+                            <dt>ASIN</dt>
+                            <dd><a href="https://www.amazon.com/dp/@Contribution.Asin/" target="_blank">@Contribution.Asin</a></dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Contribution.Upc))
+                        {
+                            <dt>UPC</dt>
+                            <dd><a href="https://www.barcodelookup.com/@Contribution.Upc" target="_blank">@Contribution.Upc</a></dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Contribution.ExternalProvider))
+                        {
+                            <dt>External provider</dt>
+                            <dd>@Contribution.ExternalProvider (<a href="@GetTmdbLink()" target="_blank">@Contribution.ExternalId</a>)</dd>
+                        }
+
+                        <dt>Status</dt>
+                        <dd>@this.Contribution.Status</dd>
+
+                        @if (this.User != null)
+                        {
+                            <dt>User</dt>
+                            <dd><a href="/admin/user/@this.Contribution.UserId">@this.User.UserName</a></dd>
+                        }
+                    </dl>
+                </div>
+            </article>
+        </section>
+
+        <section class="info-card discs-card">
+            <QuickGrid Items="Discs" class="striped-grid contribute-grid">
+                <TemplateColumn Title="Name">
+                    <div class="disc-name">
+                        <a href="/admin/contribution/@ContributionId/discs/@context.Id" title="View Disc">@context.Name</a>
+                    </div>
+                </TemplateColumn>
+                <PropertyColumn Property="d => d.Format"></PropertyColumn>
+                <TemplateColumn Title="Logs">
+                    @if (!string.IsNullOrEmpty(context.ExistingDiscPath))
+                    {
+                        <span class="badge bg-light text-dark">Copied from another disc</span>
+                    }
+                    else
+                    {
+                        <span>@(context.LogsUploaded ? "Uploaded" : "Pending")</span>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
+        </section>
+    }
+
+    @if (this.Contribution.Status == UserContributionStatus.Approved)
+    {
+        <section class="info-card discs-card">
+            <CodeHighlight CodeLanguage="PowerShell" Code="@PowershellCommand" />
+            <button class="btn btn-primary copy-command" @onclick="CopyTextToClipboard">
+                <i class="e-icons e-copy"></i>
+                <span>Copy</span>
+            </button>
+        </section>
         
     }
-    if (this.User != null)
+
+    @if (this.Contribution.Status != UserContributionStatus.Imported)
     {
-        <a href="/admin/user/@this.Contribution.UserId">@this.User.UserName</a>
+        <section>
+            <SfButton OnClick="MarkAsImported"
+                      IconCss="e-icons e-circle-check"
+                      CssClass="e-success">
+                Mark as Imported
+            </SfButton>
+        </section>
+    }
+
+    @if (this.Contribution.Status != UserContributionStatus.Approved && this.Contribution.Status != UserContributionStatus.Imported)
+    {
+        <SfButton OnClick="ApproveClicked"
+                  IconCss="e-icons e-circle-check"
+                  CssClass="e-success">
+            Mark as Approved
+        </SfButton>
     }
 }

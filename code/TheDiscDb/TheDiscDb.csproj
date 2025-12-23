@@ -21,7 +21,7 @@
         <PackageReference Include="SixLabors.ImageSharp.Web.Providers.Azure" Version="3.2.0" />
         <PackageReference Include="HotChocolate.AspNetCore" Version="15.1.11" />
         <PackageReference Include="HotChocolate.Data.EntityFramework" Version="15.1.11" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.1" />
         <PackageReference Include="System.ServiceModel.Syndication" Version="10.0.0" />
         <PackageReference Include="FluentResults.Extensions.AspNetCore" Version="0.2.0" />
         <PackageReference Include="ScrapySharp" Version="3.0.0" />

@@ -21,6 +21,10 @@ public static partial class BreadCrumbHelper
     {
         return $"{contribution.Title} ({contribution.Year}) - {contribution.ReleaseTitle}";
     }
+
+    public static (string Text, string Url) GetAdminContributionLink(UserContribution? contribution) => (Text: $"{contribution?.Title}", Url: $"/admin/contribution/{contribution?.Id}");
+
+    public static (string Text, string Url) GetRootAdminLink() => (Text: "Admin", Url: "/admin");
 }
 
 public static partial class BreadCrumbHelper
