@@ -13,6 +13,7 @@
 @if (this.Contribution != null)
 {
     <h2>@this.Contribution.Title (@this.Contribution.Year) - @this.Contribution.ReleaseTitle</h2>
+    <a href="/admin/contribution/@this.ContributionId/edit">Edit Contribution</a>
     if(!string.IsNullOrEmpty(this.Contribution.FrontImageUrl))
     {
         <section class="info-grid single-column">

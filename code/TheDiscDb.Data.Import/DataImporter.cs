@@ -46,7 +46,7 @@
             this.dataImportOptions = dataImportOptions ?? throw new ArgumentNullException(nameof(dataImportOptions));
         }
 
-        private void Map(Release release, ReleaseFile releaseFile)
+        private async Task Map(Release release, ReleaseFile releaseFile)
         {
             release.Slug = releaseFile.Slug;
             release.Isbn = releaseFile.Isbn;
@@ -58,6 +58,28 @@
             release.Title = releaseFile.Title;
             release.ImageUrl = releaseFile.ImageUrl;
             release.ReleaseDate = releaseFile.ReleaseDate;
+
+            if (releaseFile.Contributors != null && releaseFile.Contributors.Count > 0)
+            {
+                foreach (var contributor in releaseFile.Contributors)
+                {
+                    var existingContributor = await dbContext.Contributors
+                        .FirstOrDefaultAsync(c => c.Name == contributor.Name);
+
+                    if (existingContributor == null)
+                    {
+                        release.Contributors.Add(new InputModels.Contributor
+                        {
+                            Name = contributor.Name,
+                            Source = contributor.Source
+                        });
+                    }
+                    else
+                    {
+                        release.Contributors.Add(existingContributor);
+                    }
+                }
+            }
         }
 
         private Series MapSeries(MetadataFile metadata)
