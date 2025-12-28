@@ -1,7 +1,7 @@
 mutation CreateContribution($input: CreateContributionInput!) {
   createContribution(input: $input) {
     userContribution {
-        externalId
+        encodedId
     }
   }
 }

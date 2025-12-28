@@ -6,8 +6,6 @@ using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
 using Syncfusion.Blazor.Notifications;
 using TheDiscDb.Client.Contributions;
-using TheDiscDb.Client.Contributions.State;
-using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -32,7 +30,8 @@ public partial class ReleaseDetailInput : ComponentBase
     private readonly ContributionMutationRequestInput request = new ContributionMutationRequestInput
     {
         Locale = "en-us",
-        RegionCode = "1"
+        RegionCode = "1",
+        Status = UserContributionStatus.Pending
     };
 
     private string releaseDate = string.Empty;
@@ -73,6 +72,8 @@ public partial class ReleaseDetailInput : ComponentBase
         if (result != null && result.IsSuccessResult())
         {
             this.externalData = result.Data!.ExternalData.ExternalMetadata;
+            this.request.Title = this.externalData!.Title;
+            this.request.Year = this.externalData!.Year.ToString();
         }
         else
         {
@@ -114,7 +115,7 @@ public partial class ReleaseDetailInput : ComponentBase
                 // Create the episode names for later use
                 var episodeResponse = await this.ContributionClient.GetEpisodeNames.ExecuteAsync(new EpisodeNamesInput
                 {
-                    ContributionId = result.Data!.CreateContribution.UserContribution!.ExternalId!
+                    ContributionId = result.Data!.CreateContribution.UserContribution!.EncodedId!
                 });
 
                 if (episodeResponse == null || !episodeResponse.IsSuccessResult())
@@ -124,7 +125,7 @@ public partial class ReleaseDetailInput : ComponentBase
                     Console.WriteLine("Failed to create episode names. " + error?.Message);
                 }
             }
-            this.NavigationManager!.NavigateTo($"/contribution/{result.Data!.CreateContribution.UserContribution!.ExternalId!}");
+            this.NavigationManager!.NavigateTo($"/contribution/{result.Data!.CreateContribution.UserContribution!.EncodedId!}");
         }
     }
 
@@ -172,27 +173,6 @@ public partial class ReleaseDetailInput : ComponentBase
                 this.releaseDate = args.Value.ToString() ?? ""; // just set the value to be validated on submit
                 this.request.ReleaseDate = DateTimeOffset.MinValue;
             }
-
-            //if (DateTimeOffset.TryParse(args.Value.ToString(), out var date))
-            //{
-            //    this.request.ReleaseDate = date;
-            //    this.releaseDate = date.ToString("MM-dd-yyyy");
-
-            //    if (!string.IsNullOrEmpty(request.ReleaseTitle))
-            //    {
-            //        int? year = null;
-            //        if (this.request.ReleaseDate.Year > 1980)
-            //        {
-            //            year = this.request.ReleaseDate.Year;
-            //        }
-
-            //        this.request.ReleaseSlug = CreateSlug(request.ReleaseTitle, year);
-            //    }
-            //    else
-            //    {
-            //        this.request.ReleaseSlug = "";
-            //    }
-            //}
         }
         else
         {
