@@ -73,71 +73,71 @@ public class UserContributionService : IUserContributionService
         }
     }
 
-    public async Task<FluentResults.Result<CreateContributionResponse>> CreateContribution(string userId, ContributionMutationRequest request, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Result.Fail("User ID is required");
-        }
+    //public async Task<FluentResults.Result<CreateContributionResponse>> CreateContribution(string userId, ContributionMutationRequest request, CancellationToken cancellationToken)
+    //{
+    //    if (string.IsNullOrEmpty(userId))
+    //    {
+    //        return Result.Fail("User ID is required");
+    //    }
 
-        var contribution = new UserContribution
-        {
-            UserId = userId,
-            Created = DateTimeOffset.UtcNow,
-            Asin = request.Asin,
-            ExternalId = request.ExternalId,
-            ExternalProvider = request.ExternalProvider,
-            MediaType = request.MediaType,
-            ReleaseDate = request.ReleaseDate,
-            Status = UserContributionStatus.Pending,
-            FrontImageUrl = request.FrontImageUrl,
-            BackImageUrl = request.BackImageUrl,
-            Upc = request.Upc,
-            ReleaseTitle = request.ReleaseTitle,
-            ReleaseSlug = request.ReleaseSlug,
-            Locale = request.Locale,
-            RegionCode = request.RegionCode,
-            Title = request.Title,
-            Year = request.Year,
-            TitleSlug = CreateSlug(request.Title, request.Year)
-        };
+    //    var contribution = new UserContribution
+    //    {
+    //        UserId = userId,
+    //        Created = DateTimeOffset.UtcNow,
+    //        Asin = request.Asin,
+    //        ExternalId = request.ExternalId,
+    //        ExternalProvider = request.ExternalProvider,
+    //        MediaType = request.MediaType,
+    //        ReleaseDate = request.ReleaseDate,
+    //        Status = UserContributionStatus.Pending,
+    //        FrontImageUrl = request.FrontImageUrl,
+    //        BackImageUrl = request.BackImageUrl,
+    //        Upc = request.Upc,
+    //        ReleaseTitle = request.ReleaseTitle,
+    //        ReleaseSlug = request.ReleaseSlug,
+    //        Locale = request.Locale,
+    //        RegionCode = request.RegionCode,
+    //        Title = request.Title,
+    //        Year = request.Year,
+    //        TitleSlug = CreateSlug(request.Title, request.Year)
+    //    };
 
-        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
-        {
-            dbContext.UserContributions.Add(contribution);
-            await dbContext.SaveChangesAsync(cancellationToken);
+    //    await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
+    //    {
+    //        dbContext.UserContributions.Add(contribution);
+    //        await dbContext.SaveChangesAsync(cancellationToken);
 
-            this.idEncoder.EncodeInPlace(contribution);
+    //        this.idEncoder.EncodeInPlace(contribution);
 
-            // Now that we have a contributionId, we can get the external data which will save it in blob storage
-            if (string.IsNullOrEmpty(contribution.Title) || string.IsNullOrEmpty(contribution.Year))
-            {
-                var externalData = await this.GetExternalData(contribution.EncodedId, cancellationToken);
-                if (externalData.IsSuccess)
-                {
-                    contribution.Title = externalData.Value.Title;
-                    contribution.Year = externalData.Value.Year.ToString();
-                    await dbContext.SaveChangesAsync(cancellationToken);
-                }
-            }
+    //        // Now that we have a contributionId, we can get the external data which will save it in blob storage
+    //        if (string.IsNullOrEmpty(contribution.Title) || string.IsNullOrEmpty(contribution.Year))
+    //        {
+    //            var externalData = await this.GetExternalData(contribution.EncodedId, cancellationToken);
+    //            if (externalData.IsSuccess)
+    //            {
+    //                contribution.Title = externalData.Value.Title;
+    //                contribution.Year = externalData.Value.Year.ToString();
+    //                await dbContext.SaveChangesAsync(cancellationToken);
+    //            }
+    //        }
 
-            //Now move the uploaded assets from temp storage to the contribution folder
-            await MoveImages(dbContext, contribution, request.FrontImageUrl ?? string.Empty, "front", (c, url) => c.FrontImageUrl = url, cancellationToken);
-            await MoveImages(dbContext, contribution, request.BackImageUrl ?? string.Empty, "back", (c, url) => c.BackImageUrl = url, cancellationToken);
-        }
+    //        //Now move the uploaded assets from temp storage to the contribution folder
+    //        await MoveImages(dbContext, contribution, request.FrontImageUrl ?? string.Empty, "front", (c, url) => c.FrontImageUrl = url, cancellationToken);
+    //        await MoveImages(dbContext, contribution, request.BackImageUrl ?? string.Empty, "back", (c, url) => c.BackImageUrl = url, cancellationToken);
+    //    }
 
-        return new CreateContributionResponse { ContributionId = this.idEncoder.Encode(contribution.Id) };
+    //    return new CreateContributionResponse { ContributionId = this.idEncoder.Encode(contribution.Id) };
 
-        static string CreateSlug(string name, string year)
-        {
-            if (!string.IsNullOrEmpty(year))
-            {
-                return string.Format("{0}-{1}", name.Slugify(), year);
-            }
+    //    static string CreateSlug(string name, string year)
+    //    {
+    //        if (!string.IsNullOrEmpty(year))
+    //        {
+    //            return string.Format("{0}-{1}", name.Slugify(), year);
+    //        }
 
-            return name.Slugify();
-        }
-    }
+    //        return name.Slugify();
+    //    }
+    //}
 
     private async Task MoveImages(SqlServerDataContext dbContext, UserContribution contribution, string currentImageUrl, string name, Action<UserContribution, string> updateUrl, CancellationToken cancellationToken)
     {
@@ -221,37 +221,37 @@ public class UserContributionService : IUserContributionService
         return Result.Ok();
     }
 
-    public async Task<Result> UpdateContribution(string contributionId, ContributionMutationRequest request, CancellationToken cancellationToken)
-    {
-        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
-        {
-            var decodedContributionId = this.idEncoder.Decode(contributionId);
-            var contribution = await dbContext.UserContributions
-                .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
-            if (contribution == null)
-            {
-                return Result.Fail(contributionId + " not found");
-            }
+    //public async Task<Result> UpdateContribution(string contributionId, ContributionMutationRequest request, CancellationToken cancellationToken)
+    //{
+    //    await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
+    //    {
+    //        var decodedContributionId = this.idEncoder.Decode(contributionId);
+    //        var contribution = await dbContext.UserContributions
+    //            .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
+    //        if (contribution == null)
+    //        {
+    //            return Result.Fail(contributionId + " not found");
+    //        }
 
-            contribution.Asin = request.Asin;
-            contribution.ExternalId = request.ExternalId;
-            contribution.ExternalProvider = request.ExternalProvider;
-            contribution.MediaType = request.MediaType;
-            contribution.ReleaseDate = request.ReleaseDate;
-            contribution.Upc = request.Upc;
-            contribution.ReleaseTitle = request.ReleaseTitle;
-            contribution.ReleaseSlug = request.ReleaseSlug;
-            contribution.Status = request.Status;
+    //        contribution.Asin = request.Asin;
+    //        contribution.ExternalId = request.ExternalId;
+    //        contribution.ExternalProvider = request.ExternalProvider;
+    //        contribution.MediaType = request.MediaType;
+    //        contribution.ReleaseDate = request.ReleaseDate;
+    //        contribution.Upc = request.Upc;
+    //        contribution.ReleaseTitle = request.ReleaseTitle;
+    //        contribution.ReleaseSlug = request.ReleaseSlug;
+    //        contribution.Status = request.Status;
 
-            // TODO: Handle images being updated before re-enabling this
-            //contribution.FrontImageUrl = request.FrontImageUrl;
-            //contribution.BackImageUrl = request.BackImageUrl;
+    //        // TODO: Handle images being updated before re-enabling this
+    //        //contribution.FrontImageUrl = request.FrontImageUrl;
+    //        //contribution.BackImageUrl = request.BackImageUrl;
 
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
+    //        await dbContext.SaveChangesAsync(cancellationToken);
+    //    }
 
-        return Result.Ok();
-    }
+    //    return Result.Ok();
+    //}
 
     public async Task<FluentResults.Result<HashDiscResponse>> HashDisc(string contributionId, HashDiscRequest request, CancellationToken cancellationToken = default)
     {
@@ -298,67 +298,67 @@ public class UserContributionService : IUserContributionService
         }
     }
 
-    public async Task<FluentResults.Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default)
-    {
-        // First check blob storage to see if the episode names file exists
-        string filePath = $"{contributionId}/episode-names.json";
-        bool exists = await this.assetStore.Exists(filePath, cancellationToken);
-        if (exists)
-        {
-            var data = await this.assetStore.Download(filePath, cancellationToken);
-            string json = Encoding.UTF8.GetString(data.ToArray());
-            var results = JsonSerializer.Deserialize<SeriesEpisodeNames>(json);
-            return results!;
-        }
+    //public async Task<FluentResults.Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default)
+    //{
+    //    // First check blob storage to see if the episode names file exists
+    //    string filePath = $"{contributionId}/episode-names.json";
+    //    bool exists = await this.assetStore.Exists(filePath, cancellationToken);
+    //    if (exists)
+    //    {
+    //        var data = await this.assetStore.Download(filePath, cancellationToken);
+    //        string json = Encoding.UTF8.GetString(data.ToArray());
+    //        var results = JsonSerializer.Deserialize<SeriesEpisodeNames>(json);
+    //        return results!;
+    //    }
 
-        await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
-        {
-            int id = this.idEncoder.Decode(contributionId);
-            var contribution = await dbContext.UserContributions
-                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
-            if (contribution == null)
-            {
-                return Result.Fail($"Contribution {contributionId} not found");
-            }
+    //    await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
+    //    {
+    //        int id = this.idEncoder.Decode(contributionId);
+    //        var contribution = await dbContext.UserContributions
+    //            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+    //        if (contribution == null)
+    //        {
+    //            return Result.Fail($"Contribution {contributionId} not found");
+    //        }
 
-            var series = await this.tmdb.GetSeries(contribution.ExternalId, cancellationToken: cancellationToken);
-            if (series == null)
-            {
-                return Result.Fail($"Series with TMDB ID {contribution.ExternalId} not found");
-            }
+    //        var series = await this.tmdb.GetSeries(contribution.ExternalId, cancellationToken: cancellationToken);
+    //        if (series == null)
+    //        {
+    //            return Result.Fail($"Series with TMDB ID {contribution.ExternalId} not found");
+    //        }
 
-            var year = series.FirstAirDate.HasValue ? series.FirstAirDate.Value.Year : 0;
+    //        var year = series.FirstAirDate.HasValue ? series.FirstAirDate.Value.Year : 0;
 
-            var results = new SeriesEpisodeNames
-            {
-                SeriesTitle = series.Name ?? "Unknown Title",
-                SeriesYear = year.ToString()
-            };
+    //        var results = new SeriesEpisodeNames
+    //        {
+    //            SeriesTitle = series.Name ?? "Unknown Title",
+    //            SeriesYear = year.ToString()
+    //        };
 
-            foreach (var season in series.Seasons)
-            {
-                var fullSeason = await this.tmdb.GetSeason(series.Id, season.SeasonNumber);
-                foreach (var episode in fullSeason.Episodes)
-                {
-                    results.Episodes.Add(new SeriesEpisodeNameEntry
-                    {
-                        SeasonNumber = season.SeasonNumber.ToString(),
-                        EpisodeNumber = episode.EpisodeNumber.ToString(),
-                        EpisodeName = episode.Name ?? "Unknown Title"
-                    });
-                }
-            }
+    //        foreach (var season in series.Seasons)
+    //        {
+    //            var fullSeason = await this.tmdb.GetSeason(series.Id, season.SeasonNumber);
+    //            foreach (var episode in fullSeason.Episodes)
+    //            {
+    //                results.Episodes.Add(new SeriesEpisodeNameEntry
+    //                {
+    //                    SeasonNumber = season.SeasonNumber.ToString(),
+    //                    EpisodeNumber = episode.EpisodeNumber.ToString(),
+    //                    EpisodeName = episode.Name ?? "Unknown Title"
+    //                });
+    //            }
+    //        }
 
-            string json = JsonSerializer.Serialize(results, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
+    //        string json = JsonSerializer.Serialize(results, new JsonSerializerOptions
+    //        {
+    //            WriteIndented = true
+    //        });
 
-            // Save to blob storage
-            await this.assetStore.Save(new MemoryStream(Encoding.UTF8.GetBytes(json)), filePath, ContentTypes.JsonContentType, cancellationToken);
-            return results!;
-        }
-    }
+    //        // Save to blob storage
+    //        await this.assetStore.Save(new MemoryStream(Encoding.UTF8.GetBytes(json)), filePath, ContentTypes.JsonContentType, cancellationToken);
+    //        return results!;
+    //    }
+    //}
 
     public async Task<FluentResults.Result<ExternalMetadata>> GetExternalData(string contributionId, CancellationToken cancellationToken = default)
     {

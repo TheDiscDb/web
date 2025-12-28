@@ -10,6 +10,10 @@
     </PropertyGroup>
     <ItemGroup>
         <GraphQL Remove="ContributionGraphql\Mutations\CreateContribution.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\GetEpisodeNames.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\GetExternalData.graphql" />
+        <GraphQL Remove="ContributionGraphQL\Mutations\GetExternalDataForContribution.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\HashDisc.graphql" />
         <GraphQL Remove="ContributionGraphql\Queries\ContributionDiscs.graphql" />
         <GraphQL Remove="ContributionGraphQL\Queries\GetCurrentUserContributionsGetCurrentUserContributions.graphql" />
         <GraphQL Remove="graphql\queries\GetMediaItemsByGroup.graphql" />

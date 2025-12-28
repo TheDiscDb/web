@@ -29,21 +29,21 @@ public class UserContributionService : ApiClient, IUserContributionService
         return response;
     }
 
-    public async Task<Result<CreateContributionResponse>> CreateContribution(string userId, ContributionMutationRequest request, CancellationToken cancellationToken = default)
-    {
-        var client = GetHttpClient();
-        var response = await client.PostAsJsonAsync("/api/contribute/create", request, cancellationToken);
-        response.EnsureSuccessStatusCode();
+    //public async Task<Result<CreateContributionResponse>> CreateContribution(string userId, ContributionMutationRequest request, CancellationToken cancellationToken = default)
+    //{
+    //    var client = GetHttpClient();
+    //    var response = await client.PostAsJsonAsync("/api/contribute/create", request, cancellationToken);
+    //    response.EnsureSuccessStatusCode();
 
-        var result = await response.Content.ReadFromJsonAsync<CreateContributionResponse>(cancellationToken: cancellationToken);
+    //    var result = await response.Content.ReadFromJsonAsync<CreateContributionResponse>(cancellationToken: cancellationToken);
 
-        if (result == null)
-        {
-            return Result.Fail("Unable to get contribution result from server");
-        }
+    //    if (result == null)
+    //    {
+    //        return Result.Fail("Unable to get contribution result from server");
+    //    }
 
-        return result;
-    }
+    //    return result;
+    //}
 
     public async Task<Result<UserContribution>> GetContribution(string contributionId, CancellationToken cancellationToken = default)
     {
@@ -71,18 +71,18 @@ public class UserContributionService : ApiClient, IUserContributionService
         return Result.Ok();
     }
 
-    public async Task<Result> UpdateContribution(string contributionId, ContributionMutationRequest request, CancellationToken cancellationToken = default)
-    {
-        var client = GetHttpClient();
-        var response = await client.PutAsJsonAsync($"/api/contribute/{contributionId}", request, cancellationToken);
+    //public async Task<Result> UpdateContribution(string contributionId, ContributionMutationRequest request, CancellationToken cancellationToken = default)
+    //{
+    //    var client = GetHttpClient();
+    //    var response = await client.PutAsJsonAsync($"/api/contribute/{contributionId}", request, cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            return Result.Fail($"Unable to update contribution {contributionId} from server");
-        }
+    //    if (!response.IsSuccessStatusCode)
+    //    {
+    //        return Result.Fail($"Unable to update contribution {contributionId} from server");
+    //    }
 
-        return Result.Ok();
-    }
+    //    return Result.Ok();
+    //}
 
     public async Task<Result<HashDiscResponse>> HashDisc(string contributionId, HashDiscRequest request, CancellationToken cancellationToken = default)
     {
@@ -100,20 +100,20 @@ public class UserContributionService : ApiClient, IUserContributionService
         return result;
     }
 
-    public async Task<Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default)
-    {
-        var client = GetHttpClient();
-        var response = await client.GetAsync($"/api/contribute/{contributionId}/episodes", cancellationToken);
+    //public async Task<Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default)
+    //{
+    //    var client = GetHttpClient();
+    //    var response = await client.GetAsync($"/api/contribute/{contributionId}/episodes", cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            return Result.Fail($"Unable get episode names for contribution {contributionId}");
-        }
+    //    if (!response.IsSuccessStatusCode)
+    //    {
+    //        return Result.Fail($"Unable get episode names for contribution {contributionId}");
+    //    }
 
-        var result = await response.Content.ReadFromJsonAsync<SeriesEpisodeNames>(cancellationToken: cancellationToken);
+    //    var result = await response.Content.ReadFromJsonAsync<SeriesEpisodeNames>(cancellationToken: cancellationToken);
 
-        return result!;
-    }
+    //    return result!;
+    //}
 
     public async Task<Result<ExternalMetadata>> GetExternalData(string contributionId, CancellationToken cancellationToken = default)
     {

@@ -9,12 +9,12 @@ namespace TheDiscDb.Services;
 public interface IUserContributionService
 {
     Task<Result<List<UserContribution>>> GetUserContributions(CancellationToken cancellationToken = default);
-    Task<Result<CreateContributionResponse>> CreateContribution(string userId, ContributionMutationRequest request, CancellationToken cancellationToken = default);
+    //Task<Result<CreateContributionResponse>> CreateContribution(string userId, ContributionMutationRequest request, CancellationToken cancellationToken = default);
     Task<Result<UserContribution>> GetContribution(string contributionId, CancellationToken cancellationToken = default);
     Task<Result> DeleteContribution(string contributionId, CancellationToken cancellationToken = default);
-    Task<Result> UpdateContribution(string contributionId, ContributionMutationRequest request, CancellationToken cancellationToken = default);
+    //Task<Result> UpdateContribution(string contributionId, ContributionMutationRequest request, CancellationToken cancellationToken = default);
     Task<Result<HashDiscResponse>> HashDisc(string contributionId, HashDiscRequest request, CancellationToken cancellationToken = default);
-    Task<Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default);
+    //Task<Result<SeriesEpisodeNames>> GetEpisodeNames(string contributionId, CancellationToken cancellationToken = default);
     Task<Result<ExternalMetadata>> GetExternalData(string contributionId, CancellationToken cancellationToken = default);
     Task<Result<ExternalMetadata>> GetExternalData(string externalId, string mediaType, string provider, CancellationToken cancellationToken = default);
     Task<Result<ImportReleaseDetailsResponse>> ImportReleaseDetails(string asin, CancellationToken cancellationToken = default);
@@ -39,59 +39,6 @@ public interface IUserContributionService
     Task<Result<AddAudioTrackResponse>> AddAudioTrackToItem(string contributionId, string discId, string itemId, AddAudioTrackRequest request, CancellationToken cancellationToken = default);
     Task<Result> DeleteAudioTrackFromItem(string contributionId, string discId, string itemId, string audioTrackId, CancellationToken cancellationToken = default);
     Task<Result> UpdateAudioTrackInItem(string contributionId, string discId, string itemId, string audioTrackId, AddAudioTrackRequest request, CancellationToken cancellationToken = default);
-}
-
-public class ContributionMutationRequest
-{
-    [Required]
-    public string MediaType { get; set; } = string.Empty;
-    public string ExternalId { get; set; } = string.Empty;
-    public string ExternalProvider { get; set; } = string.Empty;
-    [Required]
-    public DateTimeOffset ReleaseDate { get; set; }
-    [Required]
-    [RegularExpression(@"\w{10}", ErrorMessage = "ASIN must be a combination 10 characters or numbers")]
-    public string Asin { get; set; } = string.Empty;
-    [Required]
-    [RegularExpression(@"\d{12,13}", ErrorMessage = "UPC must be exactly 12 digits")]
-    public string Upc { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Front Image is required")]
-    public string? FrontImageUrl { get; set; }
-    public string? BackImageUrl { get; set; } = string.Empty;
-    public string ReleaseTitle { get; set; } = string.Empty;
-    [Required]
-    public string ReleaseSlug { get; set; } = string.Empty;
-    [Required]
-    public string RegionCode { get; set; } = string.Empty;
-    [Required]
-    public string Locale { get; set; } = string.Empty;
-
-    public string Title { get; set; } = string.Empty;
-    public string Year { get; set; } = string.Empty;
-    public Guid StorageId { get; set; } = Guid.Empty;
-    public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
-
-    public ContributionMutationRequest() { }
-
-    public ContributionMutationRequest(UserContribution contribution)
-    {
-        this.MediaType = contribution.MediaType;
-        this.ExternalId = contribution.ExternalId ?? string.Empty;
-        this.ExternalProvider = contribution.ExternalProvider ?? string.Empty;
-        this.ReleaseDate = contribution.ReleaseDate;
-        this.Asin = contribution.Asin;
-        this.Upc = contribution.Upc;
-        this.FrontImageUrl = contribution.FrontImageUrl;
-        this.BackImageUrl = contribution.BackImageUrl ?? string.Empty;
-        this.ReleaseTitle = contribution.ReleaseTitle ?? string.Empty;
-        this.ReleaseSlug = contribution.ReleaseSlug;
-        this.RegionCode = contribution.RegionCode;
-        this.Locale = contribution.Locale;
-        this.Title = contribution.Title ?? string.Empty;
-        this.Year = contribution.Year ?? string.Empty;
-        this.Status = contribution.Status;
-    }
 }
 
 public class CreateContributionResponse

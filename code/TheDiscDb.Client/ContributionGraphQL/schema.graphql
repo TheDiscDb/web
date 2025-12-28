@@ -1,118 +1,27 @@
 schema {
   query: ContributionQuery
-  mutation: Mutation
+  mutation: ContributionMutations
 }
 
-scalar EncodedId
-
-type ContributionQuery {
-  contributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput order: [UserContributionSortInput!]): ContributionsConnection
-  myContributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput order: [UserContributionSortInput!]): MyContributionsConnection
+input UserContributionDiscItemFilterInput {
+  and: [UserContributionDiscItemFilterInput!]
+  or: [UserContributionDiscItemFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  disc: UserContributionDiscFilterInput
+  name: StringOperationFilterInput
+  source: StringOperationFilterInput
+  duration: StringOperationFilterInput
+  size: StringOperationFilterInput
+  chapterCount: IntOperationFilterInput
+  segmentCount: IntOperationFilterInput
+  segmentMap: StringOperationFilterInput
+  type: StringOperationFilterInput
+  description: StringOperationFilterInput
+  season: StringOperationFilterInput
+  episode: StringOperationFilterInput
+  chapters: ListEncodedIdFilterTypeOfUserContributionChapterFilterInput
+  audioTracks: ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput
 }
-
-type Mutation {
-  addContribution(input: AddContributionInput!): AddContributionPayload!
-  hashDisc(input: HashDiscInput!): HashDiscPayload!
-}
-
-"The `DateTime` scalar represents an ISO-8601 compliant date time type."
-scalar DateTime
-
-enum UserContributionStatus {
-  PENDING
-  READY_FOR_REVIEW
-  APPROVED
-  CHANGES_REQUESTED
-  REJECTED
-  IMPORTED
-}
-
-type UserContributionDisc {
-  id: Int!
-  userContribution: UserContribution
-  contentHash: String
-  format: String
-  name: String
-  slug: String
-  logsUploaded: Boolean!
-  existingDiscPath: String
-  items: [UserContributionDiscItem]
-  encodedId: EncodedId!
-}
-
-type UserContributionDiscHashItem {
-  id: Int!
-  userContribution: UserContribution
-  discHash: String
-  index: Int!
-  name: String
-  creationTime: DateTime!
-  size: Long!
-  encodedId: EncodedId!
-}
-
-type UserContribution {
-  id: Int!
-  userId: String
-  created: DateTime!
-  status: UserContributionStatus!
-  discs: [UserContributionDisc]
-  hashItems: [UserContributionDiscHashItem]
-  mediaType: String
-  externalId: String
-  externalProvider: String
-  releaseDate: DateTime!
-  asin: String
-  upc: String
-  frontImageUrl: String
-  backImageUrl: String
-  releaseTitle: String
-  releaseSlug: String
-  locale: String
-  regionCode: String
-  title: String
-  year: String
-  titleSlug: String
-  encodedId: EncodedId!
-}
-
-type UserContributionDiscItem {
-  id: Int!
-  disc: UserContributionDisc
-  name: String
-  source: String
-  duration: String
-  size: String
-  chapterCount: Int!
-  segmentCount: Int!
-  segmentMap: String
-  type: String
-  description: String
-  season: String
-  episode: String
-  chapters: [UserContributionChapter]
-  audioTracks: [UserContributionAudioTrack]
-  encodedId: EncodedId!
-}
-
-type UserContributionChapter {
-  id: Int!
-  index: Int!
-  title: String
-  item: UserContributionDiscItem
-  encodedId: EncodedId!
-}
-
-type UserContributionAudioTrack {
-  id: Int!
-  index: Int!
-  title: String
-  item: UserContributionDiscItem
-  encodedId: EncodedId!
-}
-
-"The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
-scalar Long
 
 input UserContributionFilterInput {
   and: [UserContributionFilterInput!]
@@ -140,26 +49,18 @@ input UserContributionFilterInput {
   titleSlug: StringOperationFilterInput
 }
 
-input UserContributionSortInput {
-  id: SortEnumType
-  userId: SortEnumType
-  created: SortEnumType
-  status: SortEnumType
-  mediaType: SortEnumType
-  externalId: SortEnumType
-  externalProvider: SortEnumType
-  releaseDate: SortEnumType
-  asin: SortEnumType
-  upc: SortEnumType
-  frontImageUrl: SortEnumType
-  backImageUrl: SortEnumType
-  releaseTitle: SortEnumType
-  releaseSlug: SortEnumType
-  locale: SortEnumType
-  regionCode: SortEnumType
-  title: SortEnumType
-  year: SortEnumType
-  titleSlug: SortEnumType
+input FileHashInfoInput {
+  index: Int!
+  name: String
+  creationTime: DateTime!
+  size: Long!
+}
+
+input ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput {
+  all: UserContributionDiscItemFilterInput
+  none: UserContributionDiscItemFilterInput
+  some: UserContributionDiscItemFilterInput
+  any: Boolean
 }
 
 "A connection to a list of items."
@@ -170,42 +71,6 @@ type ContributionsConnection {
   edges: [ContributionsEdge!]
   "A flattened list of the nodes."
   nodes: [UserContribution!]
-}
-
-"A connection to a list of items."
-type MyContributionsConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [MyContributionsEdge!]
-  "A flattened list of the nodes."
-  nodes: [UserContribution!]
-}
-
-type ContributionNotFoundError implements Error {
-  message: String!
-}
-
-input EncodedIdOperationFilterInput {
-  and: [EncodedIdOperationFilterInput!]
-  or: [EncodedIdOperationFilterInput!]
-  eq: EncodedIdFilter
-  neq: EncodedIdFilter
-}
-
-input StringOperationFilterInput {
-  and: [StringOperationFilterInput!]
-  or: [StringOperationFilterInput!]
-  eq: String
-  neq: String
-  contains: String
-  ncontains: String
-  in: [String]
-  nin: [String]
-  startsWith: String
-  nstartsWith: String
-  endsWith: String
-  nendsWith: String
 }
 
 input DateTimeOperationFilterInput {
@@ -223,42 +88,66 @@ input DateTimeOperationFilterInput {
   nlte: DateTime
 }
 
-input UserContributionStatusOperationFilterInput {
-  eq: UserContributionStatus
-  neq: UserContributionStatus
-  in: [UserContributionStatus!]
-  nin: [UserContributionStatus!]
+type UserContributionDisc {
+  id: Int!
+  userContribution: UserContribution
+  contentHash: String
+  format: String
+  name: String
+  slug: String
+  logsUploaded: Boolean!
+  existingDiscPath: String
+  items: [UserContributionDiscItem]
+  encodedId: EncodedId!
 }
 
-input ListEncodedIdFilterTypeOfUserContributionDiscFilterInput {
-  all: UserContributionDiscFilterInput
-  none: UserContributionDiscFilterInput
-  some: UserContributionDiscFilterInput
-  any: Boolean
+input EpisodeNamesInput {
+  contributionId: String!
 }
 
-input ListEncodedIdFilterTypeOfUserContributionDiscHashItemFilterInput {
-  all: UserContributionDiscHashItemFilterInput
-  none: UserContributionDiscHashItemFilterInput
-  some: UserContributionDiscHashItemFilterInput
-  any: Boolean
+type UserContribution {
+  id: Int!
+  userId: String
+  created: DateTime!
+  status: UserContributionStatus!
+  discs: [UserContributionDisc]
+  hashItems: [UserContributionDiscHashItem]
+  mediaType: String
+  externalId: String
+  externalProvider: String
+  releaseDate: DateTime!
+  asin: String
+  upc: String
+  frontImageUrl: String
+  backImageUrl: String
+  releaseTitle: String
+  releaseSlug: String
+  locale: String
+  regionCode: String
+  title: String
+  year: String
+  titleSlug: String
+  encodedId: EncodedId!
 }
 
-enum SortEnumType {
-  ASC
-  DESC
+input CreateContributionInput {
+  input: ContributionMutationRequestInput!
 }
 
-"Information about pagination in a connection."
-type PageInfo {
-  "Indicates whether more edges exist following the set defined by the clients arguments."
-  hasNextPage: Boolean!
-  "Indicates whether more edges exist prior the set defined by the clients arguments."
-  hasPreviousPage: Boolean!
-  "When paginating backwards, the cursor to continue."
-  startCursor: String
-  "When paginating forwards, the cursor to continue."
-  endCursor: String
+scalar EncodedId
+
+type SeriesEpisodeNames {
+  tryFind(season: String! episode: String!): SeriesEpisodeNameEntry
+  seriesTitle: String!
+  seriesYear: String!
+  episodes: [SeriesEpisodeNameEntry!]!
+}
+
+type ExternalMetadata {
+  id: Int!
+  title: String!
+  year: Int!
+  imageUrl: String!
 }
 
 "An edge in a connection."
@@ -269,146 +158,8 @@ type ContributionsEdge {
   node: UserContribution!
 }
 
-"An edge in a connection."
-type MyContributionsEdge {
-  "A cursor for use in pagination."
-  cursor: String!
-  "The item at the end of the edge."
-  node: UserContribution!
-}
-
 interface Error {
   message: String!
-}
-
-scalar EncodedIdFilter
-
-input UserContributionDiscFilterInput {
-  and: [UserContributionDiscFilterInput!]
-  or: [UserContributionDiscFilterInput!]
-  encodedId: EncodedIdOperationFilterInput
-  userContribution: UserContributionFilterInput
-  contentHash: StringOperationFilterInput
-  format: StringOperationFilterInput
-  name: StringOperationFilterInput
-  slug: StringOperationFilterInput
-  logsUploaded: BooleanOperationFilterInput
-  existingDiscPath: StringOperationFilterInput
-  items: ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput
-}
-
-input UserContributionDiscHashItemFilterInput {
-  and: [UserContributionDiscHashItemFilterInput!]
-  or: [UserContributionDiscHashItemFilterInput!]
-  encodedId: EncodedIdOperationFilterInput
-  userContribution: UserContributionFilterInput
-  discHash: StringOperationFilterInput
-  index: IntOperationFilterInput
-  name: StringOperationFilterInput
-  creationTime: DateTimeOperationFilterInput
-  size: LongOperationFilterInput
-}
-
-input BooleanOperationFilterInput {
-  eq: Boolean
-  neq: Boolean
-}
-
-input ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput {
-  all: UserContributionDiscItemFilterInput
-  none: UserContributionDiscItemFilterInput
-  some: UserContributionDiscItemFilterInput
-  any: Boolean
-}
-
-input IntOperationFilterInput {
-  eq: Int
-  neq: Int
-  in: [Int]
-  nin: [Int]
-  gt: Int
-  ngt: Int
-  gte: Int
-  ngte: Int
-  lt: Int
-  nlt: Int
-  lte: Int
-  nlte: Int
-}
-
-input LongOperationFilterInput {
-  eq: Long
-  neq: Long
-  in: [Long]
-  nin: [Long]
-  gt: Long
-  ngt: Long
-  gte: Long
-  ngte: Long
-  lt: Long
-  nlt: Long
-  lte: Long
-  nlte: Long
-}
-
-input UserContributionDiscItemFilterInput {
-  and: [UserContributionDiscItemFilterInput!]
-  or: [UserContributionDiscItemFilterInput!]
-  encodedId: EncodedIdOperationFilterInput
-  disc: UserContributionDiscFilterInput
-  name: StringOperationFilterInput
-  source: StringOperationFilterInput
-  duration: StringOperationFilterInput
-  size: StringOperationFilterInput
-  chapterCount: IntOperationFilterInput
-  segmentCount: IntOperationFilterInput
-  segmentMap: StringOperationFilterInput
-  type: StringOperationFilterInput
-  description: StringOperationFilterInput
-  season: StringOperationFilterInput
-  episode: StringOperationFilterInput
-  chapters: ListEncodedIdFilterTypeOfUserContributionChapterFilterInput
-  audioTracks: ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput
-}
-
-input ListEncodedIdFilterTypeOfUserContributionChapterFilterInput {
-  all: UserContributionChapterFilterInput
-  none: UserContributionChapterFilterInput
-  some: UserContributionChapterFilterInput
-  any: Boolean
-}
-
-input ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput {
-  all: UserContributionAudioTrackFilterInput
-  none: UserContributionAudioTrackFilterInput
-  some: UserContributionAudioTrackFilterInput
-  any: Boolean
-}
-
-input UserContributionChapterFilterInput {
-  and: [UserContributionChapterFilterInput!]
-  or: [UserContributionChapterFilterInput!]
-  encodedId: EncodedIdOperationFilterInput
-  index: IntOperationFilterInput
-  title: StringOperationFilterInput
-  item: UserContributionDiscItemFilterInput
-}
-
-input UserContributionAudioTrackFilterInput {
-  and: [UserContributionAudioTrackFilterInput!]
-  or: [UserContributionAudioTrackFilterInput!]
-  encodedId: EncodedIdOperationFilterInput
-  index: IntOperationFilterInput
-  title: StringOperationFilterInput
-  item: UserContributionDiscItemFilterInput
-}
-
-input HashDiscRequestInput {
-  files: [FileHashInfoInput!]!
-}
-
-type HashDiscResponse {
-  discHash: String!
 }
 
 input ContributionMutationRequestInput {
@@ -430,33 +181,344 @@ input ContributionMutationRequestInput {
   status: UserContributionStatus!
 }
 
-scalar UUID
+union HashDiscError = ContributionNotFoundError
 
-input FileHashInfoInput {
+type ExternalDataPayload {
+  externalMetadata: ExternalMetadata
+  errors: [ExternalDataError!]
+}
+
+input UserContributionStatusOperationFilterInput {
+  eq: UserContributionStatus
+  neq: UserContributionStatus
+  in: [UserContributionStatus!]
+  nin: [UserContributionStatus!]
+}
+
+input ExternalDataInput {
+  externalId: String!
+  mediaType: String!
+  provider: String!
+}
+
+enum SortEnumType {
+  ASC
+  DESC
+}
+
+input ExternalDataForContributionInput {
+  contributionId: String!
+}
+
+input IntOperationFilterInput {
+  eq: Int
+  neq: Int
+  in: [Int]
+  nin: [Int]
+  gt: Int
+  ngt: Int
+  gte: Int
+  ngte: Int
+  lt: Int
+  nlt: Int
+  lte: Int
+  nlte: Int
+}
+
+type ContributionMutations {
+  createContribution(input: CreateContributionInput!): CreateContributionPayload!
+  episodeNames(input: EpisodeNamesInput!): EpisodeNamesPayload!
+  externalData(input: ExternalDataInput!): ExternalDataPayload!
+  externalDataForContribution(input: ExternalDataForContributionInput!): ExternalDataForContributionPayload!
+  hashDisc(input: HashDiscInput!): HashDiscPayload!
+}
+
+type ExternalDataNotFoundError implements Error {
+  message: String!
+}
+
+input UserContributionAudioTrackFilterInput {
+  and: [UserContributionAudioTrackFilterInput!]
+  or: [UserContributionAudioTrackFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  index: IntOperationFilterInput
+  title: StringOperationFilterInput
+  item: UserContributionDiscItemFilterInput
+}
+
+"A connection to a list of items."
+type MyContributionsConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [MyContributionsEdge!]
+  "A flattened list of the nodes."
+  nodes: [UserContribution!]
+}
+
+type ContributionQuery {
+  contributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput order: [UserContributionSortInput!]): ContributionsConnection
+  myContributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput order: [UserContributionSortInput!]): MyContributionsConnection
+}
+
+type CreateContributionPayload {
+  userContribution: UserContribution
+}
+
+input LongOperationFilterInput {
+  eq: Long
+  neq: Long
+  in: [Long]
+  nin: [Long]
+  gt: Long
+  ngt: Long
+  gte: Long
+  ngte: Long
+  lt: Long
+  nlt: Long
+  lte: Long
+  nlte: Long
+}
+
+type UserContributionDiscHashItem {
+  id: Int!
+  userContribution: UserContribution
+  discHash: String
   index: Int!
   name: String
   creationTime: DateTime!
   size: Long!
+  encodedId: EncodedId!
 }
 
-input AddContributionInput {
-  input: ContributionMutationRequestInput!
+input UserContributionDiscFilterInput {
+  and: [UserContributionDiscFilterInput!]
+  or: [UserContributionDiscFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  userContribution: UserContributionFilterInput
+  contentHash: StringOperationFilterInput
+  format: StringOperationFilterInput
+  name: StringOperationFilterInput
+  slug: StringOperationFilterInput
+  logsUploaded: BooleanOperationFilterInput
+  existingDiscPath: StringOperationFilterInput
+  items: ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput
 }
 
-type AddContributionPayload {
-  userContribution: UserContribution
+union EpisodeNamesError = ContributionNotFoundError | ExternalDataNotFoundError
+
+input BooleanOperationFilterInput {
+  eq: Boolean
+  neq: Boolean
+}
+
+type UserContributionDiscItem {
+  id: Int!
+  disc: UserContributionDisc
+  name: String
+  source: String
+  duration: String
+  size: String
+  chapterCount: Int!
+  segmentCount: Int!
+  segmentMap: String
+  type: String
+  description: String
+  season: String
+  episode: String
+  chapters: [UserContributionChapter]
+  audioTracks: [UserContributionAudioTrack]
+  encodedId: EncodedId!
+}
+
+"Information about pagination in a connection."
+type PageInfo {
+  "Indicates whether more edges exist following the set defined by the clients arguments."
+  hasNextPage: Boolean!
+  "Indicates whether more edges exist prior the set defined by the clients arguments."
+  hasPreviousPage: Boolean!
+  "When paginating backwards, the cursor to continue."
+  startCursor: String
+  "When paginating forwards, the cursor to continue."
+  endCursor: String
+}
+
+"An edge in a connection."
+type MyContributionsEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: UserContribution!
+}
+
+type HashDiscPayload {
+  discHash: DiscHash
+  errors: [HashDiscError!]
+}
+
+input ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput {
+  all: UserContributionAudioTrackFilterInput
+  none: UserContributionAudioTrackFilterInput
+  some: UserContributionAudioTrackFilterInput
+  any: Boolean
+}
+
+union ExternalDataError = ContributionNotFoundError | ExternalDataNotFoundError
+
+input ListEncodedIdFilterTypeOfUserContributionDiscHashItemFilterInput {
+  all: UserContributionDiscHashItemFilterInput
+  none: UserContributionDiscHashItemFilterInput
+  some: UserContributionDiscHashItemFilterInput
+  any: Boolean
 }
 
 input HashDiscInput {
   contributionId: String!
-  input: HashDiscRequestInput!
+  files: [FileHashInfoInput!]!
 }
 
-union HashDiscError = ContributionNotFoundError
+type UserContributionChapter {
+  id: Int!
+  index: Int!
+  title: String
+  item: UserContributionDiscItem
+  encodedId: EncodedId!
+}
 
-type HashDiscPayload {
-  hashDiscResponse: HashDiscResponse
-  errors: [HashDiscError!]
+type EpisodeNamesPayload {
+  seriesEpisodeNames: SeriesEpisodeNames
+  errors: [EpisodeNamesError!]
+}
+
+type SeriesEpisodeNameEntry {
+  seasonNumber: String!
+  episodeNumber: String!
+  episodeName: String!
+}
+
+"The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
+scalar Long
+
+input ListEncodedIdFilterTypeOfUserContributionChapterFilterInput {
+  all: UserContributionChapterFilterInput
+  none: UserContributionChapterFilterInput
+  some: UserContributionChapterFilterInput
+  any: Boolean
+}
+
+scalar UUID
+
+type ExternalDataForContributionPayload {
+  externalMetadata: ExternalMetadata
+  errors: [ExternalDataForContributionError!]
+}
+
+input UserContributionDiscHashItemFilterInput {
+  and: [UserContributionDiscHashItemFilterInput!]
+  or: [UserContributionDiscHashItemFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  userContribution: UserContributionFilterInput
+  discHash: StringOperationFilterInput
+  index: IntOperationFilterInput
+  name: StringOperationFilterInput
+  creationTime: DateTimeOperationFilterInput
+  size: LongOperationFilterInput
+}
+
+input UserContributionChapterFilterInput {
+  and: [UserContributionChapterFilterInput!]
+  or: [UserContributionChapterFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  index: IntOperationFilterInput
+  title: StringOperationFilterInput
+  item: UserContributionDiscItemFilterInput
+}
+
+type ExternalDataSerializationError implements Error {
+  message: String!
+}
+
+input StringOperationFilterInput {
+  and: [StringOperationFilterInput!]
+  or: [StringOperationFilterInput!]
+  eq: String
+  neq: String
+  contains: String
+  ncontains: String
+  in: [String]
+  nin: [String]
+  startsWith: String
+  nstartsWith: String
+  endsWith: String
+  nendsWith: String
+}
+
+type ContributionNotFoundError implements Error {
+  message: String!
+}
+
+input ListEncodedIdFilterTypeOfUserContributionDiscFilterInput {
+  all: UserContributionDiscFilterInput
+  none: UserContributionDiscFilterInput
+  some: UserContributionDiscFilterInput
+  any: Boolean
+}
+
+"The `DateTime` scalar represents an ISO-8601 compliant date time type."
+scalar DateTime
+
+scalar EncodedIdFilter
+
+input EncodedIdOperationFilterInput {
+  and: [EncodedIdOperationFilterInput!]
+  or: [EncodedIdOperationFilterInput!]
+  eq: EncodedIdFilter
+  neq: EncodedIdFilter
+}
+
+type UserContributionAudioTrack {
+  id: Int!
+  index: Int!
+  title: String
+  item: UserContributionDiscItem
+  encodedId: EncodedId!
+}
+
+type DiscHash {
+  hash: String!
+}
+
+union ExternalDataForContributionError = ContributionNotFoundError | ExternalDataSerializationError | ExternalDataNotFoundError
+
+enum UserContributionStatus {
+  PENDING
+  READY_FOR_REVIEW
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+  IMPORTED
+}
+
+input UserContributionSortInput {
+  id: SortEnumType
+  userId: SortEnumType
+  created: SortEnumType
+  status: SortEnumType
+  mediaType: SortEnumType
+  externalId: SortEnumType
+  externalProvider: SortEnumType
+  releaseDate: SortEnumType
+  asin: SortEnumType
+  upc: SortEnumType
+  frontImageUrl: SortEnumType
+  backImageUrl: SortEnumType
+  releaseTitle: SortEnumType
+  releaseSlug: SortEnumType
+  locale: SortEnumType
+  regionCode: SortEnumType
+  title: SortEnumType
+  year: SortEnumType
+  titleSlug: SortEnumType
 }
 
 "The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."

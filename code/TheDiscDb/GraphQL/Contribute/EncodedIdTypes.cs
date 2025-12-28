@@ -7,7 +7,7 @@ using HotChocolate.Language;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 
-namespace TheDiscDb.GraphQL;
+namespace TheDiscDb.GraphQL.Contribute;
 
 public abstract class EncodedIdTypeExtension<T> : ObjectTypeExtension<T>
     where T : IHasId

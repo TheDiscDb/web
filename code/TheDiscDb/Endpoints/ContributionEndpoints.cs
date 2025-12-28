@@ -17,13 +17,13 @@ public class ContributionEndpoints
         var contribute = app.MapGroup("/api/contribute").RequireAuthorization();
 
         contribute.MapGet("my", GetUserContributions);
-        contribute.MapPost("create", CreateContribution);
+        //contribute.MapPost("create", CreateContribution);
         contribute.MapGet("{contributionId}", GetContribution);
         contribute.MapDelete("{contributionId}", DeleteContribution);
-        contribute.MapPut("{contributionId}", UpdateContribution);
+        //contribute.MapPut("{contributionId}", UpdateContribution);
         contribute.MapPost("{contributionId}/hashdisc", HashDisc);
         contribute.MapGet("externalsearch/{type}", ExternalSearch);
-        contribute.MapGet("{contributionId}/episodes", GetEpisodeNames);
+        //contribute.MapGet("{contributionId}/episodes", GetEpisodeNames);
         contribute.MapGet("{contributionId}/externalData", GetExternalData);
         contribute.MapGet("externalData/{provider}/{mediaType}/{externalId}", GetExternalDataByExternalId);
         contribute.MapGet("importMetadata/{asin}", ImportMetadata);
@@ -76,18 +76,18 @@ public class ContributionEndpoints
         return JsonResult(result, "Failed to add item to disc");
     }
 
-    public async Task<IResult> CreateContribution(IUserContributionService service, UserManager<TheDiscDbUser> userManager, [FromBody] ContributionMutationRequest request, ClaimsPrincipal user, CancellationToken cancellationToken)
-    {
-        var userId = userManager.GetUserId(user);
-        //var user = await this.userManager.FindByIdAsync(userId!);
-        if (string.IsNullOrEmpty(userId))
-        {
-            return TypedResults.NotFound();
-        }
+    //public async Task<IResult> CreateContribution(IUserContributionService service, UserManager<TheDiscDbUser> userManager, [FromBody] ContributionMutationRequest request, ClaimsPrincipal user, CancellationToken cancellationToken)
+    //{
+    //    var userId = userManager.GetUserId(user);
+    //    //var user = await this.userManager.FindByIdAsync(userId!);
+    //    if (string.IsNullOrEmpty(userId))
+    //    {
+    //        return TypedResults.NotFound();
+    //    }
 
-        var result = await service.CreateContribution(userId, request, cancellationToken);
-        return JsonResult(result, "Failed to create contribution");
-    }
+    //    var result = await service.CreateContribution(userId, request, cancellationToken);
+    //    return JsonResult(result, "Failed to create contribution");
+    //}
 
     public async Task<IResult> GetContribution(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
     {
@@ -101,17 +101,17 @@ public class ContributionEndpoints
         return OkOrProblem(result, $"Failed to delete contribution {contributionId}");
     }
 
-    public async Task<IResult> UpdateContribution(IUserContributionService service, string contributionId, [FromBody] ContributionMutationRequest request, CancellationToken cancellationToken)
-    {
-        var result = await service.UpdateContribution(contributionId, request, cancellationToken);
-        return OkOrProblem(result, $"Failed to update contribution {contributionId}");
-    }
+    //public async Task<IResult> UpdateContribution(IUserContributionService service, string contributionId, [FromBody] ContributionMutationRequest request, CancellationToken cancellationToken)
+    //{
+    //    var result = await service.UpdateContribution(contributionId, request, cancellationToken);
+    //    return OkOrProblem(result, $"Failed to update contribution {contributionId}");
+    //}
 
-    public async Task<IResult> GetEpisodeNames(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
-    {
-        var result = await service.GetEpisodeNames(contributionId, cancellationToken);
-        return JsonResult(result, $"Unable to get episode names for contribution {contributionId}");
-    }
+    //public async Task<IResult> GetEpisodeNames(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
+    //{
+    //    var result = await service.GetEpisodeNames(contributionId, cancellationToken);
+    //    return JsonResult(result, $"Unable to get episode names for contribution {contributionId}");
+    //}
 
     public async Task<IResult> GetExternalDataByExternalId(IUserContributionService service, string provider, string mediaType, string externalId, CancellationToken cancellationToken)
     {

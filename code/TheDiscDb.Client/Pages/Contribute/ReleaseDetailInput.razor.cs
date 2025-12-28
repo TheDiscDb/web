@@ -2,10 +2,12 @@
 using System.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
 using Syncfusion.Blazor.Notifications;
+using TheDiscDb.Client.Contributions;
+using TheDiscDb.Client.Contributions.State;
 using TheDiscDb.Services;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -19,7 +21,7 @@ public partial class ReleaseDetailInput : ComponentBase
     public string? ExternalId { get; set; }
 
     [Inject]
-    public IUserContributionService Client { get; set; } = default!;
+    public IContributionClient ContributionClient { get; set; } = default!;
 
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
@@ -27,7 +29,7 @@ public partial class ReleaseDetailInput : ComponentBase
     [Inject]
     public HttpClient HttpClient { get; set; } = default!;
 
-    private readonly ContributionMutationRequest request = new ContributionMutationRequest
+    private readonly ContributionMutationRequestInput request = new ContributionMutationRequestInput
     {
         Locale = "en-us",
         RegionCode = "1"
@@ -35,7 +37,7 @@ public partial class ReleaseDetailInput : ComponentBase
 
     private string releaseDate = string.Empty;
     private string releaseDateValidationMessage = string.Empty;
-    private ExternalMetadata? externalData;
+    private IGetExternalData_ExternalData_ExternalMetadata? externalData;
     private readonly Guid id = Guid.NewGuid();
     private string frontImageUploadUrl => $"/api/contribute/images/front/upload/{id}";
     private string frontImageRemoveUrl => $"/api/contribute/images/front/remove/{id}";
@@ -50,7 +52,9 @@ public partial class ReleaseDetailInput : ComponentBase
     private SfUploader? frontImageUploader;
     private SfUploader? backImageUploader;
     SfToast? toast;
-    string? toastContent;
+#pragma warning disable IDE0044 // Add readonly modifier
+    string? toastContent = "Test";
+#pragma warning restore IDE0044 // Add readonly modifier
 
     protected override async Task OnInitializedAsync()
     {
@@ -59,10 +63,16 @@ public partial class ReleaseDetailInput : ComponentBase
         this.request.ExternalId = this.ExternalId ?? string.Empty;
         this.request.StorageId = this.id;
 
-        var response = await this.Client.GetExternalData(this.request.ExternalId, this.request.MediaType, this.request.ExternalProvider);
-        if (response != null && response.IsSuccess)
+        var result = await this.ContributionClient.GetExternalData.ExecuteAsync(new ExternalDataInput
         {
-            this.externalData = response.Value;
+            ExternalId = this.request.ExternalId,
+            MediaType = this.request.MediaType,
+            Provider = this.request.ExternalProvider
+        });
+
+        if (result != null && result.IsSuccessResult())
+        {
+            this.externalData = result.Data!.ExternalData.ExternalMetadata;
         }
         else
         {
@@ -91,22 +101,31 @@ public partial class ReleaseDetailInput : ComponentBase
         {
             this.request.ReleaseDate = date;
         }
-
-        var response = await this.Client.CreateContribution(userId: string.Empty, this.request);
-
-        if (this.request.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
+        
+        var result = await this.ContributionClient.CreateContribution.ExecuteAsync(new CreateContributionInput
         {
-            // Create the episode names for later use
-            var episodeResponse = await this.Client.GetEpisodeNames(response.Value.ContributionId);
-            if (episodeResponse == null || episodeResponse.IsFailed)
-            {
-                // TODO: Show an error message
-                var error = episodeResponse?.Errors.FirstOrDefault();
-                Console.WriteLine("Failed to create episode names. " + error?.Message);
-            }
-        }
+            Input = this.request
+        });
 
-        this.NavigationManager!.NavigateTo($"/contribution/{response.Value.ContributionId}");
+        if (result != null && result.IsSuccessResult())
+        {
+            if (this.request.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
+            {
+                // Create the episode names for later use
+                var episodeResponse = await this.ContributionClient.GetEpisodeNames.ExecuteAsync(new EpisodeNamesInput
+                {
+                    ContributionId = result.Data!.CreateContribution.UserContribution!.ExternalId!
+                });
+
+                if (episodeResponse == null || !episodeResponse.IsSuccessResult())
+                {
+                    // TODO: Show an error message
+                    var error = episodeResponse?.Errors.FirstOrDefault();
+                    Console.WriteLine("Failed to create episode names. " + error?.Message);
+                }
+            }
+            this.NavigationManager!.NavigateTo($"/contribution/{result.Data!.CreateContribution.UserContribution!.ExternalId!}");
+        }
     }
 
     private void ReleaseTitleChanged(ChangeEventArgs args)
@@ -209,7 +228,7 @@ public partial class ReleaseDetailInput : ComponentBase
 
     private void FrontImageRemoved(RemovingEventArgs args)
     {
-        this.request.FrontImageUrl = null;
+        this.request.FrontImageUrl = "";
         this.frontImagePreviewUrl = "";
     }
 
@@ -220,63 +239,63 @@ public partial class ReleaseDetailInput : ComponentBase
 
     private void BackImageRemoved(RemovingEventArgs args)
     {
-        this.request.BackImageUrl = null;
+        this.request.BackImageUrl = "";
         this.backImagePreviewUrl = "";
     }
 
-    private async Task ImportFromAmazon(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
-    {
-        if (string.IsNullOrEmpty(this.request.Asin))
-        {
-            return;
-        }
+    //private async Task ImportFromAmazon(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    //{
+    //    if (string.IsNullOrEmpty(this.request.Asin))
+    //    {
+    //        return;
+    //    }
 
-        IsAmazonImportInProgress = true;
+    //    IsAmazonImportInProgress = true;
 
-        var response = await this.Client.ImportReleaseDetails(this.request.Asin);
-        if (response == null || response.IsFailed)
-        {
-            foreach (var error in response?.Errors ?? [])
-            {
-                Console.WriteLine("Failed to import release details " + error.Message);
-                toastContent = "Unable to import from Amazon. Details must be entered manually.";
-                await toast!.ShowAsync();
-            }
-            return;
-        }
+    //    var response = await this.Client.ImportReleaseDetails(this.request.Asin);
+    //    if (response == null || response.IsFailed)
+    //    {
+    //        foreach (var error in response?.Errors ?? [])
+    //        {
+    //            Console.WriteLine("Failed to import release details " + error.Message);
+    //            toastContent = "Unable to import from Amazon. Details must be entered manually.";
+    //            await toast!.ShowAsync();
+    //        }
+    //        return;
+    //    }
 
-        var details = response.Value;
-        this.request.Title = details.Title ?? "";
-        this.request.RegionCode = details.RegionCode ?? "1";
-        this.request.Locale = details.Locale ?? "en-us";
-        this.request.Upc = details.Upc ?? "";
+    //    var details = response.Value;
+    //    this.request.Title = details.Title ?? "";
+    //    this.request.RegionCode = details.RegionCode ?? "1";
+    //    this.request.Locale = details.Locale ?? "en-us";
+    //    this.request.Upc = details.Upc ?? "";
 
-        if (details.ReleaseDate.HasValue)
-        {
-            this.request.ReleaseDate = details.ReleaseDate.Value;
-            this.releaseDate = details.ReleaseDate.Value.ToString("MM-dd-yyyy");
+    //    if (details.ReleaseDate.HasValue)
+    //    {
+    //        this.request.ReleaseDate = details.ReleaseDate.Value;
+    //        this.releaseDate = details.ReleaseDate.Value.ToString("MM-dd-yyyy");
 
-            if (!string.IsNullOrEmpty(details.MediaFormat) && string.IsNullOrEmpty(this.request.ReleaseTitle))
-            {
-                this.request.ReleaseTitle = $"{details.ReleaseDate.Value.Year} {details.MediaFormat}";
-                this.request.ReleaseSlug = this.request.ReleaseTitle.Slugify();
-            }
-        }
+    //        if (!string.IsNullOrEmpty(details.MediaFormat) && string.IsNullOrEmpty(this.request.ReleaseTitle))
+    //        {
+    //            this.request.ReleaseTitle = $"{details.ReleaseDate.Value.Year} {details.MediaFormat}";
+    //            this.request.ReleaseSlug = this.request.ReleaseTitle.Slugify();
+    //        }
+    //    }
 
-        if (!string.IsNullOrEmpty(details.FrontImageUrl))
-        {
-            request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
-            this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/front.jpg?width=156&height=231";
-        }
+    //    if (!string.IsNullOrEmpty(details.FrontImageUrl))
+    //    {
+    //        request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
+    //        this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/front.jpg?width=156&height=231";
+    //    }
 
-        if (!string.IsNullOrEmpty(details.BackImageUrl))
-        {
-            request.BackImageUrl = await UploadImage(this.id.ToString(), details.BackImageUrl, this.backImageUploadUrl, "back", backImageUploader);
-            this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/back.jpg?width=156&height=231";
-        }
+    //    if (!string.IsNullOrEmpty(details.BackImageUrl))
+    //    {
+    //        request.BackImageUrl = await UploadImage(this.id.ToString(), details.BackImageUrl, this.backImageUploadUrl, "back", backImageUploader);
+    //        this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/back.jpg?width=156&height=231";
+    //    }
 
-        IsAmazonImportInProgress = false;
-    }
+    //    IsAmazonImportInProgress = false;
+    //}
 
     private async Task<string?> UploadImage(string id, string url, string uploadUrl, string name, SfUploader? uploader)
     {
@@ -322,7 +341,7 @@ public partial class ReleaseDetailInput : ComponentBase
         {
             await frontImageUploader.ClearAllAsync();
             await this.HttpClient.PostAsync(this.frontImageRemoveUrl, null);
-            this.request.FrontImageUrl = null;
+            this.request.FrontImageUrl = "";
             this.frontImagePreviewUrl = "";
         }
     }

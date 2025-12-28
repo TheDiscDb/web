@@ -107,20 +107,22 @@ public partial class Review : ComponentBase
         return "";
     }
 
-    private async Task SubmitContribution(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    private Task SubmitContribution(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
-        if (this.Contribution != null)
-        {
-            this.Contribution.Status = UserContributionStatus.ReadyForReview;
+        //if (this.Contribution != null)
+        //{
+        //    this.Contribution.Status = UserContributionStatus.ReadyForReview;
 
-            var request = new ContributionMutationRequest(this.Contribution);
+        //    var request = new ContributionMutationRequest(this.Contribution);
 
-            var response = await this.Client.UpdateContribution(this.Contribution.EncodedId, request);
-            if (response != null && response.IsSuccess)
-            {
-                //redirect to /contribute/my
-                this.NavigationManager.NavigateTo("/contribute/my");
-            }
-        }
+        //    var response = await this.Client.UpdateContribution(this.Contribution.EncodedId, request);
+        //    if (response != null && response.IsSuccess)
+        //    {
+        //        //redirect to /contribute/my
+        //        this.NavigationManager.NavigateTo("/contribute/my");
+        //    }
+        //}
+
+        return Task.CompletedTask;
     }
 }

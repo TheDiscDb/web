@@ -1,40 +1,10 @@
 ﻿namespace TheDiscDb.Data.GraphQL;
 
 using System.Linq;
-using System.Security.Claims;
-using HotChocolate.Authorization;
 using HotChocolate.Data;
 using HotChocolate.Types;
 using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
-
-public class ContributionQuery
-{
-    const int MaxPageSize = 100;
-    const int DefaultPageSize = 50;
-
-    [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize)]
-    [UseProjection]
-    [UseFiltering]
-    [UseSorting]
-    //[Authorize("Admin")]
-    public IQueryable<UserContribution> GetContributions(SqlServerDataContext context) => context.UserContributions;
-
-    [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize)]
-    [UseProjection]
-    [UseFiltering]
-    [UseSorting]
-    public IQueryable<UserContribution> GetMyContributions(SqlServerDataContext context, ClaimsPrincipal user)
-    {
-        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
-        {
-            return Enumerable.Empty<UserContribution>().AsQueryable();
-        }
-
-        return context.UserContributions.Where(c => c.UserId == userId);
-    }
-}
 
 public class Query
 {

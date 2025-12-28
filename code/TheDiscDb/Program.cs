@@ -2,10 +2,8 @@ using Azure;
 using Azure.Storage.Blobs.Models;
 using Fantastic.TheMovieDb.Caching.FileSystem;
 using HighlightBlazor;
-using HotChocolate.Data.Filters;
 using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
@@ -19,7 +17,8 @@ using TheDiscDb;
 using TheDiscDb.Client;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
-using TheDiscDb.GraphQL;
+using TheDiscDb.GraphQL.Contribute;
+using TheDiscDb.GraphQL.Contribute.Mutations;
 using TheDiscDb.Search;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
@@ -146,7 +145,7 @@ builder.Services
     .AddType<EncodedIdType>()
     .AddQueryType<ContributionQuery>()
     .AddMutationConventions(applyToAllMutations: true)
-    .AddMutationType<Mutation>();
+    .AddMutationType<ContributionMutations>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();

@@ -1,0 +1,18 @@
+mutation GetExternalData($input: ExternalDataInput!) {
+  externalData(input: $input) {
+    externalMetadata {
+      title
+      year
+      imageUrl
+    }
+    errors {
+      __typename
+      ... on ContributionNotFoundError {
+        message
+      }
+      ... on ExternalDataNotFoundError {
+        message
+      }
+    }
+  }
+}

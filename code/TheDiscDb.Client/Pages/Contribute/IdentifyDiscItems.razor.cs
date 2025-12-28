@@ -10,6 +10,27 @@ using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
+public class SeriesEpisodeNames
+{
+    public string SeriesTitle { get; set; } = string.Empty;
+    public string SeriesYear { get; set; } = string.Empty;
+    public ICollection<SeriesEpisodeNameEntry> Episodes { get; set; } = new List<SeriesEpisodeNameEntry>();
+
+    public SeriesEpisodeNameEntry? TryFind(string season, string episode)
+    {
+        return Episodes.FirstOrDefault(e =>
+            string.Equals(e.SeasonNumber, season, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(e.EpisodeNumber, episode, StringComparison.OrdinalIgnoreCase));
+    }
+}
+
+public class SeriesEpisodeNameEntry
+{
+    public string SeasonNumber { get; set; } = string.Empty;
+    public string EpisodeNumber { get; set; } = string.Empty;
+    public string EpisodeName { get; set; } = string.Empty;
+}
+
 public class EpisodeIdentification
 {
     [Required]
@@ -111,7 +132,10 @@ public partial class IdentifyDiscItems : ComponentBase
     private IQueryable<MakeMkv.Title>? allTitles = null;
     private UserContributionDisc? disc = null;
     private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
-    private SeriesEpisodeNames? episodeNames = null;
+    //private SeriesEpisodeNames? episodeNames = null;
+#pragma warning disable IDE0044 // Add readonly modifier
+    private SeriesEpisodeNames? episodeNames = new SeriesEpisodeNames();
+#pragma warning restore IDE0044 // Add readonly modifier
     private ExternalMetadata? ExternalMetadata = null;
     private UserContribution? contribution;
     private bool IsDoneButtonDisabled => identifiedTitles == null || identifiedTitles.Count == 0;
@@ -197,11 +221,12 @@ public partial class IdentifyDiscItems : ComponentBase
 
         if (!string.IsNullOrEmpty(this.mediaType) && this.mediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
         {
-            var episodeResults = await Client.GetEpisodeNames(this.ContributionId!);
-            if (episodeResults != null && episodeResults.IsSuccess)
-            {
-                this.episodeNames = episodeResults.Value;
-            }
+            // TODO: Uncomment when the API supports it
+            //var episodeResults = await Client.GetEpisodeNames(this.ContributionId!);
+            //if (episodeResults != null && episodeResults.IsSuccess)
+            //{
+            //    this.episodeNames = episodeResults.Value;
+            //}
         }
 
         var externalMetadataResponse = await Client.GetExternalData(this.ContributionId!);
