@@ -1,0 +1,84 @@
+﻿@page "/admin/contribution/{contributionId}/edit"
+@using System.Web
+@using TheDiscDb.Client.Controls
+@using HighlightBlazor
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Contribution Details</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink()]" PrimaryText="@this.Contribution?.Title" />
+
+<h1>Contribution Details</h1>
+@if (this.Contribution != null)
+{
+    <h2>@this.Contribution.Title (@this.Contribution.Year) - @this.Contribution.ReleaseTitle</h2>
+    if(!string.IsNullOrEmpty(this.Contribution.FrontImageUrl))
+    {
+        <section class="info-grid single-column">
+            <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label>ASIN<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="request.Asin" />
+                    <ValidationMessage For="@(() => request.Asin)" />
+                    @* <button type="button" class="btn btn-secondary" disabled="@ImportFromAmazonDisabled" @onclick="ImportFromAmazon">Import</button> *@
+                </div>
+                <div class="mb-3">
+                    <label>UPC/EAN<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="request.Upc" />
+                    <ValidationMessage For="@(() => request.Upc)" />
+                </div>
+                <div class="mb-3">
+                    <label>Release Date<span class="required">*</span></label>
+                    <SfDatePicker TValue="DateTimeOffset" class="form-control" @bind-Value="request.ReleaseDate"></SfDatePicker>
+                    <ValidationMessage For="@(() => request.ReleaseDate)" />
+                </div>
+                <div class="mb-3">
+                    <label>Release Title<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="request.ReleaseTitle" />
+                    <ValidationMessage For="@(() => request.ReleaseTitle)" />
+                </div>
+                <div class="mb-3">
+                    <label>Release Slug<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="request.ReleaseSlug" />
+                    <ValidationMessage For="@(() => request.ReleaseSlug)" />
+                </div>
+                <div class="mb-3">
+                    <label>Locale</label>
+                    <InputText class="form-control" @bind-Value="request.Locale" />
+                    <ValidationMessage For="@(() => request.Locale)" />
+                </div>
+                <div class="mb-3">
+                    <label>Region Code</label>
+                    <InputText class="form-control" @bind-Value="request.RegionCode" />
+                    <ValidationMessage For="@(() => request.RegionCode)" />
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </EditForm>
+        </section>
+
+        <section class="info-card discs-card">
+            <QuickGrid Items="Discs" class="striped-grid contribute-grid">
+                <TemplateColumn Title="Name">
+                    <div class="disc-name">
+                        <a href="/admin/contribution/@ContributionId/discs/@context.Id" title="View Disc">@context.Name</a>
+                    </div>
+                </TemplateColumn>
+                <PropertyColumn Property="d => d.Format"></PropertyColumn>
+                <TemplateColumn Title="Logs">
+                    @if (!string.IsNullOrEmpty(context.ExistingDiscPath))
+                    {
+                        <span class="badge bg-light text-dark">Copied from another disc</span>
+                    }
+                    else
+                    {
+                        <span>@(context.LogsUploaded ? "Uploaded" : "Pending")</span>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
+        </section>
+    }
+}

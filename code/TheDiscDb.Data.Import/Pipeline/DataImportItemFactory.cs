@@ -290,6 +290,15 @@ public class DataImportItemFactory
         release.ImageUrl = releaseFile.ImageUrl;
         release.ReleaseDate = releaseFile.ReleaseDate;
         release.DateAdded = releaseFile.DateAdded;
+
+        foreach (var contributor in releaseFile.Contributors)
+        {
+            release.Contributors.Add(new InputModels.Contributor
+            {
+                Name = contributor.Name,
+                Source = contributor.Source
+            });
+        }
     }
 
     private void Map(MediaItem instance, MetadataFile metadata)

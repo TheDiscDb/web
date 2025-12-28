@@ -1,0 +1,40 @@
+﻿@page "/admin/contribution/{contributionId}/discs/{discId}"
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Contribution Details</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink(), GetAdminContributionLink(this.Contribution)]" PrimaryText="@this.Disc?.Name" />
+
+<h1>Disc Details</h1>
+@if (this.Contribution != null)
+{
+    <h2>@this.Contribution.Title (@this.Contribution.Year) - @this.Contribution.ReleaseTitle</h2>
+    @if (this.Disc != null)
+    {
+        <h3>@this.Disc.Name (@this.Disc.Format)</h3>
+        <div>Hash: @request.ContentHash</div>
+        <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label>Disc Format</label>
+                <SfDropDownList TValue="string" TItem="string" DataSource="formats" class="form-control" @bind-Value="request.Format" Placeholder="Select format" />
+                <ValidationMessage For="@(() => request.Format)" />
+            </div>
+            <div class="mb-3">
+                <label>Disc Title</label>
+                <InputText class="form-control" @bind-Value="request.Name" />
+                <ValidationMessage For="@(() => request.Name)" />
+            </div>
+            <div class="mb-3">
+                <label>Disc Slug</label>
+                <InputText class="form-control" @bind-Value="request.Slug" />
+                <ValidationMessage For="@(() => request.Slug)" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+        </EditForm>
+    }
+}

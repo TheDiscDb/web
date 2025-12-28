@@ -34,6 +34,14 @@ public class SqlServerDataContext : DbContext
 
         var release = modelBuilder.Entity<Release>();
         release.HasMany(x => x.Discs).WithOne(x => x.Release);
+        release.HasMany(x => x.Contributors)
+            .WithMany(x => x.Releases)
+            .UsingEntity(j => j.ToTable("ReleaseContributor"));
+
+        var contributor = modelBuilder.Entity<Contributor>();
+        contributor
+            .HasIndex(u => u.Name)
+            .IsUnique();
 
         var disc = modelBuilder.Entity<Disc>();
         disc.HasMany(x => x.Titles).WithOne(x => x.Disc);
@@ -238,6 +246,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<UserContributionChapter> UserContributionChapters { get; set; } = null!;
     public DbSet<UserContributionAudioTrack> UserContributionAudioTracks { get; set; } = null!;
     public DbSet<UserContributionDiscHashItem> UserContributionDiscHashItems { get; set; } = null!;
+    public DbSet<Contributor> Contributors { get; set; } = null!;
 }
 
 public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser

@@ -27,7 +27,7 @@
         @* <button type="button" class="btn btn-secondary" disabled="@ImportFromAmazonDisabled" @onclick="ImportFromAmazon">Import</button> *@
     </div>
     <div class="mb-3">
-        <label>UPC<span class="required">*</span></label>
+        <label>UPC/EAN<span class="required">*</span></label>
         <InputText class="form-control" @bind-Value="request.Upc" />
         <ValidationMessage For="@(() => request.Upc)" />
     </div>

@@ -5,6 +5,7 @@ using HighlightBlazor;
 using HotChocolate.Data.Filters;
 using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
@@ -16,7 +17,6 @@ using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb;
 using TheDiscDb.Client;
-using TheDiscDb.Client.Pages.Contribute;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
 using TheDiscDb.GraphQL;
@@ -92,11 +92,11 @@ builder.Services.AddAuthorizationCore(b =>
     b.AddPolicy("Admin", policy => policy.RequireRole(DefaultRoles.Administrator));
 });
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddAuthenticationStateDeserialization();
 builder.Services.AddSingleton<IPrincipalProvider, PrincipalProvider>();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
+    .AddAuthenticationStateSerialization()
     .AddInteractiveWebAssemblyComponents();
 
 builder.Services.AddScoped<TheDiscDb.Components.Account.IdentityRedirectManager>();

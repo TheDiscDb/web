@@ -2,9 +2,19 @@
 @using System.Web
 @using TheDiscDb.Client.Controls
 
+@rendermode InteractiveServer
+
 <PageTitle>Admin Home</PageTitle>
 
 <h2>Pending Contributions</h2>
+<SfDropDownList TValue="UserContributionStatus"
+                TItem="UserContributionStatus"
+                DataSource="statusList"
+                Value="selectedStatus"
+                ValueChanged="OnStatusChanged"
+                ValueExpression="@(() => selectedStatus)"
+                Placeholder="Select status" />
+
 <QuickGrid Items="PendingContributions" Class="striped-grid">
     <TemplateColumn Title="Item">
         <a href="/admin/contribution/@context.Id">@context.Title (@context.Year) @context.ReleaseTitle</a>
