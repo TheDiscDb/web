@@ -150,7 +150,6 @@ builder.Services
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TheDiscDb.Client.ApiClient>();
-builder.Services.AddScoped<IUserContributionService, TheDiscDb.Services.Server.UserContributionService>();
 builder.Services.AddScoped<IExternalSearchService, TheDiscDb.Services.Server.ExternalSearchService>();
 builder.Services.AddSingleton<IFileSystemCache, InMemoryFileSystemCache>();
 builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));

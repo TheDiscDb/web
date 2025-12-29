@@ -74,16 +74,8 @@ mutation GetDiscLogs($input: DiscLogsInput!) {
       }
     }
     errors {
-      ... on ContributionNotFoundError {
-        message
-      }
-      ... on DiscNotFoundError {
-        message
-      }
-      ... on CouldNotParseLogsError {
-        message
-      }
-      ... on LogsNotFoundError {
+      code: __typename
+      ... on Error {
         message
       }
     }

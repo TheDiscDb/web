@@ -22,9 +22,11 @@
         <GraphQL Remove="contributiongraphql\mutations\GetExternalData.graphql" />
         <GraphQL Remove="ContributionGraphQL\Mutations\GetExternalDataForContribution.graphql" />
         <GraphQL Remove="contributiongraphql\mutations\HashDisc.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\UpdateDisc.graphql" />
         <GraphQL Remove="ContributionGraphql\Queries\ContributionDiscs.graphql" />
         <GraphQL Remove="contributiongraphql\queries\DiscUploadPageData.graphql" />
         <GraphQL Remove="ContributionGraphQL\Queries\GetCurrentUserContributionsGetCurrentUserContributions.graphql" />
+        <GraphQL Remove="contributiongraphql\queries\GetDisc.graphql" />
         <GraphQL Remove="graphql\queries\GetMediaItemsByGroup.graphql" />
         <GraphQL Remove="graphql\queries\GetBoxsetDiscs.graphql" />
         <GraphQL Remove="graphql\queries\GetBoxsets.graphql" />

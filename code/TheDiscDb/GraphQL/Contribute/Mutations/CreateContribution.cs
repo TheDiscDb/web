@@ -39,11 +39,11 @@ public partial class ContributionMutations
         // Now that we have a contributionId, we can get the external data which will save it in blob storage
         if (string.IsNullOrEmpty(contribution.Title) || string.IsNullOrEmpty(contribution.Year))
         {
-            var externalData = await this.userContributionService.GetExternalData(contribution.EncodedId, cancellationToken);
-            if (externalData.IsSuccess)
+            var externalData = await this.GetExternalDataForContribution(contribution.EncodedId, database, cancellationToken);
+            if (externalData != null)
             {
-                contribution.Title = externalData.Value.Title;
-                contribution.Year = externalData.Value.Year.ToString();
+                contribution.Title = externalData.Title;
+                contribution.Year = externalData.Year.ToString();
                 await database.SaveChangesAsync(cancellationToken);
             }
         }

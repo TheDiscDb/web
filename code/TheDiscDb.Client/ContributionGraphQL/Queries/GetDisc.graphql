@@ -1,0 +1,23 @@
+query GetDisc($contrubtionId: EncodedIdFilter!, $discId: EncodedIdFilter!) {
+  contributions(
+    where: {
+      encodedId:  {
+         eq: $contrubtionId
+      }
+    }
+  ) {
+    nodes {
+      encodedId
+      title
+      discs (where: { encodedId: { eq: $discId}}) {
+        encodedId
+        contentHash
+        format
+        name
+        slug
+        existingDiscPath
+        logsUploaded
+      }
+    }
+  }
+}

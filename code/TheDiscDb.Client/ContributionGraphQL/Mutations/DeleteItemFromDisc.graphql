@@ -4,13 +4,8 @@ mutation DeleteItemFromDisc($input: DeleteItemFromDiscInput!) {
       __typename
     }
     errors {
-      ... on ContributionNotFoundError {
-        message
-      }
-      ... on DiscNotFoundError {
-        message
-      }
-      ... on DiscItemNotFoundError {
+      code: __typename
+      ... on Error {
         message
       }
     }

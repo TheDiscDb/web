@@ -1,5 +1,5 @@
-mutation CreateDisc($input: CreateDiscInput!) {
-  createDisc(input: $input)
+mutation UpdateDisc($input: UpdateDiscInput!) {
+  updateDisc(input: $input)
   {
     userContributionDisc {
       encodedId

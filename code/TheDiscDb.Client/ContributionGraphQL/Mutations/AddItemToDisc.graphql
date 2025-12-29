@@ -4,10 +4,8 @@ mutation AddItemToDisc($input: AddItemToDiscInput!) {
       encodedId
     }
     errors {
-      ... on ContributionNotFoundError {
-        message
-      }
-      ... on DiscNotFoundError {
+      code: __typename
+      ... on Error {
         message
       }
     }

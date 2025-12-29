@@ -296,6 +296,7 @@ public class UserContribution : IHasId, IContributionDisplay
 
     public DateTimeOffset Created { get; set; }
     public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
+
     public ICollection<UserContributionDisc> Discs { get; set; } = new HashSet<UserContributionDisc>();
     public ICollection<UserContributionDiscHashItem> HashItems { get; set; } = new HashSet<UserContributionDiscHashItem>();
 
@@ -333,6 +334,7 @@ public class UserContributionDisc : IHasId
     public string Slug { get; set; } = string.Empty;
     public bool LogsUploaded { get; set; } = false;
     public string ExistingDiscPath { get; set; } = default!;
+
     public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();
 
     public static string GenerateDiscPath(string mediaType, string externalId, string releaseSlug, string discSlug) => $"{mediaType}/{externalId}/{releaseSlug}/{discSlug}";
@@ -373,6 +375,7 @@ public class UserContributionDiscItem : IHasId
     public string Description { get; set; } = string.Empty;
     public string Season { get; set; } = string.Empty;
     public string Episode { get; set; } = string.Empty;
+
     public ICollection<UserContributionChapter> Chapters { get; set; } = new HashSet<UserContributionChapter>();
     public ICollection<UserContributionAudioTrack> AudioTracks { get; set; } = new HashSet<UserContributionAudioTrack>();
 }

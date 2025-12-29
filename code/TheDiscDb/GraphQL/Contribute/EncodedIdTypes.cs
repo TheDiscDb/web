@@ -31,14 +31,46 @@ public abstract class EncodedIdTypeExtension<T> : ObjectTypeExtension<T>
 
 public class ContributionTypeExtension : EncodedIdTypeExtension<UserContribution>
 {
+    protected override void Configure(IObjectTypeDescriptor<UserContribution> descriptor)
+    {
+        base.Configure(descriptor);
+
+        descriptor.Field(t => t.Discs)
+                  .UseFiltering()
+                  .UseSorting();
+
+        descriptor.Field(t => t.HashItems)
+                  .UseFiltering()
+                  .UseSorting();
+    }
 }
 
 public class ContributionDiscTypeExtension : EncodedIdTypeExtension<UserContributionDisc>
 {
+    protected override void Configure(IObjectTypeDescriptor<UserContributionDisc> descriptor)
+    {
+        base.Configure(descriptor);
+
+        descriptor.Field(t => t.Items)
+                  .UseFiltering()
+                  .UseSorting();
+    }
 }
 
 public class ContributionDiscItemTypeExtension : EncodedIdTypeExtension<UserContributionDiscItem>
 {
+    protected override void Configure(IObjectTypeDescriptor<UserContributionDiscItem> descriptor)
+    {
+        base.Configure(descriptor);
+
+        descriptor.Field(t => t.Chapters)
+                  .UseFiltering()
+                  .UseSorting();
+
+        descriptor.Field(t => t.AudioTracks)
+                  .UseFiltering()
+                  .UseSorting();
+    }
 }
 
 public class UserContributionAudioTrackTypeExtension : EncodedIdTypeExtension<UserContributionAudioTrack>

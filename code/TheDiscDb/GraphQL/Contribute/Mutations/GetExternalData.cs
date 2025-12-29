@@ -49,7 +49,7 @@ public partial class ContributionMutations
     [Error(typeof(ContributionNotFoundException))]
     [Error(typeof(ExternalDataSerializationException))]
     [Error(typeof(ExternalDataNotFoundException))]
-    public async Task<ExternalMetadata> GetExternalDataForContribution(string contributionId, SqlServerDataContext database, TheMovieDbClient tmdb, CancellationToken cancellationToken = default)
+    public async Task<ExternalMetadata> GetExternalDataForContribution(string contributionId, SqlServerDataContext database, CancellationToken cancellationToken = default)
     {
         int id = this.idEncoder.Decode(contributionId);
         var contribution = await database.UserContributions

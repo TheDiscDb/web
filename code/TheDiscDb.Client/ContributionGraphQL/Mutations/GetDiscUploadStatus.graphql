@@ -5,13 +5,8 @@ mutation GetDiscUploadStatus($input: DiscUploadStatusInput!) {
       logsUploaded
     }
     errors {
-      ... on DiscNotFoundError {
-        message
-      }
-      ... on FieldRequiredError {
-        message
-      }
-      ... on InvalidIdError {
+      code: __typename
+      ... on Error {
         message
       }
     }

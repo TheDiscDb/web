@@ -1,4 +1,5 @@
-﻿using KristofferStrube.Blazor.FileAPI;
+﻿using System.ComponentModel.DataAnnotations;
+using KristofferStrube.Blazor.FileAPI;
 using KristofferStrube.Blazor.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +13,19 @@ using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client.Pages.Contribute;
+
+public class SaveDiscRequest
+{
+    [Required]
+    public string ContentHash { get; set; } = string.Empty;
+    [Required]
+    public string Format { get; set; } = string.Empty;
+    [Required]
+    public string Name { get; set; } = string.Empty;
+    [Required]
+    public string Slug { get; set; } = string.Empty;
+    public string? ExistingDiscPath { get; set; }
+}
 
 [Authorize]
 public partial class AddDisc : ComponentBase
@@ -203,7 +217,8 @@ public partial class AddDisc : ComponentBase
             ContributionId = this.ContributionId!,
             Name = this.request.Name!,
             Slug = this.request.Slug!,
-            Format = this.request.Format!
+            Format = this.request.Format!,
+            ContentHash = this.request.ContentHash
         };
         var response = await this.ContributionClient.CreateDisc.ExecuteAsync(input);
         if (response.IsSuccessResult())

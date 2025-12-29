@@ -64,6 +64,25 @@ public class AudioTrackItem
     }
 }
 
+public class AddItemRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string Source { get; set; } = string.Empty;
+    public string Duration { get; set; } = string.Empty;
+    public string Size { get; set; } = string.Empty;
+    public int ChapterCount { get; set; } = 0;
+    public int SegmentCount { get; set; } = 0;
+    public string SegmentMap { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string? Description { get; set; } = string.Empty;
+    public string? Season { get; set; } = string.Empty;
+    public string? Episode { get; set; } = string.Empty;
+}
+
+public class EditItemRequest : AddItemRequest
+{
+}
+
 public class ItemIdentification
 {
     public required IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles Title { get; set; }
