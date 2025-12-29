@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
-using TheDiscDb.Services;
-using TheDiscDb.Web.Data;
+using TheDiscDb.Client.Contributions;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -28,7 +28,7 @@ public partial class DiscUpload : ComponentBase
     private IClipboardService Clipboard { get; set; } = null!;
 
     [Inject]
-    private IUserContributionService Client { get; set; } = null!;
+    public IContributionClient ContributionClient { get; set; } = default!;
 
     [Inject]
     private HttpClient HttpClient { get; set; } = null!;
@@ -38,7 +38,7 @@ public partial class DiscUpload : ComponentBase
     //private readonly string powershellLocalCommandTempalte = "Invoke-WebRequest -Uri \"{0}\" -Method POST -ContentType \"text/plain\" -Body ((Get-Content -Path '{1}') | Out-String)";
 
     State state = new("Copy", "e-icons e-copy");
-    UserContribution? contribution;
+    IDiscUploadPageData_MyContributions_Nodes? contribution;
 
     public string? PowershellCommand => string.Format(powershellCommandTemplate, GetUri(), GetMakeMkvPath(), this.DriveIndex);
     public string? BashCommand => string.Format(bashCommandTemplate, GetUri(), this.DriveIndex);
@@ -62,10 +62,10 @@ public partial class DiscUpload : ComponentBase
         //this.pollUploadedTimer = new Timer(PollTimerTick!, null, 0, 2000);
         this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
         
-        var response = await this.Client.GetContribution(this.ContributionId ?? string.Empty);
-        if (response != null && response.IsSuccess)
+        var response = await this.ContributionClient.DiscUploadPageData.ExecuteAsync(this.ContributionId ?? string.Empty);
+        if (response != null && response.IsSuccessResult())
         {
-            this.contribution = response.Value;
+            this.contribution = response.Data!.MyContributions!.Nodes!.FirstOrDefault();
         }
     }
 
@@ -80,9 +80,14 @@ public partial class DiscUpload : ComponentBase
 
     private void PollTimerTick(object state)
     {
-        this.Client.CheckDiskUploadStatus(this.DiscId ?? string.Empty).ContinueWith(t =>
+        var input = new DiscUploadStatusInput
         {
-            if (t != null && t.Result.Value.LogsUploaded)
+            DiscId = this.DiscId ?? string.Empty
+        };
+
+        this.ContributionClient.GetDiscUploadStatus.ExecuteAsync(input).ContinueWith(t =>
+        {
+            if (t != null && !t.IsFaulted && t.Result!.Data!.DiscUploadStatus!.DiscUploadStatus!.LogsUploaded)
             {
                 this.pollUploadedTimer?.Dispose();
                 JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");

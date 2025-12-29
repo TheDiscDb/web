@@ -4,7 +4,9 @@ using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using StrawberryShake;
 using Syncfusion.Blazor.Popups;
+using TheDiscDb.Client.Contributions;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
@@ -24,7 +26,7 @@ public partial class AddDisc : ComponentBase
     public IJSRuntime Js { get; set; } = default!;
 
     [Inject]
-    public IUserContributionService Client { get; set; } = default!;
+    public IContributionClient ContributionClient { get; set; } = default!;
 
     [Inject]
     public NavigationManager Navigation { get; set; } = default!;
@@ -39,7 +41,7 @@ public partial class AddDisc : ComponentBase
     IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
     string hash = string.Empty;
     List<FileHashInfo>? hashItems = null;
-    UserContribution? contribution = null;
+    IContributionDiscs_MyContributions_Nodes? contribution = null;
 
     private readonly SaveDiscRequest request = new SaveDiscRequest
     {
@@ -50,10 +52,10 @@ public partial class AddDisc : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        var response = await this.Client.GetContribution(ContributionId!);
-        if (response.IsSuccess)
+        var response = await this.ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!);
+        if (response.IsSuccessResult())
         {
-            this.contribution = response.Value;
+            this.contribution = response.Data!.MyContributions!.Nodes!.FirstOrDefault();
         }
     }
 
@@ -103,17 +105,23 @@ public partial class AddDisc : ComponentBase
 
         if (hashItems != null)
         {
-            var request = new HashDiscRequest
-            {
-                Files = hashItems
-            };
-
             // TODO: Get a cancellation token
-            var response = await this.Client.HashDisc(this.ContributionId!, request);
-
-            if (response != null && response.IsSuccess && response.Value != null)
+            var hashInput = new HashDiscInput
             {
-                hash = response.Value.DiscHash;
+                ContributionId = this.ContributionId!,
+                Files = hashItems.Select(i => new FileHashInfoInput
+                {
+                    Index = i.Index,
+                    Name = i.Name,
+                    Size = i.Size,
+                    CreationTime = i.CreationTime
+                }).ToList()
+            };
+            var response = await this.ContributionClient.HashDisc.ExecuteAsync(hashInput);
+
+            if (response != null && response.IsSuccessResult() && response.Data != null)
+            {
+                hash = response.Data!.HashDisc!.DiscHash!.Hash;
                 this.request.ContentHash = hash;
 
                 // TODO: Check for this disc in the current user's submissions
@@ -135,10 +143,18 @@ public partial class AddDisc : ComponentBase
 
                                 var actualDisc = source.Releases.First().Discs.First();
 
-                                this.request.ExistingDiscPath = UserContributionDisc.GenerateDiscPath(this.contribution!.MediaType, source.Externalids.Tmdb, this.contribution.ReleaseSlug, actualDisc!.Slug!);
+                                this.request.ExistingDiscPath = UserContributionDisc.GenerateDiscPath(this.contribution!.MediaType!, source.Externalids.Tmdb!, this.contribution.ReleaseSlug!, actualDisc!.Slug!);
 
-                                var createDiscResponse = await this.Client.CreateDisc(this.ContributionId!, this.request);
-                                if (createDiscResponse.IsSuccess)
+                                var createInput = new CreateDiscInput
+                                {
+                                    ContributionId = this.ContributionId!,
+                                    Name = this.request.Name!,
+                                    Slug = this.request.Slug!,
+                                    Format = this.request.Format!,
+                                    ExistingDiscPath = this.request.ExistingDiscPath
+                                };
+                                var createDiscResponse = await this.ContributionClient.CreateDisc.ExecuteAsync(createInput);
+                                if (createDiscResponse.IsSuccessResult())
                                 {
                                     this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
                                 }
@@ -182,10 +198,17 @@ public partial class AddDisc : ComponentBase
 
     async Task HandleValidSubmit()
     {
-        var response = await this.Client.CreateDisc(this.ContributionId!, this.request);
-        if (response.IsSuccess)
+        var input = new CreateDiscInput
         {
-            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{response.Value.DiscId}");
+            ContributionId = this.ContributionId!,
+            Name = this.request.Name!,
+            Slug = this.request.Slug!,
+            Format = this.request.Format!
+        };
+        var response = await this.ContributionClient.CreateDisc.ExecuteAsync(input);
+        if (response.IsSuccessResult())
+        {
+            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{response.Data!.CreateDisc.UserContributionDisc!.EncodedId}");
         }
     }
 

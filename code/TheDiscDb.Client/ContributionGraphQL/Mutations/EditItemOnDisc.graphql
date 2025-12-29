@@ -1,0 +1,18 @@
+mutation EditItemOnDisc($input: EditItemOnDiscInput!) {
+  editItemOnDisc(input: $input) {
+    userContributionDiscItem {
+      encodedId
+    }
+    errors {
+      ... on ContributionNotFoundError {
+        message
+      }
+      ... on DiscNotFoundError {
+        message
+      }
+      ... on DiscItemNotFoundError {
+        message
+      }
+    }
+  }
+}

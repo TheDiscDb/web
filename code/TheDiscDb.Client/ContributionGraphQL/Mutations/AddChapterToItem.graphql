@@ -1,0 +1,18 @@
+mutation AddChapterToItem($input: AddChapterToItemInput!){
+  addChapterToItem(input: $input) {
+    userContributionChapter {
+      encodedId
+    }
+    errors {
+      ... on ContributionNotFoundError {
+        message
+      }
+      ... on DiscNotFoundError {
+        message
+      }
+      ... on DiscItemNotFoundError {
+        message
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+mutation GetDiscUploadStatus($input: DiscUploadStatusInput!) {
+  discUploadStatus(input: $input)
+  {
+    discUploadStatus {
+      logsUploaded
+    }
+    errors {
+      ... on DiscNotFoundError {
+        message
+      }
+      ... on FieldRequiredError {
+        message
+      }
+      ... on InvalidIdError {
+        message
+      }
+    }
+  }
+}

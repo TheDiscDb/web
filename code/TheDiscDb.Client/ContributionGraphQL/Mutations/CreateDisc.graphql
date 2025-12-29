@@ -1,0 +1,13 @@
+mutation CreateDisc($input: CreateDiscInput!) {
+  createDisc(input: $input)
+  {
+    userContributionDisc {
+      encodedId
+    }
+    errors {
+      ... on ContributionNotFoundError {
+        message
+      }
+    }
+  }
+}

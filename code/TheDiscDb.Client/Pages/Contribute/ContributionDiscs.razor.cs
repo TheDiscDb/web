@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using TheDiscDb.Services;
-using TheDiscDb.Web.Data;
+using StrawberryShake;
+using TheDiscDb.Client.Contributions;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -12,28 +12,32 @@ public partial class ContributionDiscs : ComponentBase
     public string? ContributionId { get; set; }
 
     [Inject]
-    IUserContributionService? ContributionService { get; set; }
+    public IContributionClient ContributionClient { get; set; } = default!;
 
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
 
-    private UserContribution? Contribution { get; set; }
+    private IContributionDiscs_MyContributions_Nodes? Contribution { get; set; }
 
-    private IQueryable<UserContributionDisc>? Discs => Contribution?.Discs.AsQueryable();
+    private IQueryable<IContributionDiscs_MyContributions_Nodes_Discs?>? Discs { get; set; }
 
     public bool IsCompleteButtonDisabled => Discs == null || !Discs.Any();
 
     protected override async Task OnInitializedAsync()
     {
-        if (this.ContributionService == null)
+        if (this.ContributionClient == null)
         {
             throw new Exception("Contribution Service was not injected");
         }
 
-        var result = await this.ContributionService.GetContribution(ContributionId!);
-        if (result.IsSuccess)
+        var result = await this.ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!);
+        if (result != null && result.IsSuccessResult())
         {
-            this.Contribution = result.Value;
+            this.Contribution = result.Data!.MyContributions!.Nodes!.FirstOrDefault();
+            if (this.Contribution != null)
+            {
+                this.Discs = this.Contribution.Discs!.AsQueryable();
+            }
         }
     }
 

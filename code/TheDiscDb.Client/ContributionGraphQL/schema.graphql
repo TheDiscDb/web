@@ -56,6 +56,15 @@ input FileHashInfoInput {
   size: Long!
 }
 
+type DiscInfo {
+  name: String
+  type: String
+  languageCode: String
+  language: String
+  titles: [Title!]!
+  hashInfo: [HashInfoLogLine!]!
+}
+
 input ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput {
   all: UserContributionDiscItemFilterInput
   none: UserContributionDiscItemFilterInput
@@ -71,6 +80,14 @@ type ContributionsConnection {
   edges: [ContributionsEdge!]
   "A flattened list of the nodes."
   nodes: [UserContribution!]
+}
+
+input AddAudioTrackToItemInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+  trackIndex: Int!
+  trackName: String!
 }
 
 input DateTimeOperationFilterInput {
@@ -90,14 +107,14 @@ input DateTimeOperationFilterInput {
 
 type UserContributionDisc {
   id: Int!
-  userContribution: UserContribution
-  contentHash: String
-  format: String
-  name: String
-  slug: String
+  userContribution: UserContribution!
+  contentHash: String!
+  format: String!
+  name: String!
+  slug: String!
   logsUploaded: Boolean!
-  existingDiscPath: String
-  items: [UserContributionDiscItem]
+  existingDiscPath: String!
+  items: [UserContributionDiscItem!]!
   encodedId: EncodedId!
 }
 
@@ -107,32 +124,38 @@ input EpisodeNamesInput {
 
 type UserContribution {
   id: Int!
-  userId: String
+  userId: String!
   created: DateTime!
   status: UserContributionStatus!
-  discs: [UserContributionDisc]
-  hashItems: [UserContributionDiscHashItem]
-  mediaType: String
-  externalId: String
-  externalProvider: String
+  discs: [UserContributionDisc!]!
+  hashItems: [UserContributionDiscHashItem!]!
+  mediaType: String!
+  externalId: String!
+  externalProvider: String!
   releaseDate: DateTime!
-  asin: String
-  upc: String
-  frontImageUrl: String
-  backImageUrl: String
-  releaseTitle: String
+  asin: String!
+  upc: String!
+  frontImageUrl: String!
+  backImageUrl: String!
+  releaseTitle: String!
   releaseSlug: String
-  locale: String
-  regionCode: String
+  locale: String!
+  regionCode: String!
   title: String
   year: String
-  titleSlug: String
+  titleSlug: String!
   encodedId: EncodedId!
 }
+
+union AddChapterToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError
+
+union DeleteItemFromDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError
 
 input CreateContributionInput {
   input: ContributionMutationRequestInput!
 }
+
+union AddAudioTrackToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError
 
 scalar EncodedId
 
@@ -156,6 +179,23 @@ type ContributionsEdge {
   cursor: String!
   "The item at the end of the edge."
   node: UserContribution!
+}
+
+input DeleteItemFromDiscInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+}
+
+type Segment {
+  index: Int!
+  type: String
+  name: String
+  audioType: String
+  languageCode: String
+  language: String
+  resolution: String
+  aspectRatio: String
 }
 
 interface Error {
@@ -183,6 +223,9 @@ input ContributionMutationRequestInput {
 
 union HashDiscError = ContributionNotFoundError
 
+"The `TimeSpan` scalar represents an ISO-8601 compliant duration type."
+scalar TimeSpan
+
 type ExternalDataPayload {
   externalMetadata: ExternalMetadata
   errors: [ExternalDataError!]
@@ -206,6 +249,11 @@ enum SortEnumType {
   DESC
 }
 
+type CreateDiscPayload {
+  userContributionDisc: UserContributionDisc
+  errors: [CreateDiscError!]
+}
+
 input ExternalDataForContributionInput {
   contributionId: String!
 }
@@ -226,15 +274,38 @@ input IntOperationFilterInput {
 }
 
 type ContributionMutations {
+  addAudioTrackToItem(input: AddAudioTrackToItemInput!): AddAudioTrackToItemPayload!
+  addChapterToItem(input: AddChapterToItemInput!): AddChapterToItemPayload!
+  addItemToDisc(input: AddItemToDiscInput!): AddItemToDiscPayload!
   createContribution(input: CreateContributionInput!): CreateContributionPayload!
+  createDisc(input: CreateDiscInput!): CreateDiscPayload!
+  deleteItemFromDisc(input: DeleteItemFromDiscInput!): DeleteItemFromDiscPayload!
+  editItemOnDisc(input: EditItemOnDiscInput!): EditItemOnDiscPayload!
+  discLogs(input: DiscLogsInput!): DiscLogsPayload!
+  discUploadStatus(input: DiscUploadStatusInput!): DiscUploadStatusPayload!
   episodeNames(input: EpisodeNamesInput!): EpisodeNamesPayload!
   externalData(input: ExternalDataInput!): ExternalDataPayload!
   externalDataForContribution(input: ExternalDataForContributionInput!): ExternalDataForContributionPayload!
   hashDisc(input: HashDiscInput!): HashDiscPayload!
 }
 
+type AddItemToDiscPayload {
+  userContributionDiscItem: UserContributionDiscItem
+  errors: [AddItemToDiscError!]
+}
+
 type ExternalDataNotFoundError implements Error {
   message: String!
+}
+
+type HashInfoLogLine {
+  matches(prefix: String!): Boolean!
+  index: Int!
+  name: String
+  creationTime: DateTime!
+  size: Long!
+  originalLine: String
+  prefix: String
 }
 
 input UserContributionAudioTrackFilterInput {
@@ -254,6 +325,18 @@ type MyContributionsConnection {
   edges: [MyContributionsEdge!]
   "A flattened list of the nodes."
   nodes: [UserContribution!]
+}
+
+input DiscLogsInput {
+  contributionId: String!
+  discId: String!
+}
+
+union AddItemToDiscError = ContributionNotFoundError | DiscNotFoundError
+
+type DiscUploadStatusPayload {
+  discUploadStatus: DiscUploadStatus
+  errors: [DiscUploadStatusError!]
 }
 
 type ContributionQuery {
@@ -282,10 +365,10 @@ input LongOperationFilterInput {
 
 type UserContributionDiscHashItem {
   id: Int!
-  userContribution: UserContribution
-  discHash: String
+  userContribution: UserContribution!
+  discHash: String!
   index: Int!
-  name: String
+  name: String!
   creationTime: DateTime!
   size: Long!
   encodedId: EncodedId!
@@ -305,30 +388,69 @@ input UserContributionDiscFilterInput {
   items: ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput
 }
 
+input EditItemOnDiscInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+  name: String!
+  source: String!
+  duration: String!
+  size: String!
+  chapterCount: Int!
+  segmentCount: Int!
+  segmentMap: String!
+  type: String!
+  description: String
+  season: String
+  episode: String
+}
+
 union EpisodeNamesError = ContributionNotFoundError | ExternalDataNotFoundError
+
+input DiscUploadStatusInput {
+  discId: String!
+}
+
+type InvalidIdError implements Error {
+  message: String!
+}
+
+type AddAudioTrackToItemPayload {
+  userContributionAudioTrack: UserContributionAudioTrack
+  errors: [AddAudioTrackToItemError!]
+}
 
 input BooleanOperationFilterInput {
   eq: Boolean
   neq: Boolean
 }
 
+type EditItemOnDiscPayload {
+  userContributionDiscItem: UserContributionDiscItem
+  errors: [EditItemOnDiscError!]
+}
+
 type UserContributionDiscItem {
   id: Int!
-  disc: UserContributionDisc
-  name: String
-  source: String
-  duration: String
-  size: String
+  disc: UserContributionDisc!
+  name: String!
+  source: String!
+  duration: String!
+  size: String!
   chapterCount: Int!
   segmentCount: Int!
-  segmentMap: String
-  type: String
-  description: String
-  season: String
-  episode: String
-  chapters: [UserContributionChapter]
-  audioTracks: [UserContributionAudioTrack]
+  segmentMap: String!
+  type: String!
+  description: String!
+  season: String!
+  episode: String!
+  chapters: [UserContributionChapter!]!
+  audioTracks: [UserContributionAudioTrack!]!
   encodedId: EncodedId!
+}
+
+type LogsNotFoundError implements Error {
+  message: String!
 }
 
 "Information about pagination in a connection."
@@ -343,12 +465,31 @@ type PageInfo {
   endCursor: String
 }
 
+type FieldRequiredError implements Error {
+  message: String!
+}
+
 "An edge in a connection."
 type MyContributionsEdge {
   "A cursor for use in pagination."
   cursor: String!
   "The item at the end of the edge."
   node: UserContribution!
+}
+
+type CouldNotParseLogsError implements Error {
+  message: String!
+}
+
+type DiscLogs {
+  info: DiscInfo
+  disc: UserContributionDisc
+  contribution: UserContribution
+}
+
+type DeleteItemFromDiscPayload {
+  userContributionDiscItem: UserContributionDiscItem
+  errors: [DeleteItemFromDiscError!]
 }
 
 type HashDiscPayload {
@@ -365,6 +506,22 @@ input ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput {
 
 union ExternalDataError = ContributionNotFoundError | ExternalDataNotFoundError
 
+input AddItemToDiscInput {
+  contributionId: String!
+  discId: String!
+  name: String!
+  source: String!
+  duration: String!
+  size: String!
+  chapterCount: Int!
+  segmentCount: Int!
+  segmentMap: String!
+  type: String!
+  description: String
+  season: String
+  episode: String
+}
+
 input ListEncodedIdFilterTypeOfUserContributionDiscHashItemFilterInput {
   all: UserContributionDiscHashItemFilterInput
   none: UserContributionDiscHashItemFilterInput
@@ -380,8 +537,8 @@ input HashDiscInput {
 type UserContributionChapter {
   id: Int!
   index: Int!
-  title: String
-  item: UserContributionDiscItem
+  title: String!
+  item: UserContributionDiscItem!
   encodedId: EncodedId!
 }
 
@@ -389,6 +546,10 @@ type EpisodeNamesPayload {
   seriesEpisodeNames: SeriesEpisodeNames
   errors: [EpisodeNamesError!]
 }
+
+union EditItemOnDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError
+
+union DiscLogsError = LogsNotFoundError | ContributionNotFoundError | DiscNotFoundError | CouldNotParseLogsError
 
 type SeriesEpisodeNameEntry {
   seasonNumber: String!
@@ -399,6 +560,19 @@ type SeriesEpisodeNameEntry {
 "The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
 scalar Long
 
+input CreateDiscInput {
+  contributionId: String!
+  contentHash: String!
+  format: String!
+  name: String!
+  slug: String!
+  existingDiscPath: String
+}
+
+type DiscUploadStatus {
+  logsUploaded: Boolean!
+}
+
 input ListEncodedIdFilterTypeOfUserContributionChapterFilterInput {
   all: UserContributionChapterFilterInput
   none: UserContributionChapterFilterInput
@@ -408,10 +582,17 @@ input ListEncodedIdFilterTypeOfUserContributionChapterFilterInput {
 
 scalar UUID
 
+type AddChapterToItemPayload {
+  userContributionChapter: UserContributionChapter
+  errors: [AddChapterToItemError!]
+}
+
 type ExternalDataForContributionPayload {
   externalMetadata: ExternalMetadata
   errors: [ExternalDataForContributionError!]
 }
+
+union CreateDiscError = ContributionNotFoundError
 
 input UserContributionDiscHashItemFilterInput {
   and: [UserContributionDiscHashItemFilterInput!]
@@ -434,7 +615,21 @@ input UserContributionChapterFilterInput {
   item: UserContributionDiscItemFilterInput
 }
 
+union DiscUploadStatusError = DiscNotFoundError | FieldRequiredError | InvalidIdError
+
+input AddChapterToItemInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+  chapterIndex: Int!
+  chapterName: String!
+}
+
 type ExternalDataSerializationError implements Error {
+  message: String!
+}
+
+type DiscNotFoundError implements Error {
   message: String!
 }
 
@@ -453,6 +648,20 @@ input StringOperationFilterInput {
   nendsWith: String
 }
 
+type Title {
+  index: Int!
+  chapterCount: Int!
+  length: String
+  displaySize: String
+  size: Long!
+  playlist: String
+  segmentMap: String
+  comment: String
+  javaComment: String
+  segments: [Segment!]!
+  lengthAsTimeSpan: TimeSpan!
+}
+
 type ContributionNotFoundError implements Error {
   message: String!
 }
@@ -469,6 +678,10 @@ scalar DateTime
 
 scalar EncodedIdFilter
 
+type DiscItemNotFoundError implements Error {
+  message: String!
+}
+
 input EncodedIdOperationFilterInput {
   and: [EncodedIdOperationFilterInput!]
   or: [EncodedIdOperationFilterInput!]
@@ -479,9 +692,14 @@ input EncodedIdOperationFilterInput {
 type UserContributionAudioTrack {
   id: Int!
   index: Int!
-  title: String
-  item: UserContributionDiscItem
+  title: String!
+  item: UserContributionDiscItem!
   encodedId: EncodedId!
+}
+
+type DiscLogsPayload {
+  discLogs: DiscLogs
+  errors: [DiscLogsError!]
 }
 
 type DiscHash {

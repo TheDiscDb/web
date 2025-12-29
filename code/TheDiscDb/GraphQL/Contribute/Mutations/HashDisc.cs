@@ -36,7 +36,7 @@ public partial class ContributionMutations
                 DiscHash = hash,
                 CreationTime = item.CreationTime,
                 Index = item.Index,
-                Name = item.Name,
+                Name = item.Name ?? "",
                 Size = item.Size
             });
         }

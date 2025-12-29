@@ -1,0 +1,18 @@
+mutation AddAudioTrackToItem($input: AddAudioTrackToItemInput!){
+  addAudioTrackToItem(input: $input) {
+    userContributionAudioTrack {
+      encodedId
+    }
+    errors {
+      ... on ContributionNotFoundError {
+        message
+      }
+      ... on DiscNotFoundError {
+        message
+      }
+      ... on DiscItemNotFoundError {
+        message
+      }
+    }
+  }
+}

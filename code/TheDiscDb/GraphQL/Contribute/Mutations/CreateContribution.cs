@@ -13,7 +13,7 @@ public partial class ContributionMutations
 
         var contribution = new UserContribution
         {
-            UserId = userId,
+            UserId = userId ?? "",
             Created = DateTimeOffset.UtcNow,
             Asin = input.Asin,
             ExternalId = input.ExternalId,
@@ -21,8 +21,8 @@ public partial class ContributionMutations
             MediaType = input.MediaType,
             ReleaseDate = input.ReleaseDate,
             Status = UserContributionStatus.Pending,
-            FrontImageUrl = input.FrontImageUrl,
-            BackImageUrl = input.BackImageUrl,
+            FrontImageUrl = input.FrontImageUrl ?? "",
+            BackImageUrl = input.BackImageUrl ?? "",
             Upc = input.Upc,
             ReleaseTitle = input.ReleaseTitle,
             ReleaseSlug = input.ReleaseSlug,

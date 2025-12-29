@@ -268,15 +268,30 @@ public interface IHasId
     int Id { get; set; }
 }
 
-public class UserContribution : IHasId
+public interface IContributionDisplay
+{
+    string EncodedId { get; }
+    string? Title { get; }
+    string? Year { get; }
+    string? ReleaseTitle { get; }
+}
+
+public interface IContributiionDiscDisplay
+{
+    string EncodedId { get; }
+    string Name { get; }
+    string Format { get; }
+}
+
+public class UserContribution : IHasId, IContributionDisplay
 {
     [JsonIgnore]
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
-    public string EncodedId { get; set; }
+    public string EncodedId { get; set; } = default!;
     [JsonIgnore]
-    public string UserId { get; set; }
+    public string UserId { get; set; } = default!;
     //public TheDiscDbUser User { get; set; } = null!;
 
     public DateTimeOffset Created { get; set; }
@@ -293,13 +308,13 @@ public class UserContribution : IHasId
     public string FrontImageUrl { get; set; } = string.Empty;
     public string BackImageUrl { get; set; } = string.Empty;
     public string ReleaseTitle { get; set; } = string.Empty;
-    public string ReleaseSlug { get; set; } = string.Empty;
+    public string? ReleaseSlug { get; set; } = string.Empty;
     public string Locale { get; set; } = string.Empty;
     public string RegionCode { get; set; } = string.Empty;
 
     // These are mostly used for display and lookup but are redundant data
-    public string Title { get; set; } = string.Empty;
-    public string Year { get; set; } = string.Empty;
+    public string? Title { get; set; } = string.Empty;
+    public string? Year { get; set; } = string.Empty;
     public string TitleSlug { get; set; } = string.Empty;
 }
 
@@ -309,15 +324,15 @@ public class UserContributionDisc : IHasId
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
-    public string EncodedId { get; set; }
+    public string EncodedId { get; set; } = default!;
     [JsonIgnore]
-    public UserContribution UserContribution { get; set; } = null;
+    public UserContribution UserContribution { get; set; } = default!;
     public string ContentHash { get; set; } = string.Empty;
     public string Format { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public bool LogsUploaded { get; set; } = false;
-    public string ExistingDiscPath { get; set; } = null;
+    public string ExistingDiscPath { get; set; } = default!;
     public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();
 
     public static string GenerateDiscPath(string mediaType, string externalId, string releaseSlug, string discSlug) => $"{mediaType}/{externalId}/{releaseSlug}/{discSlug}";
@@ -344,9 +359,9 @@ public class UserContributionDiscItem : IHasId
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
-    public string EncodedId { get; set; }
+    public string EncodedId { get; set; } = default!;
     [JsonIgnore]
-    public UserContributionDisc Disc { get; set; }
+    public UserContributionDisc Disc { get; set; } = default!;
     public string Name { get; set; } = string.Empty;
     public string Source { get; set; } = string.Empty;
     public string Duration { get; set; } = string.Empty;
@@ -368,11 +383,11 @@ public class UserContributionChapter : IHasId
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
-    public string EncodedId { get; set; }
+    public string EncodedId { get; set; } = default!;
     public int Index { get; set; }
-    public string Title { get; set; }
+    public string Title { get; set; } = default!;
     [JsonIgnore]
-    public UserContributionDiscItem Item { get; set; }
+    public UserContributionDiscItem Item { get; set; } = default!;
 }
 
 public class UserContributionAudioTrack : IHasId
@@ -381,11 +396,11 @@ public class UserContributionAudioTrack : IHasId
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
-    public string EncodedId { get; set; }
+    public string EncodedId { get; set; } = default!;
     public int Index { get; set; }
-    public string Title { get; set; }
+    public string Title { get; set; } = default!;
     [JsonIgnore]
-    public UserContributionDiscItem Item { get; set; }
+    public UserContributionDiscItem Item { get; set; } = default!;
 }
 
 public class UserContributionDiscHashItem : IHasId
@@ -394,12 +409,12 @@ public class UserContributionDiscHashItem : IHasId
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
-    public string EncodedId { get; set; }
+    public string EncodedId { get; set; } = default!;
     [JsonIgnore]
-    public UserContribution UserContribution { get; set; }
-    public string DiscHash { get; set; }
+    public UserContribution UserContribution { get; set; } = default!;
+    public string DiscHash { get; set; } = default!;
     public int Index { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = default!;
     public DateTime CreationTime { get; set; }
     public long Size { get; set; }
 }

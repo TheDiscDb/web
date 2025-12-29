@@ -93,7 +93,7 @@ public class SitemapGenerator
     {
         var boxsets = dbContext.BoxSets
             .Include(p => p.Release)
-            .ThenInclude(r => r.Discs)
+            .ThenInclude(r => r!.Discs)
             .ThenInclude(d => d.Titles)
             .ThenInclude(t => t.Item)
             .AsAsyncEnumerable();
@@ -102,6 +102,11 @@ public class SitemapGenerator
         {
             string relativeUrl = $"/boxset/{item.Slug}";
             results.Add(CreateSitemapNode(siteBase, relativeUrl, priority: 1));
+
+            if (item.Release == null)
+            {
+                continue;
+            }
 
             foreach (var disc in item.Release.Discs)
             {
@@ -122,6 +127,11 @@ public class SitemapGenerator
 
     private static string GetTitleUrl(Title title)
     {
+        if (string.IsNullOrEmpty(title.SourceFile))
+        {
+            return "";
+        }
+
         return title.SourceFile.Replace(".", "/").Replace("(", "[").Replace(")", "]");
     }
 

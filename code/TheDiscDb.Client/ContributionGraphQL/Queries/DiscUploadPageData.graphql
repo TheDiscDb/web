@@ -1,4 +1,4 @@
-query ContributionDiscs($contribtionId: EncodedIdFilter) {
+query DiscUploadPageData($contribtionId: EncodedIdFilter) {
   myContributions(where:  {
      encodedId:  {
         eq: $contribtionId

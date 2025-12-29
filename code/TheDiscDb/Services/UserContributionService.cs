@@ -282,7 +282,7 @@ public class UserContributionService : IUserContributionService
                     DiscHash = hash,
                     CreationTime = item.CreationTime,
                     Index = item.Index,
-                    Name = item.Name,
+                    Name = item.Name ?? "",
                     Size = item.Size
                 });
             }
@@ -739,7 +739,7 @@ public class UserContributionService : IUserContributionService
             Format = request.Format,
             Name = request.Name,
             Slug = request.Slug,
-            ExistingDiscPath = request.ExistingDiscPath
+            ExistingDiscPath = request.ExistingDiscPath ?? ""
         };
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -760,7 +760,7 @@ public class UserContributionService : IUserContributionService
                 existingDisc.Format = request.Format;
                 existingDisc.Name = request.Name;
                 existingDisc.Slug = request.Slug;
-                existingDisc.ExistingDiscPath = request.ExistingDiscPath;
+                existingDisc.ExistingDiscPath = request.ExistingDiscPath ?? "";
                 await dbContext.SaveChangesAsync(cancellationToken);
                 return new SaveDiscResponse { DiscId = this.idEncoder.Encode(existingDisc.Id) };
             }
@@ -876,7 +876,7 @@ public class UserContributionService : IUserContributionService
         var item = new UserContributionDiscItem
         {
             ChapterCount = request.ChapterCount,
-            Description = request.Description,
+            Description = request.Description ?? "",
             Duration = request.Duration,
             Size = request.Size,
             Name = request.Name,
@@ -884,8 +884,8 @@ public class UserContributionService : IUserContributionService
             SegmentMap = request.SegmentMap,
             Source = request.Source,
             Type = request.Type,
-            Season = request.Season,
-            Episode = request.Episode
+            Season = request.Season ?? "",
+            Episode = request.Episode ?? ""
         };
 
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -947,7 +947,7 @@ public class UserContributionService : IUserContributionService
             }
 
             item.ChapterCount = request.ChapterCount;
-            item.Description = request.Description;
+            item.Description = request.Description ?? "";
             item.Duration = request.Duration;
             item.Size = request.Size;
             item.Name = request.Name;
@@ -955,8 +955,8 @@ public class UserContributionService : IUserContributionService
             item.SegmentMap = request.SegmentMap;
             item.Source = request.Source;
             item.Type = request.Type;
-            item.Season = request.Season;
-            item.Episode = request.Episode;
+            item.Season = request.Season ?? "";
+            item.Episode = request.Episode ?? "";
 
             await dbContext.SaveChangesAsync(cancellationToken);
         }

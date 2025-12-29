@@ -1,0 +1,15 @@
+mutation AddItemToDisc($input: AddItemToDiscInput!) {
+  addItemToDisc(input: $input) {
+    userContributionDiscItem {
+      encodedId
+    }
+    errors {
+      ... on ContributionNotFoundError {
+        message
+      }
+      ... on DiscNotFoundError {
+        message
+      }
+    }
+  }
+}

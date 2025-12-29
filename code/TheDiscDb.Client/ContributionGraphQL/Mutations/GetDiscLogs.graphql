@@ -1,0 +1,91 @@
+mutation GetDiscLogs($input: DiscLogsInput!) {
+  discLogs(input: $input) {
+    discLogs {
+      info {
+        titles {
+          index
+          chapterCount
+          length
+          displaySize
+          size
+          playlist
+          segmentMap
+          comment
+          javaComment
+          segments {
+            type
+            name
+            audioType
+          }
+        }
+      }
+      disc {
+        contentHash
+        format
+        name
+        slug
+        logsUploaded
+        existingDiscPath
+        encodedId
+        items {
+          description
+          encodedId
+          name
+          source
+          duration
+          size
+          chapterCount
+          segmentCount
+          segmentMap
+          type
+          season
+          episode
+          audioTracks {
+            encodedId
+            index
+            title
+          }
+          chapters {
+            encodedId
+            index
+            title
+          }
+        }
+      }
+      contribution {
+        encodedId
+        mediaType
+        title
+        year
+        releaseTitle
+        discs {
+          encodedId
+          name
+          items {
+            chapterCount
+            name
+            chapters {
+              encodedId
+              index
+              title
+            }
+          }
+        }
+      }
+    }
+    errors {
+      ... on ContributionNotFoundError {
+        message
+      }
+      ... on DiscNotFoundError {
+        message
+      }
+      ... on CouldNotParseLogsError {
+        message
+      }
+      ... on LogsNotFoundError {
+        message
+      }
+    }
+  }
+}

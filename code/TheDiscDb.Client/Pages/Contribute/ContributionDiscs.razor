@@ -71,12 +71,12 @@
             <QuickGrid Items="Discs" class="striped-grid contribute-grid">
                 <TemplateColumn Title="Name">
                     <div class="disc-name">
-                        <a href="/contribution/@ContributionId/discs/@context.EncodedId/identify" title="Edit Disc">@context.Name</a>
+                        <a href="/contribution/@ContributionId/discs/@context!.EncodedId/identify" title="Edit Disc">@context.Name</a>
                     </div>
                 </TemplateColumn>
-                <PropertyColumn Property="d => d.Format"></PropertyColumn>
+                <PropertyColumn Property="d => d!.Format"></PropertyColumn>
                 <TemplateColumn Title="Logs">
-                    @if (!string.IsNullOrEmpty(context.ExistingDiscPath))
+                    @if (!string.IsNullOrEmpty(context!.ExistingDiscPath))
                     {
                         <span class="badge bg-light text-dark">Copied from another disc</span>
                     }
@@ -89,7 +89,7 @@
         </section>
 
         <div class="cta-row split">
-            <a class="btn btn-secondary" href="/contribute/@Contribution.MediaType.ToLowerInvariant()">Back to release details</a>
+            <a class="btn btn-secondary" href="/contribute/@Contribution.MediaType!.ToLowerInvariant()">Back to release details</a>
             <button class="btn btn-primary" @onclick="NavigateToReview" disabled="@IsCompleteButtonDisabled">Complete Contribution</button>
         </div>
     </div>
