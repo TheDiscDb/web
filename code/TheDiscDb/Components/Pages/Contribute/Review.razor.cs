@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using Syncfusion.Blazor.Buttons;
+using TheDiscDb.Services.Server;
 using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Web.Data;
 
@@ -23,6 +24,9 @@ public partial class Review : ComponentBase, IAsyncDisposable
     [Inject]
     private IDbContextFactory<SqlServerDataContext> DbFactory { get; set; } = null!;
 
+    [Inject]
+    private IdEncoder IdEncoder { get; set; } = null!;
+
     UserContribution? Contribution { get; set; }
     Dictionary<IContributionValidation, Result> Results { get; set; } = new Dictionary<IContributionValidation, Result>();
     private SqlServerDataContext database = default!;
@@ -32,12 +36,13 @@ public partial class Review : ComponentBase, IAsyncDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        if (DbFactory != null)
+        if (DbFactory != null && IdEncoder != null)
         {
+            var decodedId = this.IdEncoder.Decode(ContributionId!);
             this.database = await DbFactory.CreateDbContextAsync();
             this.Contribution = await database.UserContributions
                 .Include(uc => uc.Discs)
-                .FirstOrDefaultAsync(uc => uc.Id.ToString() == ContributionId);
+                .FirstOrDefaultAsync(uc => uc.Id == decodedId);
 
             if (this.Contribution != null)
             {

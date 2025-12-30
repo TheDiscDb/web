@@ -29,6 +29,8 @@ using TheDiscDb.Web.Sitemap;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH9eeHVURmdYVUZ0VkpWYEg=");
+
 builder.AddServiceDefaults();
 
 builder.Services.AddTransient<ContributionEndpoints>();

@@ -262,9 +262,18 @@ public partial class IdentifyDiscItems : ComponentBase
         {
             ContributionId = this.ContributionId!
         });
+
         if (externalMetadataResponse?.Data != null && externalMetadataResponse.IsSuccessResult())
         {
             this.ExternalMetadata = externalMetadataResponse.Data.ExternalDataForContribution.ExternalMetadata;
+        }
+        else if (externalMetadataResponse?.Errors != null)
+        {
+            foreach (var error in externalMetadataResponse.Errors)
+            {
+                toastContent = "Error retrieving external metadata: " + error.Message;
+                await toast!.ShowAsync();
+            }
         }
     }
 

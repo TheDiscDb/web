@@ -1,12 +1,10 @@
 using Fantastic.TheMovieDb.Caching.FileSystem;
 using HighlightBlazor;
 using KristofferStrube.Blazor.FileSystemAccess;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb.Client;
-using TheDiscDb.Client.Pages.Contribute;
 using TheDiscDb.Client.Services;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Client;

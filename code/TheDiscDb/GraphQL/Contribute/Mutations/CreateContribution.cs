@@ -1,4 +1,5 @@
-﻿using TheDiscDb.Data.Import;
+﻿using Fantastic.TheMovieDb;
+using TheDiscDb.Data.Import;
 using TheDiscDb.GraphQL.Contribute.Models;
 using TheDiscDb.Web.Data;
 
@@ -6,7 +7,7 @@ namespace TheDiscDb.GraphQL.Contribute.Mutations;
 
 public partial class ContributionMutations
 {
-    public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, CancellationToken cancellationToken)
+    public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, TheMovieDbClient tmdb, CancellationToken cancellationToken)
     {
         var user = principal.Principal ?? throw new InvalidOperationException("No user principal available.");
         var userId = userManager.GetUserId(user);
@@ -35,11 +36,12 @@ public partial class ContributionMutations
 
         database.UserContributions.Add(contribution);
         await database.SaveChangesAsync(cancellationToken);
+        this.idEncoder.EncodeInPlace(contribution);
 
         // Now that we have a contributionId, we can get the external data which will save it in blob storage
         if (string.IsNullOrEmpty(contribution.Title) || string.IsNullOrEmpty(contribution.Year))
         {
-            var externalData = await this.GetExternalDataForContribution(contribution.EncodedId, database, cancellationToken);
+            var externalData = await this.GetExternalDataForContribution(contribution.EncodedId, database, tmdb, cancellationToken);
             if (externalData != null)
             {
                 contribution.Title = externalData.Title;
@@ -68,36 +70,44 @@ public partial class ContributionMutations
 
     private async Task MoveImages(SqlServerDataContext dbContext, UserContribution contribution, string currentImageUrl, string name, Action<UserContribution, string> updateUrl, CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrEmpty(currentImageUrl) && currentImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        try
         {
-            // This shouldn't happen but just in case, we don't want to try and move an external URL
-            return;
-        }
-
-        string remotePath = $"Contributions/releaseImages/{currentImageUrl}";
-        if (await imageStore.Exists(remotePath, cancellationToken))
-        {
-            var data = await imageStore.Download(remotePath, cancellationToken);
-            // Move the image to a folder based on the contribution id
-            if (data != null)
+            if (!string.IsNullOrEmpty(currentImageUrl) && currentImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
-                var memoryStream = new MemoryStream(data.ToArray());
-
-                string imageStoreRemotePath = $"Contributions/{contribution.EncodedId}/{name}.jpg";
-                await imageStore.Save(memoryStream, imageStoreRemotePath, ContentTypes.ImageContentType, cancellationToken);
-
-                memoryStream.Position = 0;
-                string assetStoreRemotePath = $"{contribution.EncodedId}/{name}.jpg";
-                await this.assetStore.Save(memoryStream, assetStoreRemotePath, ContentTypes.ImageContentType, cancellationToken);
-
-                updateUrl(contribution, $"/images/Contributions/{contribution.EncodedId}/{name}.jpg");
-                await dbContext.SaveChangesAsync(cancellationToken);
-
-                // Delete from the old old location
-                await imageStore.Delete(remotePath, cancellationToken);
-
-                memoryStream.Dispose();
+                // This shouldn't happen but just in case, we don't want to try and move an external URL
+                return;
             }
+
+            string remotePath = $"Contributions/releaseImages/{currentImageUrl}";
+            if (await imageStore.Exists(remotePath, cancellationToken))
+            {
+                var data = await imageStore.Download(remotePath, cancellationToken);
+                // Move the image to a folder based on the contribution id
+                if (data != null)
+                {
+                    var memoryStream = new MemoryStream(data.ToArray());
+
+                    string imageStoreRemotePath = $"Contributions/{contribution.EncodedId}/{name}.jpg";
+                    await imageStore.Save(memoryStream, imageStoreRemotePath, ContentTypes.ImageContentType, cancellationToken);
+
+                    memoryStream.Position = 0;
+                    string assetStoreRemotePath = $"{contribution.EncodedId}/{name}.jpg";
+                    await this.assetStore.Save(memoryStream, assetStoreRemotePath, ContentTypes.ImageContentType, cancellationToken);
+
+                    updateUrl(contribution, $"/images/Contributions/{contribution.EncodedId}/{name}.jpg");
+                    await dbContext.SaveChangesAsync(cancellationToken);
+
+                    // Delete from the old old location
+                    await imageStore.Delete(remotePath, cancellationToken);
+
+                    memoryStream.Dispose();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+            throw;
         }
     }
 }
