@@ -24,6 +24,7 @@
         <GraphQL Remove="contributiongraphql\mutations\HashDisc.graphql" />
         <GraphQL Remove="contributiongraphql\mutations\UpdateDisc.graphql" />
         <GraphQL Remove="ContributionGraphql\Queries\ContributionDiscs.graphql" />
+        <GraphQL Remove="contributiongraphql\queries\ContributionsByStatus.graphql" />
         <GraphQL Remove="contributiongraphql\queries\DiscUploadPageData.graphql" />
         <GraphQL Remove="ContributionGraphQL\Queries\GetCurrentUserContributionsGetCurrentUserContributions.graphql" />
         <GraphQL Remove="contributiongraphql\queries\GetDisc.graphql" />

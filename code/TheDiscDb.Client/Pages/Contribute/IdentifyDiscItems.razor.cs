@@ -1,6 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Fantastic.TheMovieDb.Models;
-using MakeMkv;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using StrawberryShake;
@@ -8,8 +6,6 @@ using Syncfusion.Blazor.Notifications;
 using Syncfusion.Blazor.Popups;
 using Syncfusion.Blazor.SplitButtons;
 using TheDiscDb.Client.Contributions;
-using TheDiscDb.Services;
-using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -828,7 +824,7 @@ public partial class IdentifyDiscItems : ComponentBase
             Season = addRequest.Season,
             Episode = addRequest.Episode
         });
-            //this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());
+
         this.callInProgress = false;
 
         if (response?.Data?.AddItemToDisc != null && response.IsSuccessResult())
@@ -848,8 +844,17 @@ public partial class IdentifyDiscItems : ComponentBase
 
     private async Task EpisodeDialogCancelClicked()
     {
-        this.identifiedTitles.Remove(this.currentItem!.Title!);
-        this.StateHasChanged();
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        bool isEdit = this.currentItem.DatabaseId != null;
+        if (!isEdit)
+        {
+            this.identifiedTitles.Remove(this.currentItem!.Title!);
+        }
+
         await this.episodeDialog!.HideAsync();
     }
 

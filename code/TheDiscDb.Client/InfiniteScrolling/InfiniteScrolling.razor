@@ -83,15 +83,25 @@
         StateHasChanged(); // Display the new items and hide the loading indicator
     }
 
+    private bool _jsInitialized;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Initialize the IntersectionObserver
-        if (firstRender)
+        if (_jsInitialized || !OperatingSystem.IsBrowser())
         {
-            _module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/infinite-scrolling.js");
-            _currentComponentReference = DotNetObjectReference.Create(this);
-            _instance = await _module.InvokeAsync<IJSObjectReference>("initialize", _lastItemIndicator, _currentComponentReference);
+            return;
         }
+
+        // The ref isn't populated until the element is attached to the browser DOM.
+        if (string.IsNullOrEmpty(_lastItemIndicator.Id))
+        {
+            return;
+        }
+
+        _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/infinite-scrolling.js");
+        _currentComponentReference = DotNetObjectReference.Create(this);
+        _instance = await _module.InvokeAsync<IJSObjectReference>("initialize", _lastItemIndicator, _currentComponentReference);
+        _jsInitialized = true;
     }
 
     public async ValueTask DisposeAsync()

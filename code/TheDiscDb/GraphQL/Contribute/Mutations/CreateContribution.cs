@@ -1,5 +1,7 @@
 ﻿using Fantastic.TheMovieDb;
+using HotChocolate.Authorization;
 using TheDiscDb.Data.Import;
+using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.GraphQL.Contribute.Models;
 using TheDiscDb.Web.Data;
 
@@ -7,14 +9,21 @@ namespace TheDiscDb.GraphQL.Contribute.Mutations;
 
 public partial class ContributionMutations
 {
+    [Error(typeof(AuthenticationException))]
+    [Authorize]
     public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, TheMovieDbClient tmdb, CancellationToken cancellationToken)
     {
-        var user = principal.Principal ?? throw new InvalidOperationException("No user principal available.");
+        var user = principal.Principal ?? throw new AuthenticationException("No user principal available.");
         var userId = userManager.GetUserId(user);
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new AuthenticationException("UserId not found");
+        }
 
         var contribution = new UserContribution
         {
-            UserId = userId ?? "",
+            UserId = userId,
             Created = DateTimeOffset.UtcNow,
             Asin = input.Asin,
             ExternalId = input.ExternalId,

@@ -1,0 +1,20 @@
+query ContributionsByStatus($status: UserContributionStatus!) {
+  myContributions (where:  {
+     status:  {
+        eq: $status
+     }
+  }, order: [ {
+     created: ASC
+  }]) {
+    nodes {
+      encodedId
+      title
+      releaseTitle
+      created
+      discs {
+        encodedId
+        name
+      }
+    }
+  }
+}

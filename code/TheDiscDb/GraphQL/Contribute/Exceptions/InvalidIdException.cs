@@ -7,3 +7,11 @@ public class InvalidIdException : Exception
     {
     }
 }
+
+public class InvalidOwnershipException : Exception
+{
+    public InvalidOwnershipException(string id, string type)
+        : base($"User does not own {type} with ID '{id}'")
+    {
+    }
+}

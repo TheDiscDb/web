@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using HotChocolate.Authorization;
+using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.Web.Data;
 
@@ -9,6 +10,10 @@ public partial class ContributionMutations
     [Error(typeof(ContributionNotFoundException))]
     [Error(typeof(DiscNotFoundException))]
     [Error(typeof(DiscItemNotFoundException))]
+    [Error(typeof(AuthenticationException))]
+    [Error(typeof(InvalidIdException))]
+    [Error(typeof(InvalidOwnershipException))]
+    [Authorize]
     public async Task<UserContributionChapter> AddChapterToItem(string contributionId, string discId, string itemId, int chapterIndex, string chapterName, SqlServerDataContext database, CancellationToken cancellationToken)
     {
         var chapter = new UserContributionChapter
@@ -24,13 +29,10 @@ public partial class ContributionMutations
                     .ThenInclude(i => i.Chapters)
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
 
-        if (contribution == null)
-        {
-            throw new ContributionNotFoundException(contributionId);
-        }
+        await EnsureOwnership(contribution, contributionId, discId, itemId, cancellationToken);
 
         int realDiscId = this.idEncoder.Decode(discId);
-        var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
+        var disc = contribution!.Discs.FirstOrDefault(d => d.Id == realDiscId);
 
         if (disc == null)
         {

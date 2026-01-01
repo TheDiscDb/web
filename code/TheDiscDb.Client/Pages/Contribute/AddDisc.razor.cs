@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 using KristofferStrube.Blazor.FileAPI;
 using KristofferStrube.Blazor.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
@@ -66,10 +67,30 @@ public partial class AddDisc : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        var response = await this.ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!);
+        if (string.IsNullOrEmpty(ContributionId))
+        {
+            return;
+        }
+
+        if (!OperatingSystem.IsBrowser())
+        {
+            // prerender pass – wait for the interactive render
+            return;
+        }
+
+        await LoadContributionAsync();
+    }
+
+    private async Task LoadContributionAsync()
+    {
+        var response = await ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!);
         if (response.IsSuccessResult())
         {
-            this.contribution = response.Data!.MyContributions!.Nodes!.FirstOrDefault();
+            contribution = response.Data?.MyContributions?.Nodes?.FirstOrDefault();
+        }
+        else
+        {
+            // handle/display response.Errors
         }
     }
 

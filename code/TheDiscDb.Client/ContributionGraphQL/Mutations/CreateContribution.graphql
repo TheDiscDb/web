@@ -3,5 +3,11 @@ mutation CreateContribution($input: CreateContributionInput!) {
     userContribution {
         encodedId
     }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
   }
 }

@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Fantastic.TheMovieDb;
 using Fantastic.TheMovieDb.Models;
+using HotChocolate.Authorization;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Data.Import;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
@@ -49,15 +50,17 @@ public partial class ContributionMutations
     [Error(typeof(ContributionNotFoundException))]
     [Error(typeof(ExternalDataSerializationException))]
     [Error(typeof(ExternalDataNotFoundException))]
+    [Error(typeof(AuthenticationException))]
+    [Error(typeof(InvalidIdException))]
+    [Error(typeof(InvalidOwnershipException))]
+    [Authorize]
     public async Task<ExternalMetadata> GetExternalDataForContribution(string contributionId, SqlServerDataContext database, TheMovieDbClient tmdb, CancellationToken cancellationToken = default)
     {
         int id = this.idEncoder.Decode(contributionId);
         var contribution = await database.UserContributions
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
-        if (contribution == null)
-        {
-            throw new ContributionNotFoundException(contributionId);
-        }
+
+        await EnsureOwnership(contribution, contributionId, cancellationToken: cancellationToken);
 
         // First check blob storage to see if the episode names file exists
         string filePath = $"{contributionId}/tmdb.json";

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using HotChocolate.Authorization;
+using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.Web.Data;
 
@@ -8,6 +9,10 @@ public partial class ContributionMutations
 {
     [Error(typeof(ContributionNotFoundException))]
     [Error(typeof(DiscNotFoundException))]
+    [Error(typeof(AuthenticationException))]
+    [Error(typeof(InvalidIdException))]
+    [Error(typeof(InvalidOwnershipException))]
+    [Authorize]
     public async Task<UserContributionDiscItem> AddItemToDisc(
         [Service] SqlServerDataContext database,
         string contributionId, 
@@ -45,6 +50,8 @@ public partial class ContributionMutations
             .Include(c => c.Discs)
                 .ThenInclude(d => d.Items)
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
+
+       await EnsureOwnership(contribution, contributionId, discId, itemId: null, cancellationToken);
 
         if (contribution == null)
         {

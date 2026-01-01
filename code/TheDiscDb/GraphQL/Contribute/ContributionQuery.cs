@@ -13,13 +13,14 @@ public class ContributionQuery
     [UseProjection]
     [UseFiltering]
     [UseSorting]
-    //[Authorize("Admin")]
+    [Authorize("Admin")]
     public IQueryable<UserContribution> GetContributions(SqlServerDataContext context) => context.UserContributions;
 
     [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
+    [Authorize]
     public IQueryable<UserContribution> GetMyContributions(SqlServerDataContext context, ClaimsPrincipal user)
     {
         var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;

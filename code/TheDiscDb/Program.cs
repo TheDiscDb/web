@@ -26,10 +26,8 @@ using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Web;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
-
+    
 var builder = WebApplication.CreateBuilder(args);
-
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JFaF5cXGRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH9eeHVURmdYVUZ0VkpWYEg=");
 
 builder.AddServiceDefaults();
 
@@ -137,7 +135,7 @@ builder.Services
     .AddProjections()
     .RegisterDbContextFactory<SqlServerDataContext>()
     .DisableIntrospection(false)
-    //.AddAuthorization()
+    .AddAuthorization()
     .AddTypeExtension<ContributionTypeExtension>()
     .AddTypeExtension<ContributionDiscTypeExtension>()
     .AddTypeExtension<ContributionDiscItemTypeExtension>()
@@ -290,8 +288,8 @@ app.MapGraphQL();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema");
-   //.RequireAuthorization();
+app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema")
+   .RequireAuthorization();
 
 app.MapControllers();
 app.UseAntiforgery();

@@ -15,6 +15,17 @@ public partial class MyContributions : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
+        if (!OperatingSystem.IsBrowser())
+        {
+            // prerender pass – wait for the interactive render
+            return;
+        }
+
+        await LoadContributionsAsync();
+    }
+
+    private async Task LoadContributionsAsync()
+    {
         var results = await Query.ExecuteAsync();
         if (results != null && results.IsSuccessResult())
         {
