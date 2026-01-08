@@ -121,7 +121,7 @@ type UserContributionDisc {
   name: String!
   slug: String!
   logsUploaded: Boolean!
-  existingDiscPath: String!
+  existingDiscPath: String
   items(where: UserContributionDiscItemFilterInput order: [UserContributionDiscItemSortInput!]): [UserContributionDiscItem!]!
   encodedId: EncodedId!
 }
@@ -144,7 +144,7 @@ type UserContribution {
   asin: String!
   upc: String!
   frontImageUrl: String!
-  backImageUrl: String!
+  backImageUrl: String
   releaseTitle: String!
   releaseSlug: String
   locale: String!
@@ -155,15 +155,15 @@ type UserContribution {
   encodedId: EncodedId!
 }
 
-union AddChapterToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError
+union AddChapterToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
-union DeleteItemFromDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError
+union DeleteItemFromDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 input CreateContributionInput {
   input: ContributionMutationRequestInput!
 }
 
-union AddAudioTrackToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError
+union AddAudioTrackToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 scalar EncodedId
 
@@ -217,6 +217,16 @@ interface Error {
   message: String!
 }
 
+"Defines when a policy shall be executed."
+enum ApplyPolicy {
+  "Before the resolver was executed."
+  BEFORE_RESOLVER
+  "After the resolver was executed."
+  AFTER_RESOLVER
+  "The policy is applied in the validation step before the execution."
+  VALIDATION
+}
+
 input ContributionMutationRequestInput {
   mediaType: String!
   externalId: String!
@@ -236,7 +246,7 @@ input ContributionMutationRequestInput {
   status: UserContributionStatus!
 }
 
-union HashDiscError = ContributionNotFoundError
+union HashDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 "The `TimeSpan` scalar represents an ISO-8601 compliant duration type."
 scalar TimeSpan
@@ -358,7 +368,7 @@ input DiscLogsInput {
   discId: String!
 }
 
-union AddItemToDiscError = ContributionNotFoundError | DiscNotFoundError
+union AddItemToDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 input UserContributionDiscItemSortInput {
   id: SortEnumType
@@ -388,6 +398,7 @@ type ContributionQuery {
 
 type CreateContributionPayload {
   userContribution: UserContribution
+  errors: [CreateContributionError!]
 }
 
 input LongOperationFilterInput {
@@ -447,7 +458,7 @@ input EditItemOnDiscInput {
   episode: String
 }
 
-union EpisodeNamesError = ContributionNotFoundError | ExternalDataNotFoundError
+union EpisodeNamesError = ContributionNotFoundError | ExternalDataNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 input DiscUploadStatusInput {
   discId: String!
@@ -490,9 +501,9 @@ type UserContributionDiscItem {
   segmentCount: Int!
   segmentMap: String!
   type: String!
-  description: String!
-  season: String!
-  episode: String!
+  description: String
+  season: String
+  episode: String
   chapters(where: UserContributionChapterFilterInput order: [UserContributionChapterSortInput!]): [UserContributionChapter!]!
   audioTracks(where: UserContributionAudioTrackFilterInput order: [UserContributionAudioTrackSortInput!]): [UserContributionAudioTrack!]!
   encodedId: EncodedId!
@@ -553,7 +564,7 @@ input ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput {
   any: Boolean
 }
 
-union UpdateDiscError = ContributionNotFoundError | DiscNotFoundError
+union UpdateDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 union ExternalDataError = ContributionNotFoundError | ExternalDataNotFoundError
 
@@ -603,15 +614,17 @@ type EpisodeNamesPayload {
   errors: [EpisodeNamesError!]
 }
 
-union EditItemOnDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError
+union EditItemOnDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
-union DiscLogsError = LogsNotFoundError | ContributionNotFoundError | DiscNotFoundError | CouldNotParseLogsError
+union DiscLogsError = LogsNotFoundError | ContributionNotFoundError | DiscNotFoundError | CouldNotParseLogsError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 type SeriesEpisodeNameEntry {
   seasonNumber: String!
   episodeNumber: String!
   episodeName: String!
 }
+
+union CreateContributionError = AuthenticationError
 
 "The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
 scalar Long
@@ -648,7 +661,7 @@ type ExternalDataForContributionPayload {
   errors: [ExternalDataForContributionError!]
 }
 
-union CreateDiscError = ContributionNotFoundError
+union CreateDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 input UserContributionDiscHashItemFilterInput {
   and: [UserContributionDiscHashItemFilterInput!]
@@ -734,6 +747,10 @@ scalar DateTime
 
 scalar EncodedIdFilter
 
+type InvalidOwnershipError implements Error {
+  message: String!
+}
+
 type DiscItemNotFoundError implements Error {
   message: String!
 }
@@ -753,6 +770,10 @@ type UserContributionAudioTrack {
   encodedId: EncodedId!
 }
 
+type AuthenticationError implements Error {
+  message: String!
+}
+
 type DiscLogsPayload {
   discLogs: DiscLogs
   errors: [DiscLogsError!]
@@ -762,7 +783,7 @@ type DiscHash {
   hash: String!
 }
 
-union ExternalDataForContributionError = ContributionNotFoundError | ExternalDataSerializationError | ExternalDataNotFoundError
+union ExternalDataForContributionError = ContributionNotFoundError | ExternalDataSerializationError | ExternalDataNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 enum UserContributionStatus {
   PENDING

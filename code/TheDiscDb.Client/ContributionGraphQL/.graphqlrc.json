@@ -5,7 +5,7 @@
     "strawberryShake": {
       "name": "ContributionClient",
       "namespace": "TheDiscDb.Client.Contributions",
-      "url": "https://localhost:65110/graphql/contributions",
+      "url": "https://localhost:51317/graphql/contributions",
       "records": {
         "inputs": false,
         "entities": false

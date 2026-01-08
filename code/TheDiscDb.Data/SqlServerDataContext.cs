@@ -307,7 +307,7 @@ public class UserContribution : IHasId, IContributionDisplay
     public string Asin { get; set; } = string.Empty;
     public string Upc { get; set; } = string.Empty;
     public string FrontImageUrl { get; set; } = string.Empty;
-    public string BackImageUrl { get; set; } = string.Empty;
+    public string? BackImageUrl { get; set; } = string.Empty;
     public string ReleaseTitle { get; set; } = string.Empty;
     public string? ReleaseSlug { get; set; } = string.Empty;
     public string Locale { get; set; } = string.Empty;
@@ -333,7 +333,7 @@ public class UserContributionDisc : IHasId
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public bool LogsUploaded { get; set; } = false;
-    public string ExistingDiscPath { get; set; } = default!;
+    public string? ExistingDiscPath { get; set; } = default!;
 
     public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();
 
@@ -372,9 +372,9 @@ public class UserContributionDiscItem : IHasId
     public int SegmentCount { get; set; } = 0;
     public string SegmentMap { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public string Season { get; set; } = string.Empty;
-    public string Episode { get; set; } = string.Empty;
+    public string? Description { get; set; } = string.Empty;
+    public string? Season { get; set; } = string.Empty;
+    public string? Episode { get; set; } = string.Empty;
 
     public ICollection<UserContributionChapter> Chapters { get; set; } = new HashSet<UserContributionChapter>();
     public ICollection<UserContributionAudioTrack> AudioTracks { get; set; } = new HashSet<UserContributionAudioTrack>();
