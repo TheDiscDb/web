@@ -1,0 +1,51 @@
+﻿@page "/admin/contribution/{contributionId}/discs/{discId}/item/{itemId}"
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Contribution Details</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink(), GetAdminContributionLink(this.Contribution), GetAdminDiscLink(this.Contribution, this.Disc)]" PrimaryText="@this.Item?.Name" />
+
+<h1>Disc Details</h1>
+@if (this.Contribution != null)
+{
+    <h2>@this.Contribution.Title (@this.Contribution.Year) - @this.Contribution.ReleaseTitle</h2>
+    @if (this.Item != null)
+    {
+        <h3>@this.Item.Name (@this.Item.Type)</h3>
+        <EditForm Model="@this.Item" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label>Name</label>
+                <InputText class="form-control" @bind-Value="Item.Name" />
+                <ValidationMessage For="@(() => Item.Name)" />
+            </div>
+
+            <div class="mb-3">
+                <label>Type</label>
+                <SfDropDownList TValue="string" TItem="string" DataSource="itemTypes" class="form-control" @bind-Value="Item.Type" Placeholder="Select type"></SfDropDownList>
+                <ValidationMessage For="@(() => Item.Type)" />
+            </div>
+            <div class="mb-3">
+                <label>Description</label>
+                <InputText class="form-control" @bind-Value="Item.Description" />
+                <ValidationMessage For="@(() => Item.Description)" />
+            </div>
+            <div class="mb-3">
+                <label>Season</label>
+                <InputText class="form-control" @bind-Value="Item.Season" />
+                <ValidationMessage For="@(() => Item.Season)" />
+            </div>
+            <div class="mb-3">
+                <label>Episode</label>
+                <InputText class="form-control" @bind-Value="Item.Episode" />
+                <ValidationMessage For="@(() => Item.Episode)" />
+            </div>
+            
+
+            <button type="submit" class="btn btn-primary">Save</button>
+        </EditForm>
+    }
+}

@@ -2,13 +2,12 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages.Admin;
 
 [Authorize(Roles = DefaultRoles.Administrator)]
-public partial class DiscDetails : ComponentBase, IAsyncDisposable
+public partial class DiscItemDetails : ComponentBase, IAsyncDisposable
 {
     [Inject]
     private IDbContextFactory<SqlServerDataContext> DbFactory { get; set; } = null!;
@@ -22,13 +21,16 @@ public partial class DiscDetails : ComponentBase, IAsyncDisposable
     [Parameter]
     public string? DiscId { get; set; }
 
+    [Parameter]
+    public string? ItemId { get; set; }
+
     private SqlServerDataContext database = default!;
     private UserContribution? Contribution { get; set; }
     private UserContributionDisc? Disc { get; set; }
-    private IQueryable<UserContributionDiscItem>? Items { get; set; }
+    private UserContributionDiscItem? Item { get; set; }
     private TheDiscDbUser? User { get; set; }
 
-    readonly string[] formats = ["4K", "Blu-ray", "DVD"]; // TODO: Centralize this somewhere
+    readonly string[] itemTypes = ["MainMovie", "Extra", "Episode", "DeletedScene", "Trailer"];
 
     protected override async Task OnInitializedAsync()
     {
@@ -44,9 +46,9 @@ public partial class DiscDetails : ComponentBase, IAsyncDisposable
             if (this.Contribution != null && !string.IsNullOrEmpty(this.DiscId))
             {
                 this.Disc = this.Contribution.Discs.FirstOrDefault(d => d.Id.ToString() == this.DiscId);
-                if (this.Disc != null)
+                if (Disc != null)
                 {
-                    this.Items = this.Disc.Items.AsQueryable();
+                    this.Item = Disc.Items.FirstOrDefault(i => i.Id.ToString() == this.ItemId);
                 }
             }
 
@@ -57,19 +59,9 @@ public partial class DiscDetails : ComponentBase, IAsyncDisposable
         }
     }
 
-    string Truncate(string? text, int maxLength)
-    {
-        if (string.IsNullOrEmpty(text))
-        {
-            return "";
-        }
-
-        return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
-    }
-
     async Task HandleValidSubmit()
     {
-        if (this.Disc != null)
+        if (this.Item != null)
         {
             await this.database.SaveChangesAsync();
         }

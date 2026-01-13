@@ -13,28 +13,46 @@
     @if (this.Disc != null)
     {
         <h3>@this.Disc.Name (@this.Disc.Format)</h3>
-        <div>Hash: @request.ContentHash</div>
-        <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
+        <div>Hash: @Disc.ContentHash</div>
+        <EditForm Model="@Disc" OnValidSubmit="HandleValidSubmit">
             <DataAnnotationsValidator />
             <ValidationSummary />
 
             <div class="mb-3">
                 <label>Disc Format</label>
-                <SfDropDownList TValue="string" TItem="string" DataSource="formats" class="form-control" @bind-Value="request.Format" Placeholder="Select format" />
-                <ValidationMessage For="@(() => request.Format)" />
+                <SfDropDownList TValue="string" TItem="string" DataSource="formats" class="form-control" @bind-Value="Disc.Format" Placeholder="Select format" />
+                <ValidationMessage For="@(() => Disc.Format)" />
             </div>
             <div class="mb-3">
                 <label>Disc Title</label>
-                <InputText class="form-control" @bind-Value="request.Name" />
-                <ValidationMessage For="@(() => request.Name)" />
+                <InputText class="form-control" @bind-Value="Disc.Name" />
+                <ValidationMessage For="@(() => Disc.Name)" />
             </div>
             <div class="mb-3">
                 <label>Disc Slug</label>
-                <InputText class="form-control" @bind-Value="request.Slug" />
-                <ValidationMessage For="@(() => request.Slug)" />
+                <InputText class="form-control" @bind-Value="Disc.Slug" />
+                <ValidationMessage For="@(() => Disc.Slug)" />
             </div>
 
             <button type="submit" class="btn btn-primary">Save</button>
         </EditForm>
+
+        <QuickGrid Items="Items" Class="striped-grid">
+            <TemplateColumn>
+                <div class="disc-item-name">
+                    <a href="/admin/contribution/@ContributionId/discs/@this.Disc.Id/item/@context.Id" title="View Item">@context.Name</a>
+                </div>
+            </TemplateColumn>
+            <PropertyColumn Property="@(c => c.Type)" Sortable="true" />
+            <PropertyColumn Property="@(c => c.Source)" Sortable="true" />
+            <PropertyColumn Property="@(c => c.Duration)" Sortable="true" />
+            <PropertyColumn Property="@(c => c.Size)" Sortable="true" />
+            <PropertyColumn Property="@(c => c.ChapterCount)" Sortable="true" />
+            <PropertyColumn Property="@(c => c.SegmentCount)" Sortable="true" />
+            <PropertyColumn Property="@(c => Truncate(c.SegmentMap, 10))" Sortable="true" Title="Segment Map" />
+            <PropertyColumn Property="@(c => c.Description)" Sortable="true" />
+            <PropertyColumn Property="@(c => c.Season)" Sortable="true" />
+            <PropertyColumn Property="@(c => c.Episode)" Sortable="true" />
+        </QuickGrid>
     }
 }

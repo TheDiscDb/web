@@ -47,6 +47,7 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
     private UserContribution? Contribution { get; set; }
     private IQueryable<UserContributionDisc>? Discs => Contribution?.Discs.AsQueryable();
     private TheDiscDbUser? User { get; set; }
+    private readonly List<UserContributionStatus> statusList = Enum.GetValues<UserContributionStatus>().ToList();
 
     private readonly EditContributionRequest request = new EditContributionRequest
     {
@@ -98,9 +99,7 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
             this.Contribution.ReleaseTitle = request.ReleaseTitle;
             this.Contribution.Upc = request.Upc;
             this.Contribution.Status = request.Status;
-            //database.UserContributions.Update(this.Contribution);
             await database.SaveChangesAsync();
-
         }
     }
 }
