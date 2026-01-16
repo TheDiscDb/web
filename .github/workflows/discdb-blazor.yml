@@ -8,7 +8,7 @@ env:
   AZURE_WEBAPP_NAME: discdb
   AZURE_WEBAPP_PACKAGE_PATH: TheDiscDb\TheDiscDb\published
   CONFIGURATION: Release
-  DOTNET_CORE_VERSION: 10.0.2
+  DOTNET_CORE_VERSION: 10.0.x
   WORKING_DIRECTORY: code\TheDiscDb
 jobs:
   build:

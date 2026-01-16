@@ -41,18 +41,18 @@
     <ItemGroup>
         <PackageReference Include="Fantastic.TheMovieDb" Version="2.1.0" />
         <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.3.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="10.0.1" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.1" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.1" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="10.0.2" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.2" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.2" />
         <PackageReference Include="Sqids" Version="3.2.0" />
-        <PackageReference Include="StrawberryShake.Blazor" Version="15.1.11" />
+        <PackageReference Include="StrawberryShake.Blazor" Version="15.1.12" />
         <PackageReference Include="TheDiscDb.MakeMkv" Version="2.0.3" />
-        <PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.22" />
-        <PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.22" />
-        <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="32.1.22" />
-        <PackageReference Include="Syncfusion.Blazor.Navigations" Version="32.1.22" />
-        <PackageReference Include="Syncfusion.Blazor.Spinner" Version="32.1.22" />
-        <PackageReference Include="Syncfusion.Blazor.Calendars" Version="32.1.22" />
+        <PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.23" />
+        <PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.23" />
+        <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="32.1.23" />
+        <PackageReference Include="Syncfusion.Blazor.Navigations" Version="32.1.23" />
+        <PackageReference Include="Syncfusion.Blazor.Spinner" Version="32.1.23" />
+        <PackageReference Include="Syncfusion.Blazor.Calendars" Version="32.1.23" />
         <PackageReference Include="FluentResults" Version="4.0.0" />
         <PackageReference Include="HighlightBlazor" Version="0.1.10" />
     </ItemGroup>
