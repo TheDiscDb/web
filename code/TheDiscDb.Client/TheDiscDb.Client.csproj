@@ -28,6 +28,7 @@
         <GraphQL Remove="contributiongraphql\queries\DiscUploadPageData.graphql" />
         <GraphQL Remove="ContributionGraphQL\Queries\GetCurrentUserContributionsGetCurrentUserContributions.graphql" />
         <GraphQL Remove="contributiongraphql\queries\GetDisc.graphql" />
+        <GraphQL Remove="contributiongraphql\queries\MyPendingContributions.graphql" />
         <GraphQL Remove="graphql\queries\GetMediaItemsByGroup.graphql" />
         <GraphQL Remove="graphql\queries\GetBoxsetDiscs.graphql" />
         <GraphQL Remove="graphql\queries\GetBoxsets.graphql" />

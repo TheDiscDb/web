@@ -114,7 +114,6 @@ input DateTimeOperationFilterInput {
 }
 
 type UserContributionDisc {
-  id: Int!
   userContribution: UserContribution!
   contentHash: String!
   format: String!
@@ -123,6 +122,7 @@ type UserContributionDisc {
   logsUploaded: Boolean!
   existingDiscPath: String
   items(where: UserContributionDiscItemFilterInput order: [UserContributionDiscItemSortInput!]): [UserContributionDiscItem!]!
+  id: Int!
   encodedId: EncodedId!
 }
 
@@ -131,7 +131,6 @@ input EpisodeNamesInput {
 }
 
 type UserContribution {
-  id: Int!
   userId: String!
   created: DateTime!
   status: UserContributionStatus!
@@ -152,6 +151,7 @@ type UserContribution {
   title: String
   year: String
   titleSlug: String!
+  id: Int!
   encodedId: EncodedId!
 }
 
@@ -190,7 +190,6 @@ type ContributionsEdge {
 }
 
 input UserContributionChapterSortInput {
-  id: SortEnumType
   index: SortEnumType
   title: SortEnumType
   item: UserContributionDiscItemSortInput
@@ -299,7 +298,6 @@ input IntOperationFilterInput {
 }
 
 input UserContributionDiscHashItemSortInput {
-  id: SortEnumType
   userContribution: UserContributionSortInput
   discHash: SortEnumType
   index: SortEnumType
@@ -371,7 +369,6 @@ input DiscLogsInput {
 union AddItemToDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 input UserContributionDiscItemSortInput {
-  id: SortEnumType
   disc: UserContributionDiscSortInput
   name: SortEnumType
   source: SortEnumType
@@ -417,13 +414,13 @@ input LongOperationFilterInput {
 }
 
 type UserContributionDiscHashItem {
-  id: Int!
   userContribution: UserContribution!
   discHash: String!
   index: Int!
   name: String!
   creationTime: DateTime!
   size: Long!
+  id: Int!
   encodedId: EncodedId!
 }
 
@@ -479,7 +476,6 @@ input BooleanOperationFilterInput {
 }
 
 input UserContributionAudioTrackSortInput {
-  id: SortEnumType
   index: SortEnumType
   title: SortEnumType
   item: UserContributionDiscItemSortInput
@@ -491,7 +487,6 @@ type EditItemOnDiscPayload {
 }
 
 type UserContributionDiscItem {
-  id: Int!
   disc: UserContributionDisc!
   name: String!
   source: String!
@@ -506,6 +501,7 @@ type UserContributionDiscItem {
   episode: String
   chapters(where: UserContributionChapterFilterInput order: [UserContributionChapterSortInput!]): [UserContributionChapter!]!
   audioTracks(where: UserContributionAudioTrackFilterInput order: [UserContributionAudioTrackSortInput!]): [UserContributionAudioTrack!]!
+  id: Int!
   encodedId: EncodedId!
 }
 
@@ -602,10 +598,10 @@ type UpdateDiscPayload {
 }
 
 type UserContributionChapter {
-  id: Int!
   index: Int!
   title: String!
   item: UserContributionDiscItem!
+  id: Int!
   encodedId: EncodedId!
 }
 
@@ -763,10 +759,10 @@ input EncodedIdOperationFilterInput {
 }
 
 type UserContributionAudioTrack {
-  id: Int!
   index: Int!
   title: String!
   item: UserContributionDiscItem!
+  id: Int!
   encodedId: EncodedId!
 }
 
@@ -795,7 +791,6 @@ enum UserContributionStatus {
 }
 
 input UserContributionDiscSortInput {
-  id: SortEnumType
   userContribution: UserContributionSortInput
   contentHash: SortEnumType
   format: SortEnumType
@@ -806,7 +801,6 @@ input UserContributionDiscSortInput {
 }
 
 input UserContributionSortInput {
-  id: SortEnumType
   userId: SortEnumType
   created: SortEnumType
   status: SortEnumType
