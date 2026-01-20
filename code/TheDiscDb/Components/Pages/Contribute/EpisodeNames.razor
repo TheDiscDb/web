@@ -1,0 +1,17 @@
+﻿@page "/contribution/series/{externalId}/episodes"
+@using TheDiscDb.Validation.Contribution
+
+@rendermode InteractiveServer
+@if(this.seasons != null)
+{
+    @foreach(var season in this.seasons)
+    {
+        <div>Season @season.SeasonNumber</div>
+        <ol>
+        @foreach(var episode in season.Episodes)
+        {
+            <li>@episode.FileName</li>
+        }
+        </ol>
+    }
+}
