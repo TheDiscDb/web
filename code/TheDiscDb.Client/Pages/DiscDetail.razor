@@ -23,9 +23,10 @@ else
     <h1>@Disc.GetFullName()</h1>
     <h2>@Release.Title</h2>
 
-    <SfSwitch TChecked="bool" ValueChange="e => AllTitlesChanged(e)">
-        Show all titles
-    </SfSwitch>
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <SfSwitch TChecked="bool" ValueChange="e => AllTitlesChanged(e)" />
+        <label>Show all titles</label>
+    </div>
 
     <QuickGrid Items="FilteredTitles">
         <TemplateColumn Title="Source File" Sortable="true" SortBy="SortSourceFile">
