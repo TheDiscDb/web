@@ -288,8 +288,8 @@ app.MapGraphQL();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema");
-   //.RequireAuthorization();
+app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema")
+   .RequireAuthorization();
 
 app.MapControllers();
 app.UseAntiforgery();
