@@ -1,14 +1,34 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using MakeMkv;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using StrawberryShake;
 using Syncfusion.Blazor.Notifications;
 using Syncfusion.Blazor.Popups;
 using Syncfusion.Blazor.SplitButtons;
-using TheDiscDb.Services;
-using TheDiscDb.Web.Data;
+using TheDiscDb.Client.Contributions;
 
 namespace TheDiscDb.Client.Pages.Contribute;
+
+public class SeriesEpisodeNames
+{
+    public string SeriesTitle { get; set; } = string.Empty;
+    public string SeriesYear { get; set; } = string.Empty;
+    public ICollection<SeriesEpisodeNameEntry> Episodes { get; set; } = new List<SeriesEpisodeNameEntry>();
+
+    public SeriesEpisodeNameEntry? TryFind(string season, string episode)
+    {
+        return Episodes.FirstOrDefault(e =>
+            string.Equals(e.SeasonNumber, season, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(e.EpisodeNumber, episode, StringComparison.OrdinalIgnoreCase));
+    }
+}
+
+public class SeriesEpisodeNameEntry
+{
+    public string SeasonNumber { get; set; } = string.Empty;
+    public string EpisodeNumber { get; set; } = string.Empty;
+    public string EpisodeName { get; set; } = string.Empty;
+}
 
 public class EpisodeIdentification
 {
@@ -28,7 +48,7 @@ public class AudioTrackItem
 {
     public int Index { get; set; }
     public string? Title { get; set; }
-    public Segment? Segment { get; set; }
+    public IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles_Segments? Segment { get; set; }
     public string GetDisplayName()
     {
         if (this.Segment != null)
@@ -40,9 +60,28 @@ public class AudioTrackItem
     }
 }
 
+public class AddItemRequest
+{
+    public string Name { get; set; } = string.Empty;
+    public string Source { get; set; } = string.Empty;
+    public string Duration { get; set; } = string.Empty;
+    public string Size { get; set; } = string.Empty;
+    public int ChapterCount { get; set; } = 0;
+    public int SegmentCount { get; set; } = 0;
+    public string SegmentMap { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string? Description { get; set; } = string.Empty;
+    public string? Season { get; set; } = string.Empty;
+    public string? Episode { get; set; } = string.Empty;
+}
+
+public class EditItemRequest : AddItemRequest
+{
+}
+
 public class ItemIdentification
 {
-    public required Title Title { get; set; }
+    public required IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles Title { get; set; }
     [Required]
     public required string ItemTitle { get; set; }
     public string? Description { get; set; }
@@ -52,7 +91,7 @@ public class ItemIdentification
     public List<ChapterItem> Chapters { get; set; } = new List<ChapterItem>();
     public List<AudioTrackItem> AudioTracks { get; set; } = new List<AudioTrackItem>();
     public bool EpisodeTitleUserEdited { get; set; } = false;
-    public Dictionary<UserContributionDisc, IEnumerable<UserContributionDiscItem>> ChapterMatches { get; set; } = new Dictionary<UserContributionDisc, IEnumerable<UserContributionDiscItem>>();
+    public Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Contribution_Discs, IEnumerable<IGetDiscLogs_DiscLogs_DiscLogs_Contribution_Discs_Items>> ChapterMatches { get; set; } = new Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Contribution_Discs, IEnumerable<IGetDiscLogs_DiscLogs_DiscLogs_Contribution_Discs_Items>>();
 
     public AddItemRequest CreateAddRequest()
     {
@@ -104,16 +143,19 @@ public partial class IdentifyDiscItems : ComponentBase
     private NavigationManager NavigationManager { get; set; } = null!;
 
     [Inject]
-    private IUserContributionService Client { get; set; } = null!;
+    public IContributionClient ContributionClient { get; set; } = default!;
 
     private string? mediaType = null;
-    private IQueryable<MakeMkv.Title>? filteredTitles = null;
-    private IQueryable<MakeMkv.Title>? allTitles = null;
-    private UserContributionDisc? disc = null;
-    private readonly Dictionary<Title, ItemIdentification> identifiedTitles = new Dictionary<Title, ItemIdentification>();
-    private SeriesEpisodeNames? episodeNames = null;
-    private ExternalMetadata? ExternalMetadata = null;
-    private UserContribution? contribution;
+    private IQueryable<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>? filteredTitles = null;
+    private IQueryable<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>? allTitles = null;
+    private IGetDiscLogs_DiscLogs_DiscLogs_Disc? disc = null;
+    private readonly Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles, ItemIdentification> identifiedTitles = new Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles, ItemIdentification>();
+    //private SeriesEpisodeNames? episodeNames = null;
+#pragma warning disable IDE0044 // Add readonly modifier
+    private IGetEpisodeNames_EpisodeNames? episodeNames;
+#pragma warning restore IDE0044 // Add readonly modifier
+    private IGetExternalDataForContribution_ExternalDataForContribution_ExternalMetadata? ExternalMetadata = null;
+    private IGetDiscLogs_DiscLogs_DiscLogs_Contribution? contribution;
     private bool IsDoneButtonDisabled => identifiedTitles == null || identifiedTitles.Count == 0;
 
     // A hacky way to prevent multiple network calls at once
@@ -139,19 +181,24 @@ public partial class IdentifyDiscItems : ComponentBase
     
     protected override async Task OnInitializedAsync()
     {
-        var response = await this.Client.GetDiscLogs(this.ContributionId!, this.DiscId!);
-        if (response?.Value != null && response.IsSuccess)
+        var input = new DiscLogsInput
         {
-            this.allTitles = response.Value.Info!.Titles.AsQueryable();
+            ContributionId = this.ContributionId!,
+            DiscId = this.DiscId!
+        };
+        var response = await this.ContributionClient.GetDiscLogs.ExecuteAsync(input);
+        if (response?.Data != null && response.IsSuccessResult())
+        {
+            this.allTitles = response.Data.DiscLogs.DiscLogs!.Info!.Titles.AsQueryable();
             this.filteredTitles = allTitles;
-            this.disc = response.Value.Disc;
-            this.contribution = response.Value.Contribution;
+            this.disc = response.Data.DiscLogs.DiscLogs.Disc;
+            this.contribution = response.Data.DiscLogs.DiscLogs.Contribution;
 
             if (allTitles != null && disc?.Items != null)
             {
-                foreach (var item in disc.Items)
+                foreach (IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item in disc.Items)
                 {
-                    var title = this.allTitles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
+                    IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles? title = this.allTitles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
                     if (title != null)
                     {
                         var existingItem = new ItemIdentification
@@ -185,9 +232,9 @@ public partial class IdentifyDiscItems : ComponentBase
                 }
             }
 
-            if (response.Value.Contribution != null)
+            if (response.Data.DiscLogs.DiscLogs.Contribution != null)
             {
-                var contribution = response.Value.Contribution;
+                var contribution = response.Data.DiscLogs.DiscLogs.Contribution;
                 if (!string.IsNullOrEmpty(contribution.MediaType))
                 {
                     this.mediaType = contribution.MediaType;
@@ -197,26 +244,41 @@ public partial class IdentifyDiscItems : ComponentBase
 
         if (!string.IsNullOrEmpty(this.mediaType) && this.mediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
         {
-            var episodeResults = await Client.GetEpisodeNames(this.ContributionId!);
-            if (episodeResults != null && episodeResults.IsSuccess)
+            var episodeResults = await ContributionClient.GetEpisodeNames.ExecuteAsync(new EpisodeNamesInput
             {
-                this.episodeNames = episodeResults.Value;
+                ContributionId = this.ContributionId!
+            });
+            if (episodeResults?.Data != null && episodeResults.IsSuccessResult())
+            {
+                this.episodeNames = episodeResults.Data.EpisodeNames;
             }
         }
 
-        var externalMetadataResponse = await Client.GetExternalData(this.ContributionId!);
-        if (externalMetadataResponse != null && externalMetadataResponse.IsSuccess)
+        var externalMetadataResponse = await ContributionClient.GetExternalDataForContribution.ExecuteAsync(new ExternalDataForContributionInput
         {
-            this.ExternalMetadata = externalMetadataResponse.Value;
+            ContributionId = this.ContributionId!
+        });
+
+        if (externalMetadataResponse?.Data != null && externalMetadataResponse.IsSuccessResult())
+        {
+            this.ExternalMetadata = externalMetadataResponse.Data.ExternalDataForContribution.ExternalMetadata;
+        }
+        else if (externalMetadataResponse?.Errors != null)
+        {
+            foreach (var error in externalMetadataResponse.Errors)
+            {
+                toastContent = "Error retrieving external metadata: " + error.Message;
+                await toast!.ShowAsync();
+            }
         }
     }
 
-    private static void InitializeAudioTracks(UserContributionDiscItem item, ItemIdentification existingItem, Title title)
+    private static void InitializeAudioTracks(IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item, ItemIdentification existingItem, IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         var audioSegments = title.Segments.Where(s => s.Type != null && s.Type.Equals("Audio", StringComparison.OrdinalIgnoreCase)).ToList();
         bool hasSavedAudioTracks = item.AudioTracks != null && item.AudioTracks.Count > 0;
         int i = 1;
-        foreach (var segment in audioSegments)
+        foreach (IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles_Segments? segment in audioSegments)
         {
             if (hasSavedAudioTracks)
             {
@@ -253,7 +315,7 @@ public partial class IdentifyDiscItems : ComponentBase
         }
     }
 
-    private static void InitializeChapters(UserContributionDiscItem item, ItemIdentification existingItem)
+    private static void InitializeChapters(IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item, ItemIdentification existingItem)
     {
         if (item.Chapters != null && item.Chapters.Count > 0)
         {
@@ -291,7 +353,7 @@ public partial class IdentifyDiscItems : ComponentBase
         }
     }
 
-    bool IsIdentified(Title title)
+    bool IsIdentified(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         return identifiedTitles.ContainsKey(title);
     }
@@ -306,7 +368,7 @@ public partial class IdentifyDiscItems : ComponentBase
         return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
     }
 
-    string GetIdentifyButtonText(Title title)
+    string GetIdentifyButtonText(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
@@ -316,7 +378,7 @@ public partial class IdentifyDiscItems : ComponentBase
         return "Identify";
     }
 
-    string GetTitle(Title title)
+    string GetTitle(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
@@ -326,7 +388,7 @@ public partial class IdentifyDiscItems : ComponentBase
         return "";
     }
 
-    string GetSeason(Title title)
+    string GetSeason(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
@@ -336,7 +398,7 @@ public partial class IdentifyDiscItems : ComponentBase
         return "";
     }
 
-    string GetEpisode(Title title)
+    string GetEpisode(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
@@ -346,7 +408,7 @@ public partial class IdentifyDiscItems : ComponentBase
         return "";
     }
 
-    void NameAudioTracks(Title title)
+    void NameAudioTracks(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
@@ -369,7 +431,7 @@ public partial class IdentifyDiscItems : ComponentBase
         }
     }
 
-    string GetChapterIconCss(Title title)
+    string GetChapterIconCss(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         string css = "e-icons e-changes-track";
         
@@ -384,7 +446,7 @@ public partial class IdentifyDiscItems : ComponentBase
         return css;
     }
 
-    string GetChapterButtonToolTip(Title title)
+    string GetChapterButtonToolTip(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
@@ -397,9 +459,9 @@ public partial class IdentifyDiscItems : ComponentBase
         return "Label Chapters";
     }
 
-    bool HasAudioTracks(Title title) => identifiedTitles.TryGetValue(title, out var item) && item.AudioTracks != null && item.AudioTracks.Any(c => !string.IsNullOrEmpty(c.Title));
+    bool HasAudioTracks(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => identifiedTitles.TryGetValue(title, out var item) && item.AudioTracks != null && item.AudioTracks.Any(c => !string.IsNullOrEmpty(c.Title));
 
-    string GetAudioIconCss(Title title)
+    string GetAudioIconCss(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         string css = "e-icons e-audio";
 
@@ -411,7 +473,7 @@ public partial class IdentifyDiscItems : ComponentBase
         return css;
     }
 
-    string GetAudioButtonToolTip(Title title)
+    string GetAudioButtonToolTip(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (HasAudioTracks(title))
         {
@@ -421,7 +483,7 @@ public partial class IdentifyDiscItems : ComponentBase
         return "Label Audio Tracks";
     }
 
-    void InputChapters(Title title)
+    void InputChapters(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
@@ -441,11 +503,11 @@ public partial class IdentifyDiscItems : ComponentBase
             // search for chapters on other discs in the same contribution
             if (this.disc != null)
             {
-                foreach (var disc in this.contribution!.Discs)
+                foreach (IGetDiscLogs_DiscLogs_DiscLogs_Contribution_Discs disc in this.contribution!.Discs)
                 {
                     if (disc.EncodedId != this.disc.EncodedId)
                     {
-                        var matchingItems = disc.Items.Where(it => it.Chapters.Count == item.Chapters.Count);
+                        IEnumerable<IGetDiscLogs_DiscLogs_DiscLogs_Contribution_Discs_Items> matchingItems = disc.Items.Where(it => it.Chapters.Count == item.Chapters.Count);
                         if (matchingItems.Any())
                         {
                             item.ChapterMatches[disc] = matchingItems;
@@ -458,7 +520,7 @@ public partial class IdentifyDiscItems : ComponentBase
         }
     }
 
-    Task EditTitle(Title title)
+    Task EditTitle(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
@@ -479,12 +541,18 @@ public partial class IdentifyDiscItems : ComponentBase
         return Task.CompletedTask;
     }
 
-    async Task RemoveIdentification(Title title)
+    async Task RemoveIdentification(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
-            var result = await this.Client.DeleteItemFromDisc(this.ContributionId!, this.DiscId!, item.DatabaseId!);
-            if (result.IsSuccess)
+            var result = await this.ContributionClient.DeleteItemFromDisc.ExecuteAsync(new DeleteItemFromDiscInput
+            {
+                ContributionId = this.ContributionId!,
+                DiscId = this.DiscId!,
+                ItemId = item.DatabaseId!
+            });
+
+            if (result.IsSuccessResult())
             {
                 identifiedTitles.Remove(title);
                 this.StateHasChanged();
@@ -497,7 +565,7 @@ public partial class IdentifyDiscItems : ComponentBase
         }
     }
 
-    private Task ItemSelected(Title title, MenuEventArgs args)
+    private Task ItemSelected(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title, MenuEventArgs args)
     {
         string type = args.Item.HtmlAttributes["data-type"].ToString() ?? "Unknown";
 
@@ -541,14 +609,17 @@ public partial class IdentifyDiscItems : ComponentBase
             if (!string.IsNullOrEmpty(chapter.Title))
             {
                 this.callInProgress = true;
-                var response = await this.Client.AddChapterToItem(this.ContributionId!, this.DiscId!, this.currentItem.DatabaseId!, new AddChapterRequest
+                var response = await this.ContributionClient.AddChapterToItem.ExecuteAsync(new AddChapterToItemInput
                 {
-                    Index = chapter.Index,
-                    Title = chapter.Title!
+                    ContributionId = this.ContributionId!,
+                    DiscId = this.DiscId!,
+                    ItemId = this.currentItem.DatabaseId!,
+                    ChapterIndex = chapter.Index,
+                    ChapterName = chapter.Title!
                 });
                 this.callInProgress = false;
 
-                if (!response.IsSuccess)
+                if (!response.IsSuccessResult())
                 {
                     toastContent = "Error adding chapter";
                     await toast!.ShowAsync();
@@ -572,14 +643,17 @@ public partial class IdentifyDiscItems : ComponentBase
             if (!string.IsNullOrEmpty(audioTrack.Title))
             {
                 this.callInProgress = true;
-                var response = await this.Client.AddAudioTrackToItem(this.ContributionId!, this.DiscId!, this.currentItem.DatabaseId!, new AddAudioTrackRequest
+                var response = await this.ContributionClient.AddAudioTrackToItem.ExecuteAsync(new AddAudioTrackToItemInput
                 {
-                    Index = audioTrack.Index,
-                    Title = audioTrack.Title!
+                    ContributionId = this.ContributionId!,
+                    DiscId = this.DiscId!,
+                    ItemId = this.currentItem.DatabaseId!,
+                    TrackIndex = audioTrack.Index,
+                    TrackName = audioTrack.Title!
                 });
                 this.callInProgress = false;
 
-                if (!response.IsSuccess)
+                if (!response.IsSuccessResult())
                 {
                     toastContent = "Error naming audio track";
                     await toast!.ShowAsync();
@@ -604,10 +678,26 @@ public partial class IdentifyDiscItems : ComponentBase
             callInProgress = true;
             var updateRequest = currentItem.CreateEditRequest();
 
-            var updateResponse = await this.Client.EditItemOnDisc(this.ContributionId!, this.DiscId!, currentItem.DatabaseId!, updateRequest);
+            var updateResponse = await this.ContributionClient.EditItemOnDisc.ExecuteAsync(new EditItemOnDiscInput
+            {
+                ContributionId = this.ContributionId!,
+                DiscId = this.DiscId!,
+                ItemId = this.currentItem.DatabaseId!,
+                ChapterCount = updateRequest.ChapterCount,
+                Description = updateRequest.Description,
+                Duration = updateRequest.Duration,
+                Name = updateRequest.Name,
+                SegmentCount = updateRequest.SegmentCount,
+                SegmentMap = updateRequest.SegmentMap,
+                Size = updateRequest.Size,
+                Source = updateRequest.Source,
+                Type = updateRequest.Type,
+                Season = updateRequest.Season,
+                Episode = updateRequest.Episode
+            });
             callInProgress = false;
 
-            if (updateResponse.IsSuccess)
+            if (updateResponse.IsSuccessResult())
             {
                 this.identifiedTitles[currentItem.Title] = currentItem;
                 this.StateHasChanged();
@@ -628,12 +718,28 @@ public partial class IdentifyDiscItems : ComponentBase
         }
 
         callInProgress = true;
-        var response = await this.Client.AddItemToDisc(this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());
+        var addRequest = currentItem.CreateAddRequest();
+        var response = await this.ContributionClient.AddItemToDisc.ExecuteAsync(new AddItemToDiscInput
+        {
+            ContributionId = this.ContributionId!,
+            DiscId = this.DiscId!,
+            ChapterCount = addRequest.ChapterCount,
+            Description = addRequest.Description,
+            Duration = addRequest.Duration,
+            Name = addRequest.Name,
+            SegmentCount = addRequest.SegmentCount,
+            SegmentMap = addRequest.SegmentMap,
+            Size = addRequest.Size,
+            Source = addRequest.Source,
+            Type = addRequest.Type,
+            Season = addRequest.Season,
+            Episode = addRequest.Episode
+        });
         callInProgress = false;
 
-        if (response.IsSuccess)
+        if (response?.DataInfo != null && response.IsSuccessResult())
         {
-            currentItem.DatabaseId = response.Value.ItemId;
+            currentItem.DatabaseId = response.Data!.AddItemToDisc.UserContributionDiscItem!.EncodedId;
             this.identifiedTitles[currentItem.Title] = currentItem;
             this.StateHasChanged();
         }
@@ -701,12 +807,29 @@ public partial class IdentifyDiscItems : ComponentBase
         }
 
         this.callInProgress = true;
-        var response = await this.Client.AddItemToDisc(this.ContributionId!, this.DiscId!, currentItem.CreateAddRequest());
+        var addRequest = currentItem.CreateAddRequest();
+        var response = await this.ContributionClient.AddItemToDisc.ExecuteAsync(new AddItemToDiscInput
+        {
+            ContributionId = this.ContributionId!,
+            DiscId = this.DiscId!,
+            ChapterCount = addRequest.ChapterCount,
+            Description = addRequest.Description,
+            Duration = addRequest.Duration,
+            Name = addRequest.Name,
+            SegmentCount = addRequest.SegmentCount,
+            SegmentMap = addRequest.SegmentMap,
+            Size = addRequest.Size,
+            Source = addRequest.Source,
+            Type = addRequest.Type,
+            Season = addRequest.Season,
+            Episode = addRequest.Episode
+        });
+
         this.callInProgress = false;
 
-        if (response.IsSuccess)
+        if (response?.Data?.AddItemToDisc != null && response.IsSuccessResult())
         {
-            currentItem.DatabaseId = response.Value.ItemId;
+            currentItem.DatabaseId = response.Data.AddItemToDisc.UserContributionDiscItem!.EncodedId;
             this.identifiedTitles[currentItem.Title] = currentItem;
             this.StateHasChanged();
         }
@@ -721,8 +844,17 @@ public partial class IdentifyDiscItems : ComponentBase
 
     private async Task EpisodeDialogCancelClicked()
     {
-        this.identifiedTitles.Remove(this.currentItem!.Title!);
-        this.StateHasChanged();
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        bool isEdit = this.currentItem.DatabaseId != null;
+        if (!isEdit)
+        {
+            this.identifiedTitles.Remove(this.currentItem!.Title!);
+        }
+
         await this.episodeDialog!.HideAsync();
     }
 
@@ -742,11 +874,18 @@ public partial class IdentifyDiscItems : ComponentBase
             return;
         }
 
-        var match = this.episodeNames.TryFind(this.currentItem.Episode.Season, this.currentItem.Episode.Episode);
+        var match = TryFindEpisodeName(this.episodeNames, this.currentItem.Episode.Season, this.currentItem.Episode.Episode);
         if (match != null)
         {
             this.currentItem.ItemTitle = match.EpisodeName;
         }
+    }
+
+    private IGetEpisodeNames_EpisodeNames_SeriesEpisodeNames_Episodes? TryFindEpisodeName(IGetEpisodeNames_EpisodeNames episodeNames, string season, string episode)
+    {
+        return episodeNames.SeriesEpisodeNames!.Episodes.FirstOrDefault(e =>
+            string.Equals(e.SeasonNumber, season, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(e.EpisodeNumber, episode, StringComparison.OrdinalIgnoreCase));
     }
 
     private void EpisodeTitleKeyPress(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs args)

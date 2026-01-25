@@ -1,0 +1,828 @@
+schema {
+  query: ContributionQuery
+  mutation: ContributionMutations
+}
+
+input UpdateDiscInput {
+  contributionId: String!
+  discId: String!
+  format: String!
+  name: String!
+  slug: String!
+}
+
+input UserContributionDiscItemFilterInput {
+  and: [UserContributionDiscItemFilterInput!]
+  or: [UserContributionDiscItemFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  disc: UserContributionDiscFilterInput
+  name: StringOperationFilterInput
+  source: StringOperationFilterInput
+  duration: StringOperationFilterInput
+  size: StringOperationFilterInput
+  chapterCount: IntOperationFilterInput
+  segmentCount: IntOperationFilterInput
+  segmentMap: StringOperationFilterInput
+  type: StringOperationFilterInput
+  description: StringOperationFilterInput
+  season: StringOperationFilterInput
+  episode: StringOperationFilterInput
+  chapters: ListEncodedIdFilterTypeOfUserContributionChapterFilterInput
+  audioTracks: ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput
+}
+
+input UserContributionFilterInput {
+  and: [UserContributionFilterInput!]
+  or: [UserContributionFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  userId: StringOperationFilterInput
+  created: DateTimeOperationFilterInput
+  status: UserContributionStatusOperationFilterInput
+  discs: ListEncodedIdFilterTypeOfUserContributionDiscFilterInput
+  hashItems: ListEncodedIdFilterTypeOfUserContributionDiscHashItemFilterInput
+  mediaType: StringOperationFilterInput
+  externalId: StringOperationFilterInput
+  externalProvider: StringOperationFilterInput
+  releaseDate: DateTimeOperationFilterInput
+  asin: StringOperationFilterInput
+  upc: StringOperationFilterInput
+  frontImageUrl: StringOperationFilterInput
+  backImageUrl: StringOperationFilterInput
+  releaseTitle: StringOperationFilterInput
+  releaseSlug: StringOperationFilterInput
+  locale: StringOperationFilterInput
+  regionCode: StringOperationFilterInput
+  title: StringOperationFilterInput
+  year: StringOperationFilterInput
+  titleSlug: StringOperationFilterInput
+}
+
+input FileHashInfoInput {
+  index: Int!
+  name: String
+  creationTime: DateTime!
+  size: Long!
+}
+
+type DiscInfo {
+  name: String
+  type: String
+  languageCode: String
+  language: String
+  titles: [Title!]!
+  hashInfo: [HashInfoLogLine!]!
+}
+
+input ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput {
+  all: UserContributionDiscItemFilterInput
+  none: UserContributionDiscItemFilterInput
+  some: UserContributionDiscItemFilterInput
+  any: Boolean
+}
+
+"A connection to a list of items."
+type ContributionsConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [ContributionsEdge!]
+  "A flattened list of the nodes."
+  nodes: [UserContribution!]
+}
+
+input AddAudioTrackToItemInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+  trackIndex: Int!
+  trackName: String!
+}
+
+input DateTimeOperationFilterInput {
+  eq: DateTime
+  neq: DateTime
+  in: [DateTime]
+  nin: [DateTime]
+  gt: DateTime
+  ngt: DateTime
+  gte: DateTime
+  ngte: DateTime
+  lt: DateTime
+  nlt: DateTime
+  lte: DateTime
+  nlte: DateTime
+}
+
+type UserContributionDisc {
+  userContribution: UserContribution!
+  contentHash: String!
+  format: String!
+  name: String!
+  slug: String!
+  logsUploaded: Boolean!
+  existingDiscPath: String
+  items(where: UserContributionDiscItemFilterInput order: [UserContributionDiscItemSortInput!]): [UserContributionDiscItem!]!
+  id: Int!
+  encodedId: EncodedId!
+}
+
+input EpisodeNamesInput {
+  contributionId: String!
+}
+
+type UserContribution {
+  userId: String!
+  created: DateTime!
+  status: UserContributionStatus!
+  discs(where: UserContributionDiscFilterInput order: [UserContributionDiscSortInput!]): [UserContributionDisc!]!
+  hashItems(where: UserContributionDiscHashItemFilterInput order: [UserContributionDiscHashItemSortInput!]): [UserContributionDiscHashItem!]!
+  mediaType: String!
+  externalId: String!
+  externalProvider: String!
+  releaseDate: DateTime!
+  asin: String!
+  upc: String!
+  frontImageUrl: String!
+  backImageUrl: String
+  releaseTitle: String!
+  releaseSlug: String
+  locale: String!
+  regionCode: String!
+  title: String
+  year: String
+  titleSlug: String!
+  id: Int!
+  encodedId: EncodedId!
+}
+
+union AddChapterToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+union DeleteItemFromDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+input CreateContributionInput {
+  input: ContributionMutationRequestInput!
+}
+
+union AddAudioTrackToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+scalar EncodedId
+
+type SeriesEpisodeNames {
+  tryFind(season: String! episode: String!): SeriesEpisodeNameEntry
+  seriesTitle: String!
+  seriesYear: String!
+  episodes: [SeriesEpisodeNameEntry!]!
+}
+
+type ExternalMetadata {
+  id: Int!
+  title: String!
+  year: Int!
+  imageUrl: String!
+}
+
+"An edge in a connection."
+type ContributionsEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: UserContribution!
+}
+
+input UserContributionChapterSortInput {
+  index: SortEnumType
+  title: SortEnumType
+  item: UserContributionDiscItemSortInput
+}
+
+input DeleteItemFromDiscInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+}
+
+type Segment {
+  index: Int!
+  type: String
+  name: String
+  audioType: String
+  languageCode: String
+  language: String
+  resolution: String
+  aspectRatio: String
+}
+
+interface Error {
+  message: String!
+}
+
+"Defines when a policy shall be executed."
+enum ApplyPolicy {
+  "Before the resolver was executed."
+  BEFORE_RESOLVER
+  "After the resolver was executed."
+  AFTER_RESOLVER
+  "The policy is applied in the validation step before the execution."
+  VALIDATION
+}
+
+input ContributionMutationRequestInput {
+  mediaType: String!
+  externalId: String!
+  externalProvider: String!
+  releaseDate: DateTime!
+  asin: String!
+  upc: String!
+  frontImageUrl: String!
+  backImageUrl: String
+  releaseTitle: String!
+  releaseSlug: String!
+  regionCode: String!
+  locale: String!
+  title: String!
+  year: String!
+  storageId: UUID!
+  status: UserContributionStatus!
+}
+
+union HashDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+"The `TimeSpan` scalar represents an ISO-8601 compliant duration type."
+scalar TimeSpan
+
+type ExternalDataPayload {
+  externalMetadata: ExternalMetadata
+  errors: [ExternalDataError!]
+}
+
+input UserContributionStatusOperationFilterInput {
+  eq: UserContributionStatus
+  neq: UserContributionStatus
+  in: [UserContributionStatus!]
+  nin: [UserContributionStatus!]
+}
+
+input ExternalDataInput {
+  externalId: String!
+  mediaType: String!
+  provider: String!
+}
+
+enum SortEnumType {
+  ASC
+  DESC
+}
+
+type CreateDiscPayload {
+  userContributionDisc: UserContributionDisc
+  errors: [CreateDiscError!]
+}
+
+input ExternalDataForContributionInput {
+  contributionId: String!
+}
+
+input IntOperationFilterInput {
+  eq: Int
+  neq: Int
+  in: [Int]
+  nin: [Int]
+  gt: Int
+  ngt: Int
+  gte: Int
+  ngte: Int
+  lt: Int
+  nlt: Int
+  lte: Int
+  nlte: Int
+}
+
+input UserContributionDiscHashItemSortInput {
+  userContribution: UserContributionSortInput
+  discHash: SortEnumType
+  index: SortEnumType
+  name: SortEnumType
+  creationTime: SortEnumType
+  size: SortEnumType
+}
+
+type ContributionMutations {
+  addAudioTrackToItem(input: AddAudioTrackToItemInput!): AddAudioTrackToItemPayload!
+  addChapterToItem(input: AddChapterToItemInput!): AddChapterToItemPayload!
+  addItemToDisc(input: AddItemToDiscInput!): AddItemToDiscPayload!
+  createContribution(input: CreateContributionInput!): CreateContributionPayload!
+  createDisc(input: CreateDiscInput!): CreateDiscPayload!
+  deleteItemFromDisc(input: DeleteItemFromDiscInput!): DeleteItemFromDiscPayload!
+  editItemOnDisc(input: EditItemOnDiscInput!): EditItemOnDiscPayload!
+  discLogs(input: DiscLogsInput!): DiscLogsPayload!
+  discUploadStatus(input: DiscUploadStatusInput!): DiscUploadStatusPayload!
+  episodeNames(input: EpisodeNamesInput!): EpisodeNamesPayload!
+  externalData(input: ExternalDataInput!): ExternalDataPayload!
+  externalDataForContribution(input: ExternalDataForContributionInput!): ExternalDataForContributionPayload!
+  hashDisc(input: HashDiscInput!): HashDiscPayload!
+  updateDisc(input: UpdateDiscInput!): UpdateDiscPayload!
+}
+
+type AddItemToDiscPayload {
+  userContributionDiscItem: UserContributionDiscItem
+  errors: [AddItemToDiscError!]
+}
+
+type ExternalDataNotFoundError implements Error {
+  message: String!
+}
+
+type HashInfoLogLine {
+  matches(prefix: String!): Boolean!
+  index: Int!
+  name: String
+  creationTime: DateTime!
+  size: Long!
+  originalLine: String
+  prefix: String
+}
+
+"A connection to a list of items."
+type MyContributionsConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [MyContributionsEdge!]
+  "A flattened list of the nodes."
+  nodes: [UserContribution!]
+}
+
+input UserContributionAudioTrackFilterInput {
+  and: [UserContributionAudioTrackFilterInput!]
+  or: [UserContributionAudioTrackFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  index: IntOperationFilterInput
+  title: StringOperationFilterInput
+  item: UserContributionDiscItemFilterInput
+}
+
+input DiscLogsInput {
+  contributionId: String!
+  discId: String!
+}
+
+union AddItemToDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+input UserContributionDiscItemSortInput {
+  disc: UserContributionDiscSortInput
+  name: SortEnumType
+  source: SortEnumType
+  duration: SortEnumType
+  size: SortEnumType
+  chapterCount: SortEnumType
+  segmentCount: SortEnumType
+  segmentMap: SortEnumType
+  type: SortEnumType
+  description: SortEnumType
+  season: SortEnumType
+  episode: SortEnumType
+}
+
+type DiscUploadStatusPayload {
+  discUploadStatus: DiscUploadStatus
+  errors: [DiscUploadStatusError!]
+}
+
+type ContributionQuery {
+  contributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput order: [UserContributionSortInput!]): ContributionsConnection
+  myContributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput order: [UserContributionSortInput!]): MyContributionsConnection
+}
+
+type CreateContributionPayload {
+  userContribution: UserContribution
+  errors: [CreateContributionError!]
+}
+
+input LongOperationFilterInput {
+  eq: Long
+  neq: Long
+  in: [Long]
+  nin: [Long]
+  gt: Long
+  ngt: Long
+  gte: Long
+  ngte: Long
+  lt: Long
+  nlt: Long
+  lte: Long
+  nlte: Long
+}
+
+type UserContributionDiscHashItem {
+  userContribution: UserContribution!
+  discHash: String!
+  index: Int!
+  name: String!
+  creationTime: DateTime!
+  size: Long!
+  id: Int!
+  encodedId: EncodedId!
+}
+
+input UserContributionDiscFilterInput {
+  and: [UserContributionDiscFilterInput!]
+  or: [UserContributionDiscFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  userContribution: UserContributionFilterInput
+  contentHash: StringOperationFilterInput
+  format: StringOperationFilterInput
+  name: StringOperationFilterInput
+  slug: StringOperationFilterInput
+  logsUploaded: BooleanOperationFilterInput
+  existingDiscPath: StringOperationFilterInput
+  items: ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput
+}
+
+input EditItemOnDiscInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+  name: String!
+  source: String!
+  duration: String!
+  size: String!
+  chapterCount: Int!
+  segmentCount: Int!
+  segmentMap: String!
+  type: String!
+  description: String
+  season: String
+  episode: String
+}
+
+union EpisodeNamesError = ContributionNotFoundError | ExternalDataNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+input DiscUploadStatusInput {
+  discId: String!
+}
+
+type InvalidIdError implements Error {
+  message: String!
+}
+
+type AddAudioTrackToItemPayload {
+  userContributionAudioTrack: UserContributionAudioTrack
+  errors: [AddAudioTrackToItemError!]
+}
+
+input BooleanOperationFilterInput {
+  eq: Boolean
+  neq: Boolean
+}
+
+input UserContributionAudioTrackSortInput {
+  index: SortEnumType
+  title: SortEnumType
+  item: UserContributionDiscItemSortInput
+}
+
+type EditItemOnDiscPayload {
+  userContributionDiscItem: UserContributionDiscItem
+  errors: [EditItemOnDiscError!]
+}
+
+type UserContributionDiscItem {
+  disc: UserContributionDisc!
+  name: String!
+  source: String!
+  duration: String!
+  size: String!
+  chapterCount: Int!
+  segmentCount: Int!
+  segmentMap: String!
+  type: String!
+  description: String
+  season: String
+  episode: String
+  chapters(where: UserContributionChapterFilterInput order: [UserContributionChapterSortInput!]): [UserContributionChapter!]!
+  audioTracks(where: UserContributionAudioTrackFilterInput order: [UserContributionAudioTrackSortInput!]): [UserContributionAudioTrack!]!
+  id: Int!
+  encodedId: EncodedId!
+}
+
+type LogsNotFoundError implements Error {
+  message: String!
+}
+
+"Information about pagination in a connection."
+type PageInfo {
+  "Indicates whether more edges exist following the set defined by the clients arguments."
+  hasNextPage: Boolean!
+  "Indicates whether more edges exist prior the set defined by the clients arguments."
+  hasPreviousPage: Boolean!
+  "When paginating backwards, the cursor to continue."
+  startCursor: String
+  "When paginating forwards, the cursor to continue."
+  endCursor: String
+}
+
+type FieldRequiredError implements Error {
+  message: String!
+}
+
+"An edge in a connection."
+type MyContributionsEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: UserContribution!
+}
+
+type CouldNotParseLogsError implements Error {
+  message: String!
+}
+
+type DiscLogs {
+  info: DiscInfo
+  disc: UserContributionDisc
+  contribution: UserContribution
+}
+
+type DeleteItemFromDiscPayload {
+  userContributionDiscItem: UserContributionDiscItem
+  errors: [DeleteItemFromDiscError!]
+}
+
+type HashDiscPayload {
+  discHash: DiscHash
+  errors: [HashDiscError!]
+}
+
+input ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput {
+  all: UserContributionAudioTrackFilterInput
+  none: UserContributionAudioTrackFilterInput
+  some: UserContributionAudioTrackFilterInput
+  any: Boolean
+}
+
+union UpdateDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+union ExternalDataError = ContributionNotFoundError | ExternalDataNotFoundError
+
+input AddItemToDiscInput {
+  contributionId: String!
+  discId: String!
+  name: String!
+  source: String!
+  duration: String!
+  size: String!
+  chapterCount: Int!
+  segmentCount: Int!
+  segmentMap: String!
+  type: String!
+  description: String
+  season: String
+  episode: String
+}
+
+input ListEncodedIdFilterTypeOfUserContributionDiscHashItemFilterInput {
+  all: UserContributionDiscHashItemFilterInput
+  none: UserContributionDiscHashItemFilterInput
+  some: UserContributionDiscHashItemFilterInput
+  any: Boolean
+}
+
+input HashDiscInput {
+  contributionId: String!
+  files: [FileHashInfoInput!]!
+}
+
+type UpdateDiscPayload {
+  userContributionDisc: UserContributionDisc
+  errors: [UpdateDiscError!]
+}
+
+type UserContributionChapter {
+  index: Int!
+  title: String!
+  item: UserContributionDiscItem!
+  id: Int!
+  encodedId: EncodedId!
+}
+
+type EpisodeNamesPayload {
+  seriesEpisodeNames: SeriesEpisodeNames
+  errors: [EpisodeNamesError!]
+}
+
+union EditItemOnDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+union DiscLogsError = LogsNotFoundError | ContributionNotFoundError | DiscNotFoundError | CouldNotParseLogsError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+type SeriesEpisodeNameEntry {
+  seasonNumber: String!
+  episodeNumber: String!
+  episodeName: String!
+}
+
+union CreateContributionError = AuthenticationError
+
+"The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
+scalar Long
+
+input CreateDiscInput {
+  contributionId: String!
+  contentHash: String!
+  format: String!
+  name: String!
+  slug: String!
+  existingDiscPath: String
+}
+
+type DiscUploadStatus {
+  logsUploaded: Boolean!
+}
+
+input ListEncodedIdFilterTypeOfUserContributionChapterFilterInput {
+  all: UserContributionChapterFilterInput
+  none: UserContributionChapterFilterInput
+  some: UserContributionChapterFilterInput
+  any: Boolean
+}
+
+scalar UUID
+
+type AddChapterToItemPayload {
+  userContributionChapter: UserContributionChapter
+  errors: [AddChapterToItemError!]
+}
+
+type ExternalDataForContributionPayload {
+  externalMetadata: ExternalMetadata
+  errors: [ExternalDataForContributionError!]
+}
+
+union CreateDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+input UserContributionDiscHashItemFilterInput {
+  and: [UserContributionDiscHashItemFilterInput!]
+  or: [UserContributionDiscHashItemFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  userContribution: UserContributionFilterInput
+  discHash: StringOperationFilterInput
+  index: IntOperationFilterInput
+  name: StringOperationFilterInput
+  creationTime: DateTimeOperationFilterInput
+  size: LongOperationFilterInput
+}
+
+input UserContributionChapterFilterInput {
+  and: [UserContributionChapterFilterInput!]
+  or: [UserContributionChapterFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  index: IntOperationFilterInput
+  title: StringOperationFilterInput
+  item: UserContributionDiscItemFilterInput
+}
+
+union DiscUploadStatusError = DiscNotFoundError | FieldRequiredError | InvalidIdError
+
+input AddChapterToItemInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+  chapterIndex: Int!
+  chapterName: String!
+}
+
+type ExternalDataSerializationError implements Error {
+  message: String!
+}
+
+type DiscNotFoundError implements Error {
+  message: String!
+}
+
+input StringOperationFilterInput {
+  and: [StringOperationFilterInput!]
+  or: [StringOperationFilterInput!]
+  eq: String
+  neq: String
+  contains: String
+  ncontains: String
+  in: [String]
+  nin: [String]
+  startsWith: String
+  nstartsWith: String
+  endsWith: String
+  nendsWith: String
+}
+
+type Title {
+  index: Int!
+  chapterCount: Int!
+  length: String
+  displaySize: String
+  size: Long!
+  playlist: String
+  segmentMap: String
+  comment: String
+  javaComment: String
+  segments: [Segment!]!
+  lengthAsTimeSpan: TimeSpan!
+}
+
+type ContributionNotFoundError implements Error {
+  message: String!
+}
+
+input ListEncodedIdFilterTypeOfUserContributionDiscFilterInput {
+  all: UserContributionDiscFilterInput
+  none: UserContributionDiscFilterInput
+  some: UserContributionDiscFilterInput
+  any: Boolean
+}
+
+"The `DateTime` scalar represents an ISO-8601 compliant date time type."
+scalar DateTime
+
+scalar EncodedIdFilter
+
+type InvalidOwnershipError implements Error {
+  message: String!
+}
+
+type DiscItemNotFoundError implements Error {
+  message: String!
+}
+
+input EncodedIdOperationFilterInput {
+  and: [EncodedIdOperationFilterInput!]
+  or: [EncodedIdOperationFilterInput!]
+  eq: EncodedIdFilter
+  neq: EncodedIdFilter
+}
+
+type UserContributionAudioTrack {
+  index: Int!
+  title: String!
+  item: UserContributionDiscItem!
+  id: Int!
+  encodedId: EncodedId!
+}
+
+type AuthenticationError implements Error {
+  message: String!
+}
+
+type DiscLogsPayload {
+  discLogs: DiscLogs
+  errors: [DiscLogsError!]
+}
+
+type DiscHash {
+  hash: String!
+}
+
+union ExternalDataForContributionError = ContributionNotFoundError | ExternalDataSerializationError | ExternalDataNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+enum UserContributionStatus {
+  PENDING
+  READY_FOR_REVIEW
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+  IMPORTED
+}
+
+input UserContributionDiscSortInput {
+  userContribution: UserContributionSortInput
+  contentHash: SortEnumType
+  format: SortEnumType
+  name: SortEnumType
+  slug: SortEnumType
+  logsUploaded: SortEnumType
+  existingDiscPath: SortEnumType
+}
+
+input UserContributionSortInput {
+  userId: SortEnumType
+  created: SortEnumType
+  status: SortEnumType
+  mediaType: SortEnumType
+  externalId: SortEnumType
+  externalProvider: SortEnumType
+  releaseDate: SortEnumType
+  asin: SortEnumType
+  upc: SortEnumType
+  frontImageUrl: SortEnumType
+  backImageUrl: SortEnumType
+  releaseTitle: SortEnumType
+  releaseSlug: SortEnumType
+  locale: SortEnumType
+  regionCode: SortEnumType
+  title: SortEnumType
+  year: SortEnumType
+  titleSlug: SortEnumType
+}
+
+"The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."
+directive @cost("The `weight` argument defines what value to add to the overall cost for every appearance, or possible appearance, of a type, field, argument, etc." weight: String!) on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM | INPUT_FIELD_DEFINITION
+
+"The purpose of the `@listSize` directive is to either inform the static analysis about the size of returned lists (if that information is statically available), or to point the analysis to where to find that information."
+directive @listSize("The `assumedSize` argument can be used to statically define the maximum length of a list returned by a field." assumedSize: Int "The `slicingArguments` argument can be used to define which of the field's arguments with numeric type are slicing arguments, so that their value determines the size of the list returned by that field. It may specify a list of multiple slicing arguments." slicingArguments: [String!] "The `slicingArgumentDefaultValue` argument can be used to define a default value for a slicing argument, which is used if the argument is not present in a query." slicingArgumentDefaultValue: Int "The `sizedFields` argument can be used to define that the value of the `assumedSize` argument or of a slicing argument does not affect the size of a list returned by a field itself, but that of a list returned by one of its sub-fields." sizedFields: [String!] "The `requireOneSlicingArgument` argument can be used to inform the static analysis that it should expect that exactly one of the defined slicing arguments is present in a query. If that is not the case (i.e., if none or multiple slicing arguments are present), the static analysis may throw an error." requireOneSlicingArgument: Boolean! = true) on FIELD_DEFINITION

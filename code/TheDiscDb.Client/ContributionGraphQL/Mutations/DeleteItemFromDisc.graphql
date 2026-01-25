@@ -1,0 +1,13 @@
+mutation DeleteItemFromDisc($input: DeleteItemFromDiscInput!) {
+  deleteItemFromDisc(input: $input) {
+    userContributionDiscItem {
+      __typename
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using StrawberryShake;
+using TheDiscDb.Client.Contributions;
 using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -14,7 +16,7 @@ public partial class EditDisc : ComponentBase
     public string? DiscId { get; set; }
 
     [Inject]
-    public IUserContributionService Client { get; set; } = default!;
+    public IContributionClient ContributionClient { get; set; } = default!;
 
     [Inject]
     public NavigationManager Navigation { get; set; } = default!;
@@ -26,20 +28,36 @@ public partial class EditDisc : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        var disc = await this.Client.GetDisc(this.ContributionId!, this.DiscId!);
-        if (disc.IsSuccess)
+        var result = await this.ContributionClient.GetDisc.ExecuteAsync(this.ContributionId!, this.DiscId!);
+        if (result?.Data?.Contributions?.Nodes != null && result.IsSuccessResult())
         {
-            this.request.ContentHash = disc.Value.ContentHash;
-            this.request.Name = disc.Value.Name;
-            this.request.Slug = disc.Value.Slug;
-            this.request.Format = disc.Value.Format;
+            var contribution = result.Data.Contributions.Nodes.FirstOrDefault();
+            if (contribution != null)
+            {
+                var disc = contribution.Discs.FirstOrDefault();
+                if (disc != null)
+                {
+                    this.request.ContentHash = disc.ContentHash;
+                    this.request.Name = disc.Name;
+                    this.request.Slug = disc.Slug;
+                    this.request.Format = disc.Format;
+                }
+            }
         }
     }
 
     async Task HandleValidSubmit()
     {
-        var response = await this.Client.UpdateDisc(this.ContributionId!, this.DiscId!, this.request);
-        if (response.IsSuccess)
+        var response = await this.ContributionClient.UpdateDisc.ExecuteAsync(new UpdateDiscInput
+        {
+            ContributionId = this.ContributionId!,
+            DiscId = this.DiscId!,
+            Format = request.Format,
+            Name = request.Name,
+            Slug = request.Slug
+        });
+
+        if (response.IsSuccessResult())
         {
             this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{this.DiscId}");
         }

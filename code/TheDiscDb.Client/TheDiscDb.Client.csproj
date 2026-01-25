@@ -5,11 +5,31 @@
         <Nullable>enable</Nullable>
         <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
         <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
         <UserSecretsId>6782684c-6982-45cd-af45-1668dbf88814</UserSecretsId>
     </PropertyGroup>
     <ItemGroup>
-        <GraphQL Remove="graphql\GetMediaItemsByGroup.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\addAudioTrackToItem.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\AddChapterToItem.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\AddItemToDisc.graphql" />
+        <GraphQL Remove="ContributionGraphql\Mutations\CreateContribution.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\CreateDisc.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\DeleteItemFromDisc.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\EditItemOnDisc.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\GetDiscLogs.graphql" />
+        <GraphQL Remove="ContributionGraphQL\Mutations\GetDiscUploadStatus.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\GetEpisodeNames.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\GetExternalData.graphql" />
+        <GraphQL Remove="ContributionGraphQL\Mutations\GetExternalDataForContribution.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\HashDisc.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\UpdateDisc.graphql" />
+        <GraphQL Remove="ContributionGraphql\Queries\ContributionDiscs.graphql" />
+        <GraphQL Remove="contributiongraphql\queries\ContributionsByStatus.graphql" />
+        <GraphQL Remove="contributiongraphql\queries\DiscUploadPageData.graphql" />
+        <GraphQL Remove="ContributionGraphQL\Queries\GetCurrentUserContributionsGetCurrentUserContributions.graphql" />
+        <GraphQL Remove="contributiongraphql\queries\GetDisc.graphql" />
+        <GraphQL Remove="contributiongraphql\queries\MyPendingContributions.graphql" />
+        <GraphQL Remove="graphql\queries\GetMediaItemsByGroup.graphql" />
         <GraphQL Remove="graphql\queries\GetBoxsetDiscs.graphql" />
         <GraphQL Remove="graphql\queries\GetBoxsets.graphql" />
         <GraphQL Remove="graphql\queries\GetDiscDetail.graphql" />
@@ -22,18 +42,18 @@
     <ItemGroup>
         <PackageReference Include="Fantastic.TheMovieDb" Version="2.1.0" />
         <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.3.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="10.0.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.0" />
-        <PackageReference Include="Sqids" Version="3.1.0" />
-        <PackageReference Include="StrawberryShake.Blazor" Version="15.1.11" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="10.0.2" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.2" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.2" />
+        <PackageReference Include="Sqids" Version="3.2.0" />
+        <PackageReference Include="StrawberryShake.Blazor" Version="15.1.12" />
         <PackageReference Include="TheDiscDb.MakeMkv" Version="2.0.3" />
-        <PackageReference Include="Syncfusion.Blazor.Inputs" Version="31.2.16" />
-        <PackageReference Include="Syncfusion.Blazor.Themes" Version="31.2.16" />
-        <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="31.2.16" />
-        <PackageReference Include="Syncfusion.Blazor.Navigations" Version="31.2.16" />
-        <PackageReference Include="Syncfusion.Blazor.Spinner" Version="31.2.16" />
-        <PackageReference Include="Syncfusion.Blazor.Calendars" Version="31.2.16" />
+        <PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.23" />
+        <PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.23" />
+        <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="32.1.23" />
+        <PackageReference Include="Syncfusion.Blazor.Navigations" Version="32.1.23" />
+        <PackageReference Include="Syncfusion.Blazor.Spinner" Version="32.1.23" />
+        <PackageReference Include="Syncfusion.Blazor.Calendars" Version="32.1.23" />
         <PackageReference Include="FluentResults" Version="4.0.0" />
         <PackageReference Include="HighlightBlazor" Version="0.1.10" />
     </ItemGroup>

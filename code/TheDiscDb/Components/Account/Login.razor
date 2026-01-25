@@ -1,5 +1,7 @@
 ﻿@page "/Account/Login"
 
+@rendermode InteractiveServer
+
 <PageTitle>Login - TheDiscDb</PageTitle>
 <HeadContent>
     <meta name="description" content="The login page for TheDiscDb." />
@@ -21,3 +23,7 @@
         </p>
     </div>
 </form>
+
+<environment names="Development">
+    <button @onclick="TestContributorLogin">Login as test contributor</button>
+</environment>

@@ -1,0 +1,13 @@
+mutation CreateContribution($input: CreateContributionInput!) {
+  createContribution(input: $input) {
+    userContribution {
+        encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

@@ -1,11 +1,12 @@
-﻿using System.Security.Claims;
-using System.Text;
-using Microsoft.AspNetCore.Identity;
+﻿using System.Text;
+using FluentResults;
+using MakeMkv;
 using Microsoft.AspNetCore.Mvc;
-using Sqids;
+using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
+using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Web;
@@ -16,41 +17,10 @@ public class ContributionEndpoints
     {
         var contribute = app.MapGroup("/api/contribute").RequireAuthorization();
 
-        contribute.MapGet("my", GetUserContributions);
-        contribute.MapPost("create", CreateContribution);
-        contribute.MapGet("{contributionId}", GetContribution);
-        contribute.MapDelete("{contributionId}", DeleteContribution);
-        contribute.MapPut("{contributionId}", UpdateContribution);
-        contribute.MapPost("{contributionId}/hashdisc", HashDisc);
-        contribute.MapGet("externalsearch/{type}", ExternalSearch);
-        contribute.MapGet("{contributionId}/episodes", GetEpisodeNames);
-        contribute.MapGet("{contributionId}/externalData", GetExternalData);
-        contribute.MapGet("externalData/{provider}/{mediaType}/{externalId}", GetExternalDataByExternalId);
-        contribute.MapGet("importMetadata/{asin}", ImportMetadata);
-
-        contribute.MapGet("{contributionId}/discs", GetDiscs);
-        contribute.MapGet("{contributionId}/discsj/{discId}", GetDisc);
         contribute.MapPost("{contributionId}/discs/{discId}/logs", SaveDiscLogs)
             .AllowAnonymous()
             .Accepts<string>("text/plain");
-        contribute.MapGet("{contributionId}/discs/{discId}/logs", GetDiscLogs);
-        contribute.MapPost("{contributionId}/discs/create", CreateDisc);
-        contribute.MapPut("{contributionId}/discs/{discId}", UpdateDisc);
-        contribute.MapDelete("{contributionId}/discs/{discId}", DeleteDisc);
-        contribute.MapGet("checkdiskuploadstatus/{discId}", CheckDiskUploadStatus)
-            .AllowAnonymous();
-
-        contribute.MapPost("{contributionId}/discs/{discId}/items", AddItemToDisc);
-        contribute.MapPut("{contributionId}/discs/{discId}/items/{itemId}", EditItemOnDisc);
-        contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}", DeleteItemFromDisc);
-
-        contribute.MapPost("{contributionId}/discs/{discId}/items/{itemId}/chapters", AddChapterToItem);
-        contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}/chapters/{chapterId}", DeleteChapterFromItem);
-        contribute.MapPut("{contributionId}/discs/{discId}/items/{itemId}/chapters/{chapterId}", UpdateChapterInItem);
-
-        contribute.MapPost("{contributionId}/discs/{discId}/items/{itemId}/audiotracks", AddAudioTrackToItem);
-        contribute.MapDelete("{contributionId}/discs/{discId}/items/{itemId}/audiotracks/{audioTrackId}", DeleteAudioTrackFromItem);
-        contribute.MapPut("{contributionId}/discs/{discId}/items/{itemId}/audiotracks/{audioTrackId}", UpdateAudioTrackInItem);
+        contribute.MapGet("externalsearch/{type}", ExternalSearch);
 
         contribute.MapPost("images/front/upload/{id:guid}", UploadFrontImage)
             .WithMetadata(new DisableRequestSizeLimitAttribute())
@@ -62,108 +32,6 @@ public class ContributionEndpoints
             .DisableAntiforgery();
         contribute.MapPost("images/back/remove/{id:guid}", RemoveBackImage)
             .DisableAntiforgery();
-    }
-
-    public async Task<IResult> GetUserContributions(IUserContributionService service, UserManager<TheDiscDbUser> userManager, ClaimsPrincipal user, CancellationToken cancellationToken)
-    {
-        var userId = userManager.GetUserId(user);
-        if (string.IsNullOrEmpty(userId))
-        {
-            return TypedResults.NotFound();
-        }
-
-        var result = await service.GetUserContributions(cancellationToken);
-        return JsonResult(result, "Failed to add item to disc");
-    }
-
-    public async Task<IResult> CreateContribution(IUserContributionService service, UserManager<TheDiscDbUser> userManager, [FromBody] CreateContributionRequest request, ClaimsPrincipal user, CancellationToken cancellationToken)
-    {
-        var userId = userManager.GetUserId(user);
-        //var user = await this.userManager.FindByIdAsync(userId!);
-        if (string.IsNullOrEmpty(userId))
-        {
-            return TypedResults.NotFound();
-        }
-
-        var result = await service.CreateContribution(userId, request, cancellationToken);
-        return JsonResult(result, "Failed to create contribution");
-    }
-
-    public async Task<IResult> GetContribution(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
-    {
-        var result = await service.GetContribution(contributionId, cancellationToken);
-        return JsonResult(result, "Failed to get contribution");
-    }
-
-    public async Task<IResult> DeleteContribution(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
-    {
-        var result = await service.DeleteContribution(contributionId, cancellationToken);
-        return OkOrProblem(result, $"Failed to delete contribution {contributionId}");
-    }
-
-    public async Task<IResult> UpdateContribution(IUserContributionService service, string contributionId, [FromBody] CreateContributionRequest request, CancellationToken cancellationToken)
-    {
-        var result = await service.UpdateContribution(contributionId, request, cancellationToken);
-        return OkOrProblem(result, $"Failed to update contribution {contributionId}");
-    }
-
-    public async Task<IResult> GetEpisodeNames(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
-    {
-        var result = await service.GetEpisodeNames(contributionId, cancellationToken);
-        return JsonResult(result, $"Unable to get episode names for contribution {contributionId}");
-    }
-
-    public async Task<IResult> GetExternalDataByExternalId(IUserContributionService service, string provider, string mediaType, string externalId, CancellationToken cancellationToken)
-    {
-        var result = await service.GetExternalData(externalId, mediaType, provider, cancellationToken);
-        return JsonResult(result, $"Unable to get external data for externalId {externalId} from {provider}");
-    }
-
-    public async Task<IResult> GetExternalData(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
-    {
-        var result = await service.GetExternalData(contributionId, cancellationToken);
-        return JsonResult(result, $"Unable to get external data for contribution {contributionId}");
-    }
-
-    public async Task<IResult> ImportMetadata(IUserContributionService service, string asin,  CancellationToken cancellationToken)
-    {
-        var result = await service.ImportReleaseDetails(asin, cancellationToken);
-        return JsonResult(result, $"Unable to import metadata for ASIN {asin}");
-    }
-
-    public async Task<IResult> GetDiscs(IUserContributionService service, string contributionId, CancellationToken cancellationToken)
-    {
-        var result = await service.GetDiscs(contributionId, cancellationToken);
-        return JsonResult(result, $"Unable to get discs for {contributionId}");
-    }
-
-    public async Task<IResult> GetDisc(IUserContributionService service, string contributionId, string discId, CancellationToken cancellationToken)
-    {
-        var result = await service.GetDisc(contributionId, discId, cancellationToken);
-        return JsonResult(result, $"Unable to get disc {discId} for {contributionId}");
-    }
-
-    public async Task<IResult> SaveDiscLogs(IUserContributionService service, HttpRequest request, string contributionId, string discId, CancellationToken cancellationToken)
-    {
-        using (StreamReader reader = new StreamReader(request.Body, Encoding.UTF8))
-        {
-            string logs = await reader.ReadToEndAsync();
-            var result = await service.SaveDiscLogs(contributionId, discId, logs, cancellationToken);
-            // TODO: include a traceid people can share to look up problem later
-            return OkOrProblem(result, $"Unable to save disc logs for contribution {contributionId}, disc {discId}");
-        }
-    }
-
-    public async Task<IResult> GetDiscLogs(IUserContributionService service, string contributionId, string discId, CancellationToken cancellationToken)
-    {
-        var result = await service.GetDiscLogs(contributionId, discId, cancellationToken);
-        return JsonResult(result, $"Unable to get disc logs for contribution {contributionId}, disc {discId}");
-    }
-
-    public async Task<IResult> CreateDisc(IUserContributionService service, string contributionId, [FromBody] SaveDiscRequest request, CancellationToken cancellationToken)
-    {
-        var result = await service.CreateDisc(contributionId, request, cancellationToken);
-        return JsonResult(result, $"Unable to create disc for contribution {contributionId}");
     }
 
     public async Task<IResult> ExternalSearch(IExternalSearchService service, string type, [FromQuery] string query, CancellationToken cancellationToken)
@@ -182,105 +50,122 @@ public class ContributionEndpoints
         return TypedResults.BadRequest($"Unknown external search type {type}");
     }
 
-    public async Task<IResult> HashDisc(IUserContributionService service, string contributionId, [FromBody] HashDiscRequest request, CancellationToken cancellation)
+    public async Task<IResult> SaveDiscLogs(IDbContextFactory<SqlServerDataContext> dbContextFactory, IdEncoder idEncoder, IStaticAssetStore assetStore, HttpRequest request, string contributionId, string discId, CancellationToken cancellationToken)
     {
-        var result = await service.HashDisc(contributionId, request, cancellation);
-        return JsonResult(result, $"Unable to calculate hash for contribution {contributionId}");
-    }
-
-    public async Task<IResult> UpdateDisc(IUserContributionService service, string contributionId, string discId, [FromBody] SaveDiscRequest request, CancellationToken cancellationToken)
-    {
-        var result = await service.UpdateDisc(contributionId, discId, request, cancellationToken);
-        return OkOrProblem(result, $"Unable to update disc {discId} for contribution {contributionId}");
-    }
-    
-    public async Task<IResult> DeleteDisc(IUserContributionService service, string contributionId, string discId, CancellationToken cancellationToken)
-    {
-        var result = await service.DeleteDisc(contributionId, discId, cancellationToken);
-        return OkOrProblem(result, $"Unable to delete disc {discId} for contribution {contributionId}");
-    }
-    
-    public async Task<IResult> CheckDiskUploadStatus(IUserContributionService service, string discId, CancellationToken cancellationToken)
-    {
-        var result = await service.CheckDiskUploadStatus(discId, cancellationToken);
-        return JsonResult(result, $"Unable to get disc status for {discId}");
-    }
-
-
-    public async Task<IResult> AddItemToDisc(IUserContributionService service, string contributionId, string discId, [FromBody] AddItemRequest request, CancellationToken cancellationToken)
-    {
-        var result = await service.AddItemToDisc(contributionId, discId, request, cancellationToken);
-        return JsonResult(result, $"Failed to add item to disc {discId} for contribution {contributionId}");
-    }
-
-    public async Task<IResult> EditItemOnDisc(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, [FromBody] EditItemRequest request, CancellationToken cancellationToken)
-    {
-        if (Int32.TryParse(itemId, out int parsedItemId))
+        using (StreamReader reader = new StreamReader(request.Body, Encoding.UTF8))
         {
-            itemId = idEncoder.Encode(parsedItemId);
+            string logs = await reader.ReadToEndAsync();
+            var result = await SaveDiscLogsInternal(dbContextFactory, idEncoder, assetStore, contributionId, discId, logs, cancellationToken);
+            // TODO: include a traceid people can share to look up problem later
+            return OkOrProblem(result, $"Unable to save disc logs for contribution {contributionId}, disc {discId}");
+        }
+    }
+
+    private IResult OkOrProblem(FluentResults.Result result, string problemMessage)
+    {
+        if (result.IsSuccess)
+        {
+            return Results.Ok();
+        }
+        else
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(problemMessage);
+            sb.AppendLine("Errors:");
+            foreach (var error in result.Errors)
+            {
+                sb.AppendLine($"- {error.Message}");
+            }
+
+            return TypedResults.Problem(sb.ToString());
+        }
+    }
+
+    private IResult JsonResult<T>(FluentResults.Result<T> result, string problemMessage)
+    {
+        if (result.IsSuccess)
+        {
+            return Results.Json(result.Value);
+        }
+        else
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(problemMessage);
+            sb.AppendLine("Errors:");
+            foreach (var error in result.Errors)
+            {
+                sb.AppendLine($"- {error.Message}");
+            }
+
+            return TypedResults.Problem(sb.ToString());
+        }
+    }
+
+    public async Task<Result> SaveDiscLogsInternal(IDbContextFactory<SqlServerDataContext> dbContextFactory, IdEncoder idEncoder, IStaticAssetStore assetStore, string contributionId, string discId, string logs, CancellationToken cancellationToken)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        {
+            int id = idEncoder.Decode(contributionId);
+            var contribution = await dbContext.UserContributions
+                .Include(c => c.Discs)
+                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+            if (contribution == null)
+            {
+                return Result.Fail($"Contribution {contributionId} not found");
+            }
+
+            int realDiscId = idEncoder.Decode(discId);
+            var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
+
+            if (disc == null)
+            {
+                return Result.Fail($"Disc {discId} not found");
+            }
+
+            // Convert any LF line endings to CRLF
+            logs = logs.Replace("\r\n", "\n") // normalize any CRLF to LF first
+                .Replace("\n", "\r\n"); // then convert LF to CRLF
+
+            byte[] byteArray = Encoding.UTF8.GetBytes(logs);
+            using (MemoryStream memoryStream = new MemoryStream(byteArray))
+            {
+                // Validate the logs are from makemkv and not something else
+                memoryStream.Position = 0;
+                List<string> allLines = new();
+                using (StreamReader reader = new StreamReader(memoryStream, Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
+                {
+                    string? line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        allLines.Add(line);
+                    }
+
+                    try
+                    {
+                        _ = LogParser.Parse(allLines);
+
+                    }
+                    catch (Exception)
+                    {
+                        return Result.Fail($"Could not parse log file");
+                    }
+                }
+
+                // TODO: if the logs have changed, rewrite the memorystream
+
+                //Save the logs in blob storage
+                memoryStream.Position = 0;
+                await assetStore.Save(memoryStream, $"{contributionId}/{idEncoder.Encode(disc.Id)}-logs.txt", ContentTypes.TextContentType, cancellationToken);
+            }
+
+            disc.LogsUploaded = true;
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        var result = await service.EditItemOnDisc(contributionId, discId, itemId, request, cancellationToken);
-        return OkOrProblem(result, $"Unable to edit item {itemId} on disc {discId} for contribution {contributionId}");
-    }
+        return Result.Ok();
 
-    public async Task<IResult> DeleteItemFromDisc(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, CancellationToken cancellationToken)
-    {
-        if (Int32.TryParse(itemId, out int parsedItemId))
-        {
-            itemId = idEncoder.Encode(parsedItemId);
-        }
-
-        var result = await service.DeleteItemFromDisc(contributionId, discId, itemId, cancellationToken);
-        return OkOrProblem(result, $"Unable to delete item {itemId} from disc {discId} for contribution {contributionId}");
-    }
-
-
-    public async Task<IResult> AddChapterToItem(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, [FromBody] AddChapterRequest request, CancellationToken cancellationToken)
-    {
-        if (Int32.TryParse(itemId, out int parsedItemId))
-        {
-            itemId = idEncoder.Encode(parsedItemId);
-        }
-
-        var result = await service.AddChapterToItem(contributionId, discId, itemId, request, cancellationToken);
-        return JsonResult(result, $"Failed to add chapter item to disc {discId} for contribution {contributionId}");
-    }
-
-    public async Task<IResult> DeleteChapterFromItem(IUserContributionService service, string contributionId, string discId, string itemId, string chapterId, CancellationToken cancellationToken)
-    {
-        var result = await service.DeleteChapterFromItem(contributionId, discId, itemId, chapterId, cancellationToken);
-        return OkOrProblem(result, $"Unable to delete chapter {chapterId} from item {itemId} from disc {discId} for contribution {contributionId}");
-    }
-
-    public async Task<IResult> UpdateChapterInItem(IUserContributionService service, string contributionId, string discId, string itemId, string chapterId, [FromBody] AddChapterRequest request, CancellationToken cancellationToken)
-    {
-        var result = await service.UpdateChapterInItem(contributionId, discId, itemId, chapterId, request, cancellationToken);
-        return OkOrProblem(result, $"Unable to update chapter {chapterId} from item {itemId} from disc {discId} for contribution {contributionId}");
-    }
-
-
-    public async Task<IResult> AddAudioTrackToItem(IUserContributionService service, SqidsEncoder<int> idEncoder, string contributionId, string discId, string itemId, [FromBody] AddAudioTrackRequest request, CancellationToken cancellationToken)
-    {
-        if (Int32.TryParse(itemId, out int parsedItemId))
-        {
-            itemId = idEncoder.Encode(parsedItemId);
-        }
-
-        var result = await service.AddAudioTrackToItem(contributionId, discId, itemId, request, cancellationToken);
-        return JsonResult(result, $"Failed to add audio track to disc {discId} for contribution {contributionId}");
-    }
-
-    public async Task<IResult> DeleteAudioTrackFromItem(IUserContributionService service, string contributionId, string discId, string itemId, string audioTrackId, CancellationToken cancellationToken)
-    {
-        var result = await service.DeleteAudioTrackFromItem(contributionId, discId, itemId, audioTrackId, cancellationToken);
-        return OkOrProblem(result, $"Unable to delete audio track {audioTrackId} from item {itemId} from disc {discId} for contribution {contributionId}");
-    }
-
-    public async Task<IResult> UpdateAudioTrackInItem(IUserContributionService service, string contributionId, string discId, string itemId, string audioTrackId, [FromBody] AddAudioTrackRequest request, CancellationToken cancellationToken)
-    {
-        var result = await service.UpdateAudioTrackInItem(contributionId, discId, itemId, audioTrackId, request, cancellationToken);
-        return OkOrProblem(result, $"Unable to update audio track {audioTrackId} from item {itemId} from disc {discId} for contribution {contributionId}");
+        //TODO: Notify the client a disc has been added? (to prevent the client having to poll)
     }
 
     #region Image Upload
@@ -326,44 +211,4 @@ public class ContributionEndpoints
     private static string GetReleaseImagePath(Guid id, string name) => $"Contributions/releaseImages/{id}/{name}.jpg";
 
     #endregion
-
-    private IResult OkOrProblem(FluentResults.Result result, string problemMessage)
-    {
-        if (result.IsSuccess)
-        {
-            return Results.Ok();
-        }
-        else
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine(problemMessage);
-            sb.AppendLine("Errors:");
-            foreach (var error in result.Errors)
-            {
-                sb.AppendLine($"- {error.Message}");
-            }
-
-            return TypedResults.Problem(sb.ToString());
-        }
-    }
-
-    private IResult JsonResult<T>(FluentResults.Result<T> result, string problemMessage)
-    {
-        if (result.IsSuccess)
-        {
-            return Results.Json(result.Value);
-        }
-        else
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine(problemMessage);
-            sb.AppendLine("Errors:");
-            foreach (var error in result.Errors)
-            {
-                sb.AppendLine($"- {error.Message}");
-            }
-
-            return TypedResults.Problem(sb.ToString());
-        }
-    }
 }

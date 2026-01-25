@@ -7,17 +7,17 @@ public static partial class BreadCrumbHelper
 {
     public static (string Text, string Url) GetRootContributionLink() => (Text: "Contribute", Url: "/contribute");
 
-    public static (string Text, string Url) GetContributionLink(UserContribution contribution)
+    public static (string Text, string Url) GetContributionLink(IContributionDisplay contribution)
     {
         return (Text: GetContributionLinkText(contribution), Url: $"/contribution/{contribution.EncodedId}");
     }
 
-    public static (string Text, string Url) GetContributionDiscLink(UserContribution contribution, UserContributionDisc disc)
+    public static (string Text, string Url) GetContributionDiscLink(IContributionDisplay contribution, IContributiionDiscDisplay disc)
     {
         return (Text: $"{disc.Name} ({disc.Format})", Url: $"/contribution/{contribution.EncodedId}/discs/{disc.EncodedId}");
     }
 
-    public static string GetContributionLinkText(UserContribution contribution)
+    public static string GetContributionLinkText(IContributionDisplay contribution)
     {
         return $"{contribution.Title} ({contribution.Year}) - {contribution.ReleaseTitle}";
     }

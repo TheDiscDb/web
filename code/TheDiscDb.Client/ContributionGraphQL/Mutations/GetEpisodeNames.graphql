@@ -1,0 +1,23 @@
+mutation GetEpisodeNames($input: EpisodeNamesInput!) {
+  episodeNames(input: $input)
+  {
+    seriesEpisodeNames {
+      seriesTitle
+      seriesYear
+      episodes {
+        episodeNumber
+        seasonNumber
+        episodeName
+      }
+    }
+    errors {
+      __typename
+      ... on ContributionNotFoundError {
+        message
+      }
+      ... on ExternalDataNotFoundError {
+        message
+      }
+    }
+  }
+}

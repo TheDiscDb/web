@@ -1,0 +1,13 @@
+mutation EditItemOnDisc($input: EditItemOnDiscInput!) {
+  editItemOnDisc(input: $input) {
+    userContributionDiscItem {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

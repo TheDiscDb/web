@@ -1,0 +1,36 @@
+query DiscUploadPageData($contribtionId: EncodedIdFilter) {
+  myContributions(where:  {
+     encodedId:  {
+        eq: $contribtionId
+     }
+  })
+  {
+    nodes {
+      encodedId
+      year
+      releaseTitle
+      releaseSlug
+      status
+      mediaType
+      releaseDate
+      regionCode
+      title
+      asin
+      upc
+      externalProvider
+      externalId
+      frontImageUrl
+      backImageUrl
+      created
+      locale
+      discs {
+        encodedId
+        name
+        existingDiscPath
+        logsUploaded
+        format
+        slug
+      }
+    }
+  }
+}

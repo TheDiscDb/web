@@ -1,0 +1,13 @@
+mutation AddChapterToItem($input: AddChapterToItemInput!){
+  addChapterToItem(input: $input) {
+    userContributionChapter {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

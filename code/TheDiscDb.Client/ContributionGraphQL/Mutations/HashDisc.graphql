@@ -1,0 +1,12 @@
+mutation HashDisc($input: HashDiscInput!) {
+  hashDisc(input: $input) {
+    discHash {
+      hash
+    }
+    errors {
+      ... on ContributionNotFoundError {
+        message
+      }
+    }
+  }
+}

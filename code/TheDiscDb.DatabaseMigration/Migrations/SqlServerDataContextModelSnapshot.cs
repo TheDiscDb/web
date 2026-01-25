@@ -692,6 +692,7 @@ namespace TheDiscDb.Web.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Asin")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("BackImageUrl")
@@ -701,21 +702,27 @@ namespace TheDiscDb.Web.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<string>("ExternalId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ExternalProvider")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FrontImageUrl")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Locale")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MediaType")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RegionCode")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTimeOffset>("ReleaseDate")
@@ -725,6 +732,7 @@ namespace TheDiscDb.Web.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ReleaseTitle")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
@@ -735,12 +743,15 @@ namespace TheDiscDb.Web.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("TitleSlug")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Upc")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Year")
@@ -762,10 +773,11 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<int>("Index")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ItemId")
+                    b.Property<int>("ItemId")
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -786,10 +798,11 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<int>("Index")
                         .HasColumnType("int");
 
-                    b.Property<int?>("ItemId")
+                    b.Property<int>("ItemId")
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -808,24 +821,28 @@ namespace TheDiscDb.Web.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ContentHash")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ExistingDiscPath")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Format")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LogsUploaded")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Slug")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("UserContributionId")
+                    b.Property<int>("UserContributionId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -847,18 +864,20 @@ namespace TheDiscDb.Web.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DiscHash")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Index")
                         .HasColumnType("int");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("Size")
                         .HasColumnType("bigint");
 
-                    b.Property<int?>("UserContributionId")
+                    b.Property<int>("UserContributionId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -882,16 +901,18 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("DiscId")
+                    b.Property<int>("DiscId")
                         .HasColumnType("int");
 
                     b.Property<string>("Duration")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Episode")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Season")
@@ -901,15 +922,19 @@ namespace TheDiscDb.Web.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("SegmentMap")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Size")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Source")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Type")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -1080,7 +1105,8 @@ namespace TheDiscDb.Web.Migrations
                     b.HasOne("TheDiscDb.Web.Data.UserContributionDiscItem", "Item")
                         .WithMany("AudioTracks")
                         .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Item");
                 });
@@ -1090,7 +1116,8 @@ namespace TheDiscDb.Web.Migrations
                     b.HasOne("TheDiscDb.Web.Data.UserContributionDiscItem", "Item")
                         .WithMany("Chapters")
                         .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Item");
                 });
@@ -1100,7 +1127,8 @@ namespace TheDiscDb.Web.Migrations
                     b.HasOne("TheDiscDb.Web.Data.UserContribution", "UserContribution")
                         .WithMany("Discs")
                         .HasForeignKey("UserContributionId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("UserContribution");
                 });
@@ -1110,7 +1138,8 @@ namespace TheDiscDb.Web.Migrations
                     b.HasOne("TheDiscDb.Web.Data.UserContribution", "UserContribution")
                         .WithMany("HashItems")
                         .HasForeignKey("UserContributionId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("UserContribution");
                 });
@@ -1120,7 +1149,8 @@ namespace TheDiscDb.Web.Migrations
                     b.HasOne("TheDiscDb.Web.Data.UserContributionDisc", "Disc")
                         .WithMany("Items")
                         .HasForeignKey("DiscId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Disc");
                 });

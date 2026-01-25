@@ -1,0 +1,21 @@
+mutation GetExternalDataForContribution($input: ExternalDataForContributionInput!) {
+  externalDataForContribution(input: $input) {
+    externalMetadata {
+      title
+      year
+      imageUrl
+    }
+    errors {
+      __typename
+      ... on ContributionNotFoundError {
+        message
+      }
+      ... on ExternalDataSerializationError {
+        message
+      }
+      ... on ExternalDataNotFoundError {
+        message
+      }
+    }
+  }
+}

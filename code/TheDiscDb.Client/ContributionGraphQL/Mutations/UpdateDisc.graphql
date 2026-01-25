@@ -1,0 +1,14 @@
+mutation UpdateDisc($input: UpdateDiscInput!) {
+  updateDisc(input: $input)
+  {
+    userContributionDisc {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

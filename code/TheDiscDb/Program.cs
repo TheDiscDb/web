@@ -4,7 +4,6 @@ using Fantastic.TheMovieDb.Caching.FileSystem;
 using HighlightBlazor;
 using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
@@ -18,6 +17,8 @@ using TheDiscDb;
 using TheDiscDb.Client;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
+using TheDiscDb.GraphQL.Contribute;
+using TheDiscDb.GraphQL.Contribute.Mutations;
 using TheDiscDb.Search;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
@@ -25,7 +26,7 @@ using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Web;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
-
+    
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
@@ -99,7 +100,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddScoped<TheDiscDb.Components.Account.IdentityRedirectManager>();
 
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JGaF5cXGpCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH1dcXVXRWFdWEZ3WUpWYEs=");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JGaF5cXGpCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH1ceHRVQ2ZcVEV1V0BWYEs=");
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddScoped<SfDialogService>();
 
@@ -129,18 +130,26 @@ builder.Services
     {
         o.EnforceCostLimits = false;
     })
-    .AddFiltering()
+    .AddFiltering<EncodedIdFilterConvention>()
     .AddSorting()
     .AddProjections()
     .RegisterDbContextFactory<SqlServerDataContext>()
     .DisableIntrospection(false)
     .AddAuthorization()
-    .AddQueryType<ContributionQuery>();
+    .AddTypeExtension<ContributionTypeExtension>()
+    .AddTypeExtension<ContributionDiscTypeExtension>()
+    .AddTypeExtension<ContributionDiscItemTypeExtension>()
+    .AddTypeExtension<UserContributionAudioTrackTypeExtension>()
+    .AddTypeExtension<UserContributionChapterTypeExtension>()
+    .AddTypeExtension<UserContributionDiscHashItemTypeExtension>()
+    .AddType<EncodedIdType>()
+    .AddQueryType<ContributionQuery>()
+    .AddMutationConventions(applyToAllMutations: true)
+    .AddMutationType<ContributionMutations>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TheDiscDb.Client.ApiClient>();
-builder.Services.AddScoped<IUserContributionService, TheDiscDb.Services.Server.UserContributionService>();
 builder.Services.AddScoped<IExternalSearchService, TheDiscDb.Services.Server.ExternalSearchService>();
 builder.Services.AddSingleton<IFileSystemCache, InMemoryFileSystemCache>();
 builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Configuration.GetSection("TheMovieDb"));
@@ -153,6 +162,10 @@ var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));
 builder.Services
     .AddTheDiscDbClient()
     .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{serviceUrl}/graphql"));
+
+builder.Services
+    .AddContributionClient()
+    .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{serviceUrl}/graphql/contributions"));
 
 builder.AddAzureBlobServiceClient("blobs");
 var blobConnectionString = builder.Configuration.GetConnectionString("blobs") ?? throw new Exception("Blob connection string not configured");

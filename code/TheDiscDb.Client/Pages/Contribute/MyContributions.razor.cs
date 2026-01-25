@@ -1,24 +1,86 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using TheDiscDb.Services;
-using TheDiscDb.Web.Data;
+using StrawberryShake;
+using TheDiscDb.Client.Contributions;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
 public partial class MyContributions : ComponentBase
 {
-    [Inject]
-    private IUserContributionService Client { get; set; } = null!;
+    private IEnumerable<IGetCurrentUserContributions_MyContributions_Nodes> allContributions = Enumerable.Empty<IGetCurrentUserContributions_MyContributions_Nodes>();
+    private bool contributionsLoaded;
 
-    public IQueryable<UserContribution>? Contributions { get; set; }
+    [Inject]
+    GetCurrentUserContributionsQuery Query { get; set; } = null!;
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "status")]
+    public string? StatusFilter { get; set; }
+
+    public IQueryable<IGetCurrentUserContributions_MyContributions_Nodes>? Contributions { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        var response = await this.Client.GetUserContributions();
-        if (response != null && response.IsSuccess)
+        if (!OperatingSystem.IsBrowser())
         {
-            this.Contributions = response.Value.AsQueryable();
+            // prerender pass – wait for the interactive render
+            return;
         }
+
+        await LoadContributionsAsync();
+    }
+
+    protected override void OnParametersSet()
+    {
+        ApplyStatusFilter();
+    }
+
+    private async Task LoadContributionsAsync()
+    {
+        var results = await Query.ExecuteAsync();
+        if (results != null && results.IsSuccessResult())
+        {
+            var nodes = results.Data?.MyContributions?.Nodes ?? Array.Empty<IGetCurrentUserContributions_MyContributions_Nodes>();
+            this.allContributions = nodes;
+            this.contributionsLoaded = true;
+            ApplyStatusFilter();
+        }
+    }
+
+    private void ApplyStatusFilter()
+    {
+        if (!this.contributionsLoaded)
+        {
+            return;
+        }
+
+        if (!TryGetNormalizedStatus(out var normalizedStatus))
+        {
+            this.Contributions = this.allContributions.AsQueryable();
+            return;
+        }
+
+        this.Contributions = this.allContributions
+            .Where(c => c.Status == normalizedStatus)
+            .AsQueryable();
+    }
+
+    private bool TryGetNormalizedStatus(out UserContributionStatus? normalizedStatus)
+    {
+        normalizedStatus = null;
+
+        if (string.IsNullOrWhiteSpace(this.StatusFilter))
+        {
+            return false;
+        }
+
+        if (!Enum.TryParse(this.StatusFilter.Trim(), ignoreCase: true, out UserContributionStatus parsedStatus))
+        {
+            return false;
+        }
+
+        normalizedStatus = parsedStatus;
+        return true;
     }
 }

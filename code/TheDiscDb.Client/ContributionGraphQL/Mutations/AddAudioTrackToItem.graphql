@@ -1,0 +1,13 @@
+mutation AddAudioTrackToItem($input: AddAudioTrackToItemInput!){
+  addAudioTrackToItem(input: $input) {
+    userContributionAudioTrack {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

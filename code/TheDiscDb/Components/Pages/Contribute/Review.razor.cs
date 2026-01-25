@@ -1,15 +1,16 @@
 ﻿using FluentResults;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore;
 using Syncfusion.Blazor.Buttons;
-using TheDiscDb.Services;
+using TheDiscDb.Services.Server;
 using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages.Contribute;
 
 [Authorize]
-public partial class Review : ComponentBase
+public partial class Review : ComponentBase, IAsyncDisposable
 {
     [Parameter]
     public string? ContributionId { get; set; }
@@ -21,41 +22,38 @@ public partial class Review : ComponentBase
     private NavigationManager NavigationManager { get; set; } = null!;
 
     [Inject]
-    private IUserContributionService Client { get; set; } = null!;
+    private IDbContextFactory<SqlServerDataContext> DbFactory { get; set; } = null!;
+
+    [Inject]
+    private IdEncoder IdEncoder { get; set; } = null!;
 
     UserContribution? Contribution { get; set; }
     Dictionary<IContributionValidation, Result> Results { get; set; } = new Dictionary<IContributionValidation, Result>();
+    private SqlServerDataContext database = default!;
 
     private bool PassedValidation => this.Results.Values.All(r => r.IsSuccess);
     private bool IsSubmitForReviewButtonDisabled => !PassedValidation;
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await this.Client.GetContribution(ContributionId!);
-        if (result != null && result.IsSuccess)
+        if (DbFactory != null && IdEncoder != null)
         {
-            this.Contribution = result.Value;
+            var decodedId = this.IdEncoder.Decode(ContributionId!);
+            this.database = await DbFactory.CreateDbContextAsync();
+            this.Contribution = await database.UserContributions
+                .Include(uc => uc.Discs)
+                .FirstOrDefaultAsync(uc => uc.Id == decodedId);
 
-            foreach (var validator in Validators!)
+            if (this.Contribution != null)
             {
-                var validationResult = await validator.Validate(this.Contribution, CancellationToken.None);
-                this.Results[validator] = validationResult;
+                foreach (var validator in Validators!)
+                {
+                    var validationResult = await validator.Validate(this.Contribution, CancellationToken.None);
+                    this.Results[validator] = validationResult;
+                }
             }
         }
     }
-
-    //protected override async Task OnAfterRenderAsync(bool firstRender)
-    //{
-    //    if (firstRender && this.Contribution != null)
-    //    {
-    //        foreach (var validator in Validators!)
-    //        {
-    //            var result = await validator.Validate(this.Contribution, CancellationToken.None);
-    //            this.Results[validator] = result;
-    //        }
-    //        this.StateHasChanged();
-    //    }
-    //}
 
     string GetResultCssClass(IContributionValidation validator)
     {
@@ -112,15 +110,10 @@ public partial class Review : ComponentBase
         if (this.Contribution != null)
         {
             this.Contribution.Status = UserContributionStatus.ReadyForReview;
-
-            var request = new CreateContributionRequest(this.Contribution);
-
-            var response = await this.Client.UpdateContribution(this.Contribution.EncodedId, request);
-            if (response != null && response.IsSuccess)
-            {
-                //redirect to /contribute/my
-                this.NavigationManager.NavigateTo("/contribute/my");
-            }
+            await database.SaveChangesAsync();
+            this.NavigationManager.NavigateTo("/contribute/my");
         }
     }
+
+    public async ValueTask DisposeAsync() => await database.DisposeAsync();
 }

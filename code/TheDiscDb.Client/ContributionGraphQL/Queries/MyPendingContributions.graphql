@@ -1,0 +1,20 @@
+query MyPendingContributions {
+    myContributions(where:  {
+       status:  {
+          eq: PENDING
+       }
+    }) {
+        nodes {
+            encodedId
+            title
+            year
+            discs {
+              encodedId
+              name
+              items {
+                encodedId
+              }
+            }
+        }
+    }
+}
