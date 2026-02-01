@@ -260,7 +260,8 @@ public enum UserContributionStatus
     Approved,
     ChangesRequested,
     Rejected,
-    Imported
+    Imported,
+    Abandoned
 }
 
 public interface IHasId

@@ -320,6 +320,7 @@ type ContributionMutations {
   externalData(input: ExternalDataInput!): ExternalDataPayload!
   externalDataForContribution(input: ExternalDataForContributionInput!): ExternalDataForContributionPayload!
   hashDisc(input: HashDiscInput!): HashDiscPayload!
+  updateContribution(input: UpdateContributionInput!): UpdateContributionPayload!
   updateDisc(input: UpdateDiscInput!): UpdateDiscPayload!
 }
 
@@ -381,6 +382,17 @@ input UserContributionDiscItemSortInput {
   description: SortEnumType
   season: SortEnumType
   episode: SortEnumType
+}
+
+input UpdateContributionInput {
+  contributionId: String!
+  status: UserContributionStatus
+  mediaType: String
+  asin: String
+  upc: String
+  releaseSlug: String
+  locale: String
+  regionCode: String
 }
 
 type DiscUploadStatusPayload {
@@ -532,6 +544,8 @@ type MyContributionsEdge {
   "The item at the end of the edge."
   node: UserContribution!
 }
+
+union UpdateContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 type CouldNotParseLogsError implements Error {
   message: String!
@@ -766,6 +780,11 @@ type UserContributionAudioTrack {
   encodedId: EncodedId!
 }
 
+type UpdateContributionPayload {
+  userContribution: UserContribution
+  errors: [UpdateContributionError!]
+}
+
 type AuthenticationError implements Error {
   message: String!
 }
@@ -788,6 +807,7 @@ enum UserContributionStatus {
   CHANGES_REQUESTED
   REJECTED
   IMPORTED
+  ABANDONED
 }
 
 input UserContributionDiscSortInput {

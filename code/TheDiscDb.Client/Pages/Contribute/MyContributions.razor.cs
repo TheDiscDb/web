@@ -14,6 +14,9 @@ public partial class MyContributions : ComponentBase
     [Inject]
     GetCurrentUserContributionsQuery Query { get; set; } = null!;
 
+    [Inject]
+    IContributionClient ContributionClient { get; set; } = null!;
+
     [Parameter]
     [SupplyParameterFromQuery(Name = "status")]
     public string? StatusFilter { get; set; }
@@ -82,5 +85,19 @@ public partial class MyContributions : ComponentBase
 
         normalizedStatus = parsedStatus;
         return true;
+    }
+
+    private async Task SetStatus(IGetCurrentUserContributions_MyContributions_Nodes item, Client.Contributions.UserContributionStatus status)
+    {
+        var result = await this.ContributionClient.UpdateContribution.ExecuteAsync(new UpdateContributionInput
+        {
+            ContributionId = item.EncodedId,
+            Status = status
+        });
+
+        if (result != null && result.IsSuccessResult())
+        {
+            ApplyStatusFilter();
+        }
     }
 }

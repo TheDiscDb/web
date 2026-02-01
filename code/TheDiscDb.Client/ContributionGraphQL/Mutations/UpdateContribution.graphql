@@ -1,0 +1,14 @@
+mutation UpdateContribution($input: UpdateContributionInput!) {
+  updateContribution(input: $input)
+  {
+    userContribution {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

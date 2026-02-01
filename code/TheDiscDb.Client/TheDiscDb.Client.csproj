@@ -22,6 +22,7 @@
         <GraphQL Remove="contributiongraphql\mutations\GetExternalData.graphql" />
         <GraphQL Remove="ContributionGraphQL\Mutations\GetExternalDataForContribution.graphql" />
         <GraphQL Remove="contributiongraphql\mutations\HashDisc.graphql" />
+        <GraphQL Remove="ContributionGraphQL\Mutations\UpdateContribution.graphql" />
         <GraphQL Remove="contributiongraphql\mutations\UpdateDisc.graphql" />
         <GraphQL Remove="ContributionGraphql\Queries\ContributionDiscs.graphql" />
         <GraphQL Remove="contributiongraphql\queries\ContributionsByStatus.graphql" />

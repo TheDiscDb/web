@@ -3,10 +3,14 @@
 @rendermode @(new InteractiveAutoRenderMode(prerender:true))
 
 <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="My Contributions" Items="[
-    GetRootContributionLink()
-]" />
+                                                                         GetRootContributionLink()
+                                                                     ]" />
 
 <h1>My Contributions</h1>
+@if (!string.IsNullOrEmpty(StatusFilter))
+{
+    <h2>@StatusFilter</h2>
+}
 <QuickGrid Items="Contributions" Class="striped-grid">
     <TemplateColumn Title="Name">
         <a href="/contribution/@context.EncodedId">@context.ReleaseTitle</a>
@@ -14,4 +18,10 @@
     <PropertyColumn Property="@(c => c.Title)" />
     <PropertyColumn Property="@(c => c.MediaType)" />
     <PropertyColumn Property="@(c => c.Status)" />
+    <TemplateColumn>
+    @if (context.Status == Client.Contributions.UserContributionStatus.Pending)
+    {
+        <SfButton IconCss="e-icons e-trash" title="Abandon Contribution" OnClick="@(() => SetStatus(context, Client.Contributions.UserContributionStatus.Abandoned))"></SfButton>
+    }
+    </TemplateColumn>
 </QuickGrid>

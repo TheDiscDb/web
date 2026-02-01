@@ -8,7 +8,12 @@ query GetCurrentUserContributions {
       mediaType,
       status,
       frontImageUrl,
-      created
+      created,
+      asin,
+      upc,
+      releaseSlug,
+      locale,
+      regionCode
     }
   }
 }
