@@ -286,7 +286,7 @@ public interface IContributiionDiscDisplay
 public class UserContribution : IHasId, IContributionDisplay
 {
     [JsonIgnore]
-    [GraphQLIgnore]
+    //[GraphQLIgnore]
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
@@ -323,7 +323,7 @@ public class UserContribution : IHasId, IContributionDisplay
 public class UserContributionDisc : IHasId
 {
     [JsonIgnore]
-    [GraphQLIgnore]
+    //[GraphQLIgnore]
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
@@ -360,7 +360,7 @@ public class UserContributionDisc : IHasId
 public class UserContributionDiscItem : IHasId
 {
     [JsonIgnore]
-    [GraphQLIgnore]
+    //[GraphQLIgnore]
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
@@ -386,7 +386,7 @@ public class UserContributionDiscItem : IHasId
 public class UserContributionChapter : IHasId
 {
     [JsonIgnore]
-    [GraphQLIgnore]
+    //[GraphQLIgnore]
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
@@ -400,7 +400,7 @@ public class UserContributionChapter : IHasId
 public class UserContributionAudioTrack : IHasId
 {
     [JsonIgnore]
-    [GraphQLIgnore]
+    //[GraphQLIgnore]
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]
@@ -414,7 +414,7 @@ public class UserContributionAudioTrack : IHasId
 public class UserContributionDiscHashItem : IHasId
 {
     [JsonIgnore]
-    [GraphQLIgnore]
+    //[GraphQLIgnore]
     public int Id { get; set; }
     [NotMapped]
     [GraphQLIgnore]

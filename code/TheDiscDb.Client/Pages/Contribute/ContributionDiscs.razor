@@ -68,7 +68,7 @@
                 </a>
             </div>
 
-            <QuickGrid Items="Discs" class="striped-grid contribute-grid">
+            <QuickGrid Items="Discs" class="striped-grid contribute-grid" ItemKey="d => d.EncodedId">
                 <TemplateColumn Title="Name">
                     <div class="disc-name">
                         <a href="/contribution/@ContributionId/discs/@context!.EncodedId/identify" title="Edit Disc">@context.Name</a>
