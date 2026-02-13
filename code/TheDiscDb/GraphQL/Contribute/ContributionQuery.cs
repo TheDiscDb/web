@@ -9,14 +9,14 @@ public class ContributionQuery
     const int MaxPageSize = 100;
     const int DefaultPageSize = 50;
 
-    [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize)]
+    [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize, IncludeTotalCount = true)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]
     [Authorize("Admin")]
     public IQueryable<UserContribution> GetContributions(SqlServerDataContext context) => context.UserContributions;
 
-    [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize)]
+    [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize, IncludeTotalCount = true)]
     [UseProjection]
     [UseFiltering]
     [UseSorting]

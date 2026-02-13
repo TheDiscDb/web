@@ -88,6 +88,8 @@ type ContributionsConnection {
   edges: [ContributionsEdge!]
   "A flattened list of the nodes."
   nodes: [UserContribution!]
+  "The total count of items in the connection."
+  totalCount: Int!
 }
 
 input AddAudioTrackToItemInput {
@@ -350,6 +352,8 @@ type MyContributionsConnection {
   edges: [MyContributionsEdge!]
   "A flattened list of the nodes."
   nodes: [UserContribution!]
+  "The total count of items in the connection."
+  totalCount: Int!
 }
 
 input UserContributionAudioTrackFilterInput {

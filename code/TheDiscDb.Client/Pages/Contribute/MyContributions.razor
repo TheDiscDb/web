@@ -28,3 +28,16 @@
     <PropertyColumn Property="@(c => c.MediaType)" />
     <PropertyColumn Property="@(c => c.Status)" />
 </QuickGrid>
+
+@if (TotalPages > 1)
+{
+    <nav class="mt-3 d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(!HasPreviousPage)" @onclick="GoToPreviousPage" title="Previous page">
+            &lsaquo;
+        </button>
+        <span>Page @CurrentPage of @TotalPages</span>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(!HasNextPage)" @onclick="GoToNextPage" title="Next page">
+            &rsaquo;
+        </button>
+    </nav>
+}

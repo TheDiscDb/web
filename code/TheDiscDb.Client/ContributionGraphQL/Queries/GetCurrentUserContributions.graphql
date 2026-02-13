@@ -1,5 +1,5 @@
-query GetCurrentUserContributions($where: UserContributionFilterInput) {
-  myContributions(where: $where) {
+query GetCurrentUserContributions($where: UserContributionFilterInput, $first: Int, $after: String) {
+  myContributions(where: $where, first: $first, after: $after) {
     nodes {
       encodedId,
       title
@@ -10,5 +10,12 @@ query GetCurrentUserContributions($where: UserContributionFilterInput) {
       frontImageUrl,
       created
     }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
   }
 }
