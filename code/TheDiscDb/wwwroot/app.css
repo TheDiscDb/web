@@ -52,6 +52,31 @@ h1:focus {
     gap: 20px;
 }
 
+.media-item-card {
+    position: relative;
+    width: 156px;
+    overflow: hidden;
+    border-radius: 6px;
+}
+
+    .media-item-card img {
+        display: block;
+    }
+
+    .media-item-card .media-item-label {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 20px 6px 6px;
+        background: linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,.45) 60%, transparent 100%);
+        color: #fff;
+        font-size: .72rem;
+        line-height: 1.2;
+        text-align: center;
+        pointer-events: none;
+    }
+
 .media-item {
 }
 

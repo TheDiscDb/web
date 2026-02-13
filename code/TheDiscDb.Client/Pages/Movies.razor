@@ -15,11 +15,10 @@
 <div class="media-item-list">
     <InfiniteScrolling ItemsProvider="GetItems" @ref="infiniteScrolling">
         <ItemTemplate Context="Item">
-            <div>
-                <a href="@Item.ItemDetailUrl()" title="@Item.Title">
-                    <MediaImage Url="@Item?.ImageUrl" Width="156" Height="231" Title="@Item?.Title" />
-                </a>
-            </div>
+            <a href="@Item.ItemDetailUrl()" class="media-item-card" title="@Item.Title">
+                <MediaImage Url="@Item?.ImageUrl" Width="156" Height="231" Title="@Item?.Title" />
+                <span class="media-item-label">@Item.Title (@Item.Year)</span>
+            </a>
         </ItemTemplate>
         <LoadingTemplate>
             <div><span class="oi oi-reload spin"></span> Loading more items...</div>
