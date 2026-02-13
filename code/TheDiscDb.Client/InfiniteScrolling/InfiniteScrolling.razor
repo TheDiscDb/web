@@ -87,7 +87,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_jsInitialized || !OperatingSystem.IsBrowser())
+        if (_jsInitialized)
         {
             return;
         }
