@@ -1,16 +1,17 @@
-﻿@page "/search/{query}"
+﻿@page "/search"
+@page "/search/{query}"
 @using System.Web
 @using TheDiscDb.Client.Controls
 
 <PageTitle>
-    Search results for '@HttpUtility.UrlDecode(Query)' - TheDiscDb
+    Search results for '@SearchTerm' - TheDiscDb
 </PageTitle>
 <HeadContent>
-    <meta name="description" content="Search results for '@HttpUtility.UrlDecode(Query)' on TheDiscDb." />
-    <link rel="canonical" href="https://thediscdb.com/search/@HttpUtility.UrlEncode(Query)" />
+    <meta name="description" content="Search results for '@SearchTerm' on TheDiscDb." />
+    <link rel="canonical" href="https://thediscdb.com/search?q=@Uri.EscapeDataString(SearchTerm)" />
 </HeadContent>
 
-<h2>Search results for '@HttpUtility.UrlDecode(Query)'</h2>
+<h2>Search results for '@SearchTerm'</h2>
 @if (Results != null)
 {
     <div class="media-item-list">

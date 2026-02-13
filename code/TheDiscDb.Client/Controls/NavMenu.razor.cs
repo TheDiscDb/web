@@ -1,5 +1,4 @@
 ﻿using System.Security.Claims;
-using System.Web;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
@@ -65,7 +64,7 @@ public partial class NavMenu : ComponentBase
     {
         if (string.IsNullOrWhiteSpace(searchQuery)) return;
 
-        string url = $"/search/{HttpUtility.UrlEncode(searchQuery)}";
+        string url = $"/search?q={Uri.EscapeDataString(searchQuery)}";
         NavigationManager?.NavigateTo(url);
     }
 }
