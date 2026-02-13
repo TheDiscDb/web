@@ -8,11 +8,11 @@ namespace TheDiscDb.Client.Pages.Contribute;
 [Authorize]
 public partial class MyContributions : ComponentBase
 {
-    private IEnumerable<IGetCurrentUserContributions_MyContributions_Nodes> allContributions = Enumerable.Empty<IGetCurrentUserContributions_MyContributions_Nodes>();
-    private bool contributionsLoaded;
-
     [Inject]
     GetCurrentUserContributionsQuery Query { get; set; } = null!;
+
+    [Inject]
+    NavigationManager Navigation { get; set; } = null!;
 
     [Parameter]
     [SupplyParameterFromQuery(Name = "status")]
@@ -25,39 +25,39 @@ public partial class MyContributions : ComponentBase
         await LoadContributionsAsync();
     }
 
-    protected override void OnParametersSet()
+    private async Task OnStatusFilterChanged(ChangeEventArgs e)
     {
-        ApplyStatusFilter();
+        var selected = e.Value?.ToString();
+        var uri = string.IsNullOrEmpty(selected)
+            ? Navigation.GetUriWithQueryParameter("status", (string?)null)
+            : Navigation.GetUriWithQueryParameter("status", selected);
+
+        Navigation.NavigateTo(uri);
+
+        StatusFilter = string.IsNullOrEmpty(selected) ? null : selected;
+        await LoadContributionsAsync();
     }
 
     private async Task LoadContributionsAsync()
     {
-        var results = await Query.ExecuteAsync();
+        UserContributionFilterInput? input = null;
+        if (TryGetNormalizedStatus(out var normalizedStatus))
+        {
+            input = new UserContributionFilterInput
+            {
+                Status = new UserContributionStatusOperationFilterInput
+                {
+                    Eq = normalizedStatus!.Value
+                }
+            };
+        }
+
+        var results = await Query.ExecuteAsync(input);
         if (results != null && results.IsSuccessResult())
         {
             var nodes = results.Data?.MyContributions?.Nodes ?? Array.Empty<IGetCurrentUserContributions_MyContributions_Nodes>();
-            this.allContributions = nodes;
-            this.contributionsLoaded = true;
-            ApplyStatusFilter();
+            this.Contributions = nodes.AsQueryable();
         }
-    }
-
-    private void ApplyStatusFilter()
-    {
-        if (!this.contributionsLoaded)
-        {
-            return;
-        }
-
-        if (!TryGetNormalizedStatus(out var normalizedStatus))
-        {
-            this.Contributions = this.allContributions.AsQueryable();
-            return;
-        }
-
-        this.Contributions = this.allContributions
-            .Where(c => c.Status == normalizedStatus)
-            .AsQueryable();
     }
 
     private bool TryGetNormalizedStatus(out UserContributionStatus? normalizedStatus)

@@ -32,7 +32,7 @@ public partial class Login : ComponentBase
             Console.WriteLine("User found, logging in");
             await this.SignInManager.SignInAsync(user, isPersistent: false);
             Console.WriteLine("User logged in, redirecting");
-            Navigation.NavigateTo(ReturnUrl ?? "/");
+            Navigation.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
         }
         else
         {
@@ -49,7 +49,7 @@ public partial class Login : ComponentBase
             Console.WriteLine("User found, logging in");
             await this.SignInManager.SignInAsync(user, isPersistent: false);
             Console.WriteLine("User logged in, redirecting");
-            Navigation.NavigateTo(ReturnUrl ?? "/");
+            Navigation.NavigateTo(ReturnUrl ?? "/", forceLoad: true);
         }
         else
         {

@@ -1,5 +1,5 @@
-query GetCurrentUserContributions {
-  myContributions {
+query GetCurrentUserContributions($where: UserContributionFilterInput) {
+  myContributions(where: $where) {
     nodes {
       encodedId,
       title
