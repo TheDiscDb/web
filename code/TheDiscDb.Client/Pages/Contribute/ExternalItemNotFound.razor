@@ -1,6 +1,6 @@
 ﻿@page "/contribution/externalIdNotFound/{externalId}"
 
-@rendermode InteractiveServer
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 <h1>TMDB ID @ExternalId Not Found</h1>
 <a href="/contribute">Back to contribution home</a>

@@ -1,6 +1,6 @@
 ﻿@page "/contribution/{contributionId}/discs/{discId}/identify"
 
-@rendermode @(new InteractiveAutoRenderMode(prerender:false))
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 @if (this.disc != null && this.contribution != null)
 {

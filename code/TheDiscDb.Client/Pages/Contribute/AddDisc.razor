@@ -1,6 +1,6 @@
 ﻿@page "/contribution/{contributionId}/adddisc"
 
-@rendermode @(new InteractiveAutoRenderMode(prerender:true))
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 @if (contribution is not null)
 {

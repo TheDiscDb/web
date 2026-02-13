@@ -1,6 +1,6 @@
 ﻿@page "/contribution/{contributionId}/disc/{discId}/edit"
 
-@rendermode InteractiveWebAssembly
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 <h3>Edit Disc</h3>
 

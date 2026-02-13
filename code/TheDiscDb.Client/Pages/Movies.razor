@@ -1,7 +1,7 @@
 ﻿@page "/"
 @page "/movies"
 
-@rendermode @(new InteractiveAutoRenderMode(prerender:false))
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 @using TheDiscDb.Components.InfiniteScrolling
 
 <PageTitle>All Movies - TheDiscDb</PageTitle>
