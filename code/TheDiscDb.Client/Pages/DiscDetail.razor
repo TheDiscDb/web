@@ -1,7 +1,7 @@
 ﻿@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndexString}"
 @page "/disc/{contentHash}"
 
-@rendermode @(new InteractiveAutoRenderMode(prerender:false))
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 @if (Item == null || Disc == null || Release == null)
 {

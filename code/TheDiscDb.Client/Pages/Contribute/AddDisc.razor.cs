@@ -72,12 +72,6 @@ public partial class AddDisc : ComponentBase
             return;
         }
 
-        if (!OperatingSystem.IsBrowser())
-        {
-            // prerender pass – wait for the interactive render
-            return;
-        }
-
         await LoadContributionAsync();
     }
 

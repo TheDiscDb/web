@@ -22,12 +22,6 @@ public partial class MyContributions : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        if (!OperatingSystem.IsBrowser())
-        {
-            // prerender pass – wait for the interactive render
-            return;
-        }
-
         await LoadContributionsAsync();
     }
 

@@ -1,6 +1,6 @@
 ﻿@page "/contribute"
 
-@rendermode InteractiveAuto
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Contribute" Items='[("Home", "/")]' />
 

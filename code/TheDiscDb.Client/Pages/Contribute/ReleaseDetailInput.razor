@@ -1,6 +1,6 @@
 ﻿@page "/contribute/{mediaType}/{externalId}"
 
-@rendermode @(new InteractiveAutoRenderMode(prerender:false))
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 @if (this.externalData != null)
 {
