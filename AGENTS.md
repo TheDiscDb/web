@@ -1,5 +1,8 @@
 # Copilot instructions
 
+## Git workflow
+IMPORTANT! Never commit directly to the `main` branch. Always create a feature branch for changes and commit there. If the user has already specified a branch, use it. If not, create a new branch with a descriptive name (e.g., `fix/short-description` or `feature/short-description`) before making any commits.
+
 This repository is set up to use Aspire. Aspire is an orchestrator for the entire application and will take care of configuring dependencies, building, and running the application. The resources that make up the application are defined in `apphost.cs` including application code and external dependencies.
 
 ## General recommendations for working with Aspire
