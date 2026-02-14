@@ -122,7 +122,7 @@ builder.Services
     .AddProjections()
     .RegisterDbContextFactory<SqlServerDataContext>()
     .DisableIntrospection(false)
-    .AddTypeExtension<TitleTypeExtension>()
+    .TryAddTypeInterceptor<TitleItemProjectionTypeInterceptor>()
     .AddQueryType<Query>();
 
 builder.Services
