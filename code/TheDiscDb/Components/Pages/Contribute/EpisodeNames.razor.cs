@@ -16,7 +16,7 @@ public partial class EpisodeNames : ComponentBase
     public string? ExternalId { get; set; }
 
     [Inject]
-    private TheMovieDbClient TmdbClient { get; set; }
+    private TheMovieDbClient TmdbClient { get; set; } = null!;
 
     private List<SeasonInfo> seasons = new();
 
@@ -34,7 +34,7 @@ public partial class EpisodeNames : ComponentBase
                 {
                     string fileName = $"{series.Name}.S{season.SeasonNumber:00}.E{episode.EpisodeNumber:00}.{episode.Name}.mkv";
                     fileName = CleanPath(fileName);
-                    var episodeInfo = new EpisodeInfo(episode.EpisodeNumber.ToString(), season.SeasonNumber.ToString(), episode.Name, fileName);
+                    var episodeInfo = new EpisodeInfo(episode.EpisodeNumber.ToString(), season.SeasonNumber.ToString(), episode.Name ?? string.Empty, fileName);
 
                     if (season.SeasonNumber == 0)
                     {

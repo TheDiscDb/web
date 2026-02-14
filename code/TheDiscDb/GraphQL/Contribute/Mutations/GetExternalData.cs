@@ -29,7 +29,7 @@ public partial class ContributionMutations
 
             year = series.FirstAirDate.HasValue ? series.FirstAirDate.Value.Year : 0;
 
-            metadata = new ExternalMetadata(series.Id, series.Name ?? "Unknown Title", year ?? 0, "https://image.tmdb.org/t/p/w500" + series?.PosterPath);
+            metadata = new ExternalMetadata(series.Id, series.Name ?? "Unknown Title", year ?? 0, "https://image.tmdb.org/t/p/w500" + series.PosterPath);
         }
         else
         {
@@ -41,7 +41,7 @@ public partial class ContributionMutations
 
             year = movie.ReleaseDate.HasValue ? movie.ReleaseDate.Value.Year : 0;
 
-            metadata = new ExternalMetadata(movie.Id, movie.Title ?? "Unknown Title", year ?? 0, "https://image.tmdb.org/t/p/w500" + movie?.PosterPath);
+            metadata = new ExternalMetadata(movie.Id, movie.Title ?? "Unknown Title", year ?? 0, "https://image.tmdb.org/t/p/w500" + movie.PosterPath);
         }
 
         return metadata;
@@ -59,6 +59,11 @@ public partial class ContributionMutations
         int id = this.idEncoder.Decode(contributionId);
         var contribution = await database.UserContributions
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+        if (contribution is null)
+        {
+            throw new ContributionNotFoundException(contributionId);
+        }
 
         await EnsureOwnership(contribution, contributionId, cancellationToken: cancellationToken);
 
@@ -78,7 +83,7 @@ public partial class ContributionMutations
                     throw new ExternalDataSerializationException("Failed to deserialize series data from blob storage");
                 }
 
-                return new ExternalMetadata(series.Id, series.Name ?? "Unknown Title", series.FirstAirDate.HasValue ? series.FirstAirDate.Value.Year : 0, "https://image.tmdb.org/t/p/w500" + series?.PosterPath);
+                return new ExternalMetadata(series.Id, series.Name ?? "Unknown Title", series.FirstAirDate.HasValue ? series.FirstAirDate.Value.Year : 0, "https://image.tmdb.org/t/p/w500" + series.PosterPath);
             }
             else
             {
@@ -88,7 +93,7 @@ public partial class ContributionMutations
                     throw new ExternalDataSerializationException("Failed to deserialize movie data from blob storage");
                 }
 
-                return new ExternalMetadata(movie.Id, movie.Title ?? "Unknown Title", movie.ReleaseDate.HasValue ? movie.ReleaseDate.Value.Year : 0, "https://image.tmdb.org/t/p/w500" + movie?.PosterPath);
+                return new ExternalMetadata(movie.Id, movie.Title ?? "Unknown Title", movie.ReleaseDate.HasValue ? movie.ReleaseDate.Value.Year : 0, "https://image.tmdb.org/t/p/w500" + movie.PosterPath);
             }
         }
 

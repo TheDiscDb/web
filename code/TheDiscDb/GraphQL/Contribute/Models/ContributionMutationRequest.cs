@@ -47,7 +47,7 @@ public class ContributionMutationRequest
         this.FrontImageUrl = contribution.FrontImageUrl;
         this.BackImageUrl = contribution.BackImageUrl ?? string.Empty;
         this.ReleaseTitle = contribution.ReleaseTitle ?? string.Empty;
-        this.ReleaseSlug = contribution.ReleaseSlug;
+        this.ReleaseSlug = contribution.ReleaseSlug ?? string.Empty;
         this.RegionCode = contribution.RegionCode;
         this.Locale = contribution.Locale;
         this.Title = contribution.Title ?? string.Empty;
