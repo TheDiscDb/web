@@ -10,14 +10,19 @@ namespace TheDiscDb.Data.GraphQL;
 /// <c>ItemType</c>, <c>Season</c>, <c>Episode</c>) which delegate to
 /// <see cref="DiscItem.Item"/> return correct values even when the caller does
 /// not explicitly request the <c>item</c> field in the GraphQL query.
+///
+/// This must run during <c>OnAfterInitialize</c> because the projection
+/// convention reads <c>IsProjectedKey</c> in <c>OnAfterCompleteName</c>
+/// to build the <c>AlwaysProjectedFieldsKey</c> list.
 /// </summary>
 public class TitleItemProjectionTypeInterceptor : TypeInterceptor
 {
-    public override void OnBeforeCompleteType(ITypeCompletionContext completionContext, DefinitionBase definition)
+    public override void OnAfterInitialize(ITypeDiscoveryContext discoveryContext, DefinitionBase definition)
     {
         if (definition is ObjectTypeDefinition typeDef && typeDef.RuntimeType == typeof(Title))
         {
-            var itemField = typeDef.Fields.FirstOrDefault(f => f.Name == "item");
+            var itemField = typeDef.Fields.FirstOrDefault(
+                f => f.Name is "item" or "Item" || f.Member?.Name == "Item");
             if (itemField != null)
             {
                 itemField.ContextData["IsProjectedKey"] = true;
