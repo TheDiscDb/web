@@ -38,8 +38,7 @@ public class TitleItemProjectionTypeInterceptor : TypeInterceptor
 
         // Ensure the FK is always included in EF Core projections.
         var fkField = typeDef.Fields.FirstOrDefault(
-            f => f.Name is "discItemReferenceId" or "DiscItemReferenceId"
-                 || f.Member?.Name == "DiscItemReferenceId");
+            f => f.Member?.Name == "DiscItemReferenceId");
 
         if (fkField != null)
         {
