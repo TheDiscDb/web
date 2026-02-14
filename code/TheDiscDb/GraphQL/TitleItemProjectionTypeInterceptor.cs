@@ -70,6 +70,12 @@ public class TitleItemProjectionTypeInterceptor : TypeInterceptor
         var field = typeDef.Fields.FirstOrDefault(f => f.Name == fieldName);
         if (field is null) return;
 
+        // Clear the PureResolver that was compiled from the CLR property getter
+        // during CompileResolvers(). HotChocolate prefers PureResolver (synchronous)
+        // over Resolver (async) at runtime, so if we don't clear it our custom
+        // Resolver below will never be called.
+        field.PureResolver = null;
+
         field.Resolver = async context =>
         {
             var title = context.Parent<Title>();
