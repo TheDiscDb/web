@@ -5,35 +5,41 @@
 <nav class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
     <div class="container-fluid">
         <a class="navbar-brand" href="/" title="The Disc Db"><img src="/nav-logo.png" alt="The Disc Db" /></a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#navbarOffcanvas" aria-controls="navbarOffcanvas" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Movies</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="/series" Match="NavLinkMatch.All">Series</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="/boxsets" Match="NavLinkMatch.All">Boxsets</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="/contribute" Match="NavLinkMatch.All">Contribute</NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link" href="/about" Match="NavLinkMatch.All">About</NavLink>
-                </li>
-            </ul>
-            <input type="text" placeholder="Search..." data-permanent @bind-value="searchQuery" class="form-control main-search-box" @onkeydown="KeyPressed"></input>
-            <AuthorizeView>
-                <Authorized>
-                    <span class="user-avatar d-none d-lg-block">
-                    <a href="/contribute/my" title="@this.DisplayName"><div class="e-avatar e-avatar-circle image">@this.ShortName</div></a>
-                    </span>
-                </Authorized>
-            </AuthorizeView>
+        <div class="offcanvas-lg offcanvas-end" tabindex="-1" id="navbarOffcanvas" aria-labelledby="navbarOffcanvasLabel">
+            <div class="offcanvas-header">
+                <a class="navbar-brand" href="/" title="The Disc Db" id="navbarOffcanvasLabel"><img src="/nav-logo.png" alt="The Disc Db" /></a>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#navbarOffcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">Movies</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/series" Match="NavLinkMatch.All">Series</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/boxsets" Match="NavLinkMatch.All">Boxsets</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/contribute" Match="NavLinkMatch.All">Contribute</NavLink>
+                    </li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/about" Match="NavLinkMatch.All">About</NavLink>
+                    </li>
+                </ul>
+                <input type="text" placeholder="Search..." data-permanent @bind-value="searchQuery" class="form-control main-search-box" @onkeydown="KeyPressed"></input>
+                <AuthorizeView>
+                    <Authorized>
+                        <span class="user-avatar d-none d-lg-block">
+                        <a href="/contribute/my" title="@this.DisplayName"><div class="e-avatar e-avatar-circle image">@this.ShortName</div></a>
+                        </span>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
         </div>
     </div>
 </nav>

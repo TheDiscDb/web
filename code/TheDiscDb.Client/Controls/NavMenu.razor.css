@@ -13,6 +13,60 @@
     padding-bottom: .8rem;
 }
 
+/* On desktop (≥lg), the offcanvas-lg body must grow to fill the navbar
+   so me-auto can push the search box to the right — matching the
+   original collapse navbar-collapse behaviour.
+   Also override offcanvas-end's fixed width (400px) so the container
+   fills the available navbar space. */
+@media (min-width: 992px) {
+    ::deep .offcanvas-body {
+        flex-grow: 1 !important;
+    }
+
+    ::deep #navbarOffcanvas {
+        width: auto !important;
+        flex-grow: 1;
+    }
+}
+
+@media (max-width: 991.98px) {
+    /* Dark background for the offcanvas panel on mobile */
+    ::deep #navbarOffcanvas {
+        background-color: #00213F !important;
+    }
+
+    .nav-item {
+        margin-left: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .nav-item:last-child {
+        border-bottom: none;
+    }
+
+    ::deep .nav-link {
+        padding: 0.75rem 0 !important;
+        color: rgba(255, 255, 255, 0.85) !important;
+    }
+
+    ::deep .nav-link:hover,
+    ::deep .nav-link:focus {
+        color: #fff !important;
+    }
+
+    ::deep .nav-link.active {
+        color: #fff !important;
+    }
+
+    .main-search-box {
+        max-width: 100%;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        background-color: #fff;
+        color: #212529;
+    }
+}
+
 .autocomplete {
     position: relative;
 }

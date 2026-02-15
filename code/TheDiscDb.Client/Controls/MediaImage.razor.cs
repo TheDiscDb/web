@@ -16,5 +16,11 @@ public partial class MediaImage : ComponentBase
     [Parameter]
     public string? Title { get; set; }
 
+    [Parameter]
+    public string? CssClass { get; set; }
+
+    [Parameter]
+    public string? Style { get; set; }
+
     private string FullImageUrl => $"/images/{Url}?width={Width}&height={Height}";
 }

@@ -1,9 +1,25 @@
 body {
     font-family: Arial;
+    overflow-x: hidden;
 }
 
 h1:focus {
     outline: none;
+}
+
+/* Responsive heading sizes for mobile */
+@media (max-width: 575.98px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+    }
+
+    h3 {
+        font-size: 1.1rem;
+    }
 }
 
 .valid.modified:not([type=checkbox]) {
@@ -45,22 +61,36 @@ h1:focus {
 }*/
 
 .media-item-list {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    align-content: flex-start;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+@media (min-width: 576px) {
+    .media-item-list {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 16px;
+    }
+}
+
+@media (min-width: 992px) {
+    .media-item-list {
+        grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+        gap: 20px;
+    }
 }
 
 .media-item-card {
     position: relative;
-    width: 156px;
     overflow: hidden;
     border-radius: 6px;
+    display: block;
 }
 
     .media-item-card img {
         display: block;
+        width: 100%;
+        height: auto;
     }
 
     .media-item-card .media-item-label {
@@ -76,6 +106,59 @@ h1:focus {
         text-align: center;
         pointer-events: none;
     }
+
+/* Mobile-responsive detail page images */
+@media (max-width: 767.98px) {
+    .mediaItemDetailCover {
+        max-width: 200px !important;
+    }
+
+    .d-flex.flex-column.flex-md-row > .vstack {
+        width: 100%;
+    }
+}
+
+/* Release tile responsive layout */
+.releaseTile {
+    max-width: 100%;
+}
+
+@media (max-width: 575.98px) {
+    .releaseTile {
+        width: 100%;
+    }
+}
+
+/* Responsive tables and QuickGrid */
+.quickgrid-wrapper,
+.table-responsive-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767.98px) {
+    table.quickgrid,
+    .table {
+        font-size: 0.85rem;
+    }
+
+    table.quickgrid th,
+    table.quickgrid td,
+    .table th,
+    .table td {
+        padding: 0.4rem 0.5rem;
+        white-space: nowrap;
+    }
+
+    /* Prevent nested disc lists from overflowing */
+    ul.facts {
+        padding-left: 1rem;
+    }
+
+    ul.facts li {
+        word-break: break-word;
+    }
+}
 
 .media-item {
 }

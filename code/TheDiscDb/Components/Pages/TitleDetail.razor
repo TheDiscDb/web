@@ -21,21 +21,21 @@ else
             GetReleaseLink(this.Item, this.Release),
             GetDiscLink(this.Item, this.Release, this.Disc)
         ]" />
-        <div class="container">
+        <div class="container-fluid px-0">
             <div class="row">
-                <div class="col-3">
+                <div class="col-12 col-md-3">
                     <div class="vstack">
                         <p class="people-role">Source File</p>
                         <p class="people">@Title.SourceFile</p>
                     </div>
                 </div>
-                <div class="col-6">
+                <div class="col-12 col-md-6">
                     <div class="vstack">
                         <p class="people-role">Description</p>
                         <p class="people">@Title.TitleDescription()</p>
                     </div>
                 </div>
-                <div class="col-3">
+                <div class="col-12 col-md-3">
                     <div class="vstack">
                         <p class="people-role">Length</p>
                         <p class="people">@Title.Duration</p>
@@ -43,7 +43,7 @@ else
                 </div>
             </div>
             <div class="row">
-                <div class="col-3">
+                <div class="col-12 col-md-3">
                     <div class="vstack">
                         <p class="people-role">Type</p>
                         @if (Title.Item != null)
@@ -56,13 +56,13 @@ else
                         }
                     </div>
                 </div>
-                <div class="col-6">
+                <div class="col-12 col-md-6">
                     <div class="vstack">
                         <p class="people-role">Segment Map</p>
-                        <p class="people" style="overflowWrap: anywhere;">@Title.SegmentMap</p>
+                        <p class="people" style="overflow-wrap: anywhere;">@Title.SegmentMap</p>
                     </div>
                 </div>
-                <div class="col-3">
+                <div class="col-12 col-md-3">
                     <div class="vstack">
                         <p class="people-role">Size</p>
                         <p class="people">@Title.DisplaySize</p>
@@ -80,7 +80,8 @@ else
                 }
             </ol>
         }
-        <table>
+        <div class="table-responsive">
+        <table class="table">
             <thead>
                 <th>Index</th>
                 <th>Description</th>
@@ -97,5 +98,6 @@ else
                 }
             </tbody>
         </table>
+        </div>
     </div>
 }

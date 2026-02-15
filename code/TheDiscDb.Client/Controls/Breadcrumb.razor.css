@@ -1,5 +1,11 @@
 ﻿.breadcrumb {
     color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0;
+    font-size: 0.9rem;
+    overflow: hidden;
 }
 
 .breadcrumb-link a {
@@ -13,9 +19,22 @@
 
 .breadcrumb-primary {
     font-weight: bold;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .breadcrumb-divider {
     margin-left: 8px;
     margin-right: 8px;
+}
+
+@media (max-width: 575.98px) {
+    .breadcrumb {
+        font-size: 0.8rem;
+    }
+
+    .breadcrumb-divider {
+        margin-left: 4px;
+        margin-right: 4px;
+    }
 }

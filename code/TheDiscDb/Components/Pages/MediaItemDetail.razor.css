@@ -1,5 +1,7 @@
 ﻿::deep div.facts {
     display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0;
 }
 
 ::deep div.facts span + span {
