@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using TheDiscDb.Search;
 
 namespace TheDiscDb.Client.Controls;
@@ -13,6 +14,9 @@ public partial class NavMenu : ComponentBase
 
     [Inject]
     public ApiClient SearchClient { get; set; } = null!;
+
+    [Inject]
+    public IJSRuntime JS { get; set; } = null!;
 
     public IEnumerable<SearchEntry>? SearchResults { get; set; }
 
@@ -34,20 +38,12 @@ public partial class NavMenu : ComponentBase
             if (state != null)
             {
                 this.DisplayName = state.User.FindFirstValue(ClaimTypes.Name) ?? "";
-                Console.Write("From Claim: " + DisplayName);
                 if (this.DisplayName.Length > 0)
                 {
                     this.ShortName = Char.ToUpperInvariant(this.DisplayName[0]).ToString();
                 }
             }
-            else
-            {
-                Console.WriteLine("No Authentication state");
-            }
-        }
-        else
-        {
-            Console.WriteLine("No AuthProvider");
+            
         }
     }
 

@@ -20,14 +20,15 @@ else
             GetReleaseLink(this.Item, this.Release),
             GetDiscLink(this.Item, this.Release, this.Disc)
         ]" />
-    <h1>@Disc.GetFullName()</h1>
-    <h2>@Release.Title</h2>
+    <h1 class="fs-3 fs-md-1">@Disc.GetFullName()</h1>
+    <h2 class="fs-5 fs-md-2">@Release.Title</h2>
 
-    <div style="display: flex; align-items: center; gap: 0.5rem;">
+    <div class="d-flex align-items-center gap-2 mb-2">
         <SfSwitch TChecked="bool" ValueChange="e => AllTitlesChanged(e)" />
         <label>Show all titles</label>
     </div>
 
+    <div class="table-responsive">
     <QuickGrid Items="FilteredTitles">
         <TemplateColumn Title="Source File" Sortable="true" SortBy="SortSourceFile">
             <a href="@TitleDetailUrl(context)">@context.SourceFile</a>
@@ -43,4 +44,5 @@ else
         <PropertyColumn Property="@(t => t.Duration)" Sortable="true" />
         <PropertyColumn Property="@(t => t.DisplaySize)" Sortable="true" />
     </QuickGrid>
+    </div>
 }

@@ -3,13 +3,13 @@
 {
     <div class="vstack">
         <h3>Releases</h3>
-        <div class="hstack gap-3 d-flex align-items-start">
+        <div class="d-flex flex-column flex-sm-row flex-wrap gap-3 align-items-start">
             @foreach (var release in Releases)
             {
                 <div class="releaseTile">
                     <div class="vstack">
                         <a href="@release.ReleaseDetailUrl(Item)">
-                            <MediaImage Url="@release?.ImageUrl" Width="230" Height="328" Title="@release?.Title" />
+                            <MediaImage Url="@release?.ImageUrl" Width="230" Height="328" Title="@release?.Title" CssClass="img-fluid" />
                         </a>
                         <div class="release-title">
                             <a href="@release?.ReleaseDetailUrl(Item)">@release?.Title</a>

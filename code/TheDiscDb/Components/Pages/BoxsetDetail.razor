@@ -9,8 +9,8 @@
     </HeadContent>
     <div class="vstack">
         <TheDiscDb.Client.Controls.Breadcrumb Items="[GetBoxsetRootLink()]" PrimaryText="@Item.Title" />
-        <div class="hstack gap-3 d-flex align-items-start">
-            <img src="/images/@Item.ImageUrl?width=345&height=518" width="345" height="518" alt="@Item.Title" class="mediaItemDetailCover" />
+        <div class="d-flex flex-column flex-md-row gap-3 align-items-start">
+            <img src="/images/@Item.ImageUrl?width=345&height=518" alt="@Item.Title" class="mediaItemDetailCover img-fluid" style="max-width: 345px;" />
             <div class="vstack">
                 <h1>@Item.Title</h1>
                 <h3>@Release?.Title</h3>
