@@ -31,21 +31,43 @@ public partial class DiscDetail : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
+        // Detect the boxset disc case
+        bool isLegacyBoxsetUrl = false;
+        if (string.IsNullOrEmpty(this.Type) && !string.IsNullOrEmpty(this.Slug) && !string.IsNullOrEmpty(this.SlugOrIndexString))
+        {
+            this.Type = "boxset";
+            isLegacyBoxsetUrl = true;
+        }
+
         if (Cache == null || string.IsNullOrEmpty(Type) || string.IsNullOrEmpty(Slug))
         {
             return;
         }
 
-        Item = await Cache.GetMediaItemDetail(Type, Slug);
-
-        if (Item != null && !string.IsNullOrEmpty(ReleaseSlug))
+        if (isLegacyBoxsetUrl)
         {
-            DiscRelease = Item.Releases.FirstOrDefault(r => r.Slug == ReleaseSlug);
+            var boxset = await Cache.GetBoxsetAsync(Slug);
+            this.DiscRelease = boxset?.Release;
 
-            if (DiscRelease != null && !string.IsNullOrEmpty(SlugOrIndexString))
+            if (this.DiscRelease != null)
             {
-                Disc = DiscRelease.Discs.FirstOrDefault(d =>
-                    SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
+                this.Disc = DiscRelease.Discs.FirstOrDefault(d =>
+                        SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
+            }
+        }
+        else
+        {
+            Item = await Cache.GetMediaItemDetail(Type, Slug);
+
+            if (Item != null && !string.IsNullOrEmpty(ReleaseSlug))
+            {
+                DiscRelease = Item.Releases.FirstOrDefault(r => r.Slug == ReleaseSlug);
+
+                if (DiscRelease != null && !string.IsNullOrEmpty(SlugOrIndexString))
+                {
+                    Disc = DiscRelease.Discs.FirstOrDefault(d =>
+                        SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
+                }
             }
         }
     }

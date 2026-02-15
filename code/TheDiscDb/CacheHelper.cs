@@ -16,6 +16,32 @@ public class CacheHelper
         this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
+    public async Task<Boxset?> GetBoxsetAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(slug))
+        {
+            return null;
+        }
+
+        string normalizedSlug = slug.ToLower();
+        string cacheKey = $"Boxset|{normalizedSlug}";
+        return await this.cache.GetOrCreateAsync<Boxset>(cacheKey, async entry =>
+        {
+            var context = await this.context.CreateDbContextAsync();
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12);
+
+#pragma warning disable CS8603 // Possible null reference return.
+            var boxset = await context.BoxSets
+            .Include("Release")
+            .Include("Release.Discs")
+            .Include("Release.Discs.Titles")
+            .Include("Release.Discs.Titles.Item")
+            .FirstOrDefaultAsync(i => i.Slug == slug, cancellationToken);
+            return boxset;
+#pragma warning restore CS8603 // Possible null reference return.
+        });
+    }
+
     public async Task<MediaItem?> GetMediaItemDetail(string type, string slug, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(slug))

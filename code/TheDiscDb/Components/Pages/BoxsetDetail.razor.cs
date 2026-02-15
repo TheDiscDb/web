@@ -28,12 +28,12 @@ public partial class BoxsetDetail : ComponentBase
         }
 
         var context = await this.Context.CreateDbContextAsync();
-        Item = context.BoxSets
+        Item = await context.BoxSets
             .Include("Release")
             .Include("Release.Discs")
             .Include("Release.Discs.Titles")
             .Include("Release.Discs.Titles.Item")
-            .FirstOrDefault(i => i.Slug == Slug);
+            .FirstOrDefaultAsync(i => i.Slug == Slug);
         if (Item != null)
         {
             Release = Item.Release;
