@@ -1,14 +1,5 @@
-﻿@page "/g/{slug}"
-@using System.Web
-
-@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+﻿@using System.Web
 @using TheDiscDb.Components.InfiniteScrolling
-
-<PageTitle>Items related to '@Name' - TheDiscDb</PageTitle>
-<HeadContent>
-    <meta name="description" content="Items related to '@Name'." />
-    <link rel="canonical" href="https://thediscdb.com/g/@HttpUtility.UrlEncode(Slug)" />
-</HeadContent>
 
 <h1>Items related to '@Name'</h1>
 

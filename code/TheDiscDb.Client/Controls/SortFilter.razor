@@ -2,8 +2,8 @@
 @typeparam TSortItem
 
 <div class="hstack gap-1 mb-2 flex-wrap">
-    <span>Sort by: </span>
-    <select @onchange="SortDefinitionChanged">
+    <label for="sort-select">Sort by: </label>
+    <select id="sort-select" @onchange="SortDefinitionChanged">
         @if (AllItems != null)
         {
             foreach (var state in AllItems)

@@ -1,0 +1,9 @@
+@page "/boxsets"
+
+<PageTitle>All Boxsets - TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="A list of all the boxsets featured on TheDiscDb. Boxsets contain multiple titles and discs." />
+    <link rel="canonical" href="@BuildCanonicalLink(GetBoxsetRootLink())" />
+</HeadContent>
+
+<TheDiscDb.Client.Pages.Boxsets @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />

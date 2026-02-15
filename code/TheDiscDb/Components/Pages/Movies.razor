@@ -1,0 +1,10 @@
+@page "/"
+@page "/movies"
+
+<PageTitle>All Movies - TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="The full list of movies contained on TheDiscDb." />
+    <link rel="canonical" href="https://thediscdb.com/movies" />
+</HeadContent>
+
+<TheDiscDb.Client.Pages.Movies @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />

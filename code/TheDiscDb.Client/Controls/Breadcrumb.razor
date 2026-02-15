@@ -1,8 +1,10 @@
-﻿<div class="breadcrumb">
-    @foreach (var item in Items)
-    {
-        <span class="breadcrumb-link"><a href="@item.Url">@item.Text</a></span>
-        <span class="breadcrumb-divider">/</span>
-    }
-    <span class="breadcrumb-primary">@PrimaryText</span>
-</div>
+﻿<nav aria-label="Breadcrumb">
+    <div class="breadcrumb">
+        @foreach (var item in Items)
+        {
+            <span class="breadcrumb-link"><a href="@item.Url">@item.Text</a></span>
+            <span class="breadcrumb-divider" aria-hidden="true">/</span>
+        }
+        <span class="breadcrumb-primary" aria-current="page">@PrimaryText</span>
+    </div>
+</nav>

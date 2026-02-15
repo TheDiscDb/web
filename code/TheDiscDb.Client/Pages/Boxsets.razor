@@ -1,13 +1,4 @@
-﻿@page "/boxsets"
-
-@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
-@using TheDiscDb.Components.InfiniteScrolling
-
-<PageTitle>All Boxsets - TheDiscDb</PageTitle>
-<HeadContent>
-    <meta name="description" content="A list of all the boxsets featured on TheDiscDb. Boxsets contain multiple titles and discs." />
-    <link rel="canonical" href="@BuildCanonicalLink(GetBoxsetRootLink())" />
-</HeadContent>
+﻿@using TheDiscDb.Components.InfiniteScrolling
 
 <SortFilter AllItems="@SortItemDefinitions" SelectionChanged="SortDefinitionChanged" TSortItem="BoxsetSortInput" />
 

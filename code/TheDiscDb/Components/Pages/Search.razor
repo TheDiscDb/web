@@ -17,11 +17,10 @@
     <div class="media-item-list">
     @foreach (var item in Results)
     {
-        <div>
-            <a href="@item.RelativeUrl" title="@item.Title">
-                <MediaImage Url="@item?.ImageUrl" Width="156" Height="231" Title="@item?.Title" />
-            </a>
-        </div>
+        <a href="@item.RelativeUrl" class="media-item-card" title="@item.Title">
+            <MediaImage Url="@item?.ImageUrl" Width="156" Height="231" Title="@item?.Title" />
+            <span class="media-item-label">@item.Title</span>
+        </a>
     }
     </div>
 }

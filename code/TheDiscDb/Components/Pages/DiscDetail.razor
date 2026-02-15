@@ -1,0 +1,19 @@
+@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndexString}"
+@page "/disc/{contentHash}"
+
+@if (Item != null && DiscRelease != null && Disc != null)
+{
+    <PageTitle>@Item.Title - @DiscRelease.Title - @Disc.FullDiscName() - TheDiscDb</PageTitle>
+    <HeadContent>
+        <meta name="description" content="Details about the disc @Disc.FullDiscName() from the release @DiscRelease.Title." />
+        <link rel="canonical" href="@BuildCanonicalLink(GetDiscLink(Item, DiscRelease, Disc))" />
+    </HeadContent>
+}
+
+<TheDiscDb.Client.Pages.DiscDetail
+    Type="@Type"
+    Slug="@Slug"
+    ReleaseSlug="@ReleaseSlug"
+    SlugOrIndexString="@SlugOrIndexString"
+    ContentHash="@ContentHash"
+    @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />

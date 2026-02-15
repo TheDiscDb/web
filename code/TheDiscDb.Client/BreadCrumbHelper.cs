@@ -146,7 +146,7 @@ public static partial class BreadCrumbHelper
         {
             return string.Empty;
         }
-        return $"https://thediscdb.com{link.Url}";
+        return $"https://thediscdb.com{link.Url.ToLower()}";
     }
 
     public static (string Text, string Url) GetBoxsetDiscTitleLink(Boxset item, Disc disc, string titleSourceFile)

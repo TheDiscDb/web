@@ -18,7 +18,13 @@ public class CacheHelper
 
     public async Task<MediaItem?> GetMediaItemDetail(string type, string slug, CancellationToken cancellationToken = default)
     {
-        string cacheKey = $"MediaItemDetail|{type}|{slug}";
+        if (string.IsNullOrEmpty(slug))
+        {
+            return null;
+        }
+
+        string normalizedSlug = slug.ToLower();
+        string cacheKey = $"MediaItemDetail|{type}|{normalizedSlug}";
 
         return await this.cache.GetOrCreateAsync<MediaItem>(cacheKey, async entry =>
         {
@@ -34,7 +40,7 @@ public class CacheHelper
                 .Include("MediaItemGroups")
                 .Include("MediaItemGroups.Group")
                 .AsSplitQuery()
-                .FirstOrDefaultAsync(i => i.Type == type && i.Slug == slug, cancellationToken);
+                .FirstOrDefaultAsync(i => i.Type == type && i.Slug == normalizedSlug, cancellationToken);
 #pragma warning restore CS8603 // Possible null reference return.
         });
     }

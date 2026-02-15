@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
@@ -12,6 +13,9 @@ public partial class BoxsetDetail : ComponentBase
 
     [Inject]
     IDbContextFactory<SqlServerDataContext>? Context { get; set; }
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
 
     private Boxset? Item { get; set; }
     private Release? Release { get; set; }
@@ -33,6 +37,14 @@ public partial class BoxsetDetail : ComponentBase
         if (Item != null)
         {
             Release = Item.Release;
+        }
+
+        if (Item == null || Release == null)
+        {
+            if (HttpContext != null && !HttpContext.Response.HasStarted)
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
+            }
         }
     }
 }

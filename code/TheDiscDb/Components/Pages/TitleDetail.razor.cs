@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
@@ -28,6 +29,9 @@ public partial class TitleDetail : ComponentBase
     [Inject]
     IDbContextFactory<SqlServerDataContext>? Context { get; set; }
 
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
     private IDisplayItem? Item { get; set; }
     private Release? Release { get; set; }
     private Disc? Disc { get; set; }
@@ -42,6 +46,14 @@ public partial class TitleDetail : ComponentBase
         else
         {
             await HandleMovieOrSeries();
+        }
+
+        if (Item == null || Release == null || Disc == null || Title == null)
+        {
+            if (HttpContext != null && !HttpContext.Response.HasStarted)
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
+            }
         }
     }
 
@@ -60,7 +72,7 @@ public partial class TitleDetail : ComponentBase
 
         if (Item != null)
         {
-            Release = item?.Releases.FirstOrDefault(r => r.Slug == ReleaseSlug);
+            Release = item?.Releases.FirstOrDefault(r => !string.IsNullOrEmpty(r.Slug) && r.Slug.Equals(ReleaseSlug, StringComparison.OrdinalIgnoreCase));
 
             if (Release != null)
             {
@@ -69,7 +81,7 @@ public partial class TitleDetail : ComponentBase
                 if (Disc != null && !string.IsNullOrEmpty(File))
                 {
                     string sourceFile = NavigationExtensions.GetSourceFile(this.File, this.Extension);
-                    Title = Disc.Titles.FirstOrDefault(t => t.SourceFile == sourceFile);
+                    Title = Disc.Titles.FirstOrDefault(t => !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
                 }
             }
         }
@@ -99,7 +111,7 @@ public partial class TitleDetail : ComponentBase
                 if (Disc != null && !string.IsNullOrEmpty(File) && !string.IsNullOrEmpty(Extension))
                 {
                     string sourceFile = NavigationExtensions.GetSourceFile(this.File, this.Extension);
-                    Title = Disc.Titles.FirstOrDefault(t => t.SourceFile == sourceFile);
+                    Title = Disc.Titles.FirstOrDefault(t => !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
                 }
             }
         }

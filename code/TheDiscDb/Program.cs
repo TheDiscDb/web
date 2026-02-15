@@ -283,6 +283,7 @@ app.UseSitemap();
 app.MapStaticAssets();
 app.UseImageSharp();
 app.UseMiddleware<RssFeedMidleware>();
+app.UseMiddleware<LowercaseUrlMiddleware>();
 
 app.MapGraphQL();
 

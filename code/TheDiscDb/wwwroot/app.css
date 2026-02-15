@@ -52,14 +52,6 @@ h1:focus {
     border-color: #929292;
 }
 
-/*.nav-link {
-    font-weight: bold;
-    color: white;
-    font-size: 16px;
-    font-family: Arial;
-    margin-left: 32px;
-}*/
-
 .media-item-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -158,9 +150,6 @@ h1:focus {
     ul.facts li {
         word-break: break-word;
     }
-}
-
-.media-item {
 }
 
 pre code {

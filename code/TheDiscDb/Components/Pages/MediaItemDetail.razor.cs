@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Http;
 using SixLabors.ImageSharp.Web.Caching;
 using TheDiscDb.InputModels;
 
@@ -14,6 +15,9 @@ public partial class MediaItemDetail : ComponentBase
 
     [Inject]
     public CacheHelper? Cache { get; set; }
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
 
     private MediaItem? Item { get; set; }
     private IEnumerable<Release> Releases { get; set; } = new List<Release>();
@@ -35,6 +39,10 @@ public partial class MediaItemDetail : ComponentBase
         if (Item != null)
         {
             Releases = Item.Releases;
+        }
+        else if (HttpContext != null && !HttpContext.Response.HasStarted)
+        {
+            HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
         }
     }
 }

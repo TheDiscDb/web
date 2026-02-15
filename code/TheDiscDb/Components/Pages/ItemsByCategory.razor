@@ -1,0 +1,14 @@
+@page "/g/{slug}"
+
+<PageTitle>Items related to '@Slug' - TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="Items related to '@Slug'." />
+    <link rel="canonical" href="https://thediscdb.com/g/@Uri.EscapeDataString(Slug ?? "")" />
+</HeadContent>
+
+<TheDiscDb.Client.Pages.ItemsByCategory Slug="@Slug" @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+
+@code {
+    [Parameter]
+    public string? Slug { get; set; }
+}
