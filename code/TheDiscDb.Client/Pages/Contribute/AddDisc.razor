@@ -1,4 +1,4 @@
-﻿@page "/contribution/{contributionId}/adddisc"
+@page "/contribution/{contributionId}/adddisc"
 
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
@@ -16,13 +16,14 @@
             <p>Ensure the disc you would like to add is in your optical drive.</p>
         </section>
 
-        @if (handler is null)
+        @if (!folderSelected)
         {
             <section class="info-card">
                 <p>
                     Insert the disc you want to add, then select its root folder (usually the drive letter). We’ll hash it to see if it already exists
-                    in the database. Your browser may request file-system access.
+                    in the database.
                 </p>
+                <input id="folder-input" type="file" webkitdirectory @onchange="OnFolderSelected" style="display:none" />
                 <button class="btn btn-primary" @onclick="OpenFolderAsync">Select Disc Root Folder</button>
             </section>
         }

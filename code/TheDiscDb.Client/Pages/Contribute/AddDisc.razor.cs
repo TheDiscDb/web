@@ -1,8 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
-using KristofferStrube.Blazor.FileAPI;
-using KristofferStrube.Blazor.FileSystem;
-using KristofferStrube.Blazor.FileSystemAccess;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -28,14 +26,26 @@ public class SaveDiscRequest
     public string? ExistingDiscPath { get; set; }
 }
 
+public class DirectoryFileInfo
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("size")]
+    public long Size { get; set; }
+
+    [JsonPropertyName("lastModified")]
+    public double LastModified { get; set; }
+
+    [JsonPropertyName("webkitRelativePath")]
+    public string WebkitRelativePath { get; set; } = string.Empty;
+}
+
 [Authorize]
 public partial class AddDisc : ComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }
-
-    [Inject]
-    public IFileSystemAccessServiceInProcess FileSystemAccessService { get; set; } = default!;
 
     [Inject]
     public IJSRuntime Js { get; set; } = default!;
@@ -52,8 +62,8 @@ public partial class AddDisc : ComponentBase
     [Inject]
     public SfDialogService DialogService { get; set; } = default!;
 
-    FileSystemDirectoryHandleInProcess? handler;
-    IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
+    const string FolderInputId = "folder-input";
+    bool folderSelected;
     string hash = string.Empty;
     List<FileHashInfo>? hashItems = null;
     IContributionDiscs_MyContributions_Nodes? contribution = null;
@@ -92,12 +102,21 @@ public partial class AddDisc : ComponentBase
     {
         try
         {
-            handler = await FileSystemAccessService.ShowDirectoryPickerAsync(new DirectoryPickerOptionsStartInFileSystemHandle()
+            var useFileSystemAccess = await Js.InvokeAsync<bool>("directoryPicker.isSupported");
+            if (useFileSystemAccess)
             {
-                Mode = FileSystemPermissionMode.Read,
-            });
-
-            await TryCalculateHash();
+                // File System Access API: shows a clean "Select Folder" dialog (no upload language)
+                var files = await Js.InvokeAsync<DirectoryFileInfo[]>("directoryPicker.openDirectory");
+                if (files is not null && files.Length > 0)
+                {
+                    await TryCalculateHash(files);
+                }
+            }
+            else
+            {
+                // Fallback for Firefox and other browsers: triggers the hidden webkitdirectory input
+                await Js.InvokeVoidAsync("directoryPicker.clickElement", FolderInputId);
+            }
         }
         catch (Exception ex)
         {
@@ -105,26 +124,51 @@ public partial class AddDisc : ComponentBase
         }
     }
 
-    async Task TryCalculateHash()
+    async Task OnFolderSelected()
     {
-        items = await handler!.ValuesAsync();
-
-        var bdmv = items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("BDMV", StringComparison.OrdinalIgnoreCase));
-        var videoTs = items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase));
-        
-        if (bdmv != default && bdmv is FileSystemDirectoryHandleInProcess bdmvDirectory)
+        try
         {
-            items = await bdmvDirectory.ValuesAsync();
-            var stream = items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("STREAM", StringComparison.OrdinalIgnoreCase));
-            if (stream != default && stream is FileSystemDirectoryHandleInProcess streamDirectory)
-            {
-                hashItems = await GetHashItems(streamDirectory, i => i.Name.EndsWith("m2ts", StringComparison.OrdinalIgnoreCase));
-            }
+            var files = await Js.InvokeAsync<DirectoryFileInfo[]>("directoryPicker.getDirectoryFiles", FolderInputId);
+            if (files is null || files.Length == 0) return;
+
+            await TryCalculateHash(files);
         }
-        else if (videoTs != default && videoTs is FileSystemDirectoryHandleInProcess videoTsDirectory)
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+
+    async Task TryCalculateHash(DirectoryFileInfo[] files)
+    {
+        // The webkitRelativePath is like "RootFolder/BDMV/STREAM/00001.m2ts"
+        // Split into path segments and look for BDMV/STREAM or VIDEO_TS directories
+        var bdmvStreamFiles = files.Where(f =>
+        {
+            var segments = f.WebkitRelativePath.Split('/');
+            // Look for pattern: .../BDMV/STREAM/file.m2ts
+            return segments.Length >= 3
+                && segments[^3].Equals("BDMV", StringComparison.OrdinalIgnoreCase)
+                && segments[^2].Equals("STREAM", StringComparison.OrdinalIgnoreCase)
+                && f.Name.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase);
+        }).ToArray();
+
+        var videoTsFiles = files.Where(f =>
+        {
+            var segments = f.WebkitRelativePath.Split('/');
+            // Look for pattern: .../VIDEO_TS/file
+            return segments.Length >= 2
+                && segments[^2].Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase);
+        }).ToArray();
+
+        if (bdmvStreamFiles.Length > 0)
+        {
+            hashItems = GetHashItems(bdmvStreamFiles);
+        }
+        else if (videoTsFiles.Length > 0)
         {
             request.Format = "DVD";
-            hashItems = await GetHashItems(videoTsDirectory);
+            hashItems = GetHashItems(videoTsFiles);
         }
         else
         {
@@ -134,6 +178,8 @@ public partial class AddDisc : ComponentBase
 
         if (hashItems != null)
         {
+            folderSelected = true;
+
             // TODO: Get a cancellation token
             var hashInput = new HashDiscInput
             {
@@ -195,34 +241,23 @@ public partial class AddDisc : ComponentBase
         }
     }
 
-    async Task<List<FileHashInfo>> GetHashItems(FileSystemDirectoryHandleInProcess root, Predicate<FileInProcess>? filter = null)
+    List<FileHashInfo> GetHashItems(DirectoryFileInfo[] files)
     {
         List<FileHashInfo> results = new();
 
-        items = await root.ValuesAsync();
         int index = 0;
-        foreach (var item in items.Where(i => i.Kind == FileSystemHandleKind.File))
+        foreach (var file in files)
         {
-            var file = item as FileSystemFileHandleInProcess;
-            if (file != null)
+            results.Add(new FileHashInfo
             {
-                var fileData = await file.GetFileAsync();
-                if (filter != null && !filter(fileData))
-                {
-                    continue;
-                }
-
-                results.Add(new FileHashInfo
-                {
-                    Index = index++,
-                    Name = file.Name,
-                    Size = (long)fileData.Size,
-                    CreationTime = fileData.LastModified
-                });
-            }
+                Index = index++,
+                Name = file.Name,
+                Size = file.Size,
+                CreationTime = DateTimeOffset.FromUnixTimeMilliseconds((long)file.LastModified).UtcDateTime
+            });
         }
 
-        return results.ToList();
+        return results;
     }
 
     async Task HandleValidSubmit()
