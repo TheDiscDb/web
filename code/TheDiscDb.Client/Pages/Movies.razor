@@ -8,7 +8,7 @@
     <InfiniteScrolling ItemsProvider="GetItems" @ref="infiniteScrolling">
         <ItemTemplate Context="Item">
             <a href="@Item.ItemDetailUrl()" class="media-item-card" title="@Item.Title">
-                <MediaImage Url="@Item?.ImageUrl" Width="156" Height="231" Title="@Item?.Title" />
+                <MediaImage Url="@GetDisplayImageUrl(Item)" Width="156" Height="231" Title="@Item?.Title" />
                 <span class="media-item-label">@Item.Title (@Item.Year)</span>
             </a>
         </ItemTemplate>
