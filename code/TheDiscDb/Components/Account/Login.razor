@@ -4,7 +4,7 @@
 
 <PageTitle>Login - TheDiscDb</PageTitle>
 <HeadContent>
-    <meta name="description" content="The login page for TheDiscDb." />
+    <meta name="description" content="Log in to TheDiscDb to contribute disc information, manage your submissions, and help build the community database." />
     <link rel="canonical" href="https://thediscdb.com/account/login" />
 </HeadContent>
 
@@ -17,7 +17,7 @@
             @foreach (var provider in externalLogins)
             {
                 <p>
-                    <button type="submit" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account"><img src="/@provider.Name-login.png" /></button>
+                    <button type="submit" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account"><img src="/@provider.Name-login.png" alt="Log in with @provider.DisplayName" /></button>
                 </p>
             }
         </p>

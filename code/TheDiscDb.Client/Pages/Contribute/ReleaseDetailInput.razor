@@ -46,7 +46,7 @@
                 <UploaderAsyncSettings SaveUrl="@frontImageUploadUrl" RemoveUrl="@frontImageRemoveUrl"></UploaderAsyncSettings>
             </SfUploader>
             <span id="frontImagePreview">
-                <img src="@frontImagePreviewUrl" />
+                <img src="@frontImagePreviewUrl" alt="Front cover preview" />
             </span>
         </div>
         <ValidationMessage For="@(() => request.FrontImageUrl)" />
@@ -60,7 +60,7 @@
             <UploaderAsyncSettings SaveUrl="@backImageUploadUrl" RemoveUrl="@backImageRemoveUrl"></UploaderAsyncSettings>
         </SfUploader>
             <span id="backImagePreview">
-                <img src="@backImagePreviewUrl" />
+                <img src="@backImagePreviewUrl" alt="Back cover preview" />
             </span>
         </div>
         <ValidationMessage For="@(() => request.BackImageUrl)" />

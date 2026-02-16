@@ -6,7 +6,7 @@ else
 {
     <PageTitle>@Item.Title - @Release.Title - @Disc.Name - TheDiscDb</PageTitle>
     <HeadContent>
-        <meta name="description" content="Details about the disc @Disc.Name from the release @Release.Title." />
+        <meta name="description" content="Disc details for @Disc.Name from the release @Release.Title on TheDiscDb, including titles, MakeMKV playlists, and file structures." />
         <link rel="canonical" href="@BuildCanonicalLink(GetDiscLink(Item, Release, Disc))" />
     </HeadContent>
     <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@Disc.GetFullName()" Items="[
