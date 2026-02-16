@@ -16,7 +16,26 @@ namespace TheDiscDb.Client.Pages
 
         public IPageInfo? PageInfo { get; set; }
 
+        bool IsSortedByLatestRelease => selectedSortDefinition?.Id == "1";
+
         IReadOnlyList<MediaItemSortInput> OrderBy { get; set; } = new List<MediaItemSortInput>();
+
+        string? GetDisplayImageUrl(IGetMovies_MediaItems_Nodes item)
+        {
+            if (IsSortedByLatestRelease)
+            {
+                var latestRelease = item.Releases
+                    .OrderByDescending(r => r.ReleaseDate)
+                    .FirstOrDefault();
+
+                if (!string.IsNullOrEmpty(latestRelease?.ImageUrl))
+                {
+                    return latestRelease.ImageUrl;
+                }
+            }
+
+            return item.ImageUrl;
+        }
 
         List<SortItemDefinition<MediaItemSortInput>> SortItemDefinitions { get; set; } = new List<SortItemDefinition<MediaItemSortInput>>
         {
