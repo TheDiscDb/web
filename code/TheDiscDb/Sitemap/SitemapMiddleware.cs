@@ -1,12 +1,13 @@
 ﻿namespace TheDiscDb.Web.Sitemap;
 
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 
 public static class MiddlewareExtensions
 {
@@ -83,7 +84,7 @@ public class SitemapMiddleware
         foreach (SitemapNode node in nodes)
         {
             stringBuilder.AppendLine("<url>");
-            stringBuilder.AppendFormat("<loc>{0}</loc>\r\n", node.Url);
+            stringBuilder.AppendFormat("<loc>{0}</loc>\r\n", SecurityElement.Escape(node.Url));
 
             if (node.Frequency.HasValue)
             {

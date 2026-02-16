@@ -401,7 +401,7 @@
                             }
                         }
 
-                        Map(release, releaseFile);
+                        await Map(release, releaseFile);
 
                         string imagePath = this.fileSystem.Path.Combine(releaseFolder, "front.jpg");
                         if (await this.fileSystem.File.Exists(imagePath, cancellationToken))

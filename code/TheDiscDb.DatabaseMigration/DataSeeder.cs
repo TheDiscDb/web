@@ -13,14 +13,16 @@ public class DataSeeder
     private readonly IOptions<DatabaseMigrationOptions> options;
     private readonly RoleManager<IdentityRole> roleManager;
     private readonly UserManager<TheDiscDbUser> userManager;
+    private readonly ILogger<DataSeeder> logger;
 
-    public DataSeeder(DataImporter dataImporter, IFileSystem fileSystem, IOptions<DatabaseMigrationOptions> options, RoleManager<IdentityRole> roleManager, UserManager<TheDiscDbUser> userManager)
+    public DataSeeder(DataImporter dataImporter, IFileSystem fileSystem, IOptions<DatabaseMigrationOptions> options, RoleManager<IdentityRole> roleManager, UserManager<TheDiscDbUser> userManager, ILogger<DataSeeder> logger)
     {
         this.dataImporter = dataImporter ?? throw new ArgumentNullException(nameof(dataImporter));
         this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
         this.options = options ?? throw new ArgumentNullException(nameof(options));
         this.roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
         this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task SeedDataAsync(CancellationToken cancellationToken)
@@ -35,7 +37,15 @@ public class DataSeeder
         var items = await GetRandomSubdirectories(this.fileSystem.Path.Combine(options.Value.DataDirectoryRoot, name), options.Value.MaxItemsToImportPerMediaType, cancellationToken);
         foreach (var item in items)
         {
-            await dataImporter.Import(item, cancellationToken);
+            this.logger.LogInformation("Importing {Path}", item);
+            try
+            {
+                await dataImporter.Import(item, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                this.logger.LogError(ex, "Unable to import {Path}", item); 
+            }
         }
     }
 
