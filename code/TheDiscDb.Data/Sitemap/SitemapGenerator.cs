@@ -139,7 +139,7 @@ public class SitemapGenerator
     {
         return new SitemapNode
         {
-            Url = siteBase + relativeUrl,
+            Url = (siteBase + relativeUrl).ToLower(),
             Frequency = frequency,
             Priority = priority,
             LastModified = lastModified

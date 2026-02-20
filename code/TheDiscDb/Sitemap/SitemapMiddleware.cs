@@ -49,7 +49,8 @@ public class SitemapMiddleware
 
     private async Task WriteSitemapAsync(HttpContext context)
     {
-        string? xml = await this.cache.GetOrCreateAsync("sitemap", async entry =>
+        string cacheKey = $"sitemap-{context.Request.Host}";
+        string? xml = await this.cache.GetOrCreateAsync(cacheKey, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
             IEnumerable<SitemapNode> validUrls = await this.generator.Build(this.GetSiteBaseUrl(context.Request));
@@ -64,7 +65,8 @@ public class SitemapMiddleware
 
     private async Task WriteGroupsSitemapAsync(HttpContext context)
     {
-        string? xml = await this.cache.GetOrCreateAsync("groups-sitemap", async entry =>
+        string cacheKey = $"groups-sitemap-{context.Request.Host}";
+        string? xml = await this.cache.GetOrCreateAsync(cacheKey, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
             IEnumerable<SitemapNode> validUrls = await this.generator.BuildGroupsMap(this.GetSiteBaseUrl(context.Request));
