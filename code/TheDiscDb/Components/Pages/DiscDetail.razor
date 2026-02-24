@@ -2,19 +2,27 @@
 @page "/disc/{contentHash}"
 @page "/boxset/{slug}/discs/{slugOrIndexString}"
 
-@if (Item != null && DiscRelease != null && Disc != null)
+@if (DiscRelease == null || Disc == null)
 {
-    <PageTitle>@Item.Title - @DiscRelease.Title - @Disc.FullDiscName() - TheDiscDb</PageTitle>
+    <PageTitle>Not Found - TheDiscDb</PageTitle>
+    <div>Disc not found</div>
+}
+else
+{
+    <PageTitle>@(Item?.Title ?? "Boxset") - @DiscRelease.Title - @Disc.FullDiscName() - TheDiscDb</PageTitle>
     <HeadContent>
         <meta name="description" content="Disc details for @Disc.FullDiscName() from the release @DiscRelease.Title on TheDiscDb, including titles, MakeMKV playlists, and file structures." />
-        <link rel="canonical" href="@BuildCanonicalLink(GetDiscLink(Item, DiscRelease, Disc))" />
+        @if (Item != null)
+        {
+            <link rel="canonical" href="@BuildCanonicalLink(GetDiscLink(Item, DiscRelease, Disc))" />
+        }
     </HeadContent>
-}
 
-<TheDiscDb.Client.Pages.DiscDetail
-    Type="@Type"
-    Slug="@Slug"
-    ReleaseSlug="@ReleaseSlug"
-    SlugOrIndexString="@SlugOrIndexString"
-    ContentHash="@ContentHash"
-    @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+    <TheDiscDb.Client.Pages.DiscDetail
+        Type="@Type"
+        Slug="@Slug"
+        ReleaseSlug="@ReleaseSlug"
+        SlugOrIndexString="@SlugOrIndexString"
+        ContentHash="@ContentHash"
+        @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+}

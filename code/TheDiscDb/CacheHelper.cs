@@ -49,8 +49,9 @@ public class CacheHelper
             return null;
         }
 
+        string normalizedType = type.ToLower();
         string normalizedSlug = slug.ToLower();
-        string cacheKey = $"MediaItemDetail|{type}|{normalizedSlug}";
+        string cacheKey = $"MediaItemDetail|{normalizedType}|{normalizedSlug}";
 
         return await this.cache.GetOrCreateAsync<MediaItem>(cacheKey, async entry =>
         {

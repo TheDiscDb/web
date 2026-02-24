@@ -1,6 +1,11 @@
 ﻿@page "/boxset/{slug}/"
 
-@if (Item != null && Release != null)
+@if (Item == null || Release == null)
+{
+    <PageTitle>Not Found - TheDiscDb</PageTitle>
+    <div>Boxset not found</div>
+}
+else
 {
     <PageTitle>@Item.Title - TheDiscDb</PageTitle>
     <HeadContent>

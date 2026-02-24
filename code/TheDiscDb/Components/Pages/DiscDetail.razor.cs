@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
@@ -24,6 +25,9 @@ public partial class DiscDetail : ComponentBase
 
     [Inject]
     public CacheHelper? Cache { get; set; }
+
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
 
     private MediaItem? Item { get; set; }
     private Release? DiscRelease { get; set; }
@@ -68,6 +72,14 @@ public partial class DiscDetail : ComponentBase
                     Disc = DiscRelease.Discs.FirstOrDefault(d =>
                         SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
                 }
+            }
+        }
+
+        if (DiscRelease == null || Disc == null)
+        {
+            if (HttpContext != null && !HttpContext.Response.HasStarted)
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
             }
         }
     }

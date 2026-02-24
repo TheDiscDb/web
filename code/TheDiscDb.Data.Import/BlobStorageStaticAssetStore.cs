@@ -82,7 +82,7 @@
                 await blobClient.UploadAsync(filePath, uploadOptions, cancellationToken);
             }
 
-            return blobClient.Uri.ToString();
+            return remotePath;
         }
 
         public async Task<string> Save(Stream stream, string remotePath, string contentType, CancellationToken cancellationToken = default)
@@ -102,7 +102,7 @@
                 await blobClient.UploadAsync(stream, uploadOptions, cancellationToken);
             }
 
-            return blobClient.Uri.ToString();
+            return remotePath;
         }
 
         public async Task<BinaryData> Download(string remotePath, CancellationToken cancellationToken = default)

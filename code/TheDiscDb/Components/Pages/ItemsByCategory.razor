@@ -1,14 +1,18 @@
 @page "/g/{slug}"
 
-<PageTitle>Items related to '@Slug' - TheDiscDb</PageTitle>
-<HeadContent>
-    <meta name="description" content="Browse all movies, TV series, and boxsets related to '@Slug' on TheDiscDb. Find disc details, release information, and more." />
-    <link rel="canonical" href="https://thediscdb.com/g/@Uri.EscapeDataString(Slug ?? "")" />
-</HeadContent>
+@if (!groupExists)
+{
+    <PageTitle>Not Found - TheDiscDb</PageTitle>
+    <div>Category not found</div>
+}
+else
+{
+    <PageTitle>Items related to '@(groupName ?? Slug)' - TheDiscDb</PageTitle>
+    <HeadContent>
+        <meta name="description" content="Browse all movies, TV series, and boxsets related to '@(groupName ?? Slug)' on TheDiscDb. Find disc details, release information, and more." />
+        <link rel="canonical" href="https://thediscdb.com/g/@Uri.EscapeDataString(Slug ?? "")" />
+    </HeadContent>
 
-<TheDiscDb.Client.Pages.ItemsByCategory Slug="@Slug" @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
-
-@code {
-    [Parameter]
-    public string? Slug { get; set; }
+    <h1>Items related to '@(groupName ?? Slug)'</h1>
+    <TheDiscDb.Client.Pages.ItemsByCategory Slug="@Slug" @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
 }
