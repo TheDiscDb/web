@@ -9,12 +9,16 @@
 }
 else
 {
-    <PageTitle>@(Item?.Title ?? "Boxset") - @DiscRelease.Title - @Disc.FullDiscName() - TheDiscDb</PageTitle>
+    <PageTitle>@(Item?.Title ?? BoxsetItem?.Title ?? "Boxset") - @DiscRelease.Title - @Disc.FullDiscName() - TheDiscDb</PageTitle>
     <HeadContent>
         <meta name="description" content="Disc details for @Disc.FullDiscName() from the release @DiscRelease.Title on TheDiscDb, including titles, MakeMKV playlists, and file structures." />
         @if (Item != null)
         {
             <link rel="canonical" href="@BuildCanonicalLink(GetDiscLink(Item, DiscRelease, Disc))" />
+        }
+        else if (BoxsetItem != null)
+        {
+            <link rel="canonical" href="@BuildCanonicalLink(GetBoxsetDiscLink(BoxsetItem, Disc))" />
         }
     </HeadContent>
 

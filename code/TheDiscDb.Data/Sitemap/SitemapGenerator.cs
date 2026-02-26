@@ -73,14 +73,14 @@ public class SitemapGenerator
 
                 foreach (var disc in release.Discs)
                 {
-                    relativeUrl = $"/{item.Type}/{item.Slug}/releases/{release.Slug}/discs/{disc.Index}";
+                    relativeUrl = $"/{item.Type}/{item.Slug}/releases/{release.Slug}/discs/{disc.SlugOrIndex()}";
                     results.Add(CreateSitemapNode(siteBase, relativeUrl));
 
                     foreach (var title in disc.Titles)
                     {
                         if (title.Item != null)
                         {
-                            relativeUrl = $"/{item.Type}/{item.Slug}/releases/{release.Slug}/discs/{disc.Index}/{GetTitleUrl(title)}";
+                            relativeUrl = $"/{item.Type}/{item.Slug}/releases/{release.Slug}/discs/{disc.SlugOrIndex()}/{GetTitleUrl(title)}";
                             results.Add(CreateSitemapNode(siteBase, relativeUrl));
                         }
                     }
@@ -110,14 +110,14 @@ public class SitemapGenerator
 
             foreach (var disc in item.Release.Discs)
             {
-                relativeUrl = $"/boxset/{item.Slug}/discs/{disc.Index}";
+                relativeUrl = $"/boxset/{item.Slug}/releases/{item.Release.Slug}/discs/{disc.SlugOrIndex()}";
                 results.Add(CreateSitemapNode(siteBase, relativeUrl));
 
                 foreach (var title in disc.Titles)
                 {
                     if (title.Item != null)
                     {
-                        relativeUrl = $"/boxset/{item.Slug}/discs/{disc.Index}/{GetTitleUrl(title)}";
+                        relativeUrl = $"/boxset/{item.Slug}/releases/{item.Release.Slug}/discs/{disc.SlugOrIndex()}/{GetTitleUrl(title)}";
                         results.Add(CreateSitemapNode(siteBase, relativeUrl));
                     }
                 }

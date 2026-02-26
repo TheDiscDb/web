@@ -78,7 +78,7 @@ public static partial class BreadCrumbHelper
 
         return (
             Text: $"Disc {disc.Index}",
-            Url: $"/boxset/{item.Slug}/releases/{item.Release.Slug}/discs/{disc.Index}"
+            Url: $"/boxset/{item.Slug}/releases/{item.Release.Slug}/discs/{disc.SlugOrIndex()}"
         );
     }
 

@@ -30,17 +30,24 @@ public partial class DiscDetail : ComponentBase
     public HttpContext? HttpContext { get; set; }
 
     private MediaItem? Item { get; set; }
+    private Boxset? BoxsetItem { get; set; }
     private Release? DiscRelease { get; set; }
     private Disc? Disc { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        // Detect the boxset disc case
-        bool isLegacyBoxsetUrl = false;
+        // Detect the boxset disc case (legacy URL: /boxset/{slug}/discs/{slugOrIndex})
+        bool isBoxsetUrl = false;
         if (string.IsNullOrEmpty(this.Type) && !string.IsNullOrEmpty(this.Slug) && !string.IsNullOrEmpty(this.SlugOrIndexString))
         {
             this.Type = "boxset";
-            isLegacyBoxsetUrl = true;
+            isBoxsetUrl = true;
+        }
+
+        // Also handle boxset via /{type}/... route
+        if (this.Type?.Equals("boxset", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            isBoxsetUrl = true;
         }
 
         if (Cache == null || string.IsNullOrEmpty(Type) || string.IsNullOrEmpty(Slug))
@@ -48,10 +55,10 @@ public partial class DiscDetail : ComponentBase
             return;
         }
 
-        if (isLegacyBoxsetUrl)
+        if (isBoxsetUrl)
         {
-            var boxset = await Cache.GetBoxsetAsync(Slug);
-            this.DiscRelease = boxset?.Release;
+            BoxsetItem = await Cache.GetBoxsetAsync(Slug);
+            this.DiscRelease = BoxsetItem?.Release;
 
             if (this.DiscRelease != null)
             {
