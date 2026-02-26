@@ -1,23 +1,9 @@
 ﻿@if (Item == null || Disc == null || Release == null)
 {
-    <div>Item, Disc or Release not found</div>
+    <div>Loading titles...</div>
 }
 else
 {
-    <PageTitle>@Item.Title - @Release.Title - @Disc.Name - TheDiscDb</PageTitle>
-    <HeadContent>
-        <meta name="description" content="Disc details for @Disc.Name from the release @Release.Title on TheDiscDb, including titles, MakeMKV playlists, and file structures." />
-        <link rel="canonical" href="@BuildCanonicalLink(GetDiscLink(Item, Release, Disc))" />
-    </HeadContent>
-    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@Disc.GetFullName()" Items="[
-            GetRootLink(this.Item),
-            GetMediaItemLink(this.Item),
-            GetReleaseLink(this.Item, this.Release),
-            GetDiscLink(this.Item, this.Release, this.Disc)
-        ]" />
-    <h1 class="fs-3 fs-md-1">@Disc.GetFullName()</h1>
-    <h2 class="fs-5 fs-md-2">@Release.Title</h2>
-
     <div class="d-flex align-items-center gap-2 mb-2">
         <SfSwitch TChecked="bool" ValueChange="e => AllTitlesChanged(e)" />
         <label>Show all titles</label>

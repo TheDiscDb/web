@@ -9,8 +9,17 @@ else
 {
     <PageTitle>@Item.Title - TheDiscDb</PageTitle>
     <HeadContent>
-        <meta name="description" content="@Item.Title boxset on TheDiscDb — release details, disc structures, MakeMKV playlists, and special features for the @Item.Release?.Title release." />
+        @{ var boxsetMetaDesc = $"{Item.Title} boxset — {Release.Discs.Count} disc(s) released {Release.ReleaseDate.ToString("d")}. Full disc structures, MakeMKV playlists, and title listings on TheDiscDb."; }
+        <meta name="description" content="@boxsetMetaDesc" />
         <link rel="canonical" href="@BuildCanonicalLink(GetBoxsetLink(Item))" />
+        <meta property="og:title" content="@Item.Title - TheDiscDb" />
+        <meta property="og:description" content="@boxsetMetaDesc" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="@BuildCanonicalLink(GetBoxsetLink(Item))" />
+        <meta property="og:image" content="https://thediscdb.com/images/@(Item.ImageUrl)?width=600&amp;height=900" />
+        <meta property="og:image:width" content="600" />
+        <meta property="og:image:height" content="900" />
+        <meta property="og:site_name" content="TheDiscDb" />
     </HeadContent>
     <div class="vstack">
         <TheDiscDb.Client.Controls.Breadcrumb Items="[GetBoxsetRootLink()]" PrimaryText="@Item.Title" />

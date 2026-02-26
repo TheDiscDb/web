@@ -11,7 +11,7 @@ else
 {
     <PageTitle>@Item.Title - @Release.Title - TheDiscDb</PageTitle>
     <HeadContent>
-        <meta name="description" content="File details for @Title.SourceFile from @Release.Title disc @Disc.Index on TheDiscDb — chapters, audio tracks, video streams, and segment information." />
+        <meta name="description" content="@Title.SourceFile from @Item.Title — @Release.Title disc @Disc.Index: @Title.TitleDescription() (@Title.Duration). Audio tracks, chapters, and video stream details on TheDiscDb." />
         <link rel="canonical" href="@BuildCanonicalLink(GetDiscTitleLink(Item, Release, Disc, Title.SourceFile))" />
     </HeadContent>
     <div class="vstack">

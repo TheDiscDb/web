@@ -11,7 +11,8 @@ else
 {
     <PageTitle>@(Item?.Title ?? BoxsetItem?.Title ?? "Boxset") - @DiscRelease.Title - @Disc.FullDiscName() - TheDiscDb</PageTitle>
     <HeadContent>
-        <meta name="description" content="Disc details for @Disc.FullDiscName() from the release @DiscRelease.Title on TheDiscDb, including titles, MakeMKV playlists, and file structures." />
+        @{ var discTitleCount = Disc.Titles.Count(t => t.Item != null); }
+        <meta name="description" content="@Disc.FullDiscName() from the @DiscRelease.Title release — @discTitleCount title(s) with MakeMKV playlists, audio tracks, and chapter details on TheDiscDb." />
         @if (Item != null)
         {
             <link rel="canonical" href="@BuildCanonicalLink(GetDiscLink(Item, DiscRelease, Disc))" />
@@ -21,6 +22,60 @@ else
             <link rel="canonical" href="@BuildCanonicalLink(GetBoxsetDiscLink(BoxsetItem, Disc))" />
         }
     </HeadContent>
+
+    @if (Item != null)
+    {
+        <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@Disc.GetFullName()" Items="[
+            GetRootLink(Item),
+            GetMediaItemLink(Item),
+            GetReleaseLink(Item, DiscRelease),
+        ]" />
+    }
+    else if (BoxsetItem != null)
+    {
+        <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@Disc.GetFullName()" Items="[
+            GetBoxsetRootLink(),
+            GetBoxsetLink(BoxsetItem),
+        ]" />
+    }
+    <h1 class="fs-3 fs-md-1">@Disc.GetFullName()</h1>
+    <h2 class="fs-5 fs-md-2">@DiscRelease.Title</h2>
+
+    @if (Disc.Titles.Any(t => t.Item != null))
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Source File</th>
+                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var title in Disc.Titles.Where(t => t.Item != null))
+                    {
+                        <tr>
+                            <td>
+                                @if (Item != null)
+                                {
+                                    <a href="@title.TitleDetailUrl(Disc, DiscRelease, Item)">@title.SourceFile</a>
+                                }
+                                else
+                                {
+                                    @title.SourceFile
+                                }
+                            </td>
+                            <td>@title.Item?.Title</td>
+                            <td>@title.Item?.Type</td>
+                            <td>@title.Duration</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 
     <TheDiscDb.Client.Pages.DiscDetail
         Type="@Type"

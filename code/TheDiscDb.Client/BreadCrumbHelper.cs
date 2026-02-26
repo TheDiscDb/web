@@ -5,6 +5,27 @@ namespace TheDiscDb;
 
 public static partial class BreadCrumbHelper
 {
+    public static string TruncateForDescription(string? text, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        if (text.Length <= maxLength)
+        {
+            return text;
+        }
+
+        int lastSpace = text.LastIndexOf(' ', maxLength);
+        if (lastSpace > maxLength / 2)
+        {
+            return text[..lastSpace] + "…";
+        }
+
+        return text[..maxLength] + "…";
+    }
+
     public static (string Text, string Url) GetRootContributionLink() => (Text: "Contribute", Url: "/contribute");
 
     public static (string Text, string Url) GetContributionLink(IContributionDisplay contribution)
