@@ -182,6 +182,7 @@ public partial class IdentifyDiscItems : ComponentBase
 
     private int[] sortedUniqueLengths = [];
     private int[] lengthRange = [0, 0];
+    private string searchText = string.Empty;
     
     protected override async Task OnInitializedAsync()
     {
@@ -959,26 +960,62 @@ public partial class IdentifyDiscItems : ComponentBase
     private void OnLengthRangeChanged(int[] values)
     {
         this.lengthRange = values;
-        ApplyLengthFilter();
+        ApplyFilters();
     }
 
-    private void ApplyLengthFilter()
+    private void OnSearchInput(InputEventArgs args)
     {
-        if (this.allTitles == null || this.sortedUniqueLengths.Length < 2)
+        this.searchText = args.Value ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        if (this.allTitles == null)
         {
             return;
         }
 
-        int lowSeconds = this.sortedUniqueLengths[this.lengthRange[0]];
-        int highSeconds = this.sortedUniqueLengths[this.lengthRange[1]];
-        this.filteredTitles = this.allTitles
-            .AsEnumerable()
-            .Where(t =>
+        var result = this.allTitles.AsEnumerable();
+
+        // Length slider filter
+        if (this.sortedUniqueLengths.Length >= 2)
+        {
+            int lowSeconds = this.sortedUniqueLengths[this.lengthRange[0]];
+            int highSeconds = this.sortedUniqueLengths[this.lengthRange[1]];
+            result = result.Where(t =>
             {
                 int seconds = ParseLengthToSeconds(t.Length);
                 return seconds >= lowSeconds && seconds <= highSeconds;
-            })
-            .AsQueryable();
+            });
+        }
+
+        // Text search filter
+        if (!string.IsNullOrWhiteSpace(this.searchText))
+        {
+            string search = this.searchText;
+            result = result.Where(t => MatchesSearch(t, search));
+        }
+
+        this.filteredTitles = result.AsQueryable();
+    }
+
+    private bool MatchesSearch(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title, string search)
+    {
+        return ContainsText(title.ChapterCount.ToString(), search)
+            || ContainsText(title.DisplaySize, search)
+            || ContainsText(title.Length, search)
+            || ContainsText(title.SegmentMap, search)
+            || ContainsText(title.Playlist, search)
+            || ContainsText(title.JavaComment, search)
+            || ContainsText(GetTitle(title), search)
+            || ContainsText(GetSeason(title), search)
+            || ContainsText(GetEpisode(title), search);
+    }
+
+    private static bool ContainsText(string? value, string search)
+    {
+        return !string.IsNullOrEmpty(value) && value.Contains(search, StringComparison.OrdinalIgnoreCase);
     }
 
     private void OnLengthTooltipChange(SliderTooltipEventArgs<int[]> args)

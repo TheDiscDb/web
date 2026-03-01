@@ -37,6 +37,11 @@
             </div>
         }
 
+        <div class="search-filter">
+            <SfTextBox Placeholder="Search all fields..." Value="@searchText" Input="OnSearchInput"
+                       CssClass="e-field" ShowClearButton="true" />
+        </div>
+
         <QuickGrid Items="filteredTitles" Class="striped-grid">
             <PropertyColumn Property="@(t => t.ChapterCount)" />
             <PropertyColumn Property="@(t => t.DisplaySize)" />
