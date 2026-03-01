@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using StrawberryShake;
+using Syncfusion.Blazor.Inputs;
 using Syncfusion.Blazor.Notifications;
 using Syncfusion.Blazor.Popups;
 using Syncfusion.Blazor.SplitButtons;
@@ -179,8 +180,7 @@ public partial class IdentifyDiscItems : ComponentBase
     string? toastContent;
     ItemIdentification? currentItem;
 
-    private int minLengthSeconds;
-    private int maxLengthSeconds;
+    private int[] sortedUniqueLengths = [];
     private int[] lengthRange = [0, 0];
     
     protected override async Task OnInitializedAsync()
@@ -941,19 +941,19 @@ public partial class IdentifyDiscItems : ComponentBase
             return;
         }
 
-        var lengths = this.allTitles
+        this.sortedUniqueLengths = this.allTitles
             .Select(t => ParseLengthToSeconds(t.Length))
             .Where(s => s >= 0)
-            .ToList();
+            .Distinct()
+            .Order()
+            .ToArray();
 
-        if (lengths.Count == 0)
+        if (this.sortedUniqueLengths.Length < 2)
         {
             return;
         }
 
-        this.minLengthSeconds = lengths.Min();
-        this.maxLengthSeconds = lengths.Max();
-        this.lengthRange = [this.minLengthSeconds, this.maxLengthSeconds];
+        this.lengthRange = [0, this.sortedUniqueLengths.Length - 1];
     }
 
     private void OnLengthRangeChanged(int[] values)
@@ -964,21 +964,33 @@ public partial class IdentifyDiscItems : ComponentBase
 
     private void ApplyLengthFilter()
     {
-        if (this.allTitles == null)
+        if (this.allTitles == null || this.sortedUniqueLengths.Length < 2)
         {
             return;
         }
 
-        int low = this.lengthRange[0];
-        int high = this.lengthRange[1];
+        int lowSeconds = this.sortedUniqueLengths[this.lengthRange[0]];
+        int highSeconds = this.sortedUniqueLengths[this.lengthRange[1]];
         this.filteredTitles = this.allTitles
             .AsEnumerable()
             .Where(t =>
             {
                 int seconds = ParseLengthToSeconds(t.Length);
-                return seconds >= low && seconds <= high;
+                return seconds >= lowSeconds && seconds <= highSeconds;
             })
             .AsQueryable();
+    }
+
+    private void OnLengthTooltipChange(SliderTooltipEventArgs<int[]> args)
+    {
+        if (this.sortedUniqueLengths.Length == 0)
+        {
+            return;
+        }
+
+        int lowIndex = Math.Clamp(args.Value[0], 0, this.sortedUniqueLengths.Length - 1);
+        int highIndex = Math.Clamp(args.Value[1], 0, this.sortedUniqueLengths.Length - 1);
+        args.Text = $"{FormatSecondsToLength(this.sortedUniqueLengths[lowIndex])} - {FormatSecondsToLength(this.sortedUniqueLengths[highIndex])}";
     }
 
     static int ParseLengthToSeconds(string? length)
