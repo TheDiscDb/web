@@ -24,6 +24,18 @@
     }
     else
     {
+        @if (maxLengthSeconds > minLengthSeconds)
+        {
+            <div class="length-filter">
+                <label>Filter by Length: @FormatSecondsToLength(lengthRange[0]) – @FormatSecondsToLength(lengthRange[1])</label>
+                <SfSlider TValue="int[]" Value="@lengthRange" Type="SliderType.Range"
+                          Min="@minLengthSeconds" Max="@maxLengthSeconds"
+                          ValueChanged="OnLengthRangeChanged">
+                    <SliderTooltip IsVisible="true" ShowOn="TooltipShowOn.Always" Placement="TooltipPlacement.Before" />
+                </SfSlider>
+            </div>
+        }
+
         <QuickGrid Items="filteredTitles" Class="striped-grid">
             <PropertyColumn Property="@(t => t.ChapterCount)" />
             <PropertyColumn Property="@(t => t.DisplaySize)" />

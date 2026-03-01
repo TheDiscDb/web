@@ -178,6 +178,10 @@ public partial class IdentifyDiscItems : ComponentBase
     SfToast? toast;
     string? toastContent;
     ItemIdentification? currentItem;
+
+    private int minLengthSeconds;
+    private int maxLengthSeconds;
+    private int[] lengthRange = [0, 0];
     
     protected override async Task OnInitializedAsync()
     {
@@ -193,6 +197,7 @@ public partial class IdentifyDiscItems : ComponentBase
             this.filteredTitles = allTitles;
             this.disc = response.Data.DiscLogs.DiscLogs.Disc;
             this.contribution = response.Data.DiscLogs.DiscLogs.Contribution;
+            InitializeLengthFilter();
 
             if (allTitles != null && disc?.Items != null)
             {
@@ -927,5 +932,75 @@ public partial class IdentifyDiscItems : ComponentBase
                 }
             }
         }
+    }
+
+    private void InitializeLengthFilter()
+    {
+        if (this.allTitles == null || !this.allTitles.Any())
+        {
+            return;
+        }
+
+        var lengths = this.allTitles
+            .Select(t => ParseLengthToSeconds(t.Length))
+            .Where(s => s >= 0)
+            .ToList();
+
+        if (lengths.Count == 0)
+        {
+            return;
+        }
+
+        this.minLengthSeconds = lengths.Min();
+        this.maxLengthSeconds = lengths.Max();
+        this.lengthRange = [this.minLengthSeconds, this.maxLengthSeconds];
+    }
+
+    private void OnLengthRangeChanged(int[] values)
+    {
+        this.lengthRange = values;
+        ApplyLengthFilter();
+    }
+
+    private void ApplyLengthFilter()
+    {
+        if (this.allTitles == null)
+        {
+            return;
+        }
+
+        int low = this.lengthRange[0];
+        int high = this.lengthRange[1];
+        this.filteredTitles = this.allTitles
+            .AsEnumerable()
+            .Where(t =>
+            {
+                int seconds = ParseLengthToSeconds(t.Length);
+                return seconds >= low && seconds <= high;
+            })
+            .AsQueryable();
+    }
+
+    static int ParseLengthToSeconds(string? length)
+    {
+        if (string.IsNullOrWhiteSpace(length))
+        {
+            return -1;
+        }
+
+        if (TimeSpan.TryParse(length, out var ts))
+        {
+            return (int)ts.TotalSeconds;
+        }
+
+        return -1;
+    }
+
+    static string FormatSecondsToLength(int totalSeconds)
+    {
+        var ts = TimeSpan.FromSeconds(totalSeconds);
+        return ts.Hours > 0
+            ? ts.ToString(@"h\:mm\:ss")
+            : ts.ToString(@"m\:ss");
     }
 }
