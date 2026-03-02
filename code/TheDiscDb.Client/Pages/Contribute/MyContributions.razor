@@ -29,12 +29,15 @@
     <PropertyColumn Property="@(c => c.MediaType)" />
     <PropertyColumn Property="@(c => c.Status)" />
     <TemplateColumn Title="">
-        <button class="btn btn-sm btn-outline-danger"
-                disabled="@(!CanDelete(context))"
-                @onclick="() => ConfirmDelete(context)"
-                title="@(CanDelete(context) ? "Delete contribution" : "Only Pending, Rejected, or Changes Requested contributions can be deleted")">
-            🗑
-        </button>
+        @if (CanDelete(context))
+        {
+            <button class="btn btn-sm btn-link text-danger p-0"
+                    style="font-size: 1.25rem; line-height: 1;"
+                    @onclick="() => ConfirmDelete(context)"
+                    title="Delete contribution">
+                🗑
+            </button>
+        }
     </TemplateColumn>
 </QuickGrid>
 
