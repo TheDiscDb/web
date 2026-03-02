@@ -1,0 +1,53 @@
+::deep .metadata-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    ::deep .metadata-grid {
+        grid-template-columns: 1fr 2fr 1fr;
+    }
+}
+
+::deep .metadata-item dt {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+    margin-bottom: 0.2rem;
+}
+
+::deep .metadata-item dd {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #1f2a3b;
+}
+
+::deep .metadata-item-wide {
+    grid-column: span 1;
+}
+
+@media (min-width: 768px) {
+    ::deep .metadata-item-wide {
+        grid-column: span 1;
+    }
+}
+
+::deep .metadata-card {
+    padding: 0.5rem 0;
+}
+
+::deep .chapter-list {
+    padding-left: 1.5rem;
+}
+
+::deep .chapter-list li {
+    padding: 0.35rem 0;
+    border-bottom: 1px solid #eef1f5;
+}
+
+::deep .chapter-list li:last-child {
+    border-bottom: none;
+}

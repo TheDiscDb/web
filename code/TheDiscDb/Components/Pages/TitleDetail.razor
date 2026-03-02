@@ -22,85 +22,75 @@ else
             GetDiscLink(this.Item, this.Release, this.Disc)
         ]" />
         <h1>@Title.SourceFile — @Release.Title</h1>
-        <div class="container-fluid px-0">
-            <div class="row">
-                <div class="col-12 col-md-3">
-                    <div class="vstack">
-                        <p class="people-role">Source File</p>
-                        <p class="people">@Title.SourceFile</p>
-                    </div>
+        <div class="metadata-card mt-3">
+            <dl class="metadata-grid mb-0">
+                <div class="metadata-item">
+                    <dt>Source File</dt>
+                    <dd>@Title.SourceFile</dd>
                 </div>
-                <div class="col-12 col-md-6">
-                    <div class="vstack">
-                        <p class="people-role">Description</p>
-                        <p class="people">@Title.TitleDescription()</p>
-                    </div>
+                <div class="metadata-item metadata-item-wide">
+                    <dt>Description</dt>
+                    <dd>@Title.TitleDescription()</dd>
                 </div>
-                <div class="col-12 col-md-3">
-                    <div class="vstack">
-                        <p class="people-role">Length</p>
-                        <p class="people">@Title.Duration</p>
-                    </div>
+                <div class="metadata-item">
+                    <dt>Length</dt>
+                    <dd>@Title.Duration</dd>
                 </div>
-            </div>
-            <div class="row">
-                <div class="col-12 col-md-3">
-                    <div class="vstack">
-                        <p class="people-role">Type</p>
-                        @if (Title.Item != null)
-                        {
-                            <p class="people">@Title.Item.Type</p>
-                        }
-                        else
-                        {
-                            <p class="people"></p>
-                        }
-                    </div>
+                <div class="metadata-item">
+                    <dt>Type</dt>
+                    <dd>@(Title.Item?.Type ?? "—")</dd>
                 </div>
-                <div class="col-12 col-md-6">
-                    <div class="vstack">
-                        <p class="people-role">Segment Map</p>
-                        <p class="people" style="overflow-wrap: anywhere;">@Title.SegmentMap</p>
-                    </div>
+                <div class="metadata-item metadata-item-wide">
+                    <dt>Segment Map</dt>
+                    <dd style="overflow-wrap: anywhere;">@Title.SegmentMap</dd>
                 </div>
-                <div class="col-12 col-md-3">
-                    <div class="vstack">
-                        <p class="people-role">Size</p>
-                        <p class="people">@Title.DisplaySize</p>
-                    </div>
+                <div class="metadata-item">
+                    <dt>Size</dt>
+                    <dd>@Title.DisplaySize</dd>
                 </div>
-            </div>
+            </dl>
         </div>
+
         @if (Title.Item != null && Title.Item.Chapters != null && Title.Item.Chapters.Count > 0)
         {
-            <h3>Chapters</h3>
-            <ol>
-                @foreach (var chapter in Title.Item.Chapters)
-                {
-                    <li>@chapter.Title</li>
-                }
-            </ol>
+            <div class="info-card mt-4">
+                <h3 class="mt-0 mb-3">Chapters</h3>
+                <ol class="chapter-list mb-0">
+                    @foreach (var chapter in Title.Item.Chapters)
+                    {
+                        <li>@chapter.Title</li>
+                    }
+                </ol>
+            </div>
         }
-        <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th scope="col">Index</th>
-                    <th scope="col">Description</th>
-                    <th scope="col">Type</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var track in Title.Tracks)
-                {
-                    <tr>
-                        <td>@track.Index</td>
-                        <td>@track.GetDesciption()</td>
-                        <td>@track.Type</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-        </div>
+
+        @{ var trackGroups = new[] { "Video", "Audio", "Subtitles" }; }
+        @foreach (var groupType in trackGroups)
+        {
+            var groupTracks = Title.Tracks.Where(t => t.Type == groupType).ToList();
+            if (groupTracks.Count > 0)
+            {
+                <h3 class="mt-4 mb-2">@groupType Tracks</h3>
+                <div class="table-responsive">
+                    <table class="table striped-grid mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" style="width: 5rem;">Index</th>
+                                <th scope="col">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var track in groupTracks)
+                            {
+                                <tr>
+                                    <td>@track.Index</td>
+                                    <td>@track.GetDesciption()</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
     </div>
 }

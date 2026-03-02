@@ -41,42 +41,6 @@ else
     <h1 class="fs-3 fs-md-1">@Disc.GetFullName()</h1>
     <h2 class="fs-5 fs-md-2">@DiscRelease.Title</h2>
 
-    @if (Disc.Titles.Any(t => t.Item != null))
-    {
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Source File</th>
-                        <th>Description</th>
-                        <th>Type</th>
-                        <th>Duration</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var title in Disc.Titles.Where(t => t.Item != null))
-                    {
-                        <tr>
-                            <td>
-                                @if (Item != null)
-                                {
-                                    <a href="@title.TitleDetailUrl(Disc, DiscRelease, Item)">@title.SourceFile</a>
-                                }
-                                else
-                                {
-                                    @title.SourceFile
-                                }
-                            </td>
-                            <td>@title.Item?.Title</td>
-                            <td>@title.Item?.Type</td>
-                            <td>@title.Duration</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-
     <TheDiscDb.Client.Pages.DiscDetail
         Type="@Type"
         Slug="@Slug"
