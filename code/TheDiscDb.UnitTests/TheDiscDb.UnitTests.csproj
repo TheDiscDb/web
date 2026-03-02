@@ -8,4 +8,11 @@
     <ItemGroup>
         <PackageReference Include="TUnit" Version="0.10.28" />
     </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />
+      <ProjectReference Include="..\TheDiscDb.Data.Import\TheDiscDb.Data.Import.csproj" />
+      <ProjectReference Include="..\TheDiscDb.Data\TheDiscDb.Data.csproj" />
+      <ProjectReference Include="..\TheDiscDb\TheDiscDb.csproj" />
+      <ProjectReference Include="..\TheDiscDb.Client\TheDiscDb.Client.csproj" />
+    </ItemGroup>
 </Project>
