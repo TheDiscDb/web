@@ -963,7 +963,19 @@ public partial class IdentifyDiscItems : ComponentBase
         ApplyFilters();
     }
 
+    private void ResetLengthFilter()
+    {
+        this.lengthRange = [0, this.sortedUniqueLengths.Length - 1];
+        ApplyFilters();
+    }
+
     private void OnSearchInput(InputEventArgs args)
+    {
+        this.searchText = args.Value ?? string.Empty;
+        ApplyFilters();
+    }
+
+    private void OnSearchValueChange(ChangedEventArgs args)
     {
         this.searchText = args.Value ?? string.Empty;
         ApplyFilters();

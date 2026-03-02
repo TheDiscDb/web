@@ -509,6 +509,50 @@ pre code {
     padding: 1.5rem 2rem;
 }
 
+/* Filter panel for identify disc items */
+.filter-panel {
+    background: #f4f7fb;
+    border: 1px solid rgba(0, 33, 63, 0.10);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    max-width: 480px;
+}
+
+.filter-panel-heading {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #4d5a6d;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 0.75rem 0;
+}
+
+.filter-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.filter-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+    .filter-label-row label {
+        font-size: 0.85rem;
+        color: #1f2a3b;
+        font-weight: 500;
+        margin: 0;
+    }
+
 .identify-title-page .info-card {
     min-height: 220px;
     display: flex;

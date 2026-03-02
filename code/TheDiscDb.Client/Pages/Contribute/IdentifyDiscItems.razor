@@ -24,22 +24,30 @@
     }
     else
     {
-        @if (sortedUniqueLengths.Length >= 2)
-        {
-            <div class="length-filter">
-                <label>Filter by Length: @FormatSecondsToLength(sortedUniqueLengths[lengthRange[0]]) – @FormatSecondsToLength(sortedUniqueLengths[lengthRange[1]])</label>
-                <SfSlider TValue="int[]" Value="@lengthRange" Type="SliderType.Range"
-                          Min="0" Max="@(sortedUniqueLengths.Length - 1)"
-                          ValueChanged="OnLengthRangeChanged">
-                    <SliderEvents TValue="int[]" OnTooltipChange="OnLengthTooltipChange" />
-                    <SliderTooltip IsVisible="true" ShowOn="TooltipShowOn.Always" Placement="TooltipPlacement.Before" />
-                </SfSlider>
+        <div class="filter-panel">
+            <h3 class="filter-panel-heading">Filters</h3>
+            <div class="filter-controls">
+                @if (sortedUniqueLengths.Length >= 2)
+                {
+                    <div class="filter-group length-filter">
+                        <div class="filter-label-row">
+                            <label>Length: @FormatSecondsToLength(sortedUniqueLengths[lengthRange[0]]) – @FormatSecondsToLength(sortedUniqueLengths[lengthRange[1]])</label>
+                            <SfButton CssClass="e-small e-flat" IconCss="e-icons e-undo" OnClick="ResetLengthFilter" title="Reset length filter" />
+                        </div>
+                        <SfSlider TValue="int[]" Value="@lengthRange" Type="SliderType.Range"
+                                  Min="0" Max="@(sortedUniqueLengths.Length - 1)"
+                                  ValueChanged="OnLengthRangeChanged">
+                            <SliderEvents TValue="int[]" OnTooltipChange="OnLengthTooltipChange" />
+                            <SliderTooltip IsVisible="true" ShowOn="TooltipShowOn.Always" Placement="TooltipPlacement.Before" />
+                        </SfSlider>
+                    </div>
+                }
+                <div class="filter-group search-filter">
+                    <SfTextBox Placeholder="Search all fields..." Value="@searchText" Input="OnSearchInput"
+                               ValueChange="OnSearchValueChange"
+                               CssClass="e-field" ShowClearButton="true" />
+                </div>
             </div>
-        }
-
-        <div class="search-filter">
-            <SfTextBox Placeholder="Search all fields..." Value="@searchText" Input="OnSearchInput"
-                       CssClass="e-field" ShowClearButton="true" />
         </div>
 
         <QuickGrid Items="filteredTitles" Class="striped-grid">
