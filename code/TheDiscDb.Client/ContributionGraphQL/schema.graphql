@@ -161,6 +161,8 @@ union AddChapterToItemError = ContributionNotFoundError | DiscNotFoundError | Di
 
 union DeleteItemFromDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
+union DeleteContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
+
 input CreateContributionInput {
   input: ContributionMutationRequestInput!
 }
@@ -201,6 +203,10 @@ input DeleteItemFromDiscInput {
   contributionId: String!
   discId: String!
   itemId: String!
+}
+
+input DeleteContributionInput {
+  contributionId: String!
 }
 
 type Segment {
@@ -314,6 +320,7 @@ type ContributionMutations {
   addItemToDisc(input: AddItemToDiscInput!): AddItemToDiscPayload!
   createContribution(input: CreateContributionInput!): CreateContributionPayload!
   createDisc(input: CreateDiscInput!): CreateDiscPayload!
+  deleteContribution(input: DeleteContributionInput!): DeleteContributionPayload!
   deleteItemFromDisc(input: DeleteItemFromDiscInput!): DeleteItemFromDiscPayload!
   editItemOnDisc(input: EditItemOnDiscInput!): EditItemOnDiscPayload!
   discLogs(input: DiscLogsInput!): DiscLogsPayload!
@@ -552,6 +559,11 @@ type DeleteItemFromDiscPayload {
   errors: [DeleteItemFromDiscError!]
 }
 
+type DeleteContributionPayload {
+  userContribution: UserContribution
+  errors: [DeleteContributionError!]
+}
+
 type HashDiscPayload {
   discHash: DiscHash
   errors: [HashDiscError!]
@@ -748,6 +760,10 @@ scalar DateTime
 scalar EncodedIdFilter
 
 type InvalidOwnershipError implements Error {
+  message: String!
+}
+
+type InvalidContributionStatusError implements Error {
   message: String!
 }
 

@@ -10,11 +10,21 @@ public partial class MyContributions : ComponentBase
 {
     private const int DefaultPageSize = 50;
 
+    private static readonly UserContributionStatus[] DeletableStatuses =
+    [
+        UserContributionStatus.Pending,
+        UserContributionStatus.Rejected,
+        UserContributionStatus.ChangesRequested
+    ];
+
     [Inject]
     GetCurrentUserContributionsQuery Query { get; set; } = null!;
 
     [Inject]
     NavigationManager Navigation { get; set; } = null!;
+
+    [Inject]
+    IContributionClient ContributionClient { get; set; } = null!;
 
     [Parameter]
     [SupplyParameterFromQuery(Name = "status")]
@@ -36,6 +46,11 @@ public partial class MyContributions : ComponentBase
     public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 1;
     public bool HasNextPage => CurrentPage < TotalPages;
     public bool HasPreviousPage => CurrentPage > 1;
+
+    private bool showDeleteDialog;
+    private bool isDeleting;
+    private string? deleteErrorMessage;
+    private IGetCurrentUserContributions_MyContributions_Nodes? deletingContribution;
 
     // Store the end cursor from each page so forward navigation doesn't re-fetch.
     // Key = page number that this cursor leads to (i.e., page 2's entry = endCursor from page 1).
@@ -146,5 +161,73 @@ public partial class MyContributions : ComponentBase
 
         normalizedStatus = parsedStatus;
         return true;
+    }
+
+    private static bool CanDelete(IGetCurrentUserContributions_MyContributions_Nodes contribution)
+    {
+        return DeletableStatuses.Contains(contribution.Status);
+    }
+
+    private void ConfirmDelete(IGetCurrentUserContributions_MyContributions_Nodes contribution)
+    {
+        deletingContribution = contribution;
+        deleteErrorMessage = null;
+        showDeleteDialog = true;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteDialog = false;
+        deletingContribution = null;
+        deleteErrorMessage = null;
+    }
+
+    private async Task ExecuteDelete()
+    {
+        if (deletingContribution == null)
+            return;
+
+        isDeleting = true;
+        deleteErrorMessage = null;
+
+        try
+        {
+            var result = await ContributionClient.DeleteContribution.ExecuteAsync(new DeleteContributionInput
+            {
+                ContributionId = deletingContribution.EncodedId
+            });
+
+            if (result.Data?.DeleteContribution?.Errors is { Count: > 0 } errors)
+            {
+                var error = errors[0];
+                deleteErrorMessage = error switch
+                {
+                    IDeleteContribution_DeleteContribution_Errors_InvalidContributionStatusError e => e.Message,
+                    IDeleteContribution_DeleteContribution_Errors_ContributionNotFoundError e => e.Message,
+                    IDeleteContribution_DeleteContribution_Errors_InvalidOwnershipError e => e.Message,
+                    IDeleteContribution_DeleteContribution_Errors_AuthenticationError e => e.Message,
+                    IDeleteContribution_DeleteContribution_Errors_InvalidIdError e => e.Message,
+                    _ => $"An unexpected error occurred ({error.Code})"
+                };
+                return;
+            }
+
+            showDeleteDialog = false;
+            deletingContribution = null;
+
+            // Refresh the list
+            CurrentPage = 1;
+            endCursors.Clear();
+            endCursors[1] = null;
+            await LoadContributionsAsync();
+        }
+        catch (Exception)
+        {
+            deleteErrorMessage = "An unexpected error occurred while deleting the contribution. Please try again.";
+        }
+        finally
+        {
+            isDeleting = false;
+        }
     }
 }

@@ -1,0 +1,13 @@
+mutation DeleteContribution($input: DeleteContributionInput!) {
+  deleteContribution(input: $input) {
+    userContribution {
+      __typename
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

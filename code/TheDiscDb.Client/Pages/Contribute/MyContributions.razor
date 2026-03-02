@@ -1,5 +1,6 @@
 ﻿@page "/contribute/my"
 @using TheDiscDb.Client.Contributions
+@using Syncfusion.Blazor.Popups
 
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
@@ -27,6 +28,14 @@
     <PropertyColumn Property="@(c => c.Title)" />
     <PropertyColumn Property="@(c => c.MediaType)" />
     <PropertyColumn Property="@(c => c.Status)" />
+    <TemplateColumn Title="">
+        <button class="btn btn-sm btn-outline-danger"
+                disabled="@(!CanDelete(context))"
+                @onclick="() => ConfirmDelete(context)"
+                title="@(CanDelete(context) ? "Delete contribution" : "Only Pending, Rejected, or Changes Requested contributions can be deleted")">
+            🗑
+        </button>
+    </TemplateColumn>
 </QuickGrid>
 
 @if (TotalPages > 1)
@@ -41,3 +50,27 @@
         </button>
     </nav>
 }
+
+<SfDialog @bind-Visible="@showDeleteDialog" Width="400px" IsModal="true" ShowCloseIcon="true" Header="Delete Contribution">
+    <ChildContent>
+        <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+        <p>Are you sure you want to delete the contribution <strong>@deletingContribution?.ReleaseTitle</strong>?</p>
+        <p class="text-muted">This action cannot be undone.</p>
+        @if (!string.IsNullOrEmpty(deleteErrorMessage))
+        {
+            <div class="alert alert-danger mt-2">@deleteErrorMessage</div>
+        }
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <button class="btn btn-secondary" @onclick="CancelDelete" disabled="@isDeleting">Cancel</button>
+            <button class="btn btn-danger" @onclick="ExecuteDelete" disabled="@isDeleting">
+                @if (isDeleting)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                }
+                Delete
+            </button>
+        </div>
+    </ChildContent>
+</SfDialog>
+
+<Syncfusion.Blazor.Popups.SfDialogProvider />
