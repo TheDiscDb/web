@@ -31,12 +31,7 @@
     <TemplateColumn Title="">
         @if (CanDelete(context))
         {
-            <button class="btn btn-sm btn-link text-danger p-0"
-                    style="font-size: 1.25rem; line-height: 1;"
-                    @onclick="() => ConfirmDelete(context)"
-                    title="Delete contribution">
-                🗑
-            </button>
+            <SfButton IconCss="e-icons e-circle-remove" OnClick="() => ConfirmDelete(context)" title="Delete contribution" />
         }
     </TemplateColumn>
 </QuickGrid>
