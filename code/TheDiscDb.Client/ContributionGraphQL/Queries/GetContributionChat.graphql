@@ -1,0 +1,19 @@
+query GetContributionChat($contributionId: String!, $first: Int, $after: String) {
+  contributionChat(contributionId: $contributionId, first: $first, after: $after) {
+    nodes {
+      id
+      contributionId
+      timeStamp
+      description
+      userId
+      type
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}

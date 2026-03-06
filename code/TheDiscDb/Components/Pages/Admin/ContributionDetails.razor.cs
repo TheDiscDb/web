@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client;
+using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 
@@ -22,6 +23,12 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
 
     [Inject]
     private IClipboardService Clipboard { get; set; } = null!;
+
+    [Inject]
+    private IContributionHistoryService HistoryService { get; set; } = null!;
+
+    [Inject]
+    private IPrincipalProvider PrincipalProvider { get; set; } = null!;
 
     [Parameter]
     public string? ContributionId { get; set; }
@@ -75,8 +82,10 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
     {
         if (this.Contribution != null)
         {
+            var oldStatus = this.Contribution.Status;
             this.Contribution.Status = UserContributionStatus.Approved;
             await this.database.SaveChangesAsync();
+            await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.Approved);
         }
     }
 
@@ -91,8 +100,61 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
     {
         if (this.Contribution != null)
         {
+            var oldStatus = this.Contribution.Status;
             this.Contribution.Status = UserContributionStatus.Imported;
             await this.database.SaveChangesAsync();
+            await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.Imported);
         }
+    }
+
+    // Status change dialog state
+    private bool showStatusMessageDialog;
+    private string statusMessage = string.Empty;
+    private string statusDialogHeader = string.Empty;
+    private string statusDialogAction = string.Empty;
+    private UserContributionStatus pendingStatus;
+
+    private void ShowRejectDialog()
+    {
+        pendingStatus = UserContributionStatus.Rejected;
+        statusDialogHeader = "Reject Contribution";
+        statusDialogAction = "Reject";
+        statusMessage = string.Empty;
+        showStatusMessageDialog = true;
+    }
+
+    private void ShowChangesRequestedDialog()
+    {
+        pendingStatus = UserContributionStatus.ChangesRequested;
+        statusDialogHeader = "Request Changes";
+        statusDialogAction = "Request Changes";
+        statusMessage = string.Empty;
+        showStatusMessageDialog = true;
+    }
+
+    private void CancelStatusDialog()
+    {
+        showStatusMessageDialog = false;
+        statusMessage = string.Empty;
+    }
+
+    private async Task ConfirmStatusChange()
+    {
+        if (this.Contribution == null || string.IsNullOrWhiteSpace(statusMessage))
+            return;
+
+        var oldStatus = this.Contribution.Status;
+        this.Contribution.Status = pendingStatus;
+        await this.database.SaveChangesAsync();
+        await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, pendingStatus);
+
+        var adminUserId = PrincipalProvider.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(adminUserId))
+        {
+            await HistoryService.AddMessageAsync(this.Contribution.Id, adminUserId, statusMessage, ContributionHistoryType.AdminMessage);
+        }
+
+        showStatusMessageDialog = false;
+        statusMessage = string.Empty;
     }
 }

@@ -330,6 +330,8 @@ type ContributionMutations {
   externalDataForContribution(input: ExternalDataForContributionInput!): ExternalDataForContributionPayload!
   hashDisc(input: HashDiscInput!): HashDiscPayload!
   updateDisc(input: UpdateDiscInput!): UpdateDiscPayload!
+  sendAdminMessage(input: SendAdminMessageInput!): SendAdminMessagePayload!
+  sendUserMessage(input: SendUserMessageInput!): SendUserMessagePayload!
 }
 
 type AddItemToDiscPayload {
@@ -402,6 +404,8 @@ type DiscUploadStatusPayload {
 type ContributionQuery {
   contributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput order: [UserContributionSortInput!]): ContributionsConnection
   myContributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput order: [UserContributionSortInput!]): MyContributionsConnection
+  contributionHistory(contributionId: Int! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [ContributionHistorySortInput!]): ContributionHistoryConnection
+  contributionChat(contributionId: String! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [ContributionHistorySortInput!]): ContributionChatConnection
 }
 
 type CreateContributionPayload {
@@ -728,6 +732,90 @@ input StringOperationFilterInput {
   endsWith: String
   nendsWith: String
 }
+
+enum ContributionHistoryType {
+  CREATED
+  STATUS_CHANGED
+  DELETED
+  ADMIN_MESSAGE
+  USER_MESSAGE
+}
+
+type ContributionHistory {
+  id: Int!
+  contributionId: Int!
+  timeStamp: DateTime!
+  description: String!
+  userId: String!
+  type: ContributionHistoryType!
+}
+
+"A connection to a list of items."
+type ContributionHistoryConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [ContributionHistoryEdge!]
+  "A flattened list of the nodes."
+  nodes: [ContributionHistory!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int!
+}
+
+"An edge in a connection."
+type ContributionHistoryEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: ContributionHistory!
+}
+
+"A connection to a list of items."
+type ContributionChatConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [ContributionChatEdge!]
+  "A flattened list of the nodes."
+  nodes: [ContributionHistory!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int!
+}
+
+"An edge in a connection."
+type ContributionChatEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: ContributionHistory!
+}
+
+input ContributionHistorySortInput {
+  timeStamp: SortEnumType
+}
+
+input SendAdminMessageInput {
+  contributionId: String!
+  message: String!
+}
+
+input SendUserMessageInput {
+  contributionId: String!
+  message: String!
+}
+
+type SendAdminMessagePayload {
+  contributionHistory: ContributionHistory
+  errors: [SendAdminMessageError!]
+}
+
+type SendUserMessagePayload {
+  contributionHistory: ContributionHistory
+  errors: [SendUserMessageError!]
+}
+
+union SendAdminMessageError = ContributionNotFoundError | AuthenticationError
+union SendUserMessageError = ContributionNotFoundError | AuthenticationError | InvalidOwnershipError
 
 type Title {
   index: Int!

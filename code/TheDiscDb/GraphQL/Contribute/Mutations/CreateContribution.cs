@@ -3,6 +3,7 @@ using HotChocolate.Authorization;
 using TheDiscDb.Data.Import;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.GraphQL.Contribute.Models;
+using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.GraphQL.Contribute.Mutations;
@@ -11,7 +12,7 @@ public partial class ContributionMutations
 {
     [Error(typeof(AuthenticationException))]
     [Authorize]
-    public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, TheMovieDbClient tmdb, CancellationToken cancellationToken)
+    public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, TheMovieDbClient tmdb, IContributionHistoryService historyService, CancellationToken cancellationToken)
     {
         var user = principal.Principal ?? throw new AuthenticationException("No user principal available.");
         var userId = userManager.GetUserId(user);
@@ -46,6 +47,8 @@ public partial class ContributionMutations
         database.UserContributions.Add(contribution);
         await database.SaveChangesAsync(cancellationToken);
         this.idEncoder.EncodeInPlace(contribution);
+
+        await historyService.RecordCreatedAsync(contribution.Id, userId, cancellationToken);
 
         // Now that we have a contributionId, we can get the external data which will save it in blob storage
         if (string.IsNullOrEmpty(contribution.Title) || string.IsNullOrEmpty(contribution.Year))

@@ -1,0 +1,59 @@
+@page "/admin/contribution/{contributionId}/history"
+@using TheDiscDb.Client.Controls
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Contribution History</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink(), GetAdminContributionLink(this.Contribution)]" PrimaryText="History" />
+
+<h1>Contribution History</h1>
+
+@if (this.Contribution != null)
+{
+    <h2>@this.Contribution.Title (@this.Contribution.Year) - @this.Contribution.ReleaseTitle</h2>
+
+    <section class="info-card">
+        <h3>Send Message</h3>
+        <div class="mb-3">
+            <textarea class="form-control" rows="4" placeholder="Type a message (markdown supported)..." @bind="newMessage"></textarea>
+        </div>
+        <SfButton OnClick="SendMessage" CssClass="e-primary" Disabled="@string.IsNullOrWhiteSpace(newMessage)">
+            Send Admin Message
+        </SfButton>
+        @if (!string.IsNullOrEmpty(sendError))
+        {
+            <div class="alert alert-danger mt-2">@sendError</div>
+        }
+    </section>
+
+    <section class="info-card">
+        <h3>History Timeline</h3>
+        @if (HistoryItems != null && HistoryItems.Any())
+        {
+            <div class="history-timeline">
+                @foreach (var item in HistoryItems)
+                {
+                    <div class="history-item history-type-@item.Type.ToString().ToLower()">
+                        <div class="history-header">
+                            <span class="history-type badge @GetBadgeClass(item.Type)">@item.Type</span>
+                            <span class="history-user">@GetUserName(item.UserId)</span>
+                            <span class="history-time">@item.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                        </div>
+                        <div class="history-body">
+                            <TheDiscDb.Components.Controls.MarkdownContent Content="@item.Description" />
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">No history entries yet.</p>
+        }
+    </section>
+}
+else
+{
+    <p>Contribution not found.</p>
+}

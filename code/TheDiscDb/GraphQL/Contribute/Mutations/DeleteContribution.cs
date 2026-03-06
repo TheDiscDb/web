@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
+using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.GraphQL.Contribute.Mutations;
@@ -13,7 +14,7 @@ public partial class ContributionMutations
     [Error(typeof(InvalidOwnershipException))]
     [Error(typeof(InvalidContributionStatusException))]
     [Authorize]
-    public async Task<UserContribution> DeleteContribution(string contributionId, SqlServerDataContext database, CancellationToken cancellationToken)
+    public async Task<UserContribution> DeleteContribution(string contributionId, SqlServerDataContext database, IContributionHistoryService historyService, CancellationToken cancellationToken)
     {
         var decodedContributionId = this.idEncoder.Decode(contributionId);
         var contribution = await database.UserContributions
@@ -35,6 +36,11 @@ public partial class ContributionMutations
         {
             throw new InvalidContributionStatusException(contribution.Status.ToString());
         }
+
+        var user = principal.Principal ?? throw new AuthenticationException("No user principal available.");
+        var userId = userManager.GetUserId(user) ?? throw new AuthenticationException("UserId not found");
+
+        await historyService.RecordDeletedAsync(contribution!.Id, userId, cancellationToken);
 
         database.UserContributions.Remove(contribution);
         await database.SaveChangesAsync(cancellationToken);

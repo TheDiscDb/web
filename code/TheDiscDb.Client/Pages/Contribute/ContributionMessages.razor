@@ -1,0 +1,85 @@
+@page "/contribution/{contributionId}/messages"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<PageTitle>Messages</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Messages" Items="@breadcrumbItems" />
+
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <h1>Messages</h1>
+        <p>View messages from admins and send replies about your contribution.</p>
+    </section>
+
+    @if (isLoading)
+    {
+        <div class="text-center p-4">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (loadError != null)
+    {
+        <div class="alert alert-danger">@loadError</div>
+    }
+    else
+    {
+        <section class="info-card">
+            <h3>Send a Message</h3>
+            <div class="mb-3">
+                <div class="d-flex gap-2 mb-2">
+                    <button class="btn btn-sm @(showPreview ? "btn-outline-secondary" : "btn-secondary")" @onclick="() => showPreview = false">Write</button>
+                    <button class="btn btn-sm @(showPreview ? "btn-secondary" : "btn-outline-secondary")" @onclick="() => showPreview = true">Preview</button>
+                </div>
+
+                @if (showPreview)
+                {
+                    <div class="form-control markdown-preview" style="min-height: 100px;">
+                        @((MarkupString)RenderMarkdown(newMessage))
+                    </div>
+                }
+                else
+                {
+                    <textarea class="form-control" rows="4" placeholder="Type your message... (markdown supported)" @bind="newMessage"></textarea>
+                }
+            </div>
+            <button class="btn btn-primary" @onclick="SendMessage" disabled="@(string.IsNullOrWhiteSpace(newMessage) || isSending)">
+                @if (isSending)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                }
+                Send Message
+            </button>
+            @if (!string.IsNullOrEmpty(sendError))
+            {
+                <div class="alert alert-danger mt-2">@sendError</div>
+            }
+        </section>
+
+        <section class="info-card">
+            <h3>Conversation</h3>
+            @if (chatItems != null && chatItems.Any())
+            {
+                <div class="history-timeline">
+                    @foreach (var item in chatItems)
+                    {
+                        <div class="history-item history-type-@item.Type.ToString().ToLower()">
+                            <div class="history-header">
+                                <span class="history-type badge @GetBadgeClass(item.Type)">@GetTypeLabel(item.Type)</span>
+                                <span class="history-time">@item.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                            </div>
+                            <div class="history-body">
+                                @((MarkupString)RenderMarkdown(item.Description))
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">No messages yet.</p>
+            }
+        </section>
+    }
+</div>

@@ -1,0 +1,18 @@
+mutation SendUserMessage($input: SendUserMessageInput!) {
+  sendUserMessage(input: $input) {
+    contributionHistory {
+      id
+      contributionId
+      timeStamp
+      description
+      userId
+      type
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

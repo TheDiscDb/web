@@ -1,0 +1,16 @@
+@using Markdig
+
+@((MarkupString)RenderedHtml)
+
+@code {
+    [Parameter]
+    public string? Content { get; set; }
+
+    private string RenderedHtml => string.IsNullOrEmpty(Content)
+        ? string.Empty
+        : Markdown.ToHtml(Content, Pipeline);
+
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .Build();
+}

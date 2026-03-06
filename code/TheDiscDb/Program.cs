@@ -252,6 +252,7 @@ builder.Services.AddSingleton<IdEncoder>();
 builder.Services.AddScoped<IClipboardService, ServerClipboardService>();
 builder.Services.AddHighlight();
 builder.Services.AddSingleton<IAmazonImporter, AmazonImporter>();
+builder.Services.AddScoped<IContributionHistoryService, ContributionHistoryService>();
 
 builder.Services.AddSingleton<IContributionValidation, UniqueReleaseSlugValidation>();
 builder.Services.AddSingleton<IContributionValidation, UniqueDiscSlugValidation>();

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 
@@ -39,6 +40,9 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
 
     [Inject]
     private IdEncoder IdEncoder { get; set; } = null!;
+
+    [Inject]
+    private IContributionHistoryService HistoryService { get; set; } = null!;
 
     [Parameter]
     public string? ContributionId { get; set; }
@@ -91,6 +95,8 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
     {
         if (this.Contribution != null)
         {
+            var oldStatus = this.Contribution.Status;
+
             this.Contribution.Asin = request.Asin;
             this.Contribution.Locale = request.Locale;
             this.Contribution.RegionCode = request.RegionCode;
@@ -100,6 +106,11 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
             this.Contribution.Upc = request.Upc;
             this.Contribution.Status = request.Status;
             await database.SaveChangesAsync();
+
+            if (oldStatus != request.Status)
+            {
+                await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, request.Status);
+            }
         }
     }
 }

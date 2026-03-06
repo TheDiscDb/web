@@ -101,6 +101,12 @@ public class SqlServerDataContext : DbContext
         var userContributionAudioTrack = modelBuilder.Entity<UserContributionAudioTrack>();
         var userContributionChapter = modelBuilder.Entity<UserContributionChapter>();
 
+        var contributionHistory = modelBuilder.Entity<ContributionHistory>();
+        contributionHistory.HasKey(x => x.Id);
+        contributionHistory.Property(x => x.Type)
+            .HasConversion<string>();
+        contributionHistory.HasIndex(x => x.ContributionId);
+
         BuildIdentityModel(modelBuilder);
     }
 
@@ -246,6 +252,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<UserContributionChapter> UserContributionChapters { get; set; } = null!;
     public DbSet<UserContributionAudioTrack> UserContributionAudioTracks { get; set; } = null!;
     public DbSet<UserContributionDiscHashItem> UserContributionDiscHashItems { get; set; } = null!;
+    public DbSet<ContributionHistory> ContributionHistory { get; set; } = null!;
     public DbSet<Contributor> Contributors { get; set; } = null!;
 }
 
@@ -426,6 +433,25 @@ public class UserContributionDiscHashItem : IHasId
     public string Name { get; set; } = default!;
     public DateTime CreationTime { get; set; }
     public long Size { get; set; }
+}
+
+public enum ContributionHistoryType
+{
+    Created,
+    StatusChanged,
+    Deleted,
+    AdminMessage,
+    UserMessage
+}
+
+public class ContributionHistory
+{
+    public int Id { get; set; }
+    public int ContributionId { get; set; }
+    public DateTimeOffset TimeStamp { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public ContributionHistoryType Type { get; set; }
 }
 
 public static class DefaultRoles

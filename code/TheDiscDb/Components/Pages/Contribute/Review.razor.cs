@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using Syncfusion.Blazor.Buttons;
+using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Web.Data;
@@ -26,6 +27,9 @@ public partial class Review : ComponentBase, IAsyncDisposable
 
     [Inject]
     private IdEncoder IdEncoder { get; set; } = null!;
+
+    [Inject]
+    private IContributionHistoryService HistoryService { get; set; } = null!;
 
     UserContribution? Contribution { get; set; }
     Dictionary<IContributionValidation, Result> Results { get; set; } = new Dictionary<IContributionValidation, Result>();
@@ -109,8 +113,10 @@ public partial class Review : ComponentBase, IAsyncDisposable
     {
         if (this.Contribution != null)
         {
+            var oldStatus = this.Contribution.Status;
             this.Contribution.Status = UserContributionStatus.ReadyForReview;
             await database.SaveChangesAsync();
+            await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.ReadyForReview);
             this.NavigationManager.NavigateTo("/contribute/my");
         }
     }
