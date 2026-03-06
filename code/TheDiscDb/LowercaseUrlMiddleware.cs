@@ -6,9 +6,10 @@ public class LowercaseUrlMiddleware(RequestDelegate next)
     private static readonly string[] CaseSensitivePrefixes =
     [
         "/contribution",
-        "/admin/contribution",
-        "/api/",
-        "/graphql"
+        "/admin",
+        "/api",
+        "/graphql",
+        "/images"
     ];
 
     public Task InvokeAsync(HttpContext context)
