@@ -64,8 +64,7 @@ public class ContributionQuery(IdEncoder idEncoder)
         return context.ContributionHistory
             .Where(h => h.ContributionId == decodedId &&
                 (h.Type == ContributionHistoryType.AdminMessage ||
-                 h.Type == ContributionHistoryType.UserMessage ||
-                 h.Type == ContributionHistoryType.StatusChanged))
+                 h.Type == ContributionHistoryType.UserMessage))
             .OrderByDescending(h => h.TimeStamp);
     }
 }

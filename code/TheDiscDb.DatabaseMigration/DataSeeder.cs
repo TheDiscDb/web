@@ -79,18 +79,18 @@ public class DataSeeder
             }
         }
 
-        var regularUser = await userManager.FindByEmailAsync("web@thediscdb.com");
-        if (regularUser == null)
-        {
-            regularUser = new TheDiscDbUser
-            {
-                Email = "web@thediscdb.com",
-                EmailConfirmed = true,
-                UserName = "thediscdb"
-            };
+        // var regularUser = await userManager.FindByEmailAsync("web@thediscdb.com");
+        // if (regularUser == null)
+        // {
+        //     regularUser = new TheDiscDbUser
+        //     {
+        //         Email = "web@thediscdb.com",
+        //         EmailConfirmed = true,
+        //         UserName = "thediscdb"
+        //     };
 
-            await userManager.CreateAsync(regularUser);
-            await userManager.AddToRoleAsync(regularUser, DefaultRoles.Contributor);
-        }
+        //     await userManager.CreateAsync(regularUser);
+        //     await userManager.AddToRoleAsync(regularUser, DefaultRoles.Contributor);
+        // }
     }
 }

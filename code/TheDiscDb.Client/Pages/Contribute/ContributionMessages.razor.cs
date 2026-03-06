@@ -117,7 +117,6 @@ public partial class ContributionMessages : ComponentBase
 
     private static string GetBadgeClass(ContributionHistoryType type) => type switch
     {
-        ContributionHistoryType.StatusChanged => "bg-info",
         ContributionHistoryType.AdminMessage => "bg-primary",
         ContributionHistoryType.UserMessage => "bg-secondary",
         _ => "bg-light text-dark"
@@ -125,7 +124,6 @@ public partial class ContributionMessages : ComponentBase
 
     private static string GetTypeLabel(ContributionHistoryType type) => type switch
     {
-        ContributionHistoryType.StatusChanged => "Status Changed",
         ContributionHistoryType.AdminMessage => "Admin",
         ContributionHistoryType.UserMessage => "You",
         _ => type.ToString()
