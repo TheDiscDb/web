@@ -41,7 +41,7 @@
                 }
                 else
                 {
-                    <textarea class="form-control" rows="4" placeholder="Type your message... (markdown supported)" @bind="newMessage"></textarea>
+                    <textarea class="form-control" rows="4" placeholder="Type your message... (markdown supported)" @bind="newMessage" @bind:event="oninput"></textarea>
                 }
             </div>
             <button class="btn btn-primary" @onclick="SendMessage" disabled="@(string.IsNullOrWhiteSpace(newMessage) || isSending)">

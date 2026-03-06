@@ -42,6 +42,7 @@
     <ItemGroup>
         <PackageReference Include="Fantastic.TheMovieDb" Version="2.1.0" />
         <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="3.3.0" />
+        <PackageReference Include="Markdig" Version="1.1.1" />
         <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="10.0.2" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.2" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.2" />

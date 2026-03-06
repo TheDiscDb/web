@@ -1,3 +1,4 @@
+using Markdig;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using StrawberryShake;
@@ -129,15 +130,15 @@ public partial class ContributionMessages : ComponentBase
         _ => type.ToString()
     };
 
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .Build();
+
     private static string RenderMarkdown(string? text)
     {
         if (string.IsNullOrEmpty(text))
             return string.Empty;
 
-        var html = System.Net.WebUtility.HtmlEncode(text);
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*(.+?)\*", "<em>$1</em>");
-        html = html.Replace("\n", "<br />");
-        return $"<p>{html}</p>";
+        return Markdown.ToHtml(text, MarkdownPipeline);
     }
 }
