@@ -2,10 +2,462 @@ schema {
   query: Query
 }
 
+type Boxset {
+  id: Int!
+  title: String
+  sortTitle: String
+  slug: String
+  imageUrl: String
+  release: Release
+  releaseId: Int!
+  type: String!
+}
+
+"A connection to a list of items."
+type BoxsetsConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [BoxsetsEdge!]
+  "A flattened list of the nodes."
+  nodes: [Boxset!]
+}
+
+"An edge in a connection."
+type BoxsetsEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: Boxset!
+}
+
+type Chapter {
+  id: Int!
+  index: Int!
+  title: String
+}
+
+type Contributor {
+  id: Int!
+  name: String
+  releases: [Release!]!
+  userId: String
+  source: String
+}
+
+type Disc {
+  id: Int!
+  index: Int!
+  slug: String
+  name: String
+  format: String
+  contentHash: String
+  titles(where: TitleFilterInput @cost(weight: "10") order: [TitleSortInput!] @cost(weight: "10")): [Title!]!
+  release: Release
+}
+
+type DiscItemReference {
+  id: Int!
+  title: String
+  type: String
+  description: String
+  chapters(where: ChapterFilterInput @cost(weight: "10") order: [ChapterSortInput!] @cost(weight: "10")): [Chapter!]!
+  season: String
+  episode: String
+  discItem: Title
+}
+
+type ExternalIds {
+  id: Int!
+  tmdb: String
+  imdb: String
+  tvdb: String
+  mediaItem: MediaItem
+}
+
+type Group {
+  id: Int!
+  imdbId: String
+  name: String
+  slug: String
+  imageUrl: String
+  mediaItemGroups(where: MediaItemGroupFilterInput @cost(weight: "10") order: [MediaItemGroupSortInput!] @cost(weight: "10")): [MediaItemGroup!]!
+}
+
+type MediaItem {
+  id: Int!
+  title: String
+  slug: String
+  fullTitle: String
+  sortTitle: String
+  year: Int!
+  type: String
+  imageUrl: String
+  externalids: ExternalIds!
+  externalIdsId: Int!
+  releases(where: ReleaseFilterInput @cost(weight: "10") order: [ReleaseSortInput!] @cost(weight: "10")): [Release!]!
+  mediaItemGroups(where: MediaItemGroupFilterInput @cost(weight: "10") order: [MediaItemGroupSortInput!] @cost(weight: "10")): [MediaItemGroup!]!
+  plot: String
+  tagline: String
+  directors: String
+  writers: String
+  stars: String
+  genres: String
+  runtimeMinutes: Int!
+  runtime: String
+  contentRating: String
+  releaseDate: DateTime!
+  latestReleaseDate: DateTime!
+  dateAdded: DateTime!
+}
+
+type MediaItemGroup {
+  id: Int!
+  mediaItemId: Int!
+  groupId: Int!
+  role: String
+  isFeatured: Boolean!
+  mediaItem(where: MediaItemFilterInput @cost(weight: "10") order: [MediaItemSortInput!] @cost(weight: "10")): MediaItem
+  group(where: GroupFilterInput @cost(weight: "10") order: [GroupSortInput!] @cost(weight: "10")): Group
+}
+
+"A connection to a list of items."
+type MediaItemsByGroupConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [MediaItemsByGroupEdge!]
+  "A flattened list of the nodes."
+  nodes: [MediaItem!]
+}
+
+"An edge in a connection."
+type MediaItemsByGroupEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: MediaItem!
+}
+
+"A connection to a list of items."
+type MediaItemsConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [MediaItemsEdge!]
+  "A flattened list of the nodes."
+  nodes: [MediaItem!]
+}
+
+"An edge in a connection."
+type MediaItemsEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: MediaItem!
+}
+
+"Information about pagination in a connection."
+type PageInfo {
+  "Indicates whether more edges exist following the set defined by the clients arguments."
+  hasNextPage: Boolean!
+  "Indicates whether more edges exist prior the set defined by the clients arguments."
+  hasPreviousPage: Boolean!
+  "When paginating backwards, the cursor to continue."
+  startCursor: String
+  "When paginating forwards, the cursor to continue."
+  endCursor: String
+}
+
 type Query {
-  mediaItems("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: MediaItemFilterInput order: [MediaItemSortInput!]): MediaItemsConnection
-  boxsets("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: BoxsetFilterInput order: [BoxsetSortInput!]): BoxsetsConnection
-  mediaItemsByGroup(slug: String! role: String "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: MediaItemFilterInput order: [MediaItemSortInput!]): MediaItemsByGroupConnection
+  mediaItems("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: MediaItemFilterInput @cost(weight: "10") order: [MediaItemSortInput!] @cost(weight: "10")): MediaItemsConnection @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
+  boxsets("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: BoxsetFilterInput @cost(weight: "10") order: [BoxsetSortInput!] @cost(weight: "10")): BoxsetsConnection @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
+  mediaItemsByGroup(slug: String! role: String "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: MediaItemFilterInput @cost(weight: "10") order: [MediaItemSortInput!] @cost(weight: "10")): MediaItemsByGroupConnection @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
+}
+
+type Release {
+  id: Int!
+  slug: String
+  title: String
+  regionCode: String
+  locale: String
+  year: Int!
+  upc: String
+  isbn: String
+  asin: String
+  imageUrl: String
+  releaseDate: DateTime!
+  dateAdded: DateTime!
+  fullTitle: String!
+  type: String!
+  discs(where: DiscFilterInput @cost(weight: "10") order: [DiscSortInput!] @cost(weight: "10")): [Disc!]!
+  mediaItem: MediaItem
+  boxset: Boxset
+  contributors: [Contributor!]!
+}
+
+type Title {
+  index: Int!
+  disc: Disc
+  id: Int!
+  comment: String
+  sourceFile: String
+  segmentMap: String
+  duration: String
+  size: Long!
+  displaySize: String
+  item: DiscItemReference
+  discItemReferenceId: Int
+  tracks(where: TrackFilterInput @cost(weight: "10") order: [TrackSortInput!] @cost(weight: "10")): [Track!]!
+  description: String!
+  itemType: String!
+  season: String!
+  episode: String!
+  hasItem: Boolean!
+}
+
+type Track {
+  id: Int!
+  index: Int!
+  name: String
+  type: String
+  resolution: String
+  aspectRatio: String
+  audioType: String
+  languageCode: String
+  language: String
+  description: String
+  title: Title
+}
+
+input BooleanOperationFilterInput {
+  eq: Boolean @cost(weight: "10")
+  neq: Boolean @cost(weight: "10")
+}
+
+input BoxsetFilterInput {
+  and: [BoxsetFilterInput!]
+  or: [BoxsetFilterInput!]
+  id: IntOperationFilterInput
+  title: StringOperationFilterInput
+  sortTitle: StringOperationFilterInput
+  slug: StringOperationFilterInput
+  imageUrl: StringOperationFilterInput
+  release: ReleaseFilterInput
+  releaseId: IntOperationFilterInput
+  type: StringOperationFilterInput
+}
+
+input BoxsetSortInput {
+  id: SortEnumType @cost(weight: "10")
+  title: SortEnumType @cost(weight: "10")
+  sortTitle: SortEnumType @cost(weight: "10")
+  slug: SortEnumType @cost(weight: "10")
+  imageUrl: SortEnumType @cost(weight: "10")
+  release: ReleaseSortInput @cost(weight: "10")
+  releaseId: SortEnumType @cost(weight: "10")
+  type: SortEnumType @cost(weight: "10")
+}
+
+input ChapterFilterInput {
+  and: [ChapterFilterInput!]
+  or: [ChapterFilterInput!]
+  id: IntOperationFilterInput
+  index: IntOperationFilterInput
+  title: StringOperationFilterInput
+}
+
+input ChapterSortInput {
+  id: SortEnumType @cost(weight: "10")
+  index: SortEnumType @cost(weight: "10")
+  title: SortEnumType @cost(weight: "10")
+}
+
+input ContributorFilterInput {
+  and: [ContributorFilterInput!]
+  or: [ContributorFilterInput!]
+  id: IntOperationFilterInput
+  name: StringOperationFilterInput
+  releases: ListFilterInputTypeOfReleaseFilterInput
+  userId: StringOperationFilterInput
+  source: StringOperationFilterInput
+}
+
+input DateTimeOperationFilterInput {
+  eq: DateTime @cost(weight: "10")
+  neq: DateTime @cost(weight: "10")
+  in: [DateTime] @cost(weight: "10")
+  nin: [DateTime] @cost(weight: "10")
+  gt: DateTime @cost(weight: "10")
+  ngt: DateTime @cost(weight: "10")
+  gte: DateTime @cost(weight: "10")
+  ngte: DateTime @cost(weight: "10")
+  lt: DateTime @cost(weight: "10")
+  nlt: DateTime @cost(weight: "10")
+  lte: DateTime @cost(weight: "10")
+  nlte: DateTime @cost(weight: "10")
+}
+
+input DiscFilterInput {
+  and: [DiscFilterInput!]
+  or: [DiscFilterInput!]
+  id: IntOperationFilterInput
+  index: IntOperationFilterInput
+  slug: StringOperationFilterInput
+  name: StringOperationFilterInput
+  format: StringOperationFilterInput
+  contentHash: StringOperationFilterInput
+  titles: ListFilterInputTypeOfTitleFilterInput
+  release: ReleaseFilterInput
+}
+
+input DiscItemReferenceFilterInput {
+  and: [DiscItemReferenceFilterInput!]
+  or: [DiscItemReferenceFilterInput!]
+  id: IntOperationFilterInput
+  title: StringOperationFilterInput
+  type: StringOperationFilterInput
+  description: StringOperationFilterInput
+  chapters: ListFilterInputTypeOfChapterFilterInput
+  season: StringOperationFilterInput
+  episode: StringOperationFilterInput
+  discItem: TitleFilterInput
+}
+
+input DiscItemReferenceSortInput {
+  id: SortEnumType @cost(weight: "10")
+  title: SortEnumType @cost(weight: "10")
+  type: SortEnumType @cost(weight: "10")
+  description: SortEnumType @cost(weight: "10")
+  season: SortEnumType @cost(weight: "10")
+  episode: SortEnumType @cost(weight: "10")
+  discItem: TitleSortInput @cost(weight: "10")
+}
+
+input DiscSortInput {
+  id: SortEnumType @cost(weight: "10")
+  index: SortEnumType @cost(weight: "10")
+  slug: SortEnumType @cost(weight: "10")
+  name: SortEnumType @cost(weight: "10")
+  format: SortEnumType @cost(weight: "10")
+  contentHash: SortEnumType @cost(weight: "10")
+  release: ReleaseSortInput @cost(weight: "10")
+}
+
+input ExternalIdsFilterInput {
+  and: [ExternalIdsFilterInput!]
+  or: [ExternalIdsFilterInput!]
+  id: IntOperationFilterInput
+  tmdb: StringOperationFilterInput
+  imdb: StringOperationFilterInput
+  tvdb: StringOperationFilterInput
+  mediaItem: MediaItemFilterInput
+}
+
+input ExternalIdsSortInput {
+  id: SortEnumType @cost(weight: "10")
+  tmdb: SortEnumType @cost(weight: "10")
+  imdb: SortEnumType @cost(weight: "10")
+  tvdb: SortEnumType @cost(weight: "10")
+  mediaItem: MediaItemSortInput @cost(weight: "10")
+}
+
+input GroupFilterInput {
+  and: [GroupFilterInput!]
+  or: [GroupFilterInput!]
+  id: IntOperationFilterInput
+  imdbId: StringOperationFilterInput
+  name: StringOperationFilterInput
+  slug: StringOperationFilterInput
+  imageUrl: StringOperationFilterInput
+  mediaItemGroups: ListFilterInputTypeOfMediaItemGroupFilterInput
+}
+
+input GroupSortInput {
+  id: SortEnumType @cost(weight: "10")
+  imdbId: SortEnumType @cost(weight: "10")
+  name: SortEnumType @cost(weight: "10")
+  slug: SortEnumType @cost(weight: "10")
+  imageUrl: SortEnumType @cost(weight: "10")
+}
+
+input IntOperationFilterInput {
+  eq: Int @cost(weight: "10")
+  neq: Int @cost(weight: "10")
+  in: [Int] @cost(weight: "10")
+  nin: [Int] @cost(weight: "10")
+  gt: Int @cost(weight: "10")
+  ngt: Int @cost(weight: "10")
+  gte: Int @cost(weight: "10")
+  ngte: Int @cost(weight: "10")
+  lt: Int @cost(weight: "10")
+  nlt: Int @cost(weight: "10")
+  lte: Int @cost(weight: "10")
+  nlte: Int @cost(weight: "10")
+}
+
+input ListFilterInputTypeOfChapterFilterInput {
+  all: ChapterFilterInput @cost(weight: "10")
+  none: ChapterFilterInput @cost(weight: "10")
+  some: ChapterFilterInput @cost(weight: "10")
+  any: Boolean @cost(weight: "10")
+}
+
+input ListFilterInputTypeOfContributorFilterInput {
+  all: ContributorFilterInput @cost(weight: "10")
+  none: ContributorFilterInput @cost(weight: "10")
+  some: ContributorFilterInput @cost(weight: "10")
+  any: Boolean @cost(weight: "10")
+}
+
+input ListFilterInputTypeOfDiscFilterInput {
+  all: DiscFilterInput @cost(weight: "10")
+  none: DiscFilterInput @cost(weight: "10")
+  some: DiscFilterInput @cost(weight: "10")
+  any: Boolean @cost(weight: "10")
+}
+
+input ListFilterInputTypeOfMediaItemGroupFilterInput {
+  all: MediaItemGroupFilterInput @cost(weight: "10")
+  none: MediaItemGroupFilterInput @cost(weight: "10")
+  some: MediaItemGroupFilterInput @cost(weight: "10")
+  any: Boolean @cost(weight: "10")
+}
+
+input ListFilterInputTypeOfReleaseFilterInput {
+  all: ReleaseFilterInput @cost(weight: "10")
+  none: ReleaseFilterInput @cost(weight: "10")
+  some: ReleaseFilterInput @cost(weight: "10")
+  any: Boolean @cost(weight: "10")
+}
+
+input ListFilterInputTypeOfTitleFilterInput {
+  all: TitleFilterInput @cost(weight: "10")
+  none: TitleFilterInput @cost(weight: "10")
+  some: TitleFilterInput @cost(weight: "10")
+  any: Boolean @cost(weight: "10")
+}
+
+input ListFilterInputTypeOfTrackFilterInput {
+  all: TrackFilterInput @cost(weight: "10")
+  none: TrackFilterInput @cost(weight: "10")
+  some: TrackFilterInput @cost(weight: "10")
+  any: Boolean @cost(weight: "10")
+}
+
+input LongOperationFilterInput {
+  eq: Long @cost(weight: "10")
+  neq: Long @cost(weight: "10")
+  in: [Long] @cost(weight: "10")
+  nin: [Long] @cost(weight: "10")
+  gt: Long @cost(weight: "10")
+  ngt: Long @cost(weight: "10")
+  gte: Long @cost(weight: "10")
+  ngte: Long @cost(weight: "10")
+  lt: Long @cost(weight: "10")
+  nlt: Long @cost(weight: "10")
+  lte: Long @cost(weight: "10")
+  nlte: Long @cost(weight: "10")
 }
 
 input MediaItemFilterInput {
@@ -37,165 +489,51 @@ input MediaItemFilterInput {
   dateAdded: DateTimeOperationFilterInput
 }
 
-input MediaItemSortInput {
-  id: SortEnumType
-  title: SortEnumType
-  slug: SortEnumType
-  fullTitle: SortEnumType
-  sortTitle: SortEnumType
-  year: SortEnumType
-  type: SortEnumType
-  imageUrl: SortEnumType
-  externalids: ExternalIdsSortInput
-  externalIdsId: SortEnumType
-  plot: SortEnumType
-  tagline: SortEnumType
-  directors: SortEnumType
-  writers: SortEnumType
-  stars: SortEnumType
-  genres: SortEnumType
-  runtimeMinutes: SortEnumType
-  runtime: SortEnumType
-  contentRating: SortEnumType
-  releaseDate: SortEnumType
-  latestReleaseDate: SortEnumType
-  dateAdded: SortEnumType
-}
-
-input BoxsetFilterInput {
-  and: [BoxsetFilterInput!]
-  or: [BoxsetFilterInput!]
+input MediaItemGroupFilterInput {
+  and: [MediaItemGroupFilterInput!]
+  or: [MediaItemGroupFilterInput!]
   id: IntOperationFilterInput
-  title: StringOperationFilterInput
-  sortTitle: StringOperationFilterInput
-  slug: StringOperationFilterInput
-  imageUrl: StringOperationFilterInput
-  release: ReleaseFilterInput
-  releaseId: IntOperationFilterInput
-  type: StringOperationFilterInput
-}
-
-input BoxsetSortInput {
-  id: SortEnumType
-  title: SortEnumType
-  sortTitle: SortEnumType
-  slug: SortEnumType
-  imageUrl: SortEnumType
-  release: ReleaseSortInput
-  releaseId: SortEnumType
-  type: SortEnumType
-}
-
-"A connection to a list of items."
-type MediaItemsConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [MediaItemsEdge!]
-  "A flattened list of the nodes."
-  nodes: [MediaItem!]
-}
-
-"A connection to a list of items."
-type BoxsetsConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [BoxsetsEdge!]
-  "A flattened list of the nodes."
-  nodes: [Boxset!]
-}
-
-"A connection to a list of items."
-type MediaItemsByGroupConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [MediaItemsByGroupEdge!]
-  "A flattened list of the nodes."
-  nodes: [MediaItem!]
-}
-
-input IntOperationFilterInput {
-  eq: Int
-  neq: Int
-  in: [Int]
-  nin: [Int]
-  gt: Int
-  ngt: Int
-  gte: Int
-  ngte: Int
-  lt: Int
-  nlt: Int
-  lte: Int
-  nlte: Int
-}
-
-input StringOperationFilterInput {
-  and: [StringOperationFilterInput!]
-  or: [StringOperationFilterInput!]
-  eq: String
-  neq: String
-  contains: String
-  ncontains: String
-  in: [String]
-  nin: [String]
-  startsWith: String
-  nstartsWith: String
-  endsWith: String
-  nendsWith: String
-}
-
-input ExternalIdsFilterInput {
-  and: [ExternalIdsFilterInput!]
-  or: [ExternalIdsFilterInput!]
-  id: IntOperationFilterInput
-  tmdb: StringOperationFilterInput
-  imdb: StringOperationFilterInput
-  tvdb: StringOperationFilterInput
+  mediaItemId: IntOperationFilterInput
+  groupId: IntOperationFilterInput
+  role: StringOperationFilterInput
+  isFeatured: BooleanOperationFilterInput
   mediaItem: MediaItemFilterInput
+  group: GroupFilterInput
 }
 
-input ListFilterInputTypeOfReleaseFilterInput {
-  all: ReleaseFilterInput
-  none: ReleaseFilterInput
-  some: ReleaseFilterInput
-  any: Boolean
+input MediaItemGroupSortInput {
+  id: SortEnumType @cost(weight: "10")
+  mediaItemId: SortEnumType @cost(weight: "10")
+  groupId: SortEnumType @cost(weight: "10")
+  role: SortEnumType @cost(weight: "10")
+  isFeatured: SortEnumType @cost(weight: "10")
+  mediaItem: MediaItemSortInput @cost(weight: "10")
+  group: GroupSortInput @cost(weight: "10")
 }
 
-input ListFilterInputTypeOfMediaItemGroupFilterInput {
-  all: MediaItemGroupFilterInput
-  none: MediaItemGroupFilterInput
-  some: MediaItemGroupFilterInput
-  any: Boolean
-}
-
-input DateTimeOperationFilterInput {
-  eq: DateTime
-  neq: DateTime
-  in: [DateTime]
-  nin: [DateTime]
-  gt: DateTime
-  ngt: DateTime
-  gte: DateTime
-  ngte: DateTime
-  lt: DateTime
-  nlt: DateTime
-  lte: DateTime
-  nlte: DateTime
-}
-
-enum SortEnumType {
-  ASC
-  DESC
-}
-
-input ExternalIdsSortInput {
-  id: SortEnumType
-  tmdb: SortEnumType
-  imdb: SortEnumType
-  tvdb: SortEnumType
-  mediaItem: MediaItemSortInput
+input MediaItemSortInput {
+  id: SortEnumType @cost(weight: "10")
+  title: SortEnumType @cost(weight: "10")
+  slug: SortEnumType @cost(weight: "10")
+  fullTitle: SortEnumType @cost(weight: "10")
+  sortTitle: SortEnumType @cost(weight: "10")
+  year: SortEnumType @cost(weight: "10")
+  type: SortEnumType @cost(weight: "10")
+  imageUrl: SortEnumType @cost(weight: "10")
+  externalids: ExternalIdsSortInput @cost(weight: "10")
+  externalIdsId: SortEnumType @cost(weight: "10")
+  plot: SortEnumType @cost(weight: "10")
+  tagline: SortEnumType @cost(weight: "10")
+  directors: SortEnumType @cost(weight: "10")
+  writers: SortEnumType @cost(weight: "10")
+  stars: SortEnumType @cost(weight: "10")
+  genres: SortEnumType @cost(weight: "10")
+  runtimeMinutes: SortEnumType @cost(weight: "10")
+  runtime: SortEnumType @cost(weight: "10")
+  contentRating: SortEnumType @cost(weight: "10")
+  releaseDate: SortEnumType @cost(weight: "10")
+  latestReleaseDate: SortEnumType @cost(weight: "10")
+  dateAdded: SortEnumType @cost(weight: "10")
 }
 
 input ReleaseFilterInput {
@@ -218,119 +556,41 @@ input ReleaseFilterInput {
   discs: ListFilterInputTypeOfDiscFilterInput
   mediaItem: MediaItemFilterInput
   boxset: BoxsetFilterInput
+  contributors: ListFilterInputTypeOfContributorFilterInput
 }
 
 input ReleaseSortInput {
-  id: SortEnumType
-  slug: SortEnumType
-  title: SortEnumType
-  regionCode: SortEnumType
-  locale: SortEnumType
-  year: SortEnumType
-  upc: SortEnumType
-  isbn: SortEnumType
-  asin: SortEnumType
-  imageUrl: SortEnumType
-  releaseDate: SortEnumType
-  dateAdded: SortEnumType
-  fullTitle: SortEnumType
-  type: SortEnumType
-  mediaItem: MediaItemSortInput
-  boxset: BoxsetSortInput
+  id: SortEnumType @cost(weight: "10")
+  slug: SortEnumType @cost(weight: "10")
+  title: SortEnumType @cost(weight: "10")
+  regionCode: SortEnumType @cost(weight: "10")
+  locale: SortEnumType @cost(weight: "10")
+  year: SortEnumType @cost(weight: "10")
+  upc: SortEnumType @cost(weight: "10")
+  isbn: SortEnumType @cost(weight: "10")
+  asin: SortEnumType @cost(weight: "10")
+  imageUrl: SortEnumType @cost(weight: "10")
+  releaseDate: SortEnumType @cost(weight: "10")
+  dateAdded: SortEnumType @cost(weight: "10")
+  fullTitle: SortEnumType @cost(weight: "10")
+  type: SortEnumType @cost(weight: "10")
+  mediaItem: MediaItemSortInput @cost(weight: "10")
+  boxset: BoxsetSortInput @cost(weight: "10")
 }
 
-"Information about pagination in a connection."
-type PageInfo {
-  "Indicates whether more edges exist following the set defined by the clients arguments."
-  hasNextPage: Boolean!
-  "Indicates whether more edges exist prior the set defined by the clients arguments."
-  hasPreviousPage: Boolean!
-  "When paginating backwards, the cursor to continue."
-  startCursor: String
-  "When paginating forwards, the cursor to continue."
-  endCursor: String
-}
-
-"An edge in a connection."
-type MediaItemsEdge {
-  "A cursor for use in pagination."
-  cursor: String!
-  "The item at the end of the edge."
-  node: MediaItem!
-}
-
-"An edge in a connection."
-type BoxsetsEdge {
-  "A cursor for use in pagination."
-  cursor: String!
-  "The item at the end of the edge."
-  node: Boxset!
-}
-
-"An edge in a connection."
-type MediaItemsByGroupEdge {
-  "A cursor for use in pagination."
-  cursor: String!
-  "The item at the end of the edge."
-  node: MediaItem!
-}
-
-input MediaItemGroupFilterInput {
-  and: [MediaItemGroupFilterInput!]
-  or: [MediaItemGroupFilterInput!]
-  id: IntOperationFilterInput
-  mediaItemId: IntOperationFilterInput
-  groupId: IntOperationFilterInput
-  role: StringOperationFilterInput
-  isFeatured: BooleanOperationFilterInput
-  mediaItem: MediaItemFilterInput
-  group: GroupFilterInput
-}
-
-"The `DateTime` scalar represents an ISO-8601 compliant date time type."
-scalar DateTime
-
-input ListFilterInputTypeOfDiscFilterInput {
-  all: DiscFilterInput
-  none: DiscFilterInput
-  some: DiscFilterInput
-  any: Boolean
-}
-
-input BooleanOperationFilterInput {
-  eq: Boolean
-  neq: Boolean
-}
-
-input GroupFilterInput {
-  and: [GroupFilterInput!]
-  or: [GroupFilterInput!]
-  id: IntOperationFilterInput
-  imdbId: StringOperationFilterInput
-  name: StringOperationFilterInput
-  slug: StringOperationFilterInput
-  imageUrl: StringOperationFilterInput
-  mediaItemGroups: ListFilterInputTypeOfMediaItemGroupFilterInput
-}
-
-input DiscFilterInput {
-  and: [DiscFilterInput!]
-  or: [DiscFilterInput!]
-  id: IntOperationFilterInput
-  index: IntOperationFilterInput
-  slug: StringOperationFilterInput
-  name: StringOperationFilterInput
-  format: StringOperationFilterInput
-  contentHash: StringOperationFilterInput
-  titles: ListFilterInputTypeOfTitleFilterInput
-  release: ReleaseFilterInput
-}
-
-input ListFilterInputTypeOfTitleFilterInput {
-  all: TitleFilterInput
-  none: TitleFilterInput
-  some: TitleFilterInput
-  any: Boolean
+input StringOperationFilterInput {
+  and: [StringOperationFilterInput!]
+  or: [StringOperationFilterInput!]
+  eq: String @cost(weight: "10")
+  neq: String @cost(weight: "10")
+  contains: String @cost(weight: "20")
+  ncontains: String @cost(weight: "20")
+  in: [String] @cost(weight: "10")
+  nin: [String] @cost(weight: "10")
+  startsWith: String @cost(weight: "20")
+  nstartsWith: String @cost(weight: "20")
+  endsWith: String @cost(weight: "20")
+  nendsWith: String @cost(weight: "20")
 }
 
 input TitleFilterInput {
@@ -355,49 +615,23 @@ input TitleFilterInput {
   hasItem: BooleanOperationFilterInput
 }
 
-input LongOperationFilterInput {
-  eq: Long
-  neq: Long
-  in: [Long]
-  nin: [Long]
-  gt: Long
-  ngt: Long
-  gte: Long
-  ngte: Long
-  lt: Long
-  nlt: Long
-  lte: Long
-  nlte: Long
-}
-
-input DiscItemReferenceFilterInput {
-  and: [DiscItemReferenceFilterInput!]
-  or: [DiscItemReferenceFilterInput!]
-  id: IntOperationFilterInput
-  title: StringOperationFilterInput
-  type: StringOperationFilterInput
-  description: StringOperationFilterInput
-  chapters: ListFilterInputTypeOfChapterFilterInput
-  season: StringOperationFilterInput
-  episode: StringOperationFilterInput
-  discItem: TitleFilterInput
-}
-
-input ListFilterInputTypeOfTrackFilterInput {
-  all: TrackFilterInput
-  none: TrackFilterInput
-  some: TrackFilterInput
-  any: Boolean
-}
-
-"The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
-scalar Long
-
-input ListFilterInputTypeOfChapterFilterInput {
-  all: ChapterFilterInput
-  none: ChapterFilterInput
-  some: ChapterFilterInput
-  any: Boolean
+input TitleSortInput {
+  index: SortEnumType @cost(weight: "10")
+  disc: DiscSortInput @cost(weight: "10")
+  id: SortEnumType @cost(weight: "10")
+  comment: SortEnumType @cost(weight: "10")
+  sourceFile: SortEnumType @cost(weight: "10")
+  segmentMap: SortEnumType @cost(weight: "10")
+  duration: SortEnumType @cost(weight: "10")
+  size: SortEnumType @cost(weight: "10")
+  displaySize: SortEnumType @cost(weight: "10")
+  item: DiscItemReferenceSortInput @cost(weight: "10")
+  discItemReferenceId: SortEnumType @cost(weight: "10")
+  description: SortEnumType @cost(weight: "10")
+  itemType: SortEnumType @cost(weight: "10")
+  season: SortEnumType @cost(weight: "10")
+  episode: SortEnumType @cost(weight: "10")
+  hasItem: SortEnumType @cost(weight: "10")
 }
 
 input TrackFilterInput {
@@ -416,236 +650,23 @@ input TrackFilterInput {
   title: TitleFilterInput
 }
 
-input ChapterFilterInput {
-  and: [ChapterFilterInput!]
-  or: [ChapterFilterInput!]
-  id: IntOperationFilterInput
-  index: IntOperationFilterInput
-  title: StringOperationFilterInput
-}
-
-type Boxset {
-  id: Int!
-  title: String
-  sortTitle: String
-  slug: String
-  imageUrl: String
-  release: Release
-  releaseId: Int!
-  type: String!
-}
-
-type MediaItem {
-  id: Int!
-  title: String
-  slug: String
-  fullTitle: String
-  sortTitle: String
-  year: Int!
-  type: String
-  imageUrl: String
-  externalids: ExternalIds!
-  externalIdsId: Int!
-  releases(where: ReleaseFilterInput order: [ReleaseSortInput!]): [Release!]!
-  mediaItemGroups(where: MediaItemGroupFilterInput order: [MediaItemGroupSortInput!]): [MediaItemGroup!]!
-  plot: String
-  tagline: String
-  directors: String
-  writers: String
-  stars: String
-  genres: String
-  runtimeMinutes: Int!
-  runtime: String
-  contentRating: String
-  releaseDate: DateTime!
-  latestReleaseDate: DateTime!
-  dateAdded: DateTime!
-}
-
-input MediaItemGroupSortInput {
-  id: SortEnumType
-  mediaItemId: SortEnumType
-  groupId: SortEnumType
-  role: SortEnumType
-  isFeatured: SortEnumType
-  mediaItem: MediaItemSortInput
-  group: GroupSortInput
-}
-
-input GroupSortInput {
-  id: SortEnumType
-  imdbId: SortEnumType
-  name: SortEnumType
-  slug: SortEnumType
-  imageUrl: SortEnumType
-}
-
-type ExternalIds {
-  id: Int!
-  tmdb: String
-  imdb: String
-  tvdb: String
-  mediaItem: MediaItem
-}
-
-type Release {
-  id: Int!
-  slug: String
-  title: String
-  regionCode: String
-  locale: String
-  year: Int!
-  upc: String
-  isbn: String
-  asin: String
-  imageUrl: String
-  releaseDate: DateTime!
-  dateAdded: DateTime!
-  fullTitle: String!
-  type: String!
-  discs(where: DiscFilterInput order: [DiscSortInput!]): [Disc!]!
-  mediaItem: MediaItem
-  boxset: Boxset
-}
-
-type MediaItemGroup {
-  id: Int!
-  mediaItemId: Int!
-  groupId: Int!
-  role: String
-  isFeatured: Boolean!
-  mediaItem(where: MediaItemFilterInput order: [MediaItemSortInput!]): MediaItem
-  group(where: GroupFilterInput order: [GroupSortInput!]): Group
-}
-
-input DiscSortInput {
-  id: SortEnumType
-  index: SortEnumType
-  slug: SortEnumType
-  name: SortEnumType
-  format: SortEnumType
-  contentHash: SortEnumType
-  release: ReleaseSortInput
-}
-
-type Group {
-  id: Int!
-  imdbId: String
-  name: String
-  slug: String
-  imageUrl: String
-  mediaItemGroups(where: MediaItemGroupFilterInput order: [MediaItemGroupSortInput!]): [MediaItemGroup!]!
-}
-
-type Disc {
-  id: Int!
-  index: Int!
-  slug: String
-  name: String
-  format: String
-  contentHash: String
-  titles(where: TitleFilterInput order: [TitleSortInput!]): [Title!]!
-  release: Release
-}
-
-input TitleSortInput {
-  index: SortEnumType
-  disc: DiscSortInput
-  id: SortEnumType
-  comment: SortEnumType
-  sourceFile: SortEnumType
-  segmentMap: SortEnumType
-  duration: SortEnumType
-  size: SortEnumType
-  displaySize: SortEnumType
-  item: DiscItemReferenceSortInput
-  discItemReferenceId: SortEnumType
-  description: SortEnumType
-  itemType: SortEnumType
-  season: SortEnumType
-  episode: SortEnumType
-  hasItem: SortEnumType
-}
-
-input DiscItemReferenceSortInput {
-  id: SortEnumType
-  title: SortEnumType
-  type: SortEnumType
-  description: SortEnumType
-  season: SortEnumType
-  episode: SortEnumType
-  discItem: TitleSortInput
-}
-
-type Title {
-  index: Int!
-  disc: Disc
-  id: Int!
-  comment: String
-  sourceFile: String
-  segmentMap: String
-  duration: String
-  size: Long!
-  displaySize: String
-  item: DiscItemReference
-  discItemReferenceId: Int
-  tracks(where: TrackFilterInput order: [TrackSortInput!]): [Track!]!
-  description: String!
-  itemType: String!
-  season: String!
-  episode: String!
-  hasItem: Boolean!
-}
-
 input TrackSortInput {
-  id: SortEnumType
-  index: SortEnumType
-  name: SortEnumType
-  type: SortEnumType
-  resolution: SortEnumType
-  aspectRatio: SortEnumType
-  audioType: SortEnumType
-  languageCode: SortEnumType
-  language: SortEnumType
-  description: SortEnumType
-  title: TitleSortInput
+  id: SortEnumType @cost(weight: "10")
+  index: SortEnumType @cost(weight: "10")
+  name: SortEnumType @cost(weight: "10")
+  type: SortEnumType @cost(weight: "10")
+  resolution: SortEnumType @cost(weight: "10")
+  aspectRatio: SortEnumType @cost(weight: "10")
+  audioType: SortEnumType @cost(weight: "10")
+  languageCode: SortEnumType @cost(weight: "10")
+  language: SortEnumType @cost(weight: "10")
+  description: SortEnumType @cost(weight: "10")
+  title: TitleSortInput @cost(weight: "10")
 }
 
-type Track {
-  id: Int!
-  index: Int!
-  name: String
-  type: String
-  resolution: String
-  aspectRatio: String
-  audioType: String
-  languageCode: String
-  language: String
-  description: String
-  title: Title
-}
-
-type DiscItemReference {
-  id: Int!
-  title: String
-  type: String
-  description: String
-  chapters(where: ChapterFilterInput order: [ChapterSortInput!]): [Chapter!]!
-  season: String
-  episode: String
-  discItem: Title
-}
-
-input ChapterSortInput {
-  id: SortEnumType
-  index: SortEnumType
-  title: SortEnumType
-}
-
-type Chapter {
-  id: Int!
-  index: Int!
-  title: String
+enum SortEnumType {
+  ASC
+  DESC
 }
 
 "The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."
@@ -653,3 +674,12 @@ directive @cost("The `weight` argument defines what value to add to the overall 
 
 "The purpose of the `@listSize` directive is to either inform the static analysis about the size of returned lists (if that information is statically available), or to point the analysis to where to find that information."
 directive @listSize("The `assumedSize` argument can be used to statically define the maximum length of a list returned by a field." assumedSize: Int "The `slicingArguments` argument can be used to define which of the field's arguments with numeric type are slicing arguments, so that their value determines the size of the list returned by that field. It may specify a list of multiple slicing arguments." slicingArguments: [String!] "The `slicingArgumentDefaultValue` argument can be used to define a default value for a slicing argument, which is used if the argument is not present in a query." slicingArgumentDefaultValue: Int "The `sizedFields` argument can be used to define that the value of the `assumedSize` argument or of a slicing argument does not affect the size of a list returned by a field itself, but that of a list returned by one of its sub-fields." sizedFields: [String!] "The `requireOneSlicingArgument` argument can be used to inform the static analysis that it should expect that exactly one of the defined slicing arguments is present in a query. If that is not the case (i.e., if none or multiple slicing arguments are present), the static analysis may throw an error." requireOneSlicingArgument: Boolean! = true) on FIELD_DEFINITION
+
+"The `@specifiedBy` directive is used within the type system definition language to provide a URL for specifying the behavior of custom scalar definitions."
+directive @specifiedBy("The specifiedBy URL points to a human-readable specification. This field will only read a result for scalar types." url: String!) on SCALAR
+
+"The `DateTime` scalar represents an ISO-8601 compliant date time type."
+scalar DateTime @specifiedBy(url: "https:\/\/www.graphql-scalars.com\/date-time")
+
+"The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
+scalar Long
