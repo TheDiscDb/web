@@ -83,6 +83,11 @@
         StateHasChanged(); // Display the new items and hide the loading indicator
     }
 
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMoreItems();
+    }
+
     private bool _jsInitialized;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

@@ -14,5 +14,5 @@ else
     </HeadContent>
 
     <h1>Items related to '@(groupName ?? Slug)'</h1>
-    <TheDiscDb.Client.Pages.ItemsByCategory Slug="@Slug" @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+    <TheDiscDb.Client.Pages.ItemsByCategory Slug="@Slug" @rendermode="new InteractiveWebAssemblyRenderMode(prerender: true)" />
 }
