@@ -28,24 +28,21 @@
     </section>
 
     <section class="info-card">
-        <h3>History Timeline</h3>
+        <h3>History</h3>
         @if (HistoryItems != null && HistoryItems.Any())
         {
-            <div class="history-timeline">
-                @foreach (var item in HistoryItems)
-                {
-                    <div class="history-item history-type-@item.Type.ToString().ToLower()">
-                        <div class="history-header">
-                            <span class="history-type badge @GetBadgeClass(item.Type)">@item.Type</span>
-                            <span class="history-user">@GetUserName(item.UserId)</span>
-                            <span class="history-time">@item.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")</span>
-                        </div>
-                        <div class="history-body">
-                            <TheDiscDb.Components.Controls.MarkdownContent Content="@item.Description" />
-                        </div>
-                    </div>
-                }
-            </div>
+            <QuickGrid Items="HistoryItems.AsQueryable()" Class="striped-grid">
+                <TemplateColumn Title="Type" Sortable="true" SortBy="GridSort<Web.Data.ContributionHistory>.ByAscending(h => h.Type)">
+                    <span class="badge @GetBadgeClass(context.Type)">@context.Type</span>
+                </TemplateColumn>
+                <TemplateColumn Title="Date" Sortable="true" SortBy="GridSort<Web.Data.ContributionHistory>.ByDescending(h => h.TimeStamp)">
+                    @context.TimeStamp.ToString("yyyy-MM-dd HH:mm")
+                </TemplateColumn>
+                <PropertyColumn Property="@(h => GetUserName(h.UserId))" Title="User" />
+                <TemplateColumn Title="Description">
+                    <TheDiscDb.Components.Controls.MarkdownContent Content="@context.Description" />
+                </TemplateColumn>
+            </QuickGrid>
         }
         else
         {
