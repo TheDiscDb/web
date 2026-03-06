@@ -15,7 +15,7 @@ public class SearchEntryExtensionsTests
 
         await Assert.That(rootEntry.Type).IsEqualTo("Movie");
         await Assert.That(rootEntry.Title).IsEqualTo("The Matrix");
-        await Assert.That(rootEntry.RelativeUrl).IsEqualTo("/Movie/the-matrix");
+        await Assert.That(rootEntry.RelativeUrl).IsEqualTo("/movie/the-matrix");
         await Assert.That(rootEntry.MediaItem!.Slug).IsEqualTo("the-matrix");
     }
 
@@ -31,7 +31,7 @@ public class SearchEntryExtensionsTests
 
         await Assert.That(releaseEntry).IsNotNull();
         await Assert.That(releaseEntry!.Title).IsEqualTo("4K Edition");
-        await Assert.That(releaseEntry.RelativeUrl).IsEqualTo("/Movie/the-matrix/releases/4k-edition");
+        await Assert.That(releaseEntry.RelativeUrl).IsEqualTo("/movie/the-matrix/releases/4k-edition");
         await Assert.That(releaseEntry.Release!.Slug).IsEqualTo("4k-edition");
     }
 

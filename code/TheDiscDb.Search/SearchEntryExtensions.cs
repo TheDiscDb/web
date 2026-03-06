@@ -130,7 +130,7 @@ public static class SearchEntryExtensions
             Type = item.Type,
             Title = item.Title,
             ImageUrl = item.ImageUrl,
-            RelativeUrl = $"/{item.Type}/{item.Slug}",
+            RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}",
             MediaItem = new ItemInfo
             {
                 Slug = item.Slug,
@@ -149,7 +149,7 @@ public static class SearchEntryExtensions
                 Type = "Release",
                 Title = release.Title,
                 ImageUrl = release.ImageUrl,
-                RelativeUrl = $"/{item.Type}/{item.Slug}/releases/{release.Slug}",
+                RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}/releases/{release.Slug}",
                 MediaItem = new ItemInfo
                 {
                     Slug = item.Slug,
@@ -176,7 +176,7 @@ public static class SearchEntryExtensions
                 Type = "Disc",
                 Title = disc.Name,
                 ImageUrl = release.ImageUrl,
-                RelativeUrl = $"/{item.Type}/{item.Slug}/releases/{release.Slug}/discs/{disc.Index}",
+                RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}/releases/{release.Slug}/discs/{disc.Index}",
                 MediaItem = new ItemInfo
                 {
                     Slug = item.Slug,
@@ -209,7 +209,7 @@ public static class SearchEntryExtensions
                     Type = title.Item.Type,
                     Title = title.Item.Title,
                     ImageUrl = release.ImageUrl,
-                    RelativeUrl = $"/{item.Type}/{item.Slug}/releases/{release.Slug}/discs/{disc.Index}",
+                    RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}/releases/{release.Slug}/discs/{disc.Index}",
                     MediaItem = new ItemInfo
                     {
                         Slug = item.Slug,
