@@ -1,0 +1,17 @@
+@page "/messages"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<PageTitle>Messages</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Messages" Items="@breadcrumbItems" />
+
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <h1>Messages</h1>
+        <p>View and reply to messages about your contributions.</p>
+    </section>
+
+    <section class="info-card">
+        <p>To view messages, go to your <a href="/contribute/my">contributions</a> and click the "Messages" link on any contribution.</p>
+    </section>
+</div>

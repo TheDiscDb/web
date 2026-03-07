@@ -11,11 +11,10 @@ public partial class ContributionMutations
     [Error(typeof(ContributionNotFoundException))]
     [Error(typeof(AuthenticationException))]
     [Authorize("Admin")]
-    public async Task<ContributionHistory> SendAdminMessage(
+    public async Task<UserMessage> SendAdminMessage(
         string contributionId,
         string message,
         SqlServerDataContext database,
-        IContributionHistoryService historyService,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(message) || message.Length > 10_000)
@@ -36,23 +35,31 @@ public partial class ContributionMutations
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken)
             ?? throw new ContributionNotFoundException(contributionId);
 
-        await historyService.AddMessageAsync(contribution.Id, userId, message, ContributionHistoryType.AdminMessage, cancellationToken);
+        var userMessage = new UserMessage
+        {
+            ContributionId = contribution.Id,
+            FromUserId = userId,
+            ToUserId = contribution.UserId,
+            Message = message,
+            IsRead = false,
+            CreatedAt = DateTimeOffset.UtcNow,
+            Type = UserMessageType.AdminMessage
+        };
 
-        return await database.ContributionHistory
-            .Where(h => h.ContributionId == contribution.Id)
-            .OrderByDescending(h => h.TimeStamp)
-            .FirstAsync(cancellationToken);
+        database.UserMessages.Add(userMessage);
+        await database.SaveChangesAsync(cancellationToken);
+
+        return userMessage;
     }
 
     [Error(typeof(ContributionNotFoundException))]
     [Error(typeof(AuthenticationException))]
     [Error(typeof(InvalidOwnershipException))]
     [Authorize]
-    public async Task<ContributionHistory> SendUserMessage(
+    public async Task<UserMessage> SendUserMessage(
         string contributionId,
         string message,
         SqlServerDataContext database,
-        IContributionHistoryService historyService,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(message) || message.Length > 10_000)
@@ -75,11 +82,28 @@ public partial class ContributionMutations
 
         await EnsureOwnership(contribution, contributionId, cancellationToken: cancellationToken);
 
-        await historyService.AddMessageAsync(contribution.Id, userId, message, ContributionHistoryType.UserMessage, cancellationToken);
+        // Find an admin to set as ToUserId — use the most recent admin who messaged this contribution,
+        // or fall back to empty (admins will see it via contribution queries)
+        var lastAdminId = await database.UserMessages
+            .Where(m => m.ContributionId == contribution.Id && m.Type == UserMessageType.AdminMessage)
+            .OrderByDescending(m => m.CreatedAt)
+            .Select(m => m.FromUserId)
+            .FirstOrDefaultAsync(cancellationToken) ?? string.Empty;
 
-        return await database.ContributionHistory
-            .Where(h => h.ContributionId == contribution.Id)
-            .OrderByDescending(h => h.TimeStamp)
-            .FirstAsync(cancellationToken);
+        var userMessage = new UserMessage
+        {
+            ContributionId = contribution.Id,
+            FromUserId = userId,
+            ToUserId = lastAdminId,
+            Message = message,
+            IsRead = false,
+            CreatedAt = DateTimeOffset.UtcNow,
+            Type = UserMessageType.UserMessage
+        };
+
+        database.UserMessages.Add(userMessage);
+        await database.SaveChangesAsync(cancellationToken);
+
+        return userMessage;
     }
 }

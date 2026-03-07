@@ -67,10 +67,10 @@
                         <div class="history-item history-type-@item.Type.ToString().ToLower()">
                             <div class="history-header">
                                 <span class="history-type badge @GetBadgeClass(item.Type)">@GetTypeLabel(item.Type)</span>
-                                <span class="history-time">@item.TimeStamp.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                                <span class="history-time">@item.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</span>
                             </div>
                             <div class="history-body">
-                                @((MarkupString)RenderMarkdown(item.Description))
+                                @((MarkupString)RenderMarkdown(item.Message))
                             </div>
                         </div>
                     }

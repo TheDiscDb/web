@@ -57,6 +57,12 @@ public partial class ContributionMessages : ComponentBase
             {
                 chatItems = result.Data?.ContributionChat?.Nodes?.ToList()
                     ?? new List<IGetContributionChat_ContributionChat_Nodes>();
+
+                // Mark messages as read
+                await ContributionClient.MarkMessagesAsRead.ExecuteAsync(new MarkMessagesAsReadInput
+                {
+                    ContributionId = ContributionId!
+                });
             }
             else
             {
@@ -116,17 +122,17 @@ public partial class ContributionMessages : ComponentBase
         }
     }
 
-    private static string GetBadgeClass(ContributionHistoryType type) => type switch
+    private static string GetBadgeClass(UserMessageType type) => type switch
     {
-        ContributionHistoryType.AdminMessage => "bg-primary",
-        ContributionHistoryType.UserMessage => "bg-secondary",
+        UserMessageType.AdminMessage => "bg-primary",
+        UserMessageType.UserMessage => "bg-secondary",
         _ => "bg-light text-dark"
     };
 
-    private static string GetTypeLabel(ContributionHistoryType type) => type switch
+    private static string GetTypeLabel(UserMessageType type) => type switch
     {
-        ContributionHistoryType.AdminMessage => "Admin",
-        ContributionHistoryType.UserMessage => "You",
+        UserMessageType.AdminMessage => "Admin",
+        UserMessageType.UserMessage => "You",
         _ => type.ToString()
     };
 

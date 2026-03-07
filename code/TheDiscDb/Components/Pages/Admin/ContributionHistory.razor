@@ -29,16 +29,18 @@
 
     <section class="info-card">
         <h3>History</h3>
-        @if (HistoryItems != null && HistoryItems.Any())
+        @if (TimelineItems != null && TimelineItems.Any())
         {
-            <QuickGrid Items="HistoryItems.AsQueryable()" Class="striped-grid">
-                <TemplateColumn Title="Type" Sortable="true" SortBy="GridSort<Web.Data.ContributionHistory>.ByAscending(h => h.Type)">
-                    <span class="badge @GetBadgeClass(context.Type)">@context.Type</span>
+            <QuickGrid Items="TimelineItems.AsQueryable()" Class="striped-grid">
+                <TemplateColumn Title="Type">
+                    <span class="badge @context.BadgeClass">@context.TypeLabel</span>
                 </TemplateColumn>
-                <TemplateColumn Title="Date" Sortable="true" SortBy="GridSort<Web.Data.ContributionHistory>.ByDescending(h => h.TimeStamp)">
-                    @context.TimeStamp.ToString("yyyy-MM-dd HH:mm")
+                <TemplateColumn Title="Date" Sortable="true" SortBy="GridSort<TimelineEntry>.ByDescending(t => t.Timestamp)">
+                    @context.Timestamp.ToString("yyyy-MM-dd HH:mm")
                 </TemplateColumn>
-                <PropertyColumn Property="@(h => GetUserName(h.UserId))" Title="User" />
+                <TemplateColumn Title="User">
+                    @GetUserName(context.UserId)
+                </TemplateColumn>
                 <TemplateColumn Title="Description">
                     <TheDiscDb.Components.Controls.MarkdownContent Content="@context.Description" />
                 </TemplateColumn>

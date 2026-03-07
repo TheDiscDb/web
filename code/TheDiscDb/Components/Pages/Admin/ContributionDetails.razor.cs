@@ -151,7 +151,18 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
         var adminUserId = PrincipalProvider.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (!string.IsNullOrEmpty(adminUserId))
         {
-            await HistoryService.AddMessageAsync(this.Contribution.Id, adminUserId, statusMessage, ContributionHistoryType.AdminMessage);
+            var userMessage = new UserMessage
+            {
+                ContributionId = this.Contribution.Id,
+                FromUserId = adminUserId,
+                ToUserId = this.Contribution.UserId,
+                Message = statusMessage,
+                IsRead = false,
+                CreatedAt = DateTimeOffset.UtcNow,
+                Type = UserMessageType.AdminMessage
+            };
+            database.UserMessages.Add(userMessage);
+            await database.SaveChangesAsync();
         }
 
         showStatusMessageDialog = false;

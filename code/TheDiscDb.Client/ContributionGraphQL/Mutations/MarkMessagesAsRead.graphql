@@ -1,0 +1,11 @@
+mutation MarkMessagesAsRead($input: MarkMessagesAsReadInput!) {
+  markMessagesAsRead(input: $input) {
+    boolean
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

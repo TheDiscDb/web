@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using StrawberryShake;
+using Syncfusion.Blazor.SplitButtons;
+using TheDiscDb.Client.Contributions;
 using TheDiscDb.Search;
 
 namespace TheDiscDb.Client.Controls;
@@ -18,13 +21,18 @@ public partial class NavMenu : ComponentBase
     [Inject]
     public IJSRuntime JS { get; set; } = null!;
 
-    public IEnumerable<SearchEntry>? SearchResults { get; set; }
-
     [Inject]
     AuthenticationStateProvider? AuthProvider { get; set; }
 
+    [Inject]
+    IContributionClient? ContributionClient { get; set; }
+
+    public IEnumerable<SearchEntry>? SearchResults { get; set; }
+
     string DisplayName { get; set; } = "";
     string ShortName { get; set; } = "";
+    bool isAuthenticated;
+    bool hasUnreadMessages;
 
 #pragma warning disable IDE0044 // Add readonly modifier
     private string? searchQuery;
@@ -35,15 +43,70 @@ public partial class NavMenu : ComponentBase
         if (this.AuthProvider != null)
         {
             var state = await this.AuthProvider.GetAuthenticationStateAsync();
-            if (state != null)
+            if (state?.User?.Identity?.IsAuthenticated == true)
             {
+                isAuthenticated = true;
                 this.DisplayName = state.User.FindFirstValue(ClaimTypes.Name) ?? "";
                 if (this.DisplayName.Length > 0)
                 {
                     this.ShortName = Char.ToUpperInvariant(this.DisplayName[0]).ToString();
                 }
+
+                await CheckUnreadMessages();
             }
-            
+        }
+    }
+
+    private async Task CheckUnreadMessages()
+    {
+        try
+        {
+            if (ContributionClient != null)
+            {
+                var result = await ContributionClient.HasUnreadMessages.ExecuteAsync();
+                if (result.IsSuccessResult())
+                {
+                    hasUnreadMessages = result.Data?.HasUnreadMessages ?? false;
+                }
+            }
+        }
+        catch
+        {
+            // Silently ignore — unread badge is non-critical
+        }
+    }
+
+    private async Task OnUserMenuItemSelected(MenuEventArgs args)
+    {
+        switch (args.Item.Id)
+        {
+            case "my-contributions":
+                NavigationManager?.NavigateTo("/contribute/my");
+                break;
+            case "messages":
+                NavigationManager?.NavigateTo("/messages");
+                break;
+            case "logout":
+                // Logout requires a POST form with antiforgery token
+                await JS.InvokeVoidAsync("eval", """
+                    var form = document.createElement('form');
+                    form.method = 'post';
+                    form.action = 'Account/Logout';
+                    var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                    if (tokenInput) {
+                        var hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = '__RequestVerificationToken';
+                        hidden.value = tokenInput.value;
+                        form.appendChild(hidden);
+                    }
+                    document.body.appendChild(form);
+                    form.submit();
+                """);
+                break;
+            case "login":
+                NavigationManager?.NavigateTo("/Account/Login", forceLoad: true);
+                break;
         }
     }
 

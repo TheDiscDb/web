@@ -833,6 +833,54 @@ pre code {
     padding-left: 1rem;
 }
 
+.user-menu-container {
+    padding-left: 0.75rem;
+}
+
+.user-menu-btn.e-dropdown-btn {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    min-width: auto !important;
+}
+
+.user-menu-btn.e-dropdown-btn .e-btn-icon.e-icon-right {
+    display: none;
+}
+
+.user-menu-btn .e-caret {
+    display: none !important;
+}
+
+.user-avatar-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.user-avatar-wrapper .e-avatar {
+    cursor: pointer;
+}
+
+.user-avatar-anon {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.unread-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background-color: #dc3545;
+    border-radius: 50%;
+    border: 2px solid var(--bs-primary);
+}
+
 .about-page .info-grid {
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }

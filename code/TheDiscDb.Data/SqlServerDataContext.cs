@@ -107,6 +107,13 @@ public class SqlServerDataContext : DbContext
             .HasConversion<string>();
         contributionHistory.HasIndex(x => x.ContributionId);
 
+        var userMessage = modelBuilder.Entity<UserMessage>();
+        userMessage.HasKey(x => x.Id);
+        userMessage.Property(x => x.Type)
+            .HasConversion<string>();
+        userMessage.HasIndex(x => x.ContributionId);
+        userMessage.HasIndex(x => new { x.ToUserId, x.IsRead });
+
         BuildIdentityModel(modelBuilder);
     }
 
@@ -253,6 +260,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<UserContributionAudioTrack> UserContributionAudioTracks { get; set; } = null!;
     public DbSet<UserContributionDiscHashItem> UserContributionDiscHashItems { get; set; } = null!;
     public DbSet<ContributionHistory> ContributionHistory { get; set; } = null!;
+    public DbSet<UserMessage> UserMessages { get; set; } = null!;
     public DbSet<Contributor> Contributors { get; set; } = null!;
 }
 
@@ -452,6 +460,24 @@ public class ContributionHistory
     public string Description { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
     public ContributionHistoryType Type { get; set; }
+}
+
+public enum UserMessageType
+{
+    AdminMessage,
+    UserMessage
+}
+
+public class UserMessage
+{
+    public int Id { get; set; }
+    public int ContributionId { get; set; }
+    public string FromUserId { get; set; } = string.Empty;
+    public string ToUserId { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public bool IsRead { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public UserMessageType Type { get; set; }
 }
 
 public static class DefaultRoles

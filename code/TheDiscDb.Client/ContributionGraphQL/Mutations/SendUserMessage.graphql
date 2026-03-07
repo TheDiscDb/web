@@ -1,11 +1,13 @@
 mutation SendUserMessage($input: SendUserMessageInput!) {
   sendUserMessage(input: $input) {
-    contributionHistory {
+    userMessage {
       id
       contributionId
-      timeStamp
-      description
-      userId
+      fromUserId
+      toUserId
+      message
+      isRead
+      createdAt
       type
     }
     errors {

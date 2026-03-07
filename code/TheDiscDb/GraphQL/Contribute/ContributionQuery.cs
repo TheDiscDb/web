@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 using HotChocolate.Authorization;
@@ -44,12 +45,12 @@ public class ContributionQuery(IdEncoder idEncoder)
     [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize, IncludeTotalCount = true)]
     [UseSorting]
     [Authorize]
-    public IQueryable<ContributionHistory> GetContributionChat(SqlServerDataContext context, string contributionId, ClaimsPrincipal user)
+    public IQueryable<UserMessage> GetContributionChat(SqlServerDataContext context, string contributionId, ClaimsPrincipal user)
     {
         var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
-            return Enumerable.Empty<ContributionHistory>().AsQueryable();
+            return Enumerable.Empty<UserMessage>().AsQueryable();
         }
 
         var decodedId = idEncoder.Decode(contributionId);
@@ -58,13 +59,38 @@ public class ContributionQuery(IdEncoder idEncoder)
         var ownsContribution = context.UserContributions.Any(c => c.Id == decodedId && c.UserId == userId);
         if (!ownsContribution)
         {
-            return Enumerable.Empty<ContributionHistory>().AsQueryable();
+            return Enumerable.Empty<UserMessage>().AsQueryable();
         }
 
-        return context.ContributionHistory
-            .Where(h => h.ContributionId == decodedId &&
-                (h.Type == ContributionHistoryType.AdminMessage ||
-                 h.Type == ContributionHistoryType.UserMessage))
-            .OrderByDescending(h => h.TimeStamp);
+        return context.UserMessages
+            .Where(m => m.ContributionId == decodedId)
+            .OrderByDescending(m => m.CreatedAt);
+    }
+
+    [Authorize]
+    public async Task<bool> HasUnreadMessages(SqlServerDataContext context, ClaimsPrincipal user)
+    {
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+            return false;
+
+        return await context.UserMessages
+            .AnyAsync(m => m.ToUserId == userId && !m.IsRead);
+    }
+
+    [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize, IncludeTotalCount = true)]
+    [UseSorting]
+    [Authorize]
+    public IQueryable<UserMessage> GetMyMessages(SqlServerDataContext context, ClaimsPrincipal user)
+    {
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Enumerable.Empty<UserMessage>().AsQueryable();
+        }
+
+        return context.UserMessages
+            .Where(m => m.ToUserId == userId || m.FromUserId == userId)
+            .OrderByDescending(m => m.CreatedAt);
     }
 }

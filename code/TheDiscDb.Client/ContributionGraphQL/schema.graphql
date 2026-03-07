@@ -33,7 +33,7 @@ type ContributionChatConnection {
   "A list of edges."
   edges: [ContributionChatEdge!]
   "A flattened list of the nodes."
-  nodes: [ContributionHistory!]
+  nodes: [UserMessage!]
   "Identifies the total count of items in the connection."
   totalCount: Int! @cost(weight: "10")
 }
@@ -43,7 +43,7 @@ type ContributionChatEdge {
   "A cursor for use in pagination."
   cursor: String!
   "The item at the end of the edge."
-  node: ContributionHistory!
+  node: UserMessage!
 }
 
 type ContributionHistory {
@@ -92,6 +92,7 @@ type ContributionMutations {
   hashDisc(input: HashDiscInput!): HashDiscPayload! @authorize @cost(weight: "10")
   sendAdminMessage(input: SendAdminMessageInput!): SendAdminMessagePayload! @authorize(policy: "Admin") @cost(weight: "10")
   sendUserMessage(input: SendUserMessageInput!): SendUserMessagePayload! @authorize @cost(weight: "10")
+  markMessagesAsRead(input: MarkMessagesAsReadInput!): MarkMessagesAsReadPayload! @authorize @cost(weight: "10")
   updateDisc(input: UpdateDiscInput!): UpdateDiscPayload! @authorize @cost(weight: "10")
 }
 
@@ -103,7 +104,9 @@ type ContributionQuery {
   contributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput @cost(weight: "10") order: [UserContributionSortInput!] @cost(weight: "10")): ContributionsConnection @authorize(policy: "Admin") @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
   myContributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput @cost(weight: "10") order: [UserContributionSortInput!] @cost(weight: "10")): MyContributionsConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
   contributionHistory(contributionId: Int! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [ContributionHistorySortInput!] @cost(weight: "10")): ContributionHistoryConnection @authorize(policy: "Admin") @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
-  contributionChat(contributionId: String! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [ContributionHistorySortInput!] @cost(weight: "10")): ContributionChatConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
+  contributionChat(contributionId: String! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [UserMessageSortInput!] @cost(weight: "10")): ContributionChatConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
+  hasUnreadMessages: Boolean! @authorize @cost(weight: "10")
+  myMessages("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [UserMessageSortInput!] @cost(weight: "10")): MyMessagesConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
 }
 
 "A connection to a list of items."
@@ -133,6 +136,31 @@ type CouldNotParseLogsError implements Error {
 type CreateContributionPayload {
   userContribution: UserContribution
   errors: [CreateContributionError!]
+}
+
+type MarkMessagesAsReadPayload {
+  boolean: Boolean
+  errors: [MarkMessagesAsReadError!]
+}
+
+"A connection to a list of items."
+type MyMessagesConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [MyMessagesEdge!]
+  "A flattened list of the nodes."
+  nodes: [UserMessage!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
+}
+
+"An edge in a connection."
+type MyMessagesEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: UserMessage!
 }
 
 type CreateDiscPayload {
@@ -305,12 +333,12 @@ type Segment {
 }
 
 type SendAdminMessagePayload {
-  contributionHistory: ContributionHistory
+  userMessage: UserMessage
   errors: [SendAdminMessageError!]
 }
 
 type SendUserMessagePayload {
-  contributionHistory: ContributionHistory
+  userMessage: UserMessage
   errors: [SendUserMessageError!]
 }
 
@@ -344,6 +372,17 @@ type Title {
 type UpdateDiscPayload {
   userContributionDisc: UserContributionDisc
   errors: [UpdateDiscError!]
+}
+
+type UserMessage {
+  id: Int!
+  contributionId: Int!
+  fromUserId: String!
+  toUserId: String!
+  message: String!
+  isRead: Boolean!
+  createdAt: DateTime!
+  type: UserMessageType!
 }
 
 type UserContribution {
@@ -461,6 +500,8 @@ union HashDiscError = ContributionNotFoundError | AuthenticationError | InvalidI
 union SendAdminMessageError = ContributionNotFoundError | AuthenticationError
 
 union SendUserMessageError = ContributionNotFoundError | AuthenticationError | InvalidOwnershipError
+
+union MarkMessagesAsReadError = AuthenticationError
 
 union UpdateDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
@@ -701,6 +742,21 @@ input SendUserMessageInput {
   message: String!
 }
 
+input MarkMessagesAsReadInput {
+  contributionId: String!
+}
+
+input UserMessageSortInput {
+  id: SortEnumType @cost(weight: "10")
+  contributionId: SortEnumType @cost(weight: "10")
+  fromUserId: SortEnumType @cost(weight: "10")
+  toUserId: SortEnumType @cost(weight: "10")
+  message: SortEnumType @cost(weight: "10")
+  isRead: SortEnumType @cost(weight: "10")
+  createdAt: SortEnumType @cost(weight: "10")
+  type: SortEnumType @cost(weight: "10")
+}
+
 input StringOperationFilterInput {
   and: [StringOperationFilterInput!]
   or: [StringOperationFilterInput!]
@@ -908,6 +964,11 @@ enum ContributionHistoryType {
   CREATED
   STATUS_CHANGED
   DELETED
+  ADMIN_MESSAGE
+  USER_MESSAGE
+}
+
+enum UserMessageType {
   ADMIN_MESSAGE
   USER_MESSAGE
 }

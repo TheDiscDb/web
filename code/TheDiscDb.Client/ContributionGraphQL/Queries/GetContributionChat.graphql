@@ -3,9 +3,11 @@ query GetContributionChat($contributionId: String!, $first: Int, $after: String)
     nodes {
       id
       contributionId
-      timeStamp
-      description
-      userId
+      fromUserId
+      toUserId
+      message
+      isRead
+      createdAt
       type
     }
     pageInfo {
