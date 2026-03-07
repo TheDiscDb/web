@@ -87,7 +87,7 @@ public partial class NavMenu : ComponentBase
                 NavigationManager?.NavigateTo("/messages");
                 break;
             case "logout":
-                // Logout requires a POST form with antiforgery token and ReturnUrl
+                // Logout endpoint has antiforgery disabled for WebAssembly compatibility
                 await JS.InvokeVoidAsync("eval", """
                     var form = document.createElement('form');
                     form.method = 'post';
@@ -97,14 +97,6 @@ public partial class NavMenu : ComponentBase
                     returnUrlInput.name = 'ReturnUrl';
                     returnUrlInput.value = '';
                     form.appendChild(returnUrlInput);
-                    var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
-                    if (tokenInput) {
-                        var hidden = document.createElement('input');
-                        hidden.type = 'hidden';
-                        hidden.name = '__RequestVerificationToken';
-                        hidden.value = tokenInput.value;
-                        form.appendChild(hidden);
-                    }
                     document.body.appendChild(form);
                     form.submit();
                 """);
