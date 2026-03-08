@@ -206,6 +206,11 @@ public partial class ReleaseDetailInput : ComponentBase
         this.request.FrontImageUrl = $"{this.id}/front.jpg";
     }
 
+    private void FrontImageUploadSuccess(SuccessEventArgs args)
+    {
+        this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{this.id}/front.jpg?width=156&height=231";
+    }
+
     private void FrontImageRemoved(RemovingEventArgs args)
     {
         this.request.FrontImageUrl = "";
@@ -215,6 +220,11 @@ public partial class ReleaseDetailInput : ComponentBase
     private void BackImageSelected(SelectedEventArgs args)
     {
         this.request.BackImageUrl = $"{this.id}/back.jpg";
+    }
+
+    private void BackImageUploadSuccess(SuccessEventArgs args)
+    {
+        this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{this.id}/back.jpg?width=156&height=231";
     }
 
     private void BackImageRemoved(RemovingEventArgs args)

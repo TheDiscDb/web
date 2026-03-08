@@ -42,11 +42,14 @@
         <div class="hstack gap-3 align-items-start">
             <SfUploader @ref="frontImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
                 <UploaderButtons Browse="Browse"></UploaderButtons>
-                <UploaderEvents FileSelected="FrontImageSelected" BeforeRemove="BeforeFrontImageRemove" OnRemove="FrontImageRemoved"></UploaderEvents>
+                <UploaderEvents FileSelected="FrontImageSelected" Success="FrontImageUploadSuccess" BeforeRemove="BeforeFrontImageRemove" OnRemove="FrontImageRemoved"></UploaderEvents>
                 <UploaderAsyncSettings SaveUrl="@frontImageUploadUrl" RemoveUrl="@frontImageRemoveUrl"></UploaderAsyncSettings>
             </SfUploader>
             <span id="frontImagePreview">
-                <img src="@frontImagePreviewUrl" alt="Front cover preview" />
+                @if (!string.IsNullOrEmpty(frontImagePreviewUrl))
+                {
+                    <img src="@frontImagePreviewUrl" alt="Front cover preview" />
+                }
             </span>
         </div>
         <ValidationMessage For="@(() => request.FrontImageUrl)" />
@@ -56,11 +59,14 @@
         <div class="hstack gap-3 align-items-start">
         <SfUploader @ref="backImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
             <UploaderButtons Browse="Browse"></UploaderButtons>
-                <UploaderEvents FileSelected="BackImageSelected" BeforeRemove="BeforeBackImageRemove" OnRemove="BackImageRemoved"></UploaderEvents>
+                <UploaderEvents FileSelected="BackImageSelected" Success="BackImageUploadSuccess" BeforeRemove="BeforeBackImageRemove" OnRemove="BackImageRemoved"></UploaderEvents>
             <UploaderAsyncSettings SaveUrl="@backImageUploadUrl" RemoveUrl="@backImageRemoveUrl"></UploaderAsyncSettings>
         </SfUploader>
             <span id="backImagePreview">
-                <img src="@backImagePreviewUrl" alt="Back cover preview" />
+                @if (!string.IsNullOrEmpty(backImagePreviewUrl))
+                {
+                    <img src="@backImagePreviewUrl" alt="Back cover preview" />
+                }
             </span>
         </div>
         <ValidationMessage For="@(() => request.BackImageUrl)" />
