@@ -8,7 +8,6 @@ public interface IContributionHistoryService
     Task RecordCreatedAsync(int contributionId, string userId, CancellationToken cancellationToken = default);
     Task RecordStatusChangedAsync(int contributionId, string userId, UserContributionStatus oldStatus, UserContributionStatus newStatus, CancellationToken cancellationToken = default);
     Task RecordDeletedAsync(int contributionId, string userId, CancellationToken cancellationToken = default);
-    Task AddMessageAsync(int contributionId, string userId, string message, ContributionHistoryType type, CancellationToken cancellationToken = default);
 }
 
 public class ContributionHistoryService(SqlServerDataContext database) : IContributionHistoryService
@@ -52,21 +51,4 @@ public class ContributionHistoryService(SqlServerDataContext database) : IContri
         await database.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task AddMessageAsync(int contributionId, string userId, string message, ContributionHistoryType type, CancellationToken cancellationToken = default)
-    {
-        if (type != ContributionHistoryType.AdminMessage && type != ContributionHistoryType.UserMessage)
-        {
-            throw new ArgumentException("Type must be AdminMessage or UserMessage", nameof(type));
-        }
-
-        database.ContributionHistory.Add(new ContributionHistory
-        {
-            ContributionId = contributionId,
-            TimeStamp = DateTimeOffset.UtcNow,
-            Description = message,
-            UserId = userId,
-            Type = type
-        });
-        await database.SaveChangesAsync(cancellationToken);
-    }
 }

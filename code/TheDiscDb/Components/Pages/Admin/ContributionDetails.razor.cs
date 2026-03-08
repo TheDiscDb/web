@@ -28,6 +28,9 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
     private IContributionHistoryService HistoryService { get; set; } = null!;
 
     [Inject]
+    private IMessageService MessageService { get; set; } = null!;
+
+    [Inject]
     private IPrincipalProvider PrincipalProvider { get; set; } = null!;
 
     [Parameter]
@@ -151,18 +154,7 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
         var adminUserId = PrincipalProvider.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (!string.IsNullOrEmpty(adminUserId))
         {
-            var userMessage = new UserMessage
-            {
-                ContributionId = this.Contribution.Id,
-                FromUserId = adminUserId,
-                ToUserId = this.Contribution.UserId,
-                Message = statusMessage,
-                IsRead = false,
-                CreatedAt = DateTimeOffset.UtcNow,
-                Type = UserMessageType.AdminMessage
-            };
-            database.UserMessages.Add(userMessage);
-            await database.SaveChangesAsync();
+            await MessageService.SendAdminMessageAsync(this.Contribution.Id, adminUserId, this.Contribution.UserId, statusMessage);
         }
 
         showStatusMessageDialog = false;

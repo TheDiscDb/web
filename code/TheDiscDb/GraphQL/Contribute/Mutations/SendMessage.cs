@@ -15,6 +15,7 @@ public partial class ContributionMutations
         string contributionId,
         string message,
         SqlServerDataContext database,
+        IMessageService messageService,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(message) || message.Length > 10_000)
@@ -35,21 +36,7 @@ public partial class ContributionMutations
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken)
             ?? throw new ContributionNotFoundException(contributionId);
 
-        var userMessage = new UserMessage
-        {
-            ContributionId = contribution.Id,
-            FromUserId = userId,
-            ToUserId = contribution.UserId,
-            Message = message,
-            IsRead = false,
-            CreatedAt = DateTimeOffset.UtcNow,
-            Type = UserMessageType.AdminMessage
-        };
-
-        database.UserMessages.Add(userMessage);
-        await database.SaveChangesAsync(cancellationToken);
-
-        return userMessage;
+        return await messageService.SendAdminMessageAsync(contribution.Id, userId, contribution.UserId, message, cancellationToken);
     }
 
     [Error(typeof(ContributionNotFoundException))]
@@ -60,6 +47,7 @@ public partial class ContributionMutations
         string contributionId,
         string message,
         SqlServerDataContext database,
+        IMessageService messageService,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(message) || message.Length > 10_000)
@@ -82,28 +70,6 @@ public partial class ContributionMutations
 
         await EnsureOwnership(contribution, contributionId, cancellationToken: cancellationToken);
 
-        // Find an admin to set as ToUserId — use the most recent admin who messaged this contribution,
-        // or fall back to empty (admins will see it via contribution queries)
-        var lastAdminId = await database.UserMessages
-            .Where(m => m.ContributionId == contribution.Id && m.Type == UserMessageType.AdminMessage)
-            .OrderByDescending(m => m.CreatedAt)
-            .Select(m => m.FromUserId)
-            .FirstOrDefaultAsync(cancellationToken) ?? string.Empty;
-
-        var userMessage = new UserMessage
-        {
-            ContributionId = contribution.Id,
-            FromUserId = userId,
-            ToUserId = lastAdminId,
-            Message = message,
-            IsRead = false,
-            CreatedAt = DateTimeOffset.UtcNow,
-            Type = UserMessageType.UserMessage
-        };
-
-        database.UserMessages.Add(userMessage);
-        await database.SaveChangesAsync(cancellationToken);
-
-        return userMessage;
+        return await messageService.SendUserMessageAsync(contribution.Id, userId, message, cancellationToken);
     }
 }

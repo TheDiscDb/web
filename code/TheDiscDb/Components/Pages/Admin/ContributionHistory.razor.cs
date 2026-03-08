@@ -18,6 +18,9 @@ public partial class ContributionHistory : ComponentBase, IAsyncDisposable
     private UserManager<TheDiscDbUser> UserManager { get; set; } = null!;
 
     [Inject]
+    private IMessageService MessageService { get; set; } = null!;
+
+    [Inject]
     private IPrincipalProvider PrincipalProvider { get; set; } = null!;
 
     [Parameter]
@@ -126,19 +129,7 @@ public partial class ContributionHistory : ComponentBase, IAsyncDisposable
                 return;
             }
 
-            var userMessage = new UserMessage
-            {
-                ContributionId = this.Contribution.Id,
-                FromUserId = adminUserId,
-                ToUserId = this.Contribution.UserId,
-                Message = newMessage,
-                IsRead = false,
-                CreatedAt = DateTimeOffset.UtcNow,
-                Type = UserMessageType.AdminMessage
-            };
-
-            database.UserMessages.Add(userMessage);
-            await database.SaveChangesAsync();
+            await MessageService.SendAdminMessageAsync(this.Contribution.Id, adminUserId, this.Contribution.UserId, newMessage);
 
             newMessage = string.Empty;
             await LoadHistory();
