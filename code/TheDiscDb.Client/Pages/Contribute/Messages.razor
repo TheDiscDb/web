@@ -11,7 +11,51 @@
         <p>View and reply to messages about your contributions.</p>
     </section>
 
-    <section class="info-card">
-        <p>To view messages, go to your <a href="/contribute/my">contributions</a> and click the "Messages" link on any contribution.</p>
-    </section>
+    @if (isLoading)
+    {
+        <div class="text-center p-4">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (loadError != null)
+    {
+        <div class="alert alert-danger">@loadError</div>
+    }
+    else if (threads != null && threads.Count > 0)
+    {
+        <div class="inbox-list">
+            @foreach (var thread in threads)
+            {
+                <a href="/contribution/@thread.EncodedContributionId/messages" class="inbox-thread @(thread.UnreadCount > 0 ? "unread" : "")">
+                    <div class="inbox-thread-left">
+                        <div class="inbox-thread-title">
+                            @thread.ContributionTitle
+                            @if (thread.UnreadCount > 0)
+                            {
+                                <span class="inbox-unread-badge">@thread.UnreadCount</span>
+                            }
+                        </div>
+                        <div class="inbox-thread-preview">@thread.LastMessagePreview</div>
+                    </div>
+                    <div class="inbox-thread-meta">
+                        <span class="inbox-thread-time">@FormatTime(thread.LastMessageAt)</span>
+                        <span class="inbox-thread-count text-muted">@thread.TotalCount msg@(thread.TotalCount != 1 ? "s" : "")</span>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+    else
+    {
+        <section class="info-card">
+            <div class="text-center text-muted py-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="mb-3 opacity-25" viewBox="0 0 16 16">
+                    <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
+                </svg>
+                <p class="mb-0">No messages yet. Messages from admins about your contributions will appear here.</p>
+            </div>
+        </section>
+    }
 </div>

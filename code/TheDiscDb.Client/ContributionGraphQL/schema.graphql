@@ -100,6 +100,16 @@ type ContributionNotFoundError implements Error {
   message: String!
 }
 
+type MessageThread {
+  contributionId: Int!
+  encodedContributionId: String!
+  contributionTitle: String!
+  lastMessagePreview: String!
+  lastMessageAt: DateTime!
+  unreadCount: Int!
+  totalCount: Int!
+}
+
 type ContributionQuery {
   contributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput @cost(weight: "10") order: [UserContributionSortInput!] @cost(weight: "10")): ContributionsConnection @authorize(policy: "Admin") @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
   myContributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput @cost(weight: "10") order: [UserContributionSortInput!] @cost(weight: "10")): MyContributionsConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
@@ -107,6 +117,7 @@ type ContributionQuery {
   contributionChat(contributionId: String! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [UserMessageSortInput!] @cost(weight: "10")): ContributionChatConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
   hasUnreadMessages: Boolean! @authorize @cost(weight: "10")
   myMessages("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [UserMessageSortInput!] @cost(weight: "10")): MyMessagesConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
+  messageThreads: [MessageThread!]! @authorize @cost(weight: "10")
 }
 
 "A connection to a list of items."

@@ -6,6 +6,17 @@ using HotChocolate.Authorization;
 
 namespace TheDiscDb.GraphQL.Contribute;
 
+public class MessageThread
+{
+    public int ContributionId { get; set; }
+    public string EncodedContributionId { get; set; } = string.Empty;
+    public string ContributionTitle { get; set; } = string.Empty;
+    public string LastMessagePreview { get; set; } = string.Empty;
+    public DateTimeOffset LastMessageAt { get; set; }
+    public int UnreadCount { get; set; }
+    public int TotalCount { get; set; }
+}
+
 public class ContributionQuery(IdEncoder idEncoder)
 {
     const int MaxPageSize = 100;
@@ -92,5 +103,57 @@ public class ContributionQuery(IdEncoder idEncoder)
         return context.UserMessages
             .Where(m => m.ToUserId == userId || m.FromUserId == userId)
             .OrderByDescending(m => m.CreatedAt);
+    }
+
+    [Authorize]
+    public async Task<List<MessageThread>> GetMessageThreads(SqlServerDataContext context, ClaimsPrincipal user)
+    {
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+            return [];
+
+        // Aggregate in SQL — avoids loading full message bodies into memory
+        var threadData = await context.UserMessages
+            .Where(m => m.ToUserId == userId || m.FromUserId == userId)
+            .GroupBy(m => m.ContributionId)
+            .Select(g => new
+            {
+                ContributionId = g.Key,
+                LastMessageAt = g.Max(m => m.CreatedAt),
+                UnreadCount = g.Count(m => m.ToUserId == userId && !m.IsRead),
+                TotalCount = g.Count(),
+                LastMessageText = g.OrderByDescending(m => m.CreatedAt).Select(m => m.Message).First()
+            })
+            .OrderByDescending(t => t.LastMessageAt)
+            .ToListAsync();
+
+        if (threadData.Count == 0)
+            return [];
+
+        var contributionIds = threadData.Select(t => t.ContributionId).ToList();
+        var contributions = await context.UserContributions
+            .Where(c => contributionIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.ReleaseTitle })
+            .ToDictionaryAsync(c => c.Id, c => c.ReleaseTitle);
+
+        return threadData
+            .Select(t =>
+            {
+                var preview = t.LastMessageText.Length > 100
+                    ? t.LastMessageText[..100] + "…"
+                    : t.LastMessageText;
+
+                return new MessageThread
+                {
+                    ContributionId = t.ContributionId,
+                    EncodedContributionId = idEncoder.Encode(t.ContributionId),
+                    ContributionTitle = contributions.GetValueOrDefault(t.ContributionId, "Deleted Contribution"),
+                    LastMessagePreview = preview,
+                    LastMessageAt = t.LastMessageAt,
+                    UnreadCount = t.UnreadCount,
+                    TotalCount = t.TotalCount
+                };
+            })
+            .ToList();
     }
 }

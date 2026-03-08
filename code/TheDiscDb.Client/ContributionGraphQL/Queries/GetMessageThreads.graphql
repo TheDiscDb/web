@@ -1,0 +1,11 @@
+query GetMessageThreads {
+  messageThreads {
+    contributionId
+    encodedContributionId
+    contributionTitle
+    lastMessagePreview
+    lastMessageAt
+    unreadCount
+    totalCount
+  }
+}
