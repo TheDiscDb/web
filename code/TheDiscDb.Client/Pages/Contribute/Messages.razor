@@ -31,6 +31,10 @@
                 <a href="/contribution/@thread.EncodedContributionId/messages" class="inbox-thread @(thread.UnreadCount > 0 ? "unread" : "")">
                     <div class="inbox-thread-left">
                         <div class="inbox-thread-title">
+                            @if (!string.IsNullOrEmpty(thread.MediaTitle))
+                            {
+                                <span>@thread.MediaTitle — </span>
+                            }
                             @thread.ContributionTitle
                             @if (thread.UnreadCount > 0)
                             {

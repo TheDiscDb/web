@@ -11,6 +11,7 @@ public class MessageThread
     public int ContributionId { get; set; }
     public string EncodedContributionId { get; set; } = string.Empty;
     public string ContributionTitle { get; set; } = string.Empty;
+    public string? MediaTitle { get; set; }
     public string LastMessagePreview { get; set; } = string.Empty;
     public DateTimeOffset LastMessageAt { get; set; }
     public int UnreadCount { get; set; }
@@ -133,8 +134,8 @@ public class ContributionQuery(IdEncoder idEncoder)
         var contributionIds = threadData.Select(t => t.ContributionId).ToList();
         var contributions = await context.UserContributions
             .Where(c => contributionIds.Contains(c.Id))
-            .Select(c => new { c.Id, c.ReleaseTitle })
-            .ToDictionaryAsync(c => c.Id, c => c.ReleaseTitle);
+            .Select(c => new { c.Id, c.ReleaseTitle, c.Title })
+            .ToDictionaryAsync(c => c.Id, c => new { c.ReleaseTitle, c.Title });
 
         return threadData
             .Select(t =>
@@ -143,11 +144,13 @@ public class ContributionQuery(IdEncoder idEncoder)
                     ? t.LastMessageText[..100] + "…"
                     : t.LastMessageText;
 
+                var contrib = contributions.GetValueOrDefault(t.ContributionId);
                 return new MessageThread
                 {
                     ContributionId = t.ContributionId,
                     EncodedContributionId = idEncoder.Encode(t.ContributionId),
-                    ContributionTitle = contributions.GetValueOrDefault(t.ContributionId, "Deleted Contribution"),
+                    ContributionTitle = contrib?.ReleaseTitle ?? "Deleted Contribution",
+                    MediaTitle = contrib?.Title,
                     LastMessagePreview = preview,
                     LastMessageAt = t.LastMessageAt,
                     UnreadCount = t.UnreadCount,

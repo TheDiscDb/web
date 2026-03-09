@@ -104,6 +104,7 @@ type MessageThread {
   contributionId: Int!
   encodedContributionId: String!
   contributionTitle: String!
+  mediaTitle: String
   lastMessagePreview: String!
   lastMessageAt: DateTime!
   unreadCount: Int!
