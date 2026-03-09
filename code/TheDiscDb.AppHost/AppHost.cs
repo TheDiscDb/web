@@ -34,6 +34,7 @@ var migrations = builder.AddProject<Projects.TheDiscDb_DatabaseMigration>("migra
     .WaitFor(db);
 
 var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
+    .WithEndpoint("https", e => { e.Port = 7443; e.IsProxied = false; })
     .WithExternalHttpEndpoints()
     .WithReference(db)
     .WithReference(blobs)
