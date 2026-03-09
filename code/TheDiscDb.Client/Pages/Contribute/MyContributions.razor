@@ -8,46 +8,55 @@
     GetRootContributionLink()
 ]" />
 
-<h1>My Contributions</h1>
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <h1>My Contributions</h1>
+        <p>Track and manage your disc contributions to TheDiscDb.</p>
+    </section>
 
-<div class="mb-3" style="max-width: 300px;">
-    <label class="form-label">Filter by Status</label>
-    <select class="form-select" value="@StatusFilter" @onchange="OnStatusFilterChanged">
-        <option value="">All</option>
-        @foreach (var status in Enum.GetValues<UserContributionStatus>())
+    <section class="info-card">
+        <div class="d-flex align-items-end gap-3 mb-3 flex-wrap">
+            <div style="max-width: 280px; flex: 1;">
+                <label class="form-label mb-1">Filter by Status</label>
+                <select class="form-select" value="@StatusFilter" @onchange="OnStatusFilterChanged">
+                    <option value="">All</option>
+                    @foreach (var status in Enum.GetValues<UserContributionStatus>())
+                    {
+                        <option value="@status">@status</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <QuickGrid Items="Contributions" Class="striped-grid" ItemKey="@(c => c.EncodedId)">
+            <TemplateColumn Title="Name">
+                <a href="/contribution/@context.EncodedId">@context.ReleaseTitle</a>
+            </TemplateColumn>
+            <PropertyColumn Property="@(c => c.Title)" />
+            <PropertyColumn Property="@(c => c.MediaType)" />
+            <PropertyColumn Property="@(c => c.Status)" />
+            <TemplateColumn Title="">
+                @if (CanDelete(context))
+                {
+                    <SfButton IconCss="e-icons e-circle-remove" OnClick="() => ConfirmDelete(context)" title="Delete contribution" />
+                }
+            </TemplateColumn>
+        </QuickGrid>
+
+        @if (TotalPages > 1)
         {
-            <option value="@status">@status</option>
+            <nav class="mt-3 d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(!HasPreviousPage)" @onclick="GoToPreviousPage" title="Previous page">
+                    &lsaquo;
+                </button>
+                <span>Page @CurrentPage of @TotalPages</span>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(!HasNextPage)" @onclick="GoToNextPage" title="Next page">
+                    &rsaquo;
+                </button>
+            </nav>
         }
-    </select>
+    </section>
 </div>
-
-<QuickGrid Items="Contributions" Class="striped-grid" ItemKey="@(c => c.EncodedId)">
-    <TemplateColumn Title="Name">
-        <a href="/contribution/@context.EncodedId">@context.ReleaseTitle</a>
-    </TemplateColumn>
-    <PropertyColumn Property="@(c => c.Title)" />
-    <PropertyColumn Property="@(c => c.MediaType)" />
-    <PropertyColumn Property="@(c => c.Status)" />
-    <TemplateColumn Title="">
-        @if (CanDelete(context))
-        {
-            <SfButton IconCss="e-icons e-circle-remove" OnClick="() => ConfirmDelete(context)" title="Delete contribution" />
-        }
-    </TemplateColumn>
-</QuickGrid>
-
-@if (TotalPages > 1)
-{
-    <nav class="mt-3 d-flex align-items-center gap-2">
-        <button class="btn btn-sm btn-outline-secondary" disabled="@(!HasPreviousPage)" @onclick="GoToPreviousPage" title="Previous page">
-            &lsaquo;
-        </button>
-        <span>Page @CurrentPage of @TotalPages</span>
-        <button class="btn btn-sm btn-outline-secondary" disabled="@(!HasNextPage)" @onclick="GoToNextPage" title="Next page">
-            &rsaquo;
-        </button>
-    </nav>
-}
 
 <SfDialog @bind-Visible="@showDeleteDialog" Width="400px" IsModal="true" ShowCloseIcon="true" Header="Delete Contribution">
     <ChildContent>
