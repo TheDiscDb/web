@@ -1060,3 +1060,253 @@ pre code {
 .inbox-thread-count {
     font-size: 0.6875rem;
 }
+
+/* ── Login Page ─────────────────────────────────────────────── */
+
+.login-page {
+    position: relative;
+    min-height: calc(100dvh - 70px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #000810 0%, #001529 35%, #00213F 65%, #000d1a 100%);
+    overflow: hidden;
+    padding: 2rem;
+    margin: 0 -12px;
+    font-family: 'DM Sans', sans-serif;
+}
+
+@media (min-width: 768px) {
+    .login-page {
+        min-height: calc(100dvh - 100px);
+        margin: 0 -20px;
+    }
+}
+
+.login-scene {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.login-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.035);
+    top: 50%;
+    left: 50%;
+}
+
+.login-ring--1 {
+    width: 650px;
+    height: 650px;
+    transform: translate(-50%, -50%);
+    animation: login-orbit 80s linear infinite;
+}
+
+.login-ring--2 {
+    width: 440px;
+    height: 440px;
+    border-color: rgba(255, 255, 255, 0.025);
+    transform: translate(-50%, -50%);
+    animation: login-orbit 55s linear infinite reverse;
+}
+
+.login-ring--3 {
+    width: 260px;
+    height: 260px;
+    border-color: rgba(255, 255, 255, 0.018);
+    transform: translate(-50%, -50%);
+    animation: login-orbit 35s linear infinite;
+}
+
+.login-glow {
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(91, 161, 255, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+@keyframes login-orbit {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* Login card */
+
+.login-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    padding: 3rem 2.5rem;
+    background: rgba(255, 255, 255, 0.035);
+    backdrop-filter: blur(32px);
+    -webkit-backdrop-filter: blur(32px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    animation: login-card-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes login-card-up {
+    from {
+        opacity: 0;
+        transform: translateY(28px) scale(0.97);
+    }
+}
+
+.login-card__disc-icon {
+    margin-bottom: 1.75rem;
+    opacity: 0;
+    animation: login-reveal 0.7s 0.25s ease forwards;
+}
+
+@keyframes login-reveal {
+    to {
+        opacity: 1;
+    }
+}
+
+.login-card__title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.65rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.35;
+    margin: 0 0 0.75rem;
+    letter-spacing: -0.01em;
+    opacity: 0;
+    animation: login-reveal 0.7s 0.35s ease forwards;
+}
+
+.login-card__title span {
+    display: block;
+    color: #fff;
+    font-weight: 600;
+    font-size: 2.1rem;
+    letter-spacing: -0.02em;
+}
+
+.login-card__subtitle {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.38);
+    line-height: 1.7;
+    margin: 0 0 2.25rem;
+    letter-spacing: 0.01em;
+    opacity: 0;
+    animation: login-reveal 0.7s 0.45s ease forwards;
+}
+
+/* Provider buttons */
+
+.login-card__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 2.25rem;
+    opacity: 0;
+    animation: login-reveal 0.7s 0.55s ease forwards;
+}
+
+.login-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    width: 100%;
+    padding: 0.9375rem 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.88);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: 0.005em;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: left;
+}
+
+.login-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.login-btn:active {
+    transform: translateY(0);
+    transition-duration: 0.1s;
+}
+
+.login-btn__icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.login-btn__label {
+    flex: 1;
+}
+
+.login-btn--github:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.login-btn--google:hover {
+    border-color: rgba(66, 133, 244, 0.35);
+    background: rgba(66, 133, 244, 0.08);
+}
+
+.login-btn--microsoft:hover {
+    border-color: rgba(0, 120, 212, 0.35);
+    background: rgba(0, 120, 212, 0.08);
+}
+
+.login-card__footer {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.22);
+    margin: 0;
+    letter-spacing: 0.02em;
+    line-height: 1.6;
+    opacity: 0;
+    animation: login-reveal 0.7s 0.65s ease forwards;
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        padding: 2.25rem 1.5rem;
+        border-radius: 20px;
+    }
+
+    .login-card__title {
+        font-size: 1.4rem;
+    }
+
+    .login-card__title span {
+        font-size: 1.75rem;
+    }
+
+    .login-ring--1 {
+        width: 420px;
+        height: 420px;
+    }
+
+    .login-ring--2 {
+        width: 290px;
+        height: 290px;
+    }
+
+    .login-ring--3 {
+        width: 170px;
+        height: 170px;
+    }
+}
