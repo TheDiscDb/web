@@ -38,7 +38,7 @@
                     {
                         <SfDropDownButton CssClass="e-flat user-menu-btn">
                             <ContentTemplate>
-                                <div class="user-avatar-wrapper">
+                                <div class="user-avatar-wrapper" title="@(hasUnreadMessages ? "You have unread messages" : "")">
                                     <div class="e-avatar e-avatar-circle image">@this.ShortName</div>
                                     @if (hasUnreadMessages)
                                     {

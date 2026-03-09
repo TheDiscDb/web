@@ -874,11 +874,12 @@ pre code {
     position: absolute;
     top: -2px;
     right: -2px;
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
     background-color: #dc3545;
     border-radius: 50%;
-    border: 2px solid var(--bs-primary);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 
 .about-page .info-grid {
