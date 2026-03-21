@@ -1,8 +1,4 @@
-using System.Security.Cryptography;
 using HotChocolate.Authorization;
-using Microsoft.EntityFrameworkCore;
-using TheDiscDb.GraphQL.Contribute.Exceptions;
-using TheDiscDb.Web.Authentication;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.GraphQL.Contribute.Mutations;
@@ -22,32 +18,13 @@ public partial class ContributionMutations
             throw new ArgumentException("API key name is required.", nameof(name));
         }
 
-        var keyBytes = RandomNumberGenerator.GetBytes(32);
-        var plainTextKey = Convert.ToBase64String(keyBytes)
-            .Replace("+", "-")
-            .Replace("/", "_")
-            .TrimEnd('=');
-
-        var keyHash = ApiKeyAuthenticationHandler.HashKey(plainTextKey);
-        var keyPrefix = plainTextKey[..8];
-
-        var rolesValue = roles is { Length: > 0 } ? string.Join(",", roles) : null;
-
-        var apiKey = new ApiKey
-        {
-            Name = name,
-            KeyHash = keyHash,
-            KeyPrefix = keyPrefix,
-            IsActive = true,
-            Roles = rolesValue,
-            CreatedAt = DateTimeOffset.UtcNow,
-            ExpiresAt = expiresAt
-        };
+        string plainTextKey = ApiKey.GeneratePlainTextKey();
+        var apiKey = ApiKey.Create(plainTextKey, name, roles, expiresAt);
 
         database.ApiKeys.Add(apiKey);
         await database.SaveChangesAsync(cancellationToken);
 
-        return new GenerateApiKeyPayload(apiKey.Id, plainTextKey, keyPrefix, name);
+        return new GenerateApiKeyPayload(apiKey.Id, plainTextKey, apiKey.KeyPrefix, name);
     }
 }
 

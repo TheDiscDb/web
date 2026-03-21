@@ -99,7 +99,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     private async Task<ApiKey?> TryLookupApiKey(string apiKey)
     {
-        var keyHash = HashKey(apiKey);
+        var keyHash = ApiKeyHasher.HashKey(apiKey);
         var cacheKey = $"apikey:{keyHash}";
 
         if (cache.TryGetValue(cacheKey, out ApiKey? cached))
@@ -145,6 +145,4 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             Logger.LogWarning(ex, "Failed to update LastUsedAt for API key {KeyId}", keyId);
         }
     }
-
-    public static string HashKey(string apiKey) => ApiKeyHasher.HashKey(apiKey);
 }

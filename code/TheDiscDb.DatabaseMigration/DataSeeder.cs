@@ -119,19 +119,10 @@ public class DataSeeder
             return;
         }
 
-        var keyPrefix = adminApiKey.Length >= 8 ? adminApiKey[..8] : adminApiKey;
+        var apiKey = ApiKey.Create(adminApiKey, "Seeded Admin Key", [DefaultRoles.Administrator]);
 
-        dbContext.ApiKeys.Add(new ApiKey
-        {
-            Name = "Seeded Admin Key",
-            KeyHash = keyHash,
-            KeyPrefix = keyPrefix,
-            IsActive = true,
-            Roles = DefaultRoles.Administrator,
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-
+        dbContext.ApiKeys.Add(apiKey);
         await dbContext.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Seeded admin API key (prefix: {KeyPrefix})", keyPrefix);
+        logger.LogInformation("Seeded admin API key (prefix: {KeyPrefix})", apiKey.KeyPrefix);
     }
 }

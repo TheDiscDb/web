@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Azure.Provisioning.AppService;
 
 var builder = DistributedApplication.CreateBuilder(args);
@@ -14,6 +15,7 @@ builder.AddAzureAppServiceEnvironment("prod").ConfigureInfrastructure(infra =>
     };
 });
 
+var adminApiKey = ResolveAdminApiKey(builder);
 
 var sql = builder.AddAzureSqlServer("sql")
     .RunAsContainer(o => o.WithLifetime(ContainerLifetime.Persistent));
@@ -26,8 +28,6 @@ var blobs = builder.AddAzureStorage("storage").RunAsEmulator(
                          azurite.WithLifetime(ContainerLifetime.Persistent);
                      })
     .AddBlobs("blobs");
-
-var adminApiKey = builder.Configuration["GraphQL:ApiKeyAuthentication:AdminApiKey"] ?? string.Empty;
 
 var migrations = builder.AddProject<Projects.TheDiscDb_DatabaseMigration>("migrations")
     .WithReference(db)
@@ -47,3 +47,31 @@ var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
     .WithEnvironment("GraphQL__ApiKeyAuthentication__ApiKey", adminApiKey);
 
 builder.Build().Run();
+
+static string ResolveAdminApiKey(IDistributedApplicationBuilder builder)
+{
+    var configured = builder.Configuration["GraphQL:ApiKeyAuthentication:AdminApiKey"];
+    if (!string.IsNullOrEmpty(configured))
+    {
+        return configured;
+    }
+
+    var keyFilePath = Path.Combine(builder.AppHostDirectory, ".admin-apikey");
+    if (File.Exists(keyFilePath))
+    {
+        var existing = File.ReadAllText(keyFilePath).Trim();
+        if (!string.IsNullOrEmpty(existing))
+        {
+            return existing;
+        }
+    }
+
+    var keyBytes = RandomNumberGenerator.GetBytes(32);
+    var newKey = Convert.ToBase64String(keyBytes)
+        .Replace("+", "-")
+        .Replace("/", "_")
+        .TrimEnd('=');
+
+    File.WriteAllText(keyFilePath, newKey);
+    return newKey;
+}
