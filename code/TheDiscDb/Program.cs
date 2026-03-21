@@ -314,6 +314,7 @@ else
 app.UseHttpsRedirection();
 app.UseSitemap();
 
+app.UseMiddleware<WasmConfigMiddleware>();
 app.MapStaticAssets();
 app.UseImageSharp();
 app.UseMiddleware<RssFeedMidleware>();

@@ -101,28 +101,41 @@ public class DataSeeder
 
     public async Task SeedApiKeys(CancellationToken cancellationToken)
     {
-        var adminApiKey = configuration.GetSection("GraphQL:ApiKeyAuthentication")
-            .GetValue<string>("AdminApiKey");
+        var apiKeySection = configuration.GetSection("GraphQL:ApiKeyAuthentication");
 
-        if (string.IsNullOrEmpty(adminApiKey))
+        await SeedApiKey(
+            apiKeySection.GetValue<string>("AdminApiKey"),
+            "Seeded Admin Key",
+            [DefaultRoles.Administrator],
+            cancellationToken);
+
+        await SeedApiKey(
+            apiKeySection.GetValue<string>("PublicApiKey"),
+            "Public Read-Only Key",
+            null,
+            cancellationToken);
+    }
+
+    private async Task SeedApiKey(string? plainTextKey, string name, string[]? roles, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(plainTextKey))
         {
-            logger.LogInformation("No AdminApiKey configured — skipping API key seeding");
+            logger.LogInformation("No key configured for '{Name}' — skipping", name);
             return;
         }
 
-        var keyHash = ApiKey.HashKey(adminApiKey);
+        var keyHash = ApiKey.HashKey(plainTextKey);
         var exists = await dbContext.ApiKeys.AnyAsync(k => k.KeyHash == keyHash, cancellationToken);
 
         if (exists)
         {
-            logger.LogInformation("Admin API key already exists — skipping");
+            logger.LogInformation("API key '{Name}' already exists — skipping", name);
             return;
         }
 
-        var apiKey = ApiKey.Create(adminApiKey, "Seeded Admin Key", [DefaultRoles.Administrator]);
-
+        var apiKey = ApiKey.Create(plainTextKey, name, roles);
         dbContext.ApiKeys.Add(apiKey);
         await dbContext.SaveChangesAsync(cancellationToken);
-        logger.LogInformation("Seeded admin API key (prefix: {KeyPrefix})", apiKey.KeyPrefix);
+        logger.LogInformation("Seeded API key '{Name}' (prefix: {KeyPrefix})", name, apiKey.KeyPrefix);
     }
 }

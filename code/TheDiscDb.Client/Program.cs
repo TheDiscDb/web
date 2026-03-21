@@ -23,13 +23,26 @@ builder.Services.AddSingleton<IFileSystemCache, NullFileSystemCache>();
 builder.Services.AddScoped<Fantastic.TheMovieDb.TheMovieDbClient>();
 builder.Services.AddScoped<ExternalSearchDataAdaptor>();
 
+var publicApiKey = builder.Configuration.GetValue<string>("GraphQL:ApiKeyAuthentication:PublicApiKey") ?? string.Empty;
+
 builder.Services
     .AddTheDiscDbClient()
-    .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{builder.HostEnvironment.BaseAddress}graphql"));
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri($"{builder.HostEnvironment.BaseAddress}graphql");
+        if (!string.IsNullOrEmpty(publicApiKey))
+        {
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("ApiKey", publicApiKey);
+        }
+    });
 
 builder.Services
     .AddContributionClient()
-    .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{builder.HostEnvironment.BaseAddress}graphql/contributions"));
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri($"{builder.HostEnvironment.BaseAddress}graphql/contributions");
+    });
 
 builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
