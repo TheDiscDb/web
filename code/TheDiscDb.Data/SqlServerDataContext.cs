@@ -114,6 +114,11 @@ public class SqlServerDataContext : DbContext
         userMessage.HasIndex(x => x.ContributionId);
         userMessage.HasIndex(x => new { x.ToUserId, x.IsRead });
 
+        var apiKey = modelBuilder.Entity<ApiKey>();
+        apiKey.HasKey(x => x.Id);
+        apiKey.HasIndex(x => x.KeyHash).IsUnique();
+        apiKey.HasIndex(x => x.IsActive);
+
         BuildIdentityModel(modelBuilder);
     }
 
@@ -262,6 +267,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<ContributionHistory> ContributionHistory { get; set; } = null!;
     public DbSet<UserMessage> UserMessages { get; set; } = null!;
     public DbSet<Contributor> Contributors { get; set; } = null!;
+    public DbSet<ApiKey> ApiKeys { get; set; } = null!;
 }
 
 public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser

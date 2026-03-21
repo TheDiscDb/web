@@ -24,6 +24,7 @@ using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Web;
+using TheDiscDb.Web.Authentication;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
     
@@ -44,6 +45,16 @@ var gihubOptions = new TheDiscDb.Web.Authentication.AuthenticationOptions();
 builder.Configuration.GetSection("Authentication:GitHub").Bind(gihubOptions);
 
 var authBuilder = builder.Services.AddAuthentication();
+
+// API key authentication for /graphql
+var apiKeyConfig = builder.Configuration.GetSection(ApiKeyAuthenticationDefaults.ConfigSection);
+var apiKeyAuthEnabled = apiKeyConfig.GetValue<bool>("Enabled");
+
+authBuilder.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+    ApiKeyAuthenticationDefaults.Scheme, options =>
+    {
+        options.IsEnabled = apiKeyAuthEnabled;
+    });
 
 // Only add github auth if configured
 if (!string.IsNullOrEmpty(gihubOptions.ClientId) && !string.IsNullOrEmpty(gihubOptions.ClientSecret))
@@ -89,6 +100,9 @@ builder.Services.AddQuickGridEntityFrameworkAdapter();
 builder.Services.AddAuthorizationCore(b =>
 {
     b.AddPolicy("Admin", policy => policy.RequireRole(DefaultRoles.Administrator));
+    b.AddPolicy(ApiKeyAuthenticationDefaults.PolicyName, policy =>
+        policy.AddAuthenticationSchemes(ApiKeyAuthenticationDefaults.Scheme)
+              .RequireAuthenticatedUser());
 });
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<IPrincipalProvider, PrincipalProvider>();
@@ -146,7 +160,8 @@ builder.Services
     .AddType<EncodedIdType>()
     .AddQueryType<ContributionQuery>()
     .AddMutationConventions(applyToAllMutations: true)
-    .AddMutationType<ContributionMutations>();
+    .AddMutationType<ContributionMutations>()
+    .AddTypeExtension<ApiKeyQueryExtension>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
@@ -287,10 +302,14 @@ app.UseImageSharp();
 app.UseMiddleware<RssFeedMidleware>();
 app.UseMiddleware<LowercaseUrlMiddleware>();
 
-app.MapGraphQL();
-
 app.UseAuthentication();
 app.UseAuthorization();
+
+var graphqlEndpoint = app.MapGraphQL();
+if (apiKeyAuthEnabled)
+{
+    graphqlEndpoint.RequireAuthorization(ApiKeyAuthenticationDefaults.PolicyName);
+}
 
 app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema")
    .RequireAuthorization();
