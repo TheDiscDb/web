@@ -99,7 +99,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
     private async Task<ApiKey?> TryLookupApiKey(string apiKey)
     {
-        var keyHash = ApiKeyHasher.HashKey(apiKey);
+        var keyHash = ApiKey.HashKey(apiKey);
         var cacheKey = $"apikey:{keyHash}";
 
         if (cache.TryGetValue(cacheKey, out ApiKey? cached))

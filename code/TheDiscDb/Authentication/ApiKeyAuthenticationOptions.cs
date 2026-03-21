@@ -10,6 +10,6 @@ public class ApiKeyAuthenticationOptions : AuthenticationSchemeOptions
 public static class ApiKeyAuthenticationDefaults
 {
     public const string Scheme = "ApiKey";
-    public const string PolicyName = "ApiKeyPolicy";
+    public const string PolicyName = "GraphQLPolicy";
     public const string ConfigSection = "GraphQL:ApiKeyAuthentication";
 }

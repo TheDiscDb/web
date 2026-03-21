@@ -131,7 +131,7 @@ public class ApiKeyAuthenticationHandlerTests
     {
         var dbName = Guid.NewGuid().ToString();
         var plainKey = "test-api-key-12345678";
-        var keyHash = ApiKeyHasher.HashKey(plainKey);
+        var keyHash = ApiKey.HashKey(plainKey);
 
         using (var db = CreateDbContext(dbName))
         {
@@ -160,7 +160,7 @@ public class ApiKeyAuthenticationHandlerTests
     {
         var dbName = Guid.NewGuid().ToString();
         var plainKey = "test-api-key-inactive";
-        var keyHash = ApiKeyHasher.HashKey(plainKey);
+        var keyHash = ApiKey.HashKey(plainKey);
 
         using (var db = CreateDbContext(dbName))
         {
@@ -189,7 +189,7 @@ public class ApiKeyAuthenticationHandlerTests
     {
         var dbName = Guid.NewGuid().ToString();
         var plainKey = "test-api-key-expired1";
-        var keyHash = ApiKeyHasher.HashKey(plainKey);
+        var keyHash = ApiKey.HashKey(plainKey);
 
         using (var db = CreateDbContext(dbName))
         {
@@ -231,7 +231,7 @@ public class ApiKeyAuthenticationHandlerTests
     {
         var dbName = Guid.NewGuid().ToString();
         var plainKey = "test-api-key-for-cache";
-        var keyHash = ApiKeyHasher.HashKey(plainKey);
+        var keyHash = ApiKey.HashKey(plainKey);
 
         using (var db = CreateDbContext(dbName))
         {
@@ -265,8 +265,8 @@ public class ApiKeyAuthenticationHandlerTests
     public async Task HashKey_Is_Deterministic()
     {
         var key = "my-secret-key";
-        var hash1 = ApiKeyHasher.HashKey(key);
-        var hash2 = ApiKeyHasher.HashKey(key);
+        var hash1 = ApiKey.HashKey(key);
+        var hash2 = ApiKey.HashKey(key);
 
         await Assert.That(hash1).IsEqualTo(hash2);
     }
@@ -274,8 +274,8 @@ public class ApiKeyAuthenticationHandlerTests
     [Test]
     public async Task HashKey_Different_Keys_Produce_Different_Hashes()
     {
-        var hash1 = ApiKeyHasher.HashKey("key-one");
-        var hash2 = ApiKeyHasher.HashKey("key-two");
+        var hash1 = ApiKey.HashKey("key-one");
+        var hash2 = ApiKey.HashKey("key-two");
 
         await Assert.That(hash1).IsNotEqualTo(hash2);
     }
@@ -299,7 +299,7 @@ public class ApiKeyAuthenticationHandlerTests
     {
         var dbName = Guid.NewGuid().ToString();
         var plainKey = "test-api-key-with-roles";
-        var keyHash = ApiKeyHasher.HashKey(plainKey);
+        var keyHash = ApiKey.HashKey(plainKey);
 
         using (var db = CreateDbContext(dbName))
         {
@@ -330,7 +330,7 @@ public class ApiKeyAuthenticationHandlerTests
     {
         var dbName = Guid.NewGuid().ToString();
         var plainKey = "test-api-key-no-roles";
-        var keyHash = ApiKeyHasher.HashKey(plainKey);
+        var keyHash = ApiKey.HashKey(plainKey);
 
         using (var db = CreateDbContext(dbName))
         {

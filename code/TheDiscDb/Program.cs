@@ -102,9 +102,6 @@ builder.Services.AddAuthorizationCore(b =>
 {
     b.AddPolicy("Admin", policy => policy.RequireRole(DefaultRoles.Administrator));
     b.AddPolicy(ApiKeyAuthenticationDefaults.PolicyName, policy =>
-        policy.AddAuthenticationSchemes(ApiKeyAuthenticationDefaults.Scheme)
-              .RequireAuthenticatedUser());
-    b.AddPolicy("ContributionsPolicy", policy =>
         policy.AddAuthenticationSchemes(ApiKeyAuthenticationDefaults.Scheme, IdentityConstants.ApplicationScheme)
               .RequireAuthenticatedUser());
 });
@@ -332,7 +329,7 @@ if (apiKeyAuthEnabled)
 }
 
 app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema")
-   .RequireAuthorization("ContributionsPolicy");
+   .RequireAuthorization(ApiKeyAuthenticationDefaults.PolicyName);
 
 app.MapControllers();
 app.UseAntiforgery();

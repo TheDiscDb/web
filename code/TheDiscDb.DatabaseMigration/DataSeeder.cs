@@ -110,7 +110,7 @@ public class DataSeeder
             return;
         }
 
-        var keyHash = ApiKeyHasher.HashKey(adminApiKey);
+        var keyHash = ApiKey.HashKey(adminApiKey);
         var exists = await dbContext.ApiKeys.AnyAsync(k => k.KeyHash == keyHash, cancellationToken);
 
         if (exists)

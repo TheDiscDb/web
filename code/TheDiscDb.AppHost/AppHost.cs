@@ -66,6 +66,7 @@ static string ResolveAdminApiKey(IDistributedApplicationBuilder builder)
         }
     }
 
+    // TODO: centralize key generation so we don't keep copying this code
     var keyBytes = RandomNumberGenerator.GetBytes(32);
     var newKey = Convert.ToBase64String(keyBytes)
         .Replace("+", "-")

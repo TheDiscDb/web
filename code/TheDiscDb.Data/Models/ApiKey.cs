@@ -1,5 +1,6 @@
 using System;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace TheDiscDb.Web.Data;
 
@@ -17,7 +18,7 @@ public class ApiKey
 
     public static ApiKey Create(string plainTextKey, string name, string[]? roles = null, DateTimeOffset? expiresAt = null)
     {
-        var keyHash = ApiKeyHasher.HashKey(plainTextKey);
+        var keyHash = HashKey(plainTextKey);
         var keyPrefix = plainTextKey.Length >= 8 ? plainTextKey[..8] : plainTextKey;
         var rolesValue = roles is { Length: > 0 } ? string.Join(",", roles) : null;
 
@@ -40,5 +41,11 @@ public class ApiKey
             .Replace("+", "-")
             .Replace("/", "_")
             .TrimEnd('=');
+    }
+
+    public static string HashKey(string apiKey)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(apiKey));
+        return Convert.ToBase64String(bytes);
     }
 }
