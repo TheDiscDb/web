@@ -1,5 +1,6 @@
 using Fantastic.FileSystem;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Web.Data;
@@ -13,15 +14,19 @@ public class DataSeeder
     private readonly IOptions<DatabaseMigrationOptions> options;
     private readonly RoleManager<IdentityRole> roleManager;
     private readonly UserManager<TheDiscDbUser> userManager;
+    private readonly SqlServerDataContext dbContext;
+    private readonly IConfiguration configuration;
     private readonly ILogger<DataSeeder> logger;
 
-    public DataSeeder(DataImporter dataImporter, IFileSystem fileSystem, IOptions<DatabaseMigrationOptions> options, RoleManager<IdentityRole> roleManager, UserManager<TheDiscDbUser> userManager, ILogger<DataSeeder> logger)
+    public DataSeeder(DataImporter dataImporter, IFileSystem fileSystem, IOptions<DatabaseMigrationOptions> options, RoleManager<IdentityRole> roleManager, UserManager<TheDiscDbUser> userManager, SqlServerDataContext dbContext, IConfiguration configuration, ILogger<DataSeeder> logger)
     {
         this.dataImporter = dataImporter ?? throw new ArgumentNullException(nameof(dataImporter));
         this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
         this.options = options ?? throw new ArgumentNullException(nameof(options));
         this.roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
         this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+        this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -92,5 +97,41 @@ public class DataSeeder
         //     await userManager.CreateAsync(regularUser);
         //     await userManager.AddToRoleAsync(regularUser, DefaultRoles.Contributor);
         // }
+    }
+
+    public async Task SeedApiKeys(CancellationToken cancellationToken)
+    {
+        var adminApiKey = configuration.GetSection("GraphQL:ApiKeyAuthentication")
+            .GetValue<string>("AdminApiKey");
+
+        if (string.IsNullOrEmpty(adminApiKey))
+        {
+            logger.LogInformation("No AdminApiKey configured — skipping API key seeding");
+            return;
+        }
+
+        var keyHash = ApiKeyHasher.HashKey(adminApiKey);
+        var exists = await dbContext.ApiKeys.AnyAsync(k => k.KeyHash == keyHash, cancellationToken);
+
+        if (exists)
+        {
+            logger.LogInformation("Admin API key already exists — skipping");
+            return;
+        }
+
+        var keyPrefix = adminApiKey.Length >= 8 ? adminApiKey[..8] : adminApiKey;
+
+        dbContext.ApiKeys.Add(new ApiKey
+        {
+            Name = "Seeded Admin Key",
+            KeyHash = keyHash,
+            KeyPrefix = keyPrefix,
+            IsActive = true,
+            Roles = DefaultRoles.Administrator,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded admin API key (prefix: {KeyPrefix})", keyPrefix);
     }
 }

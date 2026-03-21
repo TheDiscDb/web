@@ -12,6 +12,7 @@ public partial class ContributionMutations
     [Authorize("Admin")]
     public async Task<GenerateApiKeyPayload> GenerateApiKey(
         string name,
+        string[]? roles,
         DateTimeOffset? expiresAt,
         SqlServerDataContext database,
         CancellationToken cancellationToken)
@@ -30,12 +31,15 @@ public partial class ContributionMutations
         var keyHash = ApiKeyAuthenticationHandler.HashKey(plainTextKey);
         var keyPrefix = plainTextKey[..8];
 
+        var rolesValue = roles is { Length: > 0 } ? string.Join(",", roles) : null;
+
         var apiKey = new ApiKey
         {
             Name = name,
             KeyHash = keyHash,
             KeyPrefix = keyPrefix,
             IsActive = true,
+            Roles = rolesValue,
             CreatedAt = DateTimeOffset.UtcNow,
             ExpiresAt = expiresAt
         };

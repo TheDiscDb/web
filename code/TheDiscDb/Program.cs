@@ -49,6 +49,7 @@ var authBuilder = builder.Services.AddAuthentication();
 // API key authentication for /graphql
 var apiKeyConfig = builder.Configuration.GetSection(ApiKeyAuthenticationDefaults.ConfigSection);
 var apiKeyAuthEnabled = apiKeyConfig.GetValue<bool>("Enabled");
+string apiKey = apiKeyConfig.GetValue<string>("ApiKey") ?? string.Empty;
 
 authBuilder.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
     ApiKeyAuthenticationDefaults.Scheme, options =>
@@ -102,6 +103,9 @@ builder.Services.AddAuthorizationCore(b =>
     b.AddPolicy("Admin", policy => policy.RequireRole(DefaultRoles.Administrator));
     b.AddPolicy(ApiKeyAuthenticationDefaults.PolicyName, policy =>
         policy.AddAuthenticationSchemes(ApiKeyAuthenticationDefaults.Scheme)
+              .RequireAuthenticatedUser());
+    b.AddPolicy("ContributionsPolicy", policy =>
+        policy.AddAuthenticationSchemes(ApiKeyAuthenticationDefaults.Scheme, IdentityConstants.ApplicationScheme)
               .RequireAuthenticatedUser());
 });
 builder.Services.AddCascadingAuthenticationState();
@@ -177,11 +181,27 @@ var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));
 
 builder.Services
     .AddTheDiscDbClient()
-    .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{serviceUrl}/graphql"));
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri($"{serviceUrl}/graphql");
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(ApiKeyAuthenticationDefaults.Scheme, apiKey);
+        }
+    });
 
 builder.Services
     .AddContributionClient()
-    .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{serviceUrl}/graphql/contributions"));
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri($"{serviceUrl}/graphql/contributions");
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(ApiKeyAuthenticationDefaults.Scheme, apiKey);
+        }
+    });
 
 builder.AddAzureBlobServiceClient("blobs");
 var blobConnectionString = builder.Configuration.GetConnectionString("blobs") ?? throw new Exception("Blob connection string not configured");
@@ -312,7 +332,7 @@ if (apiKeyAuthEnabled)
 }
 
 app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema")
-   .RequireAuthorization();
+   .RequireAuthorization("ContributionsPolicy");
 
 app.MapControllers();
 app.UseAntiforgery();

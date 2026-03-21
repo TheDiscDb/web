@@ -114,10 +114,11 @@ public class SqlServerDataContext : DbContext
         userMessage.HasIndex(x => x.ContributionId);
         userMessage.HasIndex(x => new { x.ToUserId, x.IsRead });
 
-        var apiKey = modelBuilder.Entity<ApiKey>();
-        apiKey.HasKey(x => x.Id);
-        apiKey.HasIndex(x => x.KeyHash).IsUnique();
-        apiKey.HasIndex(x => x.IsActive);
+        var apiKeyEntity = modelBuilder.Entity<ApiKey>();
+        apiKeyEntity.HasKey(x => x.Id);
+        apiKeyEntity.HasIndex(x => x.KeyHash).IsUnique();
+        apiKeyEntity.HasIndex(x => x.IsActive);
+        apiKeyEntity.Property(x => x.Roles).HasMaxLength(500);
 
         BuildIdentityModel(modelBuilder);
     }

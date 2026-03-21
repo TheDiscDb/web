@@ -33,6 +33,7 @@ public class Worker(
             }
 
             await dataSeeder.SeedUsers(cancellationToken);
+            await dataSeeder.SeedApiKeys(cancellationToken);
         }
         catch (Exception ex)
         {

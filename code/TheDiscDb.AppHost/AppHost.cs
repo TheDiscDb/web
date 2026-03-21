@@ -27,11 +27,14 @@ var blobs = builder.AddAzureStorage("storage").RunAsEmulator(
                      })
     .AddBlobs("blobs");
 
+var adminApiKey = builder.Configuration["GraphQL:ApiKeyAuthentication:AdminApiKey"] ?? string.Empty;
+
 var migrations = builder.AddProject<Projects.TheDiscDb_DatabaseMigration>("migrations")
     .WithReference(db)
     .WithReference(blobs)
     .WaitFor(blobs)
-    .WaitFor(db);
+    .WaitFor(db)
+    .WithEnvironment("GraphQL__ApiKeyAuthentication__AdminApiKey", adminApiKey);
 
 var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
     .WithEndpoint("https", e => { e.Port = 7443; e.IsProxied = false; })
@@ -40,6 +43,7 @@ var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
     .WithReference(blobs)
     .WithReference(migrations)
     .WaitForCompletion(migrations)
-    .WithChildRelationship(migrations);
+    .WithChildRelationship(migrations)
+    .WithEnvironment("GraphQL__ApiKeyAuthentication__ApiKey", adminApiKey);
 
 builder.Build().Run();

@@ -20,6 +20,7 @@ public class ApiKeyQueryExtension
                 Name = k.Name,
                 KeyPrefix = k.KeyPrefix,
                 IsActive = k.IsActive,
+                Roles = k.Roles,
                 CreatedAt = k.CreatedAt,
                 ExpiresAt = k.ExpiresAt,
                 LastUsedAt = k.LastUsedAt
@@ -33,6 +34,7 @@ public class ApiKeyInfo
     public string Name { get; set; } = string.Empty;
     public string KeyPrefix { get; set; } = string.Empty;
     public bool IsActive { get; set; }
+    public string? Roles { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? ExpiresAt { get; set; }
     public DateTimeOffset? LastUsedAt { get; set; }
