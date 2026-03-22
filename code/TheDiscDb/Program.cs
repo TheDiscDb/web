@@ -181,7 +181,7 @@ builder.Services
     .ConfigureHttpClient(client =>
     {
         client.BaseAddress = new Uri($"{serviceUrl}/graphql");
-        if (!string.IsNullOrEmpty(apiKey))
+        if (apiKeyAuthEnabled && !string.IsNullOrEmpty(apiKey))
         {
             client.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue(ApiKeyAuthenticationDefaults.Scheme, apiKey);
@@ -193,7 +193,7 @@ builder.Services
     .ConfigureHttpClient(client =>
     {
         client.BaseAddress = new Uri($"{serviceUrl}/graphql/contributions");
-        if (!string.IsNullOrEmpty(apiKey))
+        if (apiKeyAuthEnabled && !string.IsNullOrEmpty(apiKey))
         {
             client.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue(ApiKeyAuthenticationDefaults.Scheme, apiKey);

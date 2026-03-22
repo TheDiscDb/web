@@ -17,7 +17,8 @@ public class WasmConfigMiddleware
         this.next = next;
 
         var publicApiKey = configuration.GetValue<string>("GraphQL:ApiKeyAuthentication:PublicApiKey");
-        if (!string.IsNullOrEmpty(publicApiKey))
+        var apiKeyAuthEnabled = configuration.GetValue<bool>("GraphQL:ApiKeyAuthentication:Enabled");
+        if (apiKeyAuthEnabled && !string.IsNullOrEmpty(publicApiKey))
         {
             var fileInfo = env.WebRootFileProvider.GetFileInfo("appsettings.json");
             JsonObject json;
