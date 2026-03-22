@@ -19,6 +19,7 @@ public class ApiKeyQueryExtension
                 Name = k.Name,
                 KeyPrefix = k.KeyPrefix,
                 IsActive = k.IsActive,
+                LogUsage = k.LogUsage,
                 Roles = k.Roles,
                 OwnerEmail = k.OwnerEmail,
                 CreatedAt = k.CreatedAt,
@@ -52,6 +53,7 @@ public class ApiKeyInfo
     public string Name { get; set; } = string.Empty;
     public string KeyPrefix { get; set; } = string.Empty;
     public bool IsActive { get; set; }
+    public bool LogUsage { get; set; }
     public string? Roles { get; set; }
     public string OwnerEmail { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }

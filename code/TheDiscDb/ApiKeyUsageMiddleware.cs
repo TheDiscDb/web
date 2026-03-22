@@ -23,6 +23,12 @@ public class ApiKeyUsageMiddleware(
             return;
         }
 
+        var logUsageClaim = context.User?.FindFirst("ApiKeyLogUsage")?.Value;
+        if (!string.Equals(logUsageClaim, "True", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
         var elapsed = Stopwatch.GetElapsedTime(startTime);
         var durationMs = (int)elapsed.TotalMilliseconds;
 

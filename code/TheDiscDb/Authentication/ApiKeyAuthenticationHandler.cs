@@ -79,6 +79,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         {
             new Claim(ClaimTypes.Name, key.Name),
             new Claim("ApiKeyId", key.Id.ToString()),
+            new Claim("ApiKeyLogUsage", key.LogUsage.ToString()),
             new Claim(ClaimTypes.AuthenticationMethod, ApiKeyAuthenticationDefaults.Scheme)
         };
 

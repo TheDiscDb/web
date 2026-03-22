@@ -12,6 +12,7 @@ public class ApiKey
     public string KeyHash { get; set; } = string.Empty;
     public string KeyPrefix { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
+    public bool LogUsage { get; set; } = true;
     public string? Roles { get; set; }
     public string OwnerEmail { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
@@ -20,7 +21,7 @@ public class ApiKey
 
     public ICollection<ApiKeyUsageLog> UsageLogs { get; set; } = new List<ApiKeyUsageLog>();
 
-    public static ApiKey Create(string plainTextKey, string name, string ownerEmail, string[]? roles = null, DateTimeOffset? expiresAt = null)
+    public static ApiKey Create(string plainTextKey, string name, string ownerEmail, string[]? roles = null, DateTimeOffset? expiresAt = null, bool logUsage = true)
     {
         var keyHash = HashKey(plainTextKey);
         var keyPrefix = plainTextKey.Length >= 8 ? plainTextKey[..8] : plainTextKey;
@@ -32,6 +33,7 @@ public class ApiKey
             KeyHash = keyHash,
             KeyPrefix = keyPrefix,
             IsActive = true,
+            LogUsage = logUsage,
             Roles = rolesValue,
             OwnerEmail = ownerEmail,
             CreatedAt = DateTimeOffset.UtcNow,

@@ -33,7 +33,9 @@ public partial class ContributionMutations
             Name = apiKey.Name,
             KeyPrefix = apiKey.KeyPrefix,
             IsActive = apiKey.IsActive,
+            LogUsage = apiKey.LogUsage,
             Roles = apiKey.Roles,
+            OwnerEmail = apiKey.OwnerEmail,
             CreatedAt = apiKey.CreatedAt,
             ExpiresAt = apiKey.ExpiresAt,
             LastUsedAt = apiKey.LastUsedAt

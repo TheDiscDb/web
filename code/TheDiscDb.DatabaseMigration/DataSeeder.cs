@@ -108,6 +108,7 @@ public class DataSeeder
             "Seeded Admin Key",
             "system@thediscdb.com",
             [DefaultRoles.Administrator],
+            logUsage: false,
             cancellationToken);
 
         await SeedApiKey(
@@ -115,10 +116,11 @@ public class DataSeeder
             "Public Read-Only Key",
             "system@thediscdb.com",
             null,
+            logUsage: false,
             cancellationToken);
     }
 
-    private async Task SeedApiKey(string? plainTextKey, string name, string ownerEmail, string[]? roles, CancellationToken cancellationToken)
+    private async Task SeedApiKey(string? plainTextKey, string name, string ownerEmail, string[]? roles, bool logUsage, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(plainTextKey))
         {
@@ -127,15 +129,24 @@ public class DataSeeder
         }
 
         var keyHash = ApiKey.HashKey(plainTextKey);
-        var exists = await dbContext.ApiKeys.AnyAsync(k => k.KeyHash == keyHash, cancellationToken);
+        var existing = await dbContext.ApiKeys.FirstOrDefaultAsync(k => k.KeyHash == keyHash, cancellationToken);
 
-        if (exists)
+        if (existing != null)
         {
-            logger.LogInformation("API key '{Name}' already exists — skipping", name);
+            if (existing.LogUsage != logUsage)
+            {
+                existing.LogUsage = logUsage;
+                await dbContext.SaveChangesAsync(cancellationToken);
+                logger.LogInformation("Updated LogUsage to {LogUsage} for API key '{Name}'", logUsage, name);
+            }
+            else
+            {
+                logger.LogInformation("API key '{Name}' already exists — skipping", name);
+            }
             return;
         }
 
-        var apiKey = ApiKey.Create(plainTextKey, name, ownerEmail, roles);
+        var apiKey = ApiKey.Create(plainTextKey, name, ownerEmail, roles, logUsage: logUsage);
         dbContext.ApiKeys.Add(apiKey);
         await dbContext.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded API key '{Name}' (prefix: {KeyPrefix})", name, apiKey.KeyPrefix);
