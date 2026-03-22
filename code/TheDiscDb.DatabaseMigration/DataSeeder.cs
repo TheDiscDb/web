@@ -106,17 +106,19 @@ public class DataSeeder
         await SeedApiKey(
             apiKeySection.GetValue<string>("AdminApiKey"),
             "Seeded Admin Key",
+            "system@thediscdb.com",
             [DefaultRoles.Administrator],
             cancellationToken);
 
         await SeedApiKey(
             apiKeySection.GetValue<string>("PublicApiKey"),
             "Public Read-Only Key",
+            "system@thediscdb.com",
             null,
             cancellationToken);
     }
 
-    private async Task SeedApiKey(string? plainTextKey, string name, string[]? roles, CancellationToken cancellationToken)
+    private async Task SeedApiKey(string? plainTextKey, string name, string ownerEmail, string[]? roles, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(plainTextKey))
         {
@@ -133,7 +135,7 @@ public class DataSeeder
             return;
         }
 
-        var apiKey = ApiKey.Create(plainTextKey, name, roles);
+        var apiKey = ApiKey.Create(plainTextKey, name, ownerEmail, roles);
         dbContext.ApiKeys.Add(apiKey);
         await dbContext.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Seeded API key '{Name}' (prefix: {KeyPrefix})", name, apiKey.KeyPrefix);

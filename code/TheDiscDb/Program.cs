@@ -323,6 +323,10 @@ app.UseMiddleware<LowercaseUrlMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseWhen(
+    ctx => ctx.Request.Path.StartsWithSegments("/graphql"),
+    branch => branch.UseMiddleware<ApiKeyUsageMiddleware>());
+
 var graphqlEndpoint = app.MapGraphQL();
 if (apiKeyAuthEnabled)
 {

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -12,11 +13,14 @@ public class ApiKey
     public string KeyPrefix { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
     public string? Roles { get; set; }
+    public string OwnerEmail { get; set; } = string.Empty;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? ExpiresAt { get; set; }
     public DateTimeOffset? LastUsedAt { get; set; }
 
-    public static ApiKey Create(string plainTextKey, string name, string[]? roles = null, DateTimeOffset? expiresAt = null)
+    public ICollection<ApiKeyUsageLog> UsageLogs { get; set; } = new List<ApiKeyUsageLog>();
+
+    public static ApiKey Create(string plainTextKey, string name, string ownerEmail, string[]? roles = null, DateTimeOffset? expiresAt = null)
     {
         var keyHash = HashKey(plainTextKey);
         var keyPrefix = plainTextKey.Length >= 8 ? plainTextKey[..8] : plainTextKey;
@@ -29,6 +33,7 @@ public class ApiKey
             KeyPrefix = keyPrefix,
             IsActive = true,
             Roles = rolesValue,
+            OwnerEmail = ownerEmail,
             CreatedAt = DateTimeOffset.UtcNow,
             ExpiresAt = expiresAt
         };
