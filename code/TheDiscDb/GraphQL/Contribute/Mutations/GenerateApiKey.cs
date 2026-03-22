@@ -24,8 +24,8 @@ public partial class ContributionMutations
         database.ApiKeys.Add(apiKey);
         await database.SaveChangesAsync(cancellationToken);
 
-        return new GenerateApiKeyPayload(apiKey.Id, plainTextKey, apiKey.KeyPrefix, name);
+        return new GenerateApiKeyPayload(plainTextKey, apiKey.KeyPrefix, name);
     }
 }
 
-public record GenerateApiKeyPayload(int Id, string Key, string KeyPrefix, string Name);
+public record GenerateApiKeyPayload(string Key, string KeyPrefix, string Name);

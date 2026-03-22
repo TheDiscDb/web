@@ -16,7 +16,6 @@ public class ApiKeyQueryExtension
         return database.ApiKeys
             .Select(k => new ApiKeyInfo
             {
-                Id = k.Id,
                 Name = k.Name,
                 KeyPrefix = k.KeyPrefix,
                 IsActive = k.IsActive,
@@ -30,7 +29,6 @@ public class ApiKeyQueryExtension
 
 public class ApiKeyInfo
 {
-    public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string KeyPrefix { get; set; } = string.Empty;
     public bool IsActive { get; set; }

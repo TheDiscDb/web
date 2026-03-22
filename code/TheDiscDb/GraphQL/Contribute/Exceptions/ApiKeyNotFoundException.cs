@@ -2,5 +2,5 @@ namespace TheDiscDb.GraphQL.Contribute.Exceptions;
 
 public class ApiKeyNotFoundException : Exception
 {
-    public ApiKeyNotFoundException(int id) : base($"API key with ID {id} was not found.") { }
+    public ApiKeyNotFoundException(string keyPrefix) : base($"API key with prefix '{keyPrefix}' was not found.") { }
 }
