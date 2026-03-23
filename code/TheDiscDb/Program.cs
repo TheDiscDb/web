@@ -40,6 +40,7 @@ builder.Services.AddControllersWithViews( options =>
 });
 builder.Services.AddCors();
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<TheDiscDb.Web.Authentication.ApiKeyManager>();
 
 var gihubOptions = new TheDiscDb.Web.Authentication.AuthenticationOptions();
 builder.Configuration.GetSection("Authentication:GitHub").Bind(gihubOptions);

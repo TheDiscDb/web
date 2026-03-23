@@ -1,11 +1,8 @@
 using System.Net;
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using TheDiscDb.Web.Data;
 
@@ -13,21 +10,19 @@ namespace TheDiscDb.Web.Authentication;
 
 public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthenticationOptions>
 {
+    private readonly ApiKeyManager apiKeyManager;
     private readonly IDbContextFactory<SqlServerDataContext> dbContextFactory;
-    private readonly IMemoryCache cache;
-
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
     public ApiKeyAuthenticationHandler(
         IOptionsMonitor<ApiKeyAuthenticationOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        IDbContextFactory<SqlServerDataContext> dbContextFactory,
-        IMemoryCache cache)
+        ApiKeyManager apiKeyManager,
+        IDbContextFactory<SqlServerDataContext> dbContextFactory)
         : base(options, logger, encoder)
     {
+        this.apiKeyManager = apiKeyManager;
         this.dbContextFactory = dbContextFactory;
-        this.cache = cache;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -58,7 +53,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             return AuthenticateResult.Fail("API key is empty.");
         }
 
-        var key = await TryLookupApiKey(apiKey);
+        var key = await apiKeyManager.TryLookupByKeyAsync(apiKey);
 
         if (key == null)
         {
@@ -79,7 +74,6 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         {
             new Claim(ClaimTypes.Name, key.Name),
             new Claim("ApiKeyId", key.Id.ToString()),
-            new Claim("ApiKeyLogUsage", key.LogUsage.ToString()),
             new Claim(ClaimTypes.AuthenticationMethod, ApiKeyAuthenticationDefaults.Scheme)
         };
 
@@ -96,29 +90,6 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
         var ticket = new AuthenticationTicket(principal, ApiKeyAuthenticationDefaults.Scheme);
 
         return AuthenticateResult.Success(ticket);
-    }
-
-    private async Task<ApiKey?> TryLookupApiKey(string apiKey)
-    {
-        var keyHash = ApiKey.HashKey(apiKey);
-        var cacheKey = $"apikey:{keyHash}";
-
-        if (cache.TryGetValue(cacheKey, out ApiKey? cached))
-        {
-            return cached;
-        }
-
-        await using var db = await dbContextFactory.CreateDbContextAsync();
-        var key = await db.ApiKeys
-            .AsNoTracking()
-            .FirstOrDefaultAsync(k => k.KeyHash == keyHash && k.IsActive);
-
-        if (key != null)
-        {
-            cache.Set(cacheKey, key, CacheDuration);
-        }
-
-        return key;
     }
 
     private bool IsLoopbackRequest()

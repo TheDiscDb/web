@@ -44,13 +44,14 @@ public class ApiKeyAuthenticationHandlerTests
         var optionsMonitor = new TestOptionsMonitor(new ApiKeyAuthenticationOptions { IsEnabled = isEnabled });
         var loggerFactory = NullLoggerFactory.Instance;
         cache ??= new MemoryCache(new MemoryCacheOptions());
+        var apiKeyManager = new ApiKeyManager(factory, cache);
 
         var handler = new ApiKeyAuthenticationHandler(
             optionsMonitor,
             loggerFactory,
             UrlEncoder.Default,
-            factory,
-            cache);
+            apiKeyManager,
+            factory);
 
         await handler.InitializeAsync(
             new AuthenticationScheme(ApiKeyAuthenticationDefaults.Scheme, null, typeof(ApiKeyAuthenticationHandler)),

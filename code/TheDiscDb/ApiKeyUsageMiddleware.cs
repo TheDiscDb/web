@@ -1,12 +1,14 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Web.Authentication;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb;
 
 public class ApiKeyUsageMiddleware(
     RequestDelegate next,
+    ApiKeyManager apiKeyManager,
     IDbContextFactory<SqlServerDataContext> dbContextFactory,
     ILogger<ApiKeyUsageMiddleware> logger)
 {
@@ -23,8 +25,8 @@ public class ApiKeyUsageMiddleware(
             return;
         }
 
-        var logUsageClaim = context.User?.FindFirst("ApiKeyLogUsage")?.Value;
-        if (!string.Equals(logUsageClaim, "True", StringComparison.OrdinalIgnoreCase))
+        var apiKey = await apiKeyManager.TryGetByIdAsync(apiKeyId);
+        if (apiKey is not { LogUsage: true })
         {
             return;
         }
