@@ -24,6 +24,7 @@ using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Web;
+using TheDiscDb.Web.Authentication;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Sitemap;
     
@@ -39,11 +40,23 @@ builder.Services.AddControllersWithViews( options =>
 });
 builder.Services.AddCors();
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<TheDiscDb.Web.Authentication.ApiKeyManager>();
 
 var gihubOptions = new TheDiscDb.Web.Authentication.AuthenticationOptions();
 builder.Configuration.GetSection("Authentication:GitHub").Bind(gihubOptions);
 
 var authBuilder = builder.Services.AddAuthentication();
+
+// API key authentication for /graphql
+var apiKeyConfig = builder.Configuration.GetSection(ApiKeyAuthenticationDefaults.ConfigSection);
+var apiKeyAuthEnabled = apiKeyConfig.GetValue<bool>("Enabled");
+string apiKey = apiKeyConfig.GetValue<string>("ApiKey") ?? string.Empty;
+
+authBuilder.AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+    ApiKeyAuthenticationDefaults.Scheme, options =>
+    {
+        options.IsEnabled = apiKeyAuthEnabled;
+    });
 
 // Only add github auth if configured
 if (!string.IsNullOrEmpty(gihubOptions.ClientId) && !string.IsNullOrEmpty(gihubOptions.ClientSecret))
@@ -89,6 +102,9 @@ builder.Services.AddQuickGridEntityFrameworkAdapter();
 builder.Services.AddAuthorizationCore(b =>
 {
     b.AddPolicy("Admin", policy => policy.RequireRole(DefaultRoles.Administrator));
+    b.AddPolicy(ApiKeyAuthenticationDefaults.PolicyName, policy =>
+        policy.AddAuthenticationSchemes(ApiKeyAuthenticationDefaults.Scheme, IdentityConstants.ApplicationScheme)
+              .RequireAuthenticatedUser());
 });
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<IPrincipalProvider, PrincipalProvider>();
@@ -146,7 +162,8 @@ builder.Services
     .AddType<EncodedIdType>()
     .AddQueryType<ContributionQuery>()
     .AddMutationConventions(applyToAllMutations: true)
-    .AddMutationType<ContributionMutations>();
+    .AddMutationType<ContributionMutations>()
+    .AddTypeExtension<ApiKeyQueryExtension>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
@@ -162,11 +179,27 @@ var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));
 
 builder.Services
     .AddTheDiscDbClient()
-    .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{serviceUrl}/graphql"));
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri($"{serviceUrl}/graphql");
+        if (apiKeyAuthEnabled && !string.IsNullOrEmpty(apiKey))
+        {
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(ApiKeyAuthenticationDefaults.Scheme, apiKey);
+        }
+    });
 
 builder.Services
     .AddContributionClient()
-    .ConfigureHttpClient(client => client.BaseAddress = new Uri($"{serviceUrl}/graphql/contributions"));
+    .ConfigureHttpClient(client =>
+    {
+        client.BaseAddress = new Uri($"{serviceUrl}/graphql/contributions");
+        if (apiKeyAuthEnabled && !string.IsNullOrEmpty(apiKey))
+        {
+            client.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue(ApiKeyAuthenticationDefaults.Scheme, apiKey);
+        }
+    });
 
 builder.AddAzureBlobServiceClient("blobs");
 var blobConnectionString = builder.Configuration.GetConnectionString("blobs") ?? throw new Exception("Blob connection string not configured");
@@ -282,18 +315,27 @@ else
 app.UseHttpsRedirection();
 app.UseSitemap();
 
+app.UseMiddleware<WasmConfigMiddleware>();
 app.MapStaticAssets();
 app.UseImageSharp();
 app.UseMiddleware<RssFeedMidleware>();
 app.UseMiddleware<LowercaseUrlMiddleware>();
 
-app.MapGraphQL();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseWhen(
+    ctx => ctx.Request.Path.StartsWithSegments("/graphql"),
+    branch => branch.UseMiddleware<ApiKeyUsageMiddleware>());
+
+var graphqlEndpoint = app.MapGraphQL();
+if (apiKeyAuthEnabled)
+{
+    graphqlEndpoint.RequireAuthorization(ApiKeyAuthenticationDefaults.PolicyName);
+}
+
 app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema")
-   .RequireAuthorization();
+   .RequireAuthorization(ApiKeyAuthenticationDefaults.PolicyName);
 
 app.MapControllers();
 app.UseAntiforgery();

@@ -114,6 +114,22 @@ public class SqlServerDataContext : DbContext
         userMessage.HasIndex(x => x.ContributionId);
         userMessage.HasIndex(x => new { x.ToUserId, x.IsRead });
 
+        var apiKeyEntity = modelBuilder.Entity<ApiKey>();
+        apiKeyEntity.HasKey(x => x.Id);
+        apiKeyEntity.HasIndex(x => x.KeyHash).IsUnique();
+        apiKeyEntity.HasIndex(x => x.IsActive);
+        apiKeyEntity.Property(x => x.Roles).HasMaxLength(500);
+        apiKeyEntity.Property(x => x.OwnerEmail).HasMaxLength(256);
+
+        var usageLog = modelBuilder.Entity<ApiKeyUsageLog>();
+        usageLog.HasKey(x => x.Id);
+        usageLog.HasIndex(x => new { x.ApiKeyId, x.Timestamp });
+        usageLog.Property(x => x.OperationName).HasMaxLength(256);
+        usageLog.HasOne(x => x.ApiKey)
+            .WithMany(x => x.UsageLogs)
+            .HasForeignKey(x => x.ApiKeyId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         BuildIdentityModel(modelBuilder);
     }
 
@@ -262,6 +278,8 @@ public class SqlServerDataContext : DbContext
     public DbSet<ContributionHistory> ContributionHistory { get; set; } = null!;
     public DbSet<UserMessage> UserMessages { get; set; } = null!;
     public DbSet<Contributor> Contributors { get; set; } = null!;
+    public DbSet<ApiKey> ApiKeys { get; set; } = null!;
+    public DbSet<ApiKeyUsageLog> ApiKeyUsageLogs { get; set; } = null!;
 }
 
 public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser

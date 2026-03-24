@@ -1,5 +1,6 @@
 using Fantastic.FileSystem;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Web.Data;
@@ -13,15 +14,19 @@ public class DataSeeder
     private readonly IOptions<DatabaseMigrationOptions> options;
     private readonly RoleManager<IdentityRole> roleManager;
     private readonly UserManager<TheDiscDbUser> userManager;
+    private readonly SqlServerDataContext dbContext;
+    private readonly IConfiguration configuration;
     private readonly ILogger<DataSeeder> logger;
 
-    public DataSeeder(DataImporter dataImporter, IFileSystem fileSystem, IOptions<DatabaseMigrationOptions> options, RoleManager<IdentityRole> roleManager, UserManager<TheDiscDbUser> userManager, ILogger<DataSeeder> logger)
+    public DataSeeder(DataImporter dataImporter, IFileSystem fileSystem, IOptions<DatabaseMigrationOptions> options, RoleManager<IdentityRole> roleManager, UserManager<TheDiscDbUser> userManager, SqlServerDataContext dbContext, IConfiguration configuration, ILogger<DataSeeder> logger)
     {
         this.dataImporter = dataImporter ?? throw new ArgumentNullException(nameof(dataImporter));
         this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
         this.options = options ?? throw new ArgumentNullException(nameof(options));
         this.roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
         this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+        this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -92,5 +97,58 @@ public class DataSeeder
         //     await userManager.CreateAsync(regularUser);
         //     await userManager.AddToRoleAsync(regularUser, DefaultRoles.Contributor);
         // }
+    }
+
+    public async Task SeedApiKeys(CancellationToken cancellationToken)
+    {
+        var apiKeySection = configuration.GetSection("GraphQL:ApiKeyAuthentication");
+
+        await SeedApiKey(
+            apiKeySection.GetValue<string>("AdminApiKey"),
+            "Seeded Admin Key",
+            "system@thediscdb.com",
+            [DefaultRoles.Administrator],
+            logUsage: false,
+            cancellationToken);
+
+        await SeedApiKey(
+            apiKeySection.GetValue<string>("PublicApiKey"),
+            "Public Read-Only Key",
+            "system@thediscdb.com",
+            null,
+            logUsage: false,
+            cancellationToken);
+    }
+
+    private async Task SeedApiKey(string? plainTextKey, string name, string ownerEmail, string[]? roles, bool logUsage, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(plainTextKey))
+        {
+            logger.LogInformation("No key configured for '{Name}' — skipping", name);
+            return;
+        }
+
+        var keyHash = ApiKey.HashKey(plainTextKey);
+        var existing = await dbContext.ApiKeys.FirstOrDefaultAsync(k => k.KeyHash == keyHash, cancellationToken);
+
+        if (existing != null)
+        {
+            if (existing.LogUsage != logUsage)
+            {
+                existing.LogUsage = logUsage;
+                await dbContext.SaveChangesAsync(cancellationToken);
+                logger.LogInformation("Updated LogUsage to {LogUsage} for API key '{Name}'", logUsage, name);
+            }
+            else
+            {
+                logger.LogInformation("API key '{Name}' already exists — skipping", name);
+            }
+            return;
+        }
+
+        var apiKey = ApiKey.Create(plainTextKey, name, ownerEmail, roles, logUsage: logUsage);
+        dbContext.ApiKeys.Add(apiKey);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Seeded API key '{Name}' (prefix: {KeyPrefix})", name, apiKey.KeyPrefix);
     }
 }

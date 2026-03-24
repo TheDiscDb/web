@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TheDiscDb.Web.Data;
 
@@ -11,9 +12,11 @@ using TheDiscDb.Web.Data;
 namespace TheDiscDb.Web.Migrations
 {
     [DbContext(typeof(SqlServerDataContext))]
-    partial class SqlServerDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260321053837_AddApiKeys")]
+    partial class AddApiKeys
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -646,21 +649,9 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<DateTimeOffset?>("LastUsedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<bool>("LogUsage")
-                        .HasColumnType("bit");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OwnerEmail")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("Roles")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
 
@@ -670,40 +661,6 @@ namespace TheDiscDb.Web.Migrations
                         .IsUnique();
 
                     b.ToTable("ApiKeys");
-                });
-
-            modelBuilder.Entity("TheDiscDb.Web.Data.ApiKeyUsageLog", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("ApiKeyId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DurationMs")
-                        .HasColumnType("int");
-
-                    b.Property<double>("FieldCost")
-                        .HasColumnType("float");
-
-                    b.Property<string>("OperationName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<DateTimeOffset>("Timestamp")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<double>("TypeCost")
-                        .HasColumnType("float");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApiKeyId", "Timestamp");
-
-                    b.ToTable("ApiKeyUsageLogs");
                 });
 
             modelBuilder.Entity("TheDiscDb.Web.Data.ContributionHistory", b =>
@@ -1263,17 +1220,6 @@ namespace TheDiscDb.Web.Migrations
                     b.Navigation("Title");
                 });
 
-            modelBuilder.Entity("TheDiscDb.Web.Data.ApiKeyUsageLog", b =>
-                {
-                    b.HasOne("TheDiscDb.Web.Data.ApiKey", "ApiKey")
-                        .WithMany("UsageLogs")
-                        .HasForeignKey("ApiKeyId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ApiKey");
-                });
-
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionAudioTrack", b =>
                 {
                     b.HasOne("TheDiscDb.Web.Data.UserContributionDiscItem", "Item")
@@ -1368,11 +1314,6 @@ namespace TheDiscDb.Web.Migrations
             modelBuilder.Entity("TheDiscDb.InputModels.Title", b =>
                 {
                     b.Navigation("Tracks");
-                });
-
-            modelBuilder.Entity("TheDiscDb.Web.Data.ApiKey", b =>
-                {
-                    b.Navigation("UsageLogs");
                 });
 
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContribution", b =>
