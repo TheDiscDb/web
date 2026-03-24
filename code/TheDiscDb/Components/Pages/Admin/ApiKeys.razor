@@ -1,0 +1,164 @@
+﻿@page "/admin/apikeys"
+@using TheDiscDb.Client.Controls
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Buttons
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - API Keys</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink()]" PrimaryText="API Keys" />
+
+<h1>API Keys</h1>
+
+<div class="mb-3">
+    <SfButton OnClick="ShowCreateDialog"
+              IconCss="e-icons e-plus"
+              CssClass="e-success">
+        Create New Key
+    </SfButton>
+</div>
+
+<QuickGrid Items="ApiKeyList" Class="striped-grid">
+    <PropertyColumn Property="@(k => k.Name)" Sortable="true" />
+    <PropertyColumn Property="@(k => k.KeyPrefix)" Title="Key Prefix" Sortable="true" />
+    <PropertyColumn Property="@(k => k.OwnerEmail)" Title="Owner" Sortable="true" />
+    <PropertyColumn Property="@(k => k.Roles)" Sortable="true" />
+    <TemplateColumn Title="Active" Sortable="true" SortBy="GridSort<ApiKeyRow>.ByAscending(k => k.IsActive)">
+        @if (context.IsActive)
+        {
+            <span class="badge bg-success">Active</span>
+        }
+        else
+        {
+            <span class="badge bg-secondary">Revoked</span>
+        }
+    </TemplateColumn>
+    <TemplateColumn Title="Log Usage" Sortable="true" SortBy="GridSort<ApiKeyRow>.ByAscending(k => k.LogUsage)">
+        @(context.LogUsage ? "Yes" : "No")
+    </TemplateColumn>
+    <PropertyColumn Property="@(k => k.CreatedAt)" Title="Created" Sortable="true" Format="yyyy-MM-dd" />
+    <PropertyColumn Property="@(k => k.ExpiresAt)" Title="Expires" Sortable="true" Format="yyyy-MM-dd" />
+    <PropertyColumn Property="@(k => k.LastUsedAt)" Title="Last Used" Sortable="true" Format="yyyy-MM-dd HH:mm" />
+    <TemplateColumn Title="Actions">
+        <SfButton OnClick="@(() => ShowEditDialog(context))"
+                  IconCss="e-icons e-edit"
+                  CssClass="e-flat e-primary e-small">
+            Edit
+        </SfButton>
+        @if (context.IsActive)
+        {
+            <SfButton OnClick="@(() => ShowRevokeDialog(context))"
+                      IconCss="e-icons e-circle-close"
+                      CssClass="e-flat e-danger e-small ms-2">
+                Revoke
+            </SfButton>
+        }
+    </TemplateColumn>
+</QuickGrid>
+
+@* ── Create dialog ── *@
+<SfDialog @bind-Visible="showCreateDialog" Width="500px" IsModal="true" ShowCloseIcon="true" Header="Create API Key">
+    <DialogTemplates>
+        <Content>
+            <EditForm Model="@createModel" OnValidSubmit="HandleCreate">
+                <DataAnnotationsValidator />
+                <div class="mb-3">
+                    <label class="form-label">Name<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="createModel.Name" />
+                    <ValidationMessage For="@(() => createModel.Name)" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Owner Email<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="createModel.OwnerEmail" />
+                    <ValidationMessage For="@(() => createModel.OwnerEmail)" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Roles (comma-separated)</label>
+                    <InputText class="form-control" @bind-Value="createModel.Roles" placeholder="e.g. admin,contributor" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Expires At</label>
+                    <InputDate class="form-control" TValue="DateTimeOffset?" @bind-Value="createModel.ExpiresAt" />
+                </div>
+                <div class="mb-3 form-check">
+                    <InputCheckbox class="form-check-input" @bind-Value="createModel.LogUsage" />
+                    <label class="form-check-label">Log Usage</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Create</button>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@* ── Key created / reveal dialog ── *@
+<SfDialog @bind-Visible="showKeyRevealDialog" Width="550px" IsModal="true" ShowCloseIcon="true" Header="API Key Created">
+    <DialogTemplates>
+        <Content>
+            <div class="alert alert-warning">
+                <strong>Copy this key now.</strong> It will not be shown again.
+            </div>
+            <div class="mb-3">
+                <label class="form-label">API Key</label>
+                <div class="input-group">
+                    <input type="text" class="form-control font-monospace" readonly value="@createdPlainTextKey" />
+                </div>
+            </div>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Close" IsPrimary="true" OnClick="CloseKeyRevealDialog" />
+    </DialogButtons>
+</SfDialog>
+
+@* ── Edit dialog ── *@
+<SfDialog @bind-Visible="showEditDialog" Width="500px" IsModal="true" ShowCloseIcon="true" Header="Edit API Key">
+    <DialogTemplates>
+        <Content>
+            <EditForm Model="@editModel" OnValidSubmit="HandleEdit">
+                <DataAnnotationsValidator />
+                <div class="mb-3">
+                    <label class="form-label">Name<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="editModel.Name" />
+                    <ValidationMessage For="@(() => editModel.Name)" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Owner Email<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="editModel.OwnerEmail" />
+                    <ValidationMessage For="@(() => editModel.OwnerEmail)" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Roles (comma-separated)</label>
+                    <InputText class="form-control" @bind-Value="editModel.Roles" placeholder="e.g. admin,contributor" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Expires At</label>
+                    <InputDate class="form-control" TValue="DateTimeOffset?" @bind-Value="editModel.ExpiresAt" />
+                </div>
+                <div class="mb-3 form-check">
+                    <InputCheckbox class="form-check-input" @bind-Value="editModel.IsActive" />
+                    <label class="form-check-label">Active</label>
+                </div>
+                <div class="mb-3 form-check">
+                    <InputCheckbox class="form-check-input" @bind-Value="editModel.LogUsage" />
+                    <label class="form-check-label">Log Usage</label>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@* ── Revoke confirmation dialog ── *@
+<SfDialog @bind-Visible="showRevokeDialog" Width="400px" IsModal="true" ShowCloseIcon="true" Header="Revoke API Key">
+    <DialogTemplates>
+        <Content>
+            <p>Are you sure you want to revoke <strong>@revokeTarget?.Name</strong> (<code>@revokeTarget?.KeyPrefix…</code>)?</p>
+            <p class="text-muted">The key will be deactivated immediately. Any requests using this key will be rejected.</p>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Cancel" CssClass="e-flat" OnClick="CancelRevoke" />
+        <DialogButton Content="Revoke" IsPrimary="true" CssClass="e-danger" OnClick="ConfirmRevoke" />
+    </DialogButtons>
+</SfDialog>
