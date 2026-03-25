@@ -13,7 +13,7 @@ public partial class ContributionMutations
 {
     [Error(typeof(AuthenticationException))]
     [Authorize]
-    public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, TheMovieDbClient tmdb, IContributionHistoryService historyService, IContributionNotificationService notificationService, UserManager<TheDiscDbUser> userManager, ILogger<ContributionMutations> logger, CancellationToken cancellationToken)
+    public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, TheMovieDbClient tmdb, IContributionHistoryService historyService, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
     {
         var user = principal.Principal ?? throw new AuthenticationException("No user principal available.");
         var userId = userManager.GetUserId(user);
@@ -51,15 +51,7 @@ public partial class ContributionMutations
 
         await historyService.RecordCreatedAsync(contribution.Id, userId, cancellationToken);
 
-        // Fire-and-forget email notification
-        var dbUser = await userManager.FindByIdAsync(userId);
-        _ = notificationService.NotifyContributionCreatedAsync(contribution, dbUser?.Email, dbUser?.UserName)
-            .ContinueWith(t =>
-            {
-                logger.LogWarning(t.Exception, "Failed to send contribution notification for {Id}", contribution.Id);
-            }, TaskContinuationOptions.OnlyOnFaulted);
-
-        // Now that we have a contributionId, we can get the external data which will save it in blob storage
+        // Now that we have a contributionId, we can get the external datawhich will save it in blob storage
         if (string.IsNullOrEmpty(contribution.Title) || string.IsNullOrEmpty(contribution.Year))
         {
             var externalData = await this.GetExternalDataForContribution(contribution.EncodedId, database, tmdb, userManager, cancellationToken);

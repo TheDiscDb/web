@@ -1,6 +1,7 @@
 ﻿using FluentResults;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Syncfusion.Blazor.Buttons;
 using TheDiscDb.Services;
@@ -30,6 +31,15 @@ public partial class Review : ComponentBase, IAsyncDisposable
 
     [Inject]
     private IContributionHistoryService HistoryService { get; set; } = null!;
+
+    [Inject]
+    private IContributionNotificationService NotificationService { get; set; } = null!;
+
+    [Inject]
+    private UserManager<TheDiscDbUser> UserManager { get; set; } = null!;
+
+    [Inject]
+    private ILogger<Review> Logger { get; set; } = null!;
 
     UserContribution? Contribution { get; set; }
     Dictionary<IContributionValidation, Result> Results { get; set; } = new Dictionary<IContributionValidation, Result>();
@@ -114,9 +124,20 @@ public partial class Review : ComponentBase, IAsyncDisposable
         if (this.Contribution != null)
         {
             var oldStatus = this.Contribution.Status;
+            if (oldStatus == UserContributionStatus.ReadyForReview)
+            {
+                return;
+            }
+
             this.Contribution.Status = UserContributionStatus.ReadyForReview;
             await database.SaveChangesAsync();
             await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.ReadyForReview);
+
+            var dbUser = await UserManager.FindByIdAsync(this.Contribution.UserId);
+            _ = NotificationService.NotifyContributionCreatedAsync(this.Contribution, dbUser?.Email, dbUser?.UserName)
+                .ContinueWith(t => Logger.LogError(t.Exception, "Failed to send submission notification for contribution {Id}", this.Contribution.Id),
+                    TaskContinuationOptions.OnlyOnFaulted);
+
             this.NavigationManager.NavigateTo("/contribute/my");
         }
     }
