@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -10,6 +11,12 @@ public static class MailgunClientExtensions
 {
     public static IServiceCollection AddMailgunClient(this IServiceCollection services)
     {
+        services.Configure<MailgunOptions>(options =>
+        {
+            var config = services.BuildServiceProvider().GetRequiredService<IConfiguration>();
+            config.GetSection("Mailgun").Bind(options);
+        });
+
         services.AddHttpClient(nameof(MailgunClient), (sp, client) =>
         {
             var options = sp.GetRequiredService<IOptionsMonitor<MailgunOptions>>().CurrentValue;

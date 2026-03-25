@@ -1,4 +1,5 @@
 ﻿using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.Web.Data;
@@ -17,7 +18,7 @@ public partial class ContributionMutations
         [Service] SqlServerDataContext database,
         string contributionId, 
         string discId,
-        string name,
+        string name,        
         string source,
         string duration,
         string size,
@@ -25,6 +26,7 @@ public partial class ContributionMutations
         int segmentCount,
         string segmentMap,
         string type,
+        UserManager<TheDiscDbUser> userManager,
         string? description = null,
         string? season = null,
         string? episode = null,
@@ -51,7 +53,7 @@ public partial class ContributionMutations
                 .ThenInclude(d => d.Items)
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
 
-       await EnsureOwnership(contribution, contributionId, discId, itemId: null, cancellationToken);
+       await EnsureOwnership(userManager, contribution, contributionId, discId, cancellationToken: cancellationToken);
 
         if (contribution == null)
         {

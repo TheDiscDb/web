@@ -1,4 +1,5 @@
 ﻿using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.Web.Data;
@@ -14,7 +15,7 @@ public partial class ContributionMutations
     [Error(typeof(InvalidIdException))]
     [Error(typeof(InvalidOwnershipException))]
     [Authorize]
-    public async Task<UserContributionAudioTrack> AddAudioTrackToItem(string contributionId, string discId, string itemId, int trackIndex, string trackName, SqlServerDataContext database, CancellationToken cancellationToken)
+    public async Task<UserContributionAudioTrack> AddAudioTrackToItem(string contributionId, string discId, string itemId, int trackIndex, string trackName, SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
     {
         var audioTrack = new UserContributionAudioTrack
         {
@@ -29,7 +30,7 @@ public partial class ContributionMutations
                     .ThenInclude(i => i.AudioTracks)
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
 
-        await EnsureOwnership(contribution, contributionId, discId, itemId, cancellationToken);
+        await EnsureOwnership(userManager, contribution, contributionId, discId, itemId, cancellationToken);
 
         int realDiscId = this.idEncoder.Decode(discId);
         var disc = contribution!.Discs.FirstOrDefault(d => d.Id == realDiscId);

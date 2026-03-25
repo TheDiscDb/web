@@ -1,4 +1,5 @@
 using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.Services;
@@ -13,6 +14,7 @@ public partial class ContributionMutations
     public async Task<bool> MarkMessagesAsRead(
         string contributionId,
         SqlServerDataContext database,
+        UserManager<TheDiscDbUser> userManager,
         CancellationToken cancellationToken)
     {
         var user = principal.Principal ?? throw new AuthenticationException("No user principal available.");

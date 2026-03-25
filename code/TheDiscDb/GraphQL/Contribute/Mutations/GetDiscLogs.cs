@@ -1,6 +1,7 @@
 ﻿using FluentResults;
 using HotChocolate.Authorization;
 using MakeMkv;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.GraphQL.Contribute.Models;
@@ -18,7 +19,7 @@ public partial class ContributionMutations
     [Error(typeof(InvalidIdException))]
     [Error(typeof(InvalidOwnershipException))]
     [Authorize]
-    public async Task<DiscLogs> GetDiscLogs(string contributionId, string discId, SqlServerDataContext database, CancellationToken cancellationToken)
+    public async Task<DiscLogs> GetDiscLogs(string contributionId, string discId, SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
     {
         // TODO: Check the user owns the contribution
         var blob = await this.assetStore.Download($"{contributionId}/{discId}-logs.txt", cancellationToken);
@@ -55,7 +56,7 @@ public partial class ContributionMutations
                 .ThenInclude(d => d.AudioTracks)
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
 
-        await EnsureOwnership(contribution, contributionId, discId, itemId: null, cancellationToken);
+        await EnsureOwnership(userManager, contribution, contributionId, discId, cancellationToken: cancellationToken);
 
         disc = contribution!.Discs.FirstOrDefault(d => d.Id == decodedDiscId);
         if (disc == null)
