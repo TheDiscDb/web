@@ -19,4 +19,10 @@ public class NullContributionNotificationService : IContributionNotificationServ
         logger.LogDebug("Email notifications disabled (Mailgun not configured). Skipping notification for contribution {Id}", contribution.Id);
         return Task.CompletedTask;
     }
+
+    public Task NotifyContributionImportedAsync(UserContribution contribution, string? userEmail)
+    {
+        logger.LogDebug("Email notifications disabled (Mailgun not configured). Skipping imported notification for contribution {Id}", contribution.Id);
+        return Task.CompletedTask;
+    }
 }

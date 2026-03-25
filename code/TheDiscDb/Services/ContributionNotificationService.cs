@@ -142,4 +142,60 @@ public class ContributionNotificationService : IContributionNotificationService
     }
 
     private static string E(string? value) => WebUtility.HtmlEncode(value ?? string.Empty);
+
+    public async Task NotifyContributionImportedAsync(UserContribution contribution, string? userEmail)
+    {
+        if (string.IsNullOrEmpty(userEmail))
+        {
+            logger.LogDebug("No user email available — skipping imported notification for contribution {Id}", contribution.Id);
+            return;
+        }
+
+        var title = $"{contribution.Title} ({contribution.Year})";
+        var mediaType = contribution.MediaType?.ToLowerInvariant() ?? "movie";
+        var hasItemLink = !string.IsNullOrEmpty(contribution.TitleSlug);
+        var itemUrl = hasItemLink ? $"https://thediscdb.com/{mediaType}/{contribution.TitleSlug}" : "https://thediscdb.com";
+
+        var eTitle = E(contribution.Title);
+        var eYear = E(contribution.Year);
+        var eReleaseTitle = E(contribution.ReleaseTitle);
+        var eMediaType = E(contribution.MediaType);
+
+        var linkHtml = hasItemLink
+            ? $"""<p><a href="{itemUrl}" style="display: inline-block; padding: 10px 20px; background-color: #00213F; color: #ffffff; text-decoration: none; border-radius: 4px;">View on TheDiscDb</a></p>"""
+            : $"""<p><a href="{itemUrl}" style="display: inline-block; padding: 10px 20px; background-color: #00213F; color: #ffffff; text-decoration: none; border-radius: 4px;">Visit TheDiscDb</a></p>""";
+
+        var html = $"""
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #00213F;">Your Contribution Has Been Imported!</h2>
+                <p>Great news — your contribution has been reviewed, approved, and imported into TheDiscDb.</p>
+                <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Title</td><td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{eTitle}</strong></td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Year</td><td style="padding: 8px; border-bottom: 1px solid #eee;">{eYear}</td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Release</td><td style="padding: 8px; border-bottom: 1px solid #eee;">{eReleaseTitle}</td></tr>
+                    <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Type</td><td style="padding: 8px; border-bottom: 1px solid #eee;">{eMediaType}</td></tr>
+                </table>
+                {linkHtml}
+                <p style="color: #666; font-size: 14px;">Thank you for contributing to TheDiscDb! Your submission helps build the most complete disc database on the web.</p>
+            </div>
+            """;
+
+        var message = new MailgunMessage
+        {
+            To = [userEmail],
+            Subject = $"Your contribution has been imported — {title}",
+            Html = html,
+            Tags = ["contribution-imported"]
+        };
+
+        try
+        {
+            await mailgun.SendAsync(message);
+            logger.LogInformation("Sent imported notification for contribution {Id} to {Email}", contribution.Id, userEmail);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send imported notification for contribution {Id}", contribution.Id);
+        }
+    }
 }
