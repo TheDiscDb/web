@@ -134,9 +134,14 @@ public partial class Review : ComponentBase, IAsyncDisposable
             await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.ReadyForReview);
 
             var dbUser = await UserManager.FindByIdAsync(this.Contribution.UserId);
-            _ = NotificationService.NotifyContributionCreatedAsync(this.Contribution, dbUser?.Email, dbUser?.UserName)
-                .ContinueWith(t => Logger.LogError(t.Exception, "Failed to send submission notification for contribution {Id}", this.Contribution.Id),
-                    TaskContinuationOptions.OnlyOnFaulted);
+            try
+            {
+                await NotificationService.NotifyContributionCreatedAsync(this.Contribution, dbUser?.Email, dbUser?.UserName);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Failed to send submission notification for contribution {Id}", this.Contribution.Id);
+            }
 
             this.NavigationManager.NavigateTo("/contribute/my");
         }

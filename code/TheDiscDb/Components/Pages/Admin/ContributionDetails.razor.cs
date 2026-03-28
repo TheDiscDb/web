@@ -114,9 +114,14 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
             await this.database.SaveChangesAsync();
             await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.Imported);
 
-            _ = NotificationService.NotifyContributionImportedAsync(this.Contribution, this.User?.Email)
-                .ContinueWith(t => logger.LogError(t.Exception, "Failed to send imported notification for contribution {Id}", this.Contribution.Id),
-                    TaskContinuationOptions.OnlyOnFaulted);
+            try
+            {
+                await NotificationService.NotifyContributionImportedAsync(this.Contribution, this.User?.Email);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to send imported notification for contribution {Id}", this.Contribution.Id);
+            }
         }
     }
 
