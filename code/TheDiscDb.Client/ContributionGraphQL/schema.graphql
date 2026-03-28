@@ -22,6 +22,28 @@ type AddItemToDiscPayload {
   errors: [AddItemToDiscError!]
 }
 
+type AmazonProductMetadata {
+  asin: String
+  title: String
+  upc: String
+  frontImageUrl: String
+  backImageUrl: String
+  releaseDate: DateTime
+  numberOfDiscs: Int
+  aspectRatio: String
+  isDiscontinued: Boolean
+  mpaaRating: String
+  modelNumber: String
+  director: String
+  mediaFormat: String
+  actors: String
+  producers: String
+  language: String
+  dubbed: String
+  subtitles: String
+  studio: String
+}
+
 type AuthenticationError implements Error {
   message: String!
 }
@@ -119,6 +141,7 @@ type ContributionQuery {
   hasUnreadMessages: Boolean! @authorize @cost(weight: "10")
   myMessages("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [UserMessageSortInput!] @cost(weight: "10")): MyMessagesConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
   messageThreads: [MessageThread!]! @authorize @cost(weight: "10")
+  amazonProductMetadata(asin: String!): AmazonProductMetadata @authorize @cost(weight: "10")
 }
 
 "A connection to a list of items."

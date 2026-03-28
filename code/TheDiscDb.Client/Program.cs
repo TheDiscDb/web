@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb.Client;
-using TheDiscDb.Client.Services;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Client;
 
@@ -54,6 +53,5 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthenticationStateDeserialization();
 builder.Services.AddScoped<IClipboardService, ClipboardService>();
 builder.Services.AddHighlight();
-builder.Services.AddSingleton<IAmazonImporter, AmazonImporter>();
 
 await builder.Build().RunAsync();

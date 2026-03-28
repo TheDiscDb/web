@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 using HotChocolate.Authorization;
@@ -158,5 +159,24 @@ public class ContributionQuery(IdEncoder idEncoder)
                 };
             })
             .ToList();
+    }
+
+    [Authorize]
+    public async Task<AmazonProductMetadata?> GetAmazonProductMetadata(string asin, IAmazonImporter importer, ILogger<ContributionQuery> logger, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(asin) || !System.Text.RegularExpressions.Regex.IsMatch(asin, @"^\w{10}$"))
+        {
+            return null;
+        }
+
+        try
+        {
+            return await importer.GetProductMetadataAsync(asin, cancellationToken);
+        }
+        catch (AmazonImportException ex)
+        {
+            logger.LogWarning(ex, "Amazon import failed for ASIN {Asin}", asin);
+            return null;
+        }
     }
 }

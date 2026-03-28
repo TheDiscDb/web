@@ -45,7 +45,8 @@ public partial class ReleaseDetailInput : ComponentBase
     string frontImagePreviewUrl = "";
     string backImagePreviewUrl = "";
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
-    private bool ImportFromAmazonDisabled => string.IsNullOrEmpty(this.request.Asin);
+    private static readonly System.Text.RegularExpressions.Regex AsinRegex = new(@"^\w{10}$", System.Text.RegularExpressions.RegexOptions.Compiled);
+    private bool ImportFromAmazonDisabled => !AsinRegex.IsMatch(this.request.Asin ?? string.Empty) || IsAmazonImportInProgress;
     private bool IsAmazonImportInProgress = false;
 
     private SfUploader? frontImageUploader;
@@ -127,6 +128,11 @@ public partial class ReleaseDetailInput : ComponentBase
             }
             this.NavigationManager!.NavigateTo($"/contribution/{result.Data!.CreateContribution.UserContribution!.EncodedId!}");
         }
+    }
+
+    private void OnAsinInput(ChangeEventArgs args)
+    {
+        this.request.Asin = args.Value?.ToString() ?? string.Empty;
     }
 
     private void ReleaseTitleChanged(ChangeEventArgs args)
@@ -233,59 +239,81 @@ public partial class ReleaseDetailInput : ComponentBase
         this.backImagePreviewUrl = "";
     }
 
-    //private async Task ImportFromAmazon(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
-    //{
-    //    if (string.IsNullOrEmpty(this.request.Asin))
-    //    {
-    //        return;
-    //    }
+    private async Task ImportFromAmazon(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    {
+        if (string.IsNullOrEmpty(this.request.Asin))
+        {
+            return;
+        }
 
-    //    IsAmazonImportInProgress = true;
+        IsAmazonImportInProgress = true;
 
-    //    var response = await this.Client.ImportReleaseDetails(this.request.Asin);
-    //    if (response == null || response.IsFailed)
-    //    {
-    //        foreach (var error in response?.Errors ?? [])
-    //        {
-    //            Console.WriteLine("Failed to import release details " + error.Message);
-    //            toastContent = "Unable to import from Amazon. Details must be entered manually.";
-    //            await toast!.ShowAsync();
-    //        }
-    //        return;
-    //    }
+        try
+        {
+            var response = await this.ContributionClient.GetAmazonProductMetadata.ExecuteAsync(this.request.Asin);
+            if (response == null || !response.IsSuccessResult() || response.Data?.AmazonProductMetadata == null)
+            {
+                toastContent = "Unable to import from Amazon. Details must be entered manually.";
+                await toast!.ShowAsync();
+                return;
+            }
 
-    //    var details = response.Value;
-    //    this.request.Title = details.Title ?? "";
-    //    this.request.RegionCode = details.RegionCode ?? "1";
-    //    this.request.Locale = details.Locale ?? "en-us";
-    //    this.request.Upc = details.Upc ?? "";
+            var details = response.Data.AmazonProductMetadata;
+            this.request.Title = details.Title ?? this.request.Title;
+            if (!string.IsNullOrEmpty(details.Upc))
+            {
+                this.request.Upc = details.Upc;
+            }
 
-    //    if (details.ReleaseDate.HasValue)
-    //    {
-    //        this.request.ReleaseDate = details.ReleaseDate.Value;
-    //        this.releaseDate = details.ReleaseDate.Value.ToString("MM-dd-yyyy");
+            if (details.ReleaseDate.HasValue)
+            {
+                this.request.ReleaseDate = details.ReleaseDate.Value;
+                this.releaseDate = details.ReleaseDate.Value.ToString("MM-dd-yyyy");
 
-    //        if (!string.IsNullOrEmpty(details.MediaFormat) && string.IsNullOrEmpty(this.request.ReleaseTitle))
-    //        {
-    //            this.request.ReleaseTitle = $"{details.ReleaseDate.Value.Year} {details.MediaFormat}";
-    //            this.request.ReleaseSlug = this.request.ReleaseTitle.Slugify();
-    //        }
-    //    }
+                if (!string.IsNullOrEmpty(details.MediaFormat) && string.IsNullOrEmpty(this.request.ReleaseTitle))
+                {
+                    this.request.ReleaseTitle = $"{details.ReleaseDate.Value.Year} {details.MediaFormat}";
+                    this.request.ReleaseSlug = this.request.ReleaseTitle.Slugify();
+                }
+            }
 
-    //    if (!string.IsNullOrEmpty(details.FrontImageUrl))
-    //    {
-    //        request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
-    //        this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/front.jpg?width=156&height=231";
-    //    }
+            if (!string.IsNullOrEmpty(details.FrontImageUrl))
+            {
+                try
+                {
+                    request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
+                    this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/front.jpg?width=156&height=231";
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to upload front image: {ex.Message}");
+                }
+            }
 
-    //    if (!string.IsNullOrEmpty(details.BackImageUrl))
-    //    {
-    //        request.BackImageUrl = await UploadImage(this.id.ToString(), details.BackImageUrl, this.backImageUploadUrl, "back", backImageUploader);
-    //        this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/back.jpg?width=156&height=231";
-    //    }
-
-    //    IsAmazonImportInProgress = false;
-    //}
+            if (!string.IsNullOrEmpty(details.BackImageUrl))
+            {
+                try
+                {
+                    request.BackImageUrl = await UploadImage(this.id.ToString(), details.BackImageUrl, this.backImageUploadUrl, "back", backImageUploader);
+                    this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/back.jpg?width=156&height=231";
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to upload back image: {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Failed to import release details: " + ex.Message);
+            toastContent = "Unable to import from Amazon. Details must be entered manually.";
+            await toast!.ShowAsync();
+        }
+        finally
+        {
+            IsAmazonImportInProgress = false;
+        }
+    }
 
     private async Task<string?> UploadImage(string id, string url, string uploadUrl, string name, SfUploader? uploader)
     {

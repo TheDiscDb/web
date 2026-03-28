@@ -1,0 +1,23 @@
+query GetAmazonProductMetadata($asin: String!) {
+  amazonProductMetadata(asin: $asin) {
+    asin
+    title
+    upc
+    frontImageUrl
+    backImageUrl
+    releaseDate
+    numberOfDiscs
+    mediaFormat
+    mpaaRating
+    studio
+    director
+    actors
+    producers
+    language
+    dubbed
+    subtitles
+    aspectRatio
+    isDiscontinued
+    modelNumber
+  }
+}

@@ -8,6 +8,17 @@ using TheDiscDb.Data.Import;
 
 namespace TheDiscDb.Services;
 
+public class AmazonImportException : Exception
+{
+    public AmazonImportException(string message) : base(message)
+    {
+    }
+
+    public AmazonImportException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
+}
+
 public class AmazonImporter : IAmazonImporter
 {
     private readonly ScrapingBrowser browser;
@@ -35,7 +46,7 @@ public class AmazonImporter : IAmazonImporter
         }
     }
 
-    public async Task<FluentResults.Result<AmazonProductMetadata?>> GetProductMetadataAsync(string asin, CancellationToken cancellationToken = default)
+    public async Task<AmazonProductMetadata?> GetProductMetadataAsync(string asin, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -44,12 +55,12 @@ public class AmazonImporter : IAmazonImporter
 
             if (html.RawResponse.StatusCode < 200 || html.RawResponse.StatusCode > 299)
             {
-                return FluentResults.Result.Fail($"Could not retrieve Amazon page for ASIN {asin}. Status code: {html.RawResponse.StatusCode}");
+                throw new AmazonImportException($"Failed to retrieve Amazon page for ASIN {asin}. Status code: {html.RawResponse.StatusCode}");
             }
 
             if (string.IsNullOrEmpty(html.Content))
             {
-                return FluentResults.Result.Fail($"Could not retrieve Amazon page for ASIN {asin}. Empty content.");
+                throw new AmazonImportException($"Could not retrieve Amazon page for ASIN {asin}. Empty content.");
             }
 
             var nodes = html.Html.CssSelect("div#detailBullets_feature_div");
@@ -67,7 +78,7 @@ public class AmazonImporter : IAmazonImporter
             {
                 string logPath = $"logs/{asin}-{Guid.NewGuid()}.html";
                 await SaveResponse(html.RawResponse.ToString(), logPath, cancellationToken);
-                return FluentResults.Result.Fail("Could not find detail bullets on Amazon page. " + logPath);
+                throw new AmazonImportException("Could not find detail bullets on Amazon page. " + logPath);
             }
 
             var imageData = GetImageData(html.RawResponse.ToString());
@@ -76,7 +87,7 @@ public class AmazonImporter : IAmazonImporter
             {
                 string logPath = $"logs/{asin}-{Guid.NewGuid()}.html";
                 await SaveResponse(html.RawResponse.ToString(), logPath, cancellationToken);
-                return FluentResults.Result.Fail("Could not find image data on Amazon page. " + logPath);
+                throw new AmazonImportException("Could not find image data on Amazon page. " + logPath);
             }
 
             var front = imageData.Initial
@@ -103,7 +114,7 @@ public class AmazonImporter : IAmazonImporter
         }
         catch (Exception ex)
         {
-            return FluentResults.Result.Fail($"An error occurred while retrieving Amazon product metadata for ASIN {asin}: {ex.Message}");
+            throw new AmazonImportException($"An error occurred while retrieving Amazon product metadata for ASIN {asin}: {ex.Message}", ex);
         }
     }
 
