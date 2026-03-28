@@ -17,6 +17,7 @@ public partial class ContributionMutations
         string message,
         SqlServerDataContext database,
         IMessageService messageService,
+        IContributionNotificationService notificationService,
         UserManager<TheDiscDbUser> userManager,
         CancellationToken cancellationToken)
     {
@@ -38,7 +39,16 @@ public partial class ContributionMutations
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken)
             ?? throw new ContributionNotFoundException(contributionId);
 
-        return await messageService.SendAdminMessageAsync(contribution.Id, userId, contribution.UserId, message, cancellationToken);
+        var result = await messageService.SendAdminMessageAsync(contribution.Id, userId, contribution.UserId, message, cancellationToken);
+
+        try
+        {
+            var recipient = await userManager.FindByIdAsync(contribution.UserId);
+            await notificationService.NotifyMessageFromAdminAsync(contribution, message, recipient?.Email);
+        }
+        catch (Exception) { /* non-blocking — logged by service */ }
+
+        return result;
     }
 
     [Error(typeof(ContributionNotFoundException))]
@@ -50,6 +60,7 @@ public partial class ContributionMutations
         string message,
         SqlServerDataContext database,
         IMessageService messageService,
+        IContributionNotificationService notificationService,
         UserManager<TheDiscDbUser> userManager,
         CancellationToken cancellationToken)
     {
@@ -73,6 +84,15 @@ public partial class ContributionMutations
 
         await EnsureOwnership(userManager, contribution, contributionId, cancellationToken: cancellationToken);
 
-        return await messageService.SendUserMessageAsync(contribution.Id, userId, message, cancellationToken);
+        var result = await messageService.SendUserMessageAsync(contribution.Id, userId, message, cancellationToken);
+
+        try
+        {
+            var dbUser = await userManager.FindByIdAsync(userId);
+            await notificationService.NotifyMessageFromUserAsync(contribution, message, dbUser?.UserName, dbUser?.Email);
+        }
+        catch (Exception) { /* non-blocking — logged by service */ }
+
+        return result;
     }
 }
