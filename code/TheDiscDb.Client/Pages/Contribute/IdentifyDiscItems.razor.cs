@@ -462,6 +462,8 @@ public partial class IdentifyDiscItems : ComponentBase
         return "Label Chapters";
     }
 
+    bool HasAudioSegments(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => title.Segments.Any(s => s.Type != null && s.Type.Equals("Audio", StringComparison.OrdinalIgnoreCase));
+
     bool HasAudioTracks(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => identifiedTitles.TryGetValue(title, out var item) && item.AudioTracks != null && item.AudioTracks.Any(c => !string.IsNullOrEmpty(c.Title));
 
     string GetAudioIconCss(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)

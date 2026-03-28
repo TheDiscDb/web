@@ -111,7 +111,7 @@
                 }
             </TemplateColumn>
             <TemplateColumn Align="Align.Center">
-                @if (HasAudioTracks(context))
+                @if (IsIdentified(context) && HasAudioSegments(context))
                 {
                     <SfButton IconCss="@GetAudioIconCss(context)" OnClick="() => NameAudioTracks(context)" title="@GetAudioButtonToolTip(context)" />
                 }
