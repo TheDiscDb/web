@@ -82,6 +82,7 @@ public class ContributionNotificationService : IContributionNotificationService
             Html = html,
             Tags = ["contribution-admin-notification"]
         };
+        EnrichMessage(message, contribution, "contribution-submitted", replyTo: userEmail);
 
         try
         {
@@ -133,6 +134,7 @@ public class ContributionNotificationService : IContributionNotificationService
             Html = html,
             Tags = ["contribution-user-confirmation"]
         };
+        EnrichMessage(message, contribution, "contribution-user-confirmation", replyTo: opts.AdminEmail);
 
         try
         {
@@ -152,6 +154,8 @@ public class ContributionNotificationService : IContributionNotificationService
             logger.LogDebug("No user email available — skipping imported notification for contribution {Id}", contribution.Id);
             return;
         }
+
+        var opts = options.CurrentValue;
 
         var title = $"{contribution.Title} ({contribution.Year})";
         var mediaType = contribution.MediaType?.ToLowerInvariant() ?? "movie";
@@ -189,6 +193,7 @@ public class ContributionNotificationService : IContributionNotificationService
             Html = html,
             Tags = ["contribution-imported"]
         };
+        EnrichMessage(message, contribution, "contribution-imported", replyTo: opts.AdminEmail);
 
         try
         {
@@ -234,6 +239,7 @@ public class ContributionNotificationService : IContributionNotificationService
             Html = html,
             Tags = ["message-admin-notification"]
         };
+        EnrichMessage(email, contribution, "message-from-user", replyTo: userEmail);
 
         try
         {
@@ -253,6 +259,8 @@ public class ContributionNotificationService : IContributionNotificationService
             logger.LogDebug("No user email available — skipping admin message notification for contribution {Id}", contribution.Id);
             return;
         }
+
+        var opts = options.CurrentValue;
 
         var title = $"{contribution.Title} ({contribution.Year})";
         var encodedId = idEncoder.Encode(contribution.Id);
@@ -277,6 +285,7 @@ public class ContributionNotificationService : IContributionNotificationService
             Html = html,
             Tags = ["message-user-notification"]
         };
+        EnrichMessage(email, contribution, "message-from-admin", replyTo: opts.AdminEmail);
 
         try
         {
@@ -290,4 +299,37 @@ public class ContributionNotificationService : IContributionNotificationService
     }
 
     private static string E(string? value) => WebUtility.HtmlEncode(value ?? string.Empty);
+
+    /// <summary>
+    /// Strips HTML tags to produce a plain-text fallback and applies common Mailgun
+    /// enhancements: tracking, custom variables, List-Unsubscribe, and Reply-To.
+    /// </summary>
+    private void EnrichMessage(MailgunMessage message, UserContribution contribution, string notificationType, string? replyTo = null)
+    {
+        var opts = options.CurrentValue;
+
+        // Plain-text fallback from HTML
+        if (!string.IsNullOrEmpty(message.Html) && string.IsNullOrEmpty(message.Text))
+        {
+            message.Text = System.Text.RegularExpressions.Regex.Replace(message.Html, "<[^>]+>", "").Trim();
+        }
+
+        // Open and click tracking
+        message.TrackingOpens = true;
+        message.TrackingClicks = true;
+
+        // Custom variables for webhook correlation
+        message.CustomVariables["contribution-id"] = contribution.Id.ToString();
+        message.CustomVariables["notification-type"] = notificationType;
+
+        // List-Unsubscribe header (mailto-based, no infrastructure needed)
+        message.CustomHeaders["List-Unsubscribe"] = $"<mailto:{opts.AdminEmail}?subject=Unsubscribe>";
+        message.CustomHeaders["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+
+        // Reply-To
+        if (!string.IsNullOrEmpty(replyTo))
+        {
+            message.ReplyTo = replyTo;
+        }
+    }
 }
