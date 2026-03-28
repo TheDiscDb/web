@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.Extensions.Options;
+using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Email;
 
@@ -9,15 +10,18 @@ public class ContributionNotificationService : IContributionNotificationService
 {
     private readonly MailgunClient mailgun;
     private readonly IOptionsMonitor<MailgunOptions> options;
+    private readonly IdEncoder idEncoder;
     private readonly ILogger<ContributionNotificationService> logger;
 
     public ContributionNotificationService(
         MailgunClient mailgun,
         IOptionsMonitor<MailgunOptions> options,
+        IdEncoder idEncoder,
         ILogger<ContributionNotificationService> logger)
     {
         this.mailgun = mailgun;
         this.options = options;
+        this.idEncoder = idEncoder;
         this.logger = logger;
     }
 
@@ -207,7 +211,7 @@ public class ContributionNotificationService : IContributionNotificationService
         }
 
         var title = $"{contribution.Title} ({contribution.Year})";
-        var adminUrl = $"https://thediscdb.com/admin/contribution/{contribution.Id}";
+        var adminUrl = $"https://thediscdb.com/admin/contribution/{contribution.Id}/history";
         var eName = E(userName ?? "A contributor");
         var eEmail = E(userEmail);
         var eTitle = E(title);
@@ -251,6 +255,8 @@ public class ContributionNotificationService : IContributionNotificationService
         }
 
         var title = $"{contribution.Title} ({contribution.Year})";
+        var encodedId = idEncoder.Encode(contribution.Id);
+        var messagesUrl = $"https://thediscdb.com/contribution/{encodedId}/messages";
         var eTitle = E(title);
         var eRelease = E(contribution.ReleaseTitle);
         var eMessage = E(message);
@@ -260,7 +266,7 @@ public class ContributionNotificationService : IContributionNotificationService
                 <h2 style="color: #00213F;">New Message from TheDiscDb</h2>
                 <p>An admin sent you a message about your contribution <strong>{eTitle}</strong> — {eRelease}:</p>
                 <blockquote style="margin: 16px 0; padding: 12px 16px; background: #f5f5f5; border-left: 4px solid #00213F; white-space: pre-wrap;">{eMessage}</blockquote>
-                <p style="color: #666; font-size: 14px;">Log in to TheDiscDb to reply.</p>
+                <p><a href="{messagesUrl}" style="display: inline-block; padding: 10px 20px; background-color: #00213F; color: #ffffff; text-decoration: none; border-radius: 4px;">View Messages</a></p>
             </div>
             """;
 
