@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Web.Data;
 
@@ -9,7 +10,11 @@ public interface IMessageService
     Task<UserMessage> SendUserMessageAsync(int contributionId, string fromUserId, string message, CancellationToken cancellationToken = default);
 }
 
-public class MessageService(IDbContextFactory<SqlServerDataContext> dbFactory) : IMessageService
+public class MessageService(
+    IDbContextFactory<SqlServerDataContext> dbFactory,
+    IContributionNotificationService notificationService,
+    UserManager<TheDiscDbUser> userManager,
+    ILogger<MessageService> logger) : IMessageService
 {
     public async Task<UserMessage> SendAdminMessageAsync(int contributionId, string fromUserId, string toUserId, string message, CancellationToken cancellationToken = default)
     {
@@ -28,6 +33,20 @@ public class MessageService(IDbContextFactory<SqlServerDataContext> dbFactory) :
 
         database.UserMessages.Add(userMessage);
         await database.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            var contribution = await database.UserContributions.FirstOrDefaultAsync(c => c.Id == contributionId, cancellationToken);
+            if (contribution != null)
+            {
+                var recipient = await userManager.FindByIdAsync(toUserId);
+                await notificationService.NotifyMessageFromAdminAsync(contribution, message, recipient?.Email);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send admin message notification for contribution {Id}", contributionId);
+        }
 
         return userMessage;
     }
@@ -56,6 +75,20 @@ public class MessageService(IDbContextFactory<SqlServerDataContext> dbFactory) :
 
         database.UserMessages.Add(userMessage);
         await database.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            var contribution = await database.UserContributions.FirstOrDefaultAsync(c => c.Id == contributionId, cancellationToken);
+            if (contribution != null)
+            {
+                var sender = await userManager.FindByIdAsync(fromUserId);
+                await notificationService.NotifyMessageFromUserAsync(contribution, message, sender?.UserName, sender?.Email);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to send user message notification for contribution {Id}", contributionId);
+        }
 
         return userMessage;
     }
