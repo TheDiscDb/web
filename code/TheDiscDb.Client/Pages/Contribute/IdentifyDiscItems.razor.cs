@@ -200,6 +200,8 @@ public partial class IdentifyDiscItems : ComponentBase
             this.contribution = response.Data.DiscLogs.DiscLogs.Contribution;
             InitializeLengthFilter();
 
+            this.commentColumnVisible = this.allTitles.Any(t => !string.IsNullOrEmpty(t.JavaComment));
+
             if (allTitles != null && disc?.Items != null)
             {
                 foreach (IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item in disc.Items)
@@ -229,11 +231,6 @@ public partial class IdentifyDiscItems : ComponentBase
                         InitializeAudioTracks(item, existingItem, title);
 
                         identifiedTitles[title] = existingItem;
-
-                        if (!string.IsNullOrEmpty(title.JavaComment))
-                        {
-                            this.commentColumnVisible = true;
-                        }
                     }
                 }
             }
