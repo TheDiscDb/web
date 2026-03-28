@@ -9,6 +9,7 @@
   <Project Path="TheDiscDb.Data.Import/TheDiscDb.Data.Import.csproj" />
   <Project Path="TheDiscDb.Data/TheDiscDb.Data.csproj" />
   <Project Path="TheDiscDb.DatabaseMigration/TheDiscDb.DatabaseMigration.csproj" />
+  <Project Path="TheDiscDb.Mailgun/TheDiscDb.Mailgun.csproj" />
   <Project Path="TheDiscDb.Search/TheDiscDb.Search.csproj" />
   <Project Path="TheDiscDb.ServiceDefaults/TheDiscDb.ServiceDefaults.csproj" />
   <Project Path="TheDiscDb/TheDiscDb.csproj" />

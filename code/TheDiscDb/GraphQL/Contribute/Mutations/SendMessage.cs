@@ -1,4 +1,5 @@
 using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.Services;
@@ -16,6 +17,7 @@ public partial class ContributionMutations
         string message,
         SqlServerDataContext database,
         IMessageService messageService,
+        UserManager<TheDiscDbUser> userManager,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(message) || message.Length > 10_000)
@@ -48,6 +50,7 @@ public partial class ContributionMutations
         string message,
         SqlServerDataContext database,
         IMessageService messageService,
+        UserManager<TheDiscDbUser> userManager,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(message) || message.Length > 10_000)
@@ -68,7 +71,7 @@ public partial class ContributionMutations
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken)
             ?? throw new ContributionNotFoundException(contributionId);
 
-        await EnsureOwnership(contribution, contributionId, cancellationToken: cancellationToken);
+        await EnsureOwnership(userManager, contribution, contributionId, cancellationToken: cancellationToken);
 
         return await messageService.SendUserMessageAsync(contribution.Id, userId, message, cancellationToken);
     }

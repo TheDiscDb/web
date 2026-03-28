@@ -1,4 +1,5 @@
 ﻿using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
@@ -14,17 +15,17 @@ public partial class ContributionMutations
     [Error(typeof(InvalidIdException))]
     [Error(typeof(InvalidOwnershipException))]
     [Authorize]
-    public async Task<DiscHash> HashDisc(string contributionId, List<FileHashInfo> files, SqlServerDataContext database, CancellationToken cancellationToken = default)
+    public async Task<DiscHash> HashDisc(string contributionId, List<FileHashInfo> files, SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken = default)
     {
         int id = this.idEncoder.Decode(contributionId);
         var contribution = await database.UserContributions
             .Include(c => c.HashItems)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
-        await EnsureOwnership(contribution, contributionId, cancellationToken: cancellationToken);
+        await EnsureOwnership(userManager, contribution, contributionId, cancellationToken: cancellationToken);
 
         var hash = files.OrderBy(f => f.Name).CalculateHash();
-        var existingItems = contribution!.HashItems?.Where(i => i.DiscHash == hash).ToList();
+        var existingItems= contribution!.HashItems?.Where(i => i.DiscHash == hash).ToList();
         foreach (var existing in existingItems ?? Enumerable.Empty<UserContributionDiscHashItem>())
         {
             contribution.HashItems!.Remove(existing);

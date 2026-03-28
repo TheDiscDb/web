@@ -26,6 +26,7 @@ using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Web;
 using TheDiscDb.Web.Authentication;
 using TheDiscDb.Web.Data;
+using TheDiscDb.Web.Email;
 using TheDiscDb.Web.Sitemap;
     
 var builder = WebApplication.CreateBuilder(args);
@@ -287,6 +288,19 @@ builder.Services.AddHighlight();
 builder.Services.AddSingleton<IAmazonImporter, AmazonImporter>();
 builder.Services.AddScoped<IContributionHistoryService, ContributionHistoryService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+
+// Mailgun email — optional, no-ops if ApiKey is not configured
+builder.Services.Configure<MailgunOptions>(builder.Configuration.GetSection("Mailgun"));
+var mailgunApiKey = builder.Configuration.GetValue<string>("Mailgun:ApiKey");
+if (!string.IsNullOrEmpty(mailgunApiKey))
+{
+    builder.Services.AddMailgunClient();
+    builder.Services.AddTransient<IContributionNotificationService, ContributionNotificationService>();
+}
+else
+{
+    builder.Services.AddTransient<IContributionNotificationService, NullContributionNotificationService>();
+}
 
 builder.Services.AddSingleton<IContributionValidation, UniqueReleaseSlugValidation>();
 builder.Services.AddSingleton<IContributionValidation, UniqueDiscSlugValidation>();

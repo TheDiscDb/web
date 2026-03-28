@@ -28,10 +28,16 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
     private IContributionHistoryService HistoryService { get; set; } = null!;
 
     [Inject]
+    private IContributionNotificationService NotificationService { get; set; } = null!;
+
+    [Inject]
     private IMessageService MessageService { get; set; } = null!;
 
     [Inject]
     private IPrincipalProvider PrincipalProvider { get; set; } = null!;
+
+    [Inject]
+    private ILogger<ContributionDetails> logger { get; set; } = null!;
 
     [Parameter]
     public string? ContributionId { get; set; }
@@ -107,6 +113,15 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
             this.Contribution.Status = UserContributionStatus.Imported;
             await this.database.SaveChangesAsync();
             await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.Imported);
+
+            try
+            {
+                await NotificationService.NotifyContributionImportedAsync(this.Contribution, this.User?.Email);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to send imported notification for contribution {Id}", this.Contribution.Id);
+            }
         }
     }
 

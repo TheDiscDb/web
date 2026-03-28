@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.Services;
@@ -14,7 +15,7 @@ public partial class ContributionMutations
     [Error(typeof(InvalidOwnershipException))]
     [Error(typeof(InvalidContributionStatusException))]
     [Authorize]
-    public async Task<UserContribution> DeleteContribution(string contributionId, SqlServerDataContext database, IContributionHistoryService historyService, CancellationToken cancellationToken)
+    public async Task<UserContribution> DeleteContribution(string contributionId, SqlServerDataContext database, IContributionHistoryService historyService, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
     {
         var decodedContributionId = this.idEncoder.Decode(contributionId);
         var contribution = await database.UserContributions
@@ -23,7 +24,7 @@ public partial class ContributionMutations
             .Include(c => c.HashItems)
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
 
-        await EnsureOwnership(contribution, contributionId, cancellationToken: cancellationToken);
+        await EnsureOwnership(userManager, contribution, contributionId, cancellationToken: cancellationToken);
 
         var deletableStatuses = new[]
         {
