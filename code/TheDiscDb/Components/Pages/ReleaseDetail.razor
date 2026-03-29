@@ -24,34 +24,61 @@ else
         <TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootLink(this.Item), GetMediaItemLink(this.Item)]" PrimaryText="@Release.Title" />
         <div class="d-flex flex-column flex-md-row gap-3 align-items-start">
             <MediaImage Url="@Release?.ImageUrl" Width="413" Height="525" Title="@Release?.FullTitle" CssClass="mediaItemDetailCover img-fluid" Style="max-width: 413px;" />
-            <div class="vstack">
-                <h1>@Item.FullTitle</h1>
-                <h2>@Release?.FullTitle</h2>
-                <div>Released @string.Format("{0:d}", @Release?.ReleaseDate)</div>
-                <AmazonAssociatesButton Asin="@Release?.Asin" Width="25" />
-                <ul>
-                    @if (Release?.Discs != null)
-                    {
-                        foreach (var disc in Release.Discs)
+            <div class="release-info-column">
+                <div>
+                    <h1>@Item.FullTitle</h1>
+                    <h2>@Release?.FullTitle</h2>
+                    <div>Released @string.Format("{0:d}", @Release?.ReleaseDate)</div>
+                    <AmazonAssociatesButton Asin="@Release?.Asin" Width="25" />
+                    <ul>
+                        @if (Release?.Discs != null)
                         {
-                            <li><a href="@disc.DiscDetailUrl(this.Release, this.Item)">@disc.FullDiscName()</a></li>
-                            <ul class="facts">
-                                @foreach (var feature in NavigationExtensions.GetDiscFeatures(disc))
-                                {
-                                    <li>
-                                        <span class="feature">@feature.Description</span>
-                                        @if (feature.HasChapters)
-                                        {
-                                            <span title="Has chapter names">
-                                                <SfIcon Name="IconName.ListOrdered" />
-                                            </span>
-                                        }
-                                    </li>
-                                }
-                            </ul>
+                            foreach (var disc in Release.Discs)
+                            {
+                                <li><a href="@disc.DiscDetailUrl(this.Release, this.Item)">@disc.FullDiscName()</a></li>
+                                <ul class="facts">
+                                    @foreach (var feature in NavigationExtensions.GetDiscFeatures(disc))
+                                    {
+                                        <li>
+                                            <span class="feature">@feature.Description</span>
+                                            @if (feature.HasChapters)
+                                            {
+                                                <span title="Has chapter names">
+                                                    <SfIcon Name="IconName.ListOrdered" />
+                                                </span>
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            }
                         }
-                    }
-                </ul>
+                    </ul>
+                </div>
+
+                @if (Release?.Contributors != null && Release.Contributors.Any())
+                {
+                    <section class="contributed-by-section">
+                        <h3>Contributed by</h3>
+                        <div class="contributor-list">
+                            @foreach (var contributor in Release.Contributors)
+                            {
+                                @if (string.Equals(contributor.Source, "github", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(contributor.Name))
+                                {
+                                    <a href="https://github.com/@contributor.Name" target="_blank" rel="noopener noreferrer" class="contributor-chip" title="View on GitHub">
+                                        <img src="https://github.com/@(contributor.Name).png?size=24" width="24" height="24" alt="@contributor.Name" class="contributor-avatar" />
+                                        @contributor.Name
+                                    </a>
+                                }
+                                else if (!string.IsNullOrEmpty(contributor.Name))
+                                {
+                                    <a href="/contributedBy/@Uri.EscapeDataString(contributor.Name)" class="contributor-chip" title="View contributions">
+                                        @contributor.Name
+                                    </a>
+                                }
+                            }
+                        </div>
+                    </section>
+                }
             </div>
         </div>
     </div>

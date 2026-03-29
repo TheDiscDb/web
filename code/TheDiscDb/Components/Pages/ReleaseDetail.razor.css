@@ -1,0 +1,49 @@
+.release-info-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-self: stretch;
+    min-height: 100%;
+}
+
+.contributed-by-section {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.contributed-by-section h3 {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+}
+
+.contributor-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.contributor-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: #f0f4f8;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #00213F;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+
+.contributor-chip:hover {
+    background: #dce4ed;
+    text-decoration: none;
+    color: #00213F;
+}
+
+.contributor-avatar {
+    border-radius: 50%;
+}
