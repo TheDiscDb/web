@@ -73,29 +73,38 @@
 
     .autocomplete .options {
         position: absolute;
-        top: 40px;
+        top: 42px;
         left: 0;
         background: white;
         width: 100%;
+        min-width: 300px;
         padding: 0;
-        z-index: 10;
+        z-index: 1050;
         border: 1px solid #ced4da;
         border-radius: 0.5rem;
-        box-shadow: 0 30px 25px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
     }
 
     .autocomplete .option {
-        display: block;
-        padding: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        color: #333;
+        text-decoration: none;
+        cursor: pointer;
+        border-bottom: 1px solid #f0f0f0;
     }
 
-        .autocomplete .option .option-text {
-            padding: 0.25rem 0.5rem;
+        .autocomplete .option:last-child {
+            border-bottom: none;
         }
 
-        .autocomplete .option:hover {
-            background: #1E90FF;
-            color: #fff;
+        .autocomplete .option:hover,
+        .autocomplete .option.selected {
+            background: #f0f4f8;
+            color: #00213F;
         }
 
         .autocomplete .option.disabled {
@@ -103,7 +112,42 @@
             cursor: not-allowed;
         }
 
-            .autocomplete .option.disabled:hover {
-                background: lightgrey;
-                color: var(--bs-body);
-            }
+    .autocomplete .option-thumb {
+        border-radius: 4px;
+        flex-shrink: 0;
+        object-fit: cover;
+    }
+
+    .autocomplete .option-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        overflow: hidden;
+    }
+
+    .autocomplete .option-title {
+        font-size: 0.85rem;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .autocomplete .option-type {
+        font-size: 0.7rem;
+        color: #666;
+        text-transform: capitalize;
+    }
+
+    .autocomplete .see-all {
+        justify-content: center;
+        font-size: 0.8rem;
+        color: #00213F;
+        font-weight: 500;
+        padding: 10px 12px;
+        background: #f8f9fa;
+    }
+
+        .autocomplete .see-all:hover {
+            background: #e8eef5;
+        }

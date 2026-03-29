@@ -31,10 +31,46 @@
                         <NavLink class="nav-link" href="/about" Match="NavLinkMatch.All">About</NavLink>
                     </li>
                 </ul>
-                <form action="/search" method="get" class="search-form" @onsubmit="OnSearchSubmit" @onsubmit:preventDefault>
-                    <label for="site-search" class="visually-hidden">Search</label>
-                    <input id="site-search" type="text" name="q" placeholder="Search..." data-permanent @bind-value="searchQuery" class="form-control main-search-box" />
-                </form>
+                <div class="autocomplete">
+                    <form action="/search" method="get" class="search-form" @onsubmit="OnSearchSubmit" @onsubmit:preventDefault>
+                        <label for="site-search" class="visually-hidden">Search</label>
+                        <input id="site-search" type="text" name="q" placeholder="Search..." autocomplete="off" data-permanent
+                               value="@searchQuery"
+                               @oninput="OnSearchInput"
+                               @onkeydown="OnSearchKeyDown"
+                               @onfocus="OnSearchFocus"
+                               @onblur="OnSearchBlur"
+                               class="form-control main-search-box" />
+                    </form>
+                    @if (showSuggestions && suggestions != null && suggestions.Any())
+                    {
+                        <div class="options">
+                            @for (int i = 0; i < suggestions.Count; i++)
+                            {
+                                var suggestion = suggestions[i];
+                                var isSelected = i == selectedIndex;
+                                <a href="@suggestion.RelativeUrl?.ToLower()" class="option @(isSelected ? "selected" : "")"
+                                   @onmousedown="() => NavigateToSuggestion(suggestion)" @onmousedown:preventDefault>
+                                    @if (!string.IsNullOrEmpty(suggestion.ImageUrl))
+                                    {
+                                        <img src="/images/@(suggestion.ImageUrl)?width=40&height=60" width="40" height="60" alt="" class="option-thumb" />
+                                    }
+                                    <span class="option-text">
+                                        <span class="option-title">@suggestion.Title</span>
+                                        @if (!string.IsNullOrEmpty(suggestion.Type))
+                                        {
+                                            <span class="option-type">@suggestion.Type</span>
+                                        }
+                                    </span>
+                                </a>
+                            }
+                            <a href="/search?q=@Uri.EscapeDataString(searchQuery ?? "")" class="option see-all"
+                               @onmousedown="OnSearchSubmit" @onmousedown:preventDefault>
+                                See all results for "@searchQuery"
+                            </a>
+                        </div>
+                    }
+                </div>
                 <div class="user-menu-container d-none d-lg-block">
                     @if (isAuthenticated)
                     {
