@@ -36,7 +36,7 @@
         {
             var response = await this.client.SearchAsync<SearchEntry>(term, cancellationToken: cancellationToken);
 
-            List<SearchEntry> results = new();
+            List<(SearchEntry Document, double? Score)> results = new();
             HashSet<string> dedupe = new();
 
             foreach (var item in response.Value.GetResults())
@@ -46,24 +46,47 @@
 
                 if (!dedupe.Contains(item.Document.RelativeUrl))
                 {
-                    results.Add(item.Document);
+                    results.Add((item.Document, item.Score));
                     dedupe.Add(item.Document.RelativeUrl);
                 }
             }
 
-            return results;
+            // Prioritize media items and releases, then sort by relevance within each tier
+            return results
+                .OrderBy(r => TypePriority(r.Document.Type))
+                .ThenByDescending(r => r.Score ?? 0)
+                .Select(r => r.Document);
         }
+        private static readonly HashSet<string> TopLevelTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "movie", "series", "boxset"
+        };
+
+        private static readonly HashSet<string> SecondaryTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "release"
+        };
+
+        private static int TypePriority(string? type)
+        {
+            if (type == null) return 99;
+            if (TopLevelTypes.Contains(type)) return 0;
+            if (SecondaryTypes.Contains(type)) return 1;
+            return 2; // disc, title, etc.
+        }
+
         public async Task<IEnumerable<SearchEntry>> Suggest(string term, int limit = 5, CancellationToken cancellationToken = default)
         {
+            // Fetch more than needed so we can prioritize top-level items
             var searchOptions = new Azure.Search.Documents.SearchOptions
             {
-                Size = limit,
+                Size = limit * 5,
                 QueryType = Azure.Search.Documents.Models.SearchQueryType.Simple
             };
 
             var response = await this.client.SearchAsync<SearchEntry>(term, searchOptions, cancellationToken);
 
-            List<SearchEntry> results = new();
+            List<SearchEntry> candidates = new();
             HashSet<string> dedupe = new();
 
             foreach (var item in response.Value.GetResults())
@@ -73,15 +96,14 @@
 
                 if (!dedupe.Contains(item.Document.RelativeUrl))
                 {
-                    results.Add(item.Document);
+                    candidates.Add(item.Document);
                     dedupe.Add(item.Document.RelativeUrl);
                 }
-
-                if (results.Count >= limit)
-                    break;
             }
 
-            return results;
+            return candidates
+                .OrderBy(c => TypePriority(c.Type))
+                .Take(limit);
         }
     }
 }
