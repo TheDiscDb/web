@@ -62,3 +62,14 @@ IMPORTANT! Always prefer official documentation when available. The following si
 1. https://aspire.dev
 2. https://learn.microsoft.com/dotnet/aspire
 3. https://nuget.org (for specific integration package details)
+
+## Code conventions
+
+### Blazor component structure
+IMPORTANT! Always use the code-behind pattern for Razor components. Markup goes in the `.razor` file, all C# logic goes in a separate `.razor.cs` file. Never put `@code` blocks inline in `.razor` files.
+
+### CSS
+IMPORTANT! Avoid inline CSS (`style="..."` attributes) in Razor files. Use scoped CSS (`.razor.css` files) or the global stylesheet (`app.css`) instead.
+
+### Git merge strategy
+When merging feature branches into `main`, always use squash merge (`git merge --squash`). Do not use regular merge or rebase merge.

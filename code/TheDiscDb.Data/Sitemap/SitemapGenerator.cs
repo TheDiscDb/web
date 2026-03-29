@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
@@ -24,6 +25,7 @@ public class SitemapGenerator
         {
             await this.GenerateMediaItemUrls(siteBase, dbContext, nodes);
             await this.GenerateBoxsetUrls(siteBase, dbContext, nodes);
+            await this.GenerateLeaderboardUrls(siteBase, dbContext, nodes);
             //await this.GenerateGroupUrls(siteBase, dbContext, nodes);
         }
 
@@ -40,6 +42,25 @@ public class SitemapGenerator
         }
 
         return nodes;
+    }
+
+    private async Task GenerateLeaderboardUrls(string siteBase, SqlServerDataContext dbContext, ICollection<SitemapNode> results)
+    {
+        results.Add(CreateSitemapNode(siteBase, "/leaderboard", SitemapFrequency.Weekly, priority: 0.7));
+
+        var contributors = await dbContext.Contributors
+            .Where(c => c.Releases.Any())
+            .Select(c => c.Name)
+            .ToListAsync();
+
+        foreach (var name in contributors)
+        {
+            if (!string.IsNullOrEmpty(name))
+            {
+                string relativeUrl = $"/contributedBy/{Uri.EscapeDataString(name)}";
+                results.Add(CreateSitemapNode(siteBase, relativeUrl, SitemapFrequency.Weekly, priority: 0.5));
+            }
+        }
     }
 
     private async Task GenerateGroupUrls(string siteBase, SqlServerDataContext dbContext, ICollection<SitemapNode> results)

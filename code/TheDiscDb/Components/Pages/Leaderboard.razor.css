@@ -1,0 +1,114 @@
+.leaderboard-page {
+    max-width: 720px;
+    margin: 0 auto;
+    gap: 0.75rem;
+}
+
+.leaderboard-page ::deep .contribute-hero.compact {
+    padding: 1rem 2rem;
+    margin-bottom: 0.75rem;
+}
+
+.leaderboard-page ::deep .contribute-hero.compact h1 {
+    margin-bottom: 0.25rem;
+    font-size: 1.5rem;
+}
+
+.leaderboard-page ::deep .contribute-hero.compact p {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.leaderboard-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 0;
+}
+
+.leaderboard-filter-link {
+    font-size: 14px;
+    color: #00213F;
+    text-decoration: none;
+}
+
+.leaderboard-filter-link:hover {
+    text-decoration: underline;
+}
+
+.leaderboard-table-section {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard-table thead {
+    background: #00213F;
+    color: #fff;
+}
+
+.leaderboard-table th {
+    padding: 12px 16px;
+    font-weight: 500;
+    font-size: 14px;
+    text-align: left;
+}
+
+.leaderboard-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+
+.leaderboard-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.leaderboard-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.rank-col {
+    width: 60px;
+    text-align: center;
+}
+
+.count-col {
+    width: 100px;
+    text-align: center;
+}
+
+.date-col {
+    width: 140px;
+    text-align: right;
+}
+
+.medal {
+    font-size: 20px;
+}
+
+.contributor-name {
+    font-weight: 500;
+}
+
+.top-1 .contributor-name {
+    color: #00213F;
+    font-weight: 700;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.error-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #c0392b;
+}

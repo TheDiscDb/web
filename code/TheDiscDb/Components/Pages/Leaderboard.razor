@@ -1,0 +1,67 @@
+@page "/leaderboard"
+
+<PageTitle>Contributor Leaderboard - TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="See who's contributing the most to TheDiscDb — the community-driven disc database for Blu-ray, 4K UHD, and DVD collectors." />
+    <link rel="canonical" href="https://thediscdb.com/leaderboard" />
+    <meta property="og:title" content="Contributor Leaderboard - TheDiscDb" />
+    <meta property="og:description" content="See who's contributing the most to TheDiscDb — the community-driven disc database." />
+    <meta property="og:url" content="https://thediscdb.com/leaderboard" />
+    <meta property="og:type" content="website" />
+</HeadContent>
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Leaderboard" Items='[("Home", "/"), ("Contribute", "/contribute")]' />
+
+<div class="contribute-layout leaderboard-page">
+    <section class="contribute-hero compact">
+        <h1>Contributor Leaderboard</h1>
+        <p>Celebrating the people who make TheDiscDb possible.</p>
+    </section>
+
+    @if (errorMessage != null)
+    {
+        <p class="error-state">@errorMessage</p>
+    }
+    else if (leaders != null)
+    {
+        <section class="leaderboard-table-section">
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th class="rank-col">#</th>
+                        <th>Contributor</th>
+                        <th class="count-col">Releases</th>
+                        <th class="date-col">Latest</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var rank = 1; }
+                    @foreach (var entry in leaders)
+                    {
+                        <tr class="@(rank <= 3 ? $"top-{rank}" : "")">
+                            <td class="rank-col">
+                                @if (rank == 1) { <span class="medal" title="1st place">🥇</span> }
+                                else if (rank == 2) { <span class="medal" title="2nd place">🥈</span> }
+                                else if (rank == 3) { <span class="medal" title="3rd place">🥉</span> }
+                                else { @rank }
+                            </td>
+                            <td class="contributor-name"><a href="/contributedBy/@Uri.EscapeDataString(entry.Name)">@entry.Name</a></td>
+                            <td class="count-col">@entry.ReleaseCount</td>
+                            <td class="date-col">@entry.LatestRelease.ToString("MMM d, yyyy")</td>
+                        </tr>
+                        rank++;
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        @if (!leaders.Any())
+        {
+            <p class="empty-state">No imported contributions yet. Be the first — <a href="/contribute">start contributing</a>!</p>
+        }
+    }
+    else
+    {
+        <p><em>Loading...</em></p>
+    }
+</div>

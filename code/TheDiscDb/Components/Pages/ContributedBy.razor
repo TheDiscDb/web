@@ -1,0 +1,53 @@
+@page "/contributedBy/{username}"
+
+<PageTitle>Releases by @Username - TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="Browse all Blu-ray, 4K UHD, and DVD releases contributed by @Username to TheDiscDb — the community disc database." />
+    <link rel="canonical" href="https://thediscdb.com/contributedBy/@Uri.EscapeDataString(Username ?? "")" />
+    <meta property="og:title" content="Releases by @Username - TheDiscDb" />
+    <meta property="og:description" content="Browse all releases contributed by @Username to TheDiscDb." />
+    <meta property="og:url" content="https://thediscdb.com/contributedBy/@Uri.EscapeDataString(Username ?? "")" />
+    <meta property="og:type" content="website" />
+</HeadContent>
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@Username" Items='[("Home", "/"), ("Contribute", "/contribute"), ("Leaderboard", "/leaderboard")]' />
+
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <h1>Contributions by @Username</h1>
+        <p>@(releases?.Count ?? 0) contribution@(releases?.Count == 1 ? "" : "s") and growing!</p>
+    </section>
+
+    @if (errorMessage != null)
+    {
+        <p class="error-state">@errorMessage</p>
+    }
+    else if (releases != null)
+    {
+        <div class="media-item-list">
+            @foreach (var release in releases)
+            {
+                <a href="/@release.MediaType/@release.MediaItemSlug" class="media-item-card" title="@release.Title">
+                    @if (!string.IsNullOrEmpty(release.ImageUrl))
+                    {
+                        <img src="/images/@(release.ImageUrl)?width=156&height=231" width="156" height="231" alt="@release.Title" />
+                    }
+                    else
+                    {
+                        <div class="no-image-placeholder">No Image</div>
+                    }
+                    <span class="media-item-label">@release.Title (@release.Year)</span>
+                </a>
+            }
+        </div>
+
+        @if (!releases.Any())
+        {
+            <p class="empty-state">No releases found for this contributor.</p>
+        }
+    }
+    else
+    {
+        <p><em>Loading...</em></p>
+    }
+</div>

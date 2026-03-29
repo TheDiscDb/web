@@ -450,6 +450,35 @@ pre code {
         margin-top: 0;
     }
 
+.leaderboard-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #f0f4f8 0%, #e8eef5 100%);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+    .leaderboard-banner a {
+        color: #00213F;
+        font-weight: 600;
+    }
+
+.leaderboard-banner-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #2ecc71;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
 .add-disc-page .info-card {
     padding: 2rem;
 }
