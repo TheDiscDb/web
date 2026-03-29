@@ -1,7 +1,6 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.SplitButtons;
@@ -107,18 +106,12 @@ public partial class NavMenu : ComponentBase
         }
     }
 
-    public async Task KeyPressed(KeyboardEventArgs e)
-    {
-        if (e.Code == "Enter" || e.Code == "NumpadEnter")
-        {
-            await Task.Yield();
-            TryNavigateToSearch();
-        }
-    }
-
-    private void TryNavigateToSearch()
+    public async Task OnSearchSubmit()
     {
         if (string.IsNullOrWhiteSpace(searchQuery)) return;
+
+        // Dismiss mobile offcanvas if open
+        await JS.InvokeVoidAsync("eval", "document.querySelector('#navbarOffcanvas.show')?.classList.remove('show');document.querySelector('.offcanvas-backdrop')?.remove();document.body.classList.remove('overflow-hidden');");
 
         string url = $"/search?q={Uri.EscapeDataString(searchQuery)}";
         NavigationManager?.NavigateTo(url);

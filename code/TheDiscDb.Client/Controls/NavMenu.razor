@@ -31,8 +31,10 @@
                         <NavLink class="nav-link" href="/about" Match="NavLinkMatch.All">About</NavLink>
                     </li>
                 </ul>
-                <label for="site-search" class="visually-hidden">Search</label>
-                <input id="site-search" type="text" placeholder="Search..." data-permanent @bind-value="searchQuery" class="form-control main-search-box" @onkeydown="KeyPressed"></input>
+                <form action="/search" method="get" class="search-form" @onsubmit="OnSearchSubmit" @onsubmit:preventDefault>
+                    <label for="site-search" class="visually-hidden">Search</label>
+                    <input id="site-search" type="text" name="q" placeholder="Search..." data-permanent @bind-value="searchQuery" class="form-control main-search-box" />
+                </form>
                 <div class="user-menu-container d-none d-lg-block">
                     @if (isAuthenticated)
                     {
