@@ -37,42 +37,19 @@
             var response = await this.client.SearchAsync<SearchEntry>(term, cancellationToken: cancellationToken);
 
             List<SearchEntry> results = new();
-            List<SearchEntry> subResults = new();
-
             HashSet<string> dedupe = new();
 
             foreach (var item in response.Value.GetResults())
             {
-                if (item?.Document?.Type == null)
-                {
+                if (item?.Document?.Type == null || item.Document.RelativeUrl == null)
                     continue;
-                }
 
-                if (item.Document.Type.Equals("movie", StringComparison.OrdinalIgnoreCase) ||
-                    item.Document.Type.Equals("series", StringComparison.OrdinalIgnoreCase) ||
-                    item.Document.Type.Equals("boxset", StringComparison.OrdinalIgnoreCase))
+                if (!dedupe.Contains(item.Document.RelativeUrl))
                 {
-                    if (item?.Document.RelativeUrl != null && !dedupe.Contains(item.Document.RelativeUrl))
-                    {
-                        results.Add(item.Document);
-                        dedupe.Add(item.Document.RelativeUrl);
-                    }
-                }
-                else
-                {
-                    subResults.Add(item.Document);
+                    results.Add(item.Document);
+                    dedupe.Add(item.Document.RelativeUrl);
                 }
             }
-
-            //TODO: Figure out sub items
-            //foreach (var subItem in subResults)
-            //{
-            //    var parent = results.FirstOrDefault(p => p.id.Equals($"{p.id}-{p.Type}", StringComparison.OrdinalIgnoreCase));
-            //    if (parent != null)
-            //    {
-
-            //    }
-            //}
 
             return results;
         }
