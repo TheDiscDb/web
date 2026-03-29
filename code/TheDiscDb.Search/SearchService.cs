@@ -76,5 +76,35 @@
 
             return results;
         }
+        public async Task<IEnumerable<SearchEntry>> Suggest(string term, int limit = 5, CancellationToken cancellationToken = default)
+        {
+            var searchOptions = new Azure.Search.Documents.SearchOptions
+            {
+                Size = limit,
+                QueryType = Azure.Search.Documents.Models.SearchQueryType.Simple
+            };
+
+            var response = await this.client.SearchAsync<SearchEntry>(term, searchOptions, cancellationToken);
+
+            List<SearchEntry> results = new();
+            HashSet<string> dedupe = new();
+
+            foreach (var item in response.Value.GetResults())
+            {
+                if (item?.Document?.RelativeUrl == null || item.Document.Type == null)
+                    continue;
+
+                if (!dedupe.Contains(item.Document.RelativeUrl))
+                {
+                    results.Add(item.Document);
+                    dedupe.Add(item.Document.RelativeUrl);
+                }
+
+                if (results.Count >= limit)
+                    break;
+            }
+
+            return results;
+        }
     }
 }

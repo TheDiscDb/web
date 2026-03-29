@@ -25,6 +25,15 @@ public class ClientApiController : ControllerBase
         return results;
     }
 
+    [HttpGet("search/suggest")]
+    public async Task<IEnumerable<SearchEntry>> Suggest(string q, int limit = 5, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+            return [];
+
+        return await this.search.Suggest(q, Math.Min(limit, 10), cancellationToken);
+    }
+
     [HttpGet("barcode")]
     public FileContentResult Barcode(string data, int width = 200)
     {
