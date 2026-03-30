@@ -1,0 +1,80 @@
+@page "/contribute/boxset/create"
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Create Boxset" Items='[("Home", "/"), ("Contribute", "/contribute")]' />
+
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <h1>Create a Boxset</h1>
+        <p>A boxset is a collection of discs spanning multiple movies or series.</p>
+    </section>
+
+    <section class="info-card">
+        <EditForm Model="request" OnValidSubmit="HandleSubmit" FormName="CreateBoxsetForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Boxset Title <span class="text-danger">*</span></label>
+                <InputText class="form-control" @bind-Value="request.Title" @oninput="OnTitleChanged" />
+                <ValidationMessage For="@(() => request.Title)" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Slug <span class="text-danger">*</span></label>
+                <InputText class="form-control" @bind-Value="request.Slug" />
+                <ValidationMessage For="@(() => request.Slug)" />
+                <small class="text-muted">URL-friendly identifier for the boxset. Auto-generated from the title.</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Sort Title</label>
+                <InputText class="form-control" @bind-Value="request.SortTitle" />
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">ASIN</label>
+                    <InputText class="form-control" @bind-Value="request.Asin" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">UPC / EAN</label>
+                    <InputText class="form-control" @bind-Value="request.Upc" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Locale</label>
+                    <InputText class="form-control" @bind-Value="request.Locale" placeholder="e.g. en-us" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Region Code</label>
+                    <InputText class="form-control" @bind-Value="request.RegionCode" placeholder="e.g. 1" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Release Date</label>
+                <InputDate class="form-control" @bind-Value="releaseDate" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger">@errorMessage</div>
+            }
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                    }
+                    Create Boxset
+                </button>
+                <a class="btn btn-secondary" href="/contribute">Cancel</a>
+            </div>
+        </EditForm>
+    </section>
+</div>

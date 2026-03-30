@@ -23,6 +23,7 @@ using TheDiscDb.Search;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Validation.Contribution;
+using TheDiscDb.Validation.Boxset;
 using TheDiscDb.Web;
 using TheDiscDb.Web.Authentication;
 using TheDiscDb.Web.Data;
@@ -160,6 +161,7 @@ builder.Services
     .AddTypeExtension<UserContributionAudioTrackTypeExtension>()
     .AddTypeExtension<UserContributionChapterTypeExtension>()
     .AddTypeExtension<UserContributionDiscHashItemTypeExtension>()
+    .AddTypeExtension<UserContributionBoxsetTypeExtension>()
     .AddType<EncodedIdType>()
     .AddQueryType<ContributionQuery>()
     .AddMutationConventions(applyToAllMutations: true)
@@ -306,6 +308,11 @@ builder.Services.AddSingleton<IContributionValidation, UniqueReleaseSlugValidati
 builder.Services.AddSingleton<IContributionValidation, UniqueDiscSlugValidation>();
 builder.Services.AddSingleton<IContributionValidation, ReleaseHasDiscsValidation>();
 builder.Services.AddSingleton<IContributionValidation, ReleaseImageValidation>();
+
+builder.Services.AddSingleton<IBoxsetValidation, BoxsetHasMembersValidation>();
+builder.Services.AddSingleton<IBoxsetValidation, BoxsetHasImageValidation>();
+builder.Services.AddSingleton<IBoxsetValidation, BoxsetSlugValidation>();
+builder.Services.AddSingleton<IBoxsetValidation, BoxsetMemberDiscsValidation>();
 
 var app = builder.Build();
 

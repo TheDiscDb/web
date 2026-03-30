@@ -116,6 +116,12 @@ type ContributionMutations {
   sendUserMessage(input: SendUserMessageInput!): SendUserMessagePayload! @authorize @cost(weight: "10")
   markMessagesAsRead(input: MarkMessagesAsReadInput!): MarkMessagesAsReadPayload! @authorize @cost(weight: "10")
   updateDisc(input: UpdateDiscInput!): UpdateDiscPayload! @authorize @cost(weight: "10")
+  createBoxset(input: CreateBoxsetInput!): CreateBoxsetPayload! @authorize @cost(weight: "10")
+  updateBoxset(input: UpdateBoxsetInput!): UpdateBoxsetPayload! @authorize @cost(weight: "10")
+  deleteBoxset(input: DeleteBoxsetInput!): DeleteBoxsetPayload! @authorize @cost(weight: "10")
+  addDiscToBoxset(input: AddDiscToBoxsetInput!): AddDiscToBoxsetPayload! @authorize @cost(weight: "10")
+  removeDiscFromBoxset(input: RemoveDiscFromBoxsetInput!): RemoveDiscFromBoxsetPayload! @authorize @cost(weight: "10")
+  reorderBoxsetMembers(input: ReorderBoxsetMembersInput!): ReorderBoxsetMembersPayload! @authorize @cost(weight: "10")
 }
 
 type ContributionNotFoundError implements Error {
@@ -142,6 +148,8 @@ type ContributionQuery {
   myMessages("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [UserMessageSortInput!] @cost(weight: "10")): MyMessagesConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
   messageThreads: [MessageThread!]! @authorize @cost(weight: "10")
   amazonProductMetadata(asin: String!): AmazonProductMetadata @authorize @cost(weight: "10")
+  boxsetContributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionBoxsetFilterInput @cost(weight: "10") order: [UserContributionBoxsetSortInput!] @cost(weight: "10")): BoxsetContributionsConnection @authorize(policy: "Admin") @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
+  myBoxsets("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionBoxsetFilterInput @cost(weight: "10") order: [UserContributionBoxsetSortInput!] @cost(weight: "10")): MyBoxsetsConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
 }
 
 "A connection to a list of items."
@@ -539,6 +547,18 @@ union SendUserMessageError = ContributionNotFoundError | AuthenticationError | I
 union MarkMessagesAsReadError = AuthenticationError
 
 union UpdateDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+union CreateBoxsetError = AuthenticationError
+
+union UpdateBoxsetError = AuthenticationError | BoxsetNotFoundError | InvalidIdError | InvalidOwnershipError
+
+union DeleteBoxsetError = AuthenticationError | BoxsetNotFoundError | InvalidIdError | InvalidOwnershipError | InvalidBoxsetStatusError
+
+union AddDiscToBoxsetError = AuthenticationError | BoxsetNotFoundError | DiscNotFoundError | ContributionAlreadyInBoxsetError | InvalidIdError | InvalidOwnershipError | InvalidBoxsetStatusError
+
+union RemoveDiscFromBoxsetError = AuthenticationError | BoxsetNotFoundError | DiscNotFoundError | InvalidIdError | InvalidOwnershipError | InvalidBoxsetStatusError
+
+union ReorderBoxsetMembersError = AuthenticationError | BoxsetNotFoundError | InvalidIdError | InvalidOwnershipError | InvalidBoxsetStatusError
 
 input AddAudioTrackToItemInput {
   contributionId: String!
@@ -1040,6 +1060,183 @@ scalar DateTime @specifiedBy(url: "https:\/\/www.graphql-scalars.com\/date-time"
 scalar EncodedId
 
 scalar EncodedIdFilter
+
+type BoxsetNotFoundError implements Error {
+  message: String!
+}
+
+type ContributionAlreadyInBoxsetError implements Error {
+  message: String!
+}
+
+type InvalidBoxsetStatusError implements Error {
+  message: String!
+}
+
+type UserContributionBoxset {
+  id: Int!
+  userId: String!
+  created: DateTime!
+  status: UserContributionStatus!
+  title: String!
+  sortTitle: String
+  slug: String!
+  frontImageUrl: String
+  backImageUrl: String
+  asin: String
+  upc: String
+  releaseDate: DateTime
+  locale: String
+  regionCode: String
+  members(where: UserContributionBoxsetMemberFilterInput @cost(weight: "10") order: [UserContributionBoxsetMemberSortInput!] @cost(weight: "10")): [UserContributionBoxsetMember!]!
+  encodedId: EncodedId! @cost(weight: "10")
+}
+
+type UserContributionBoxsetMember {
+  id: Int!
+  boxset: UserContributionBoxset!
+  disc: UserContributionDisc!
+  sortOrder: Int!
+}
+
+type CreateBoxsetPayload {
+  userContributionBoxset: UserContributionBoxset
+  errors: [CreateBoxsetError!]
+}
+
+type UpdateBoxsetPayload {
+  userContributionBoxset: UserContributionBoxset
+  errors: [UpdateBoxsetError!]
+}
+
+type DeleteBoxsetPayload {
+  userContributionBoxset: UserContributionBoxset
+  errors: [DeleteBoxsetError!]
+}
+
+type AddDiscToBoxsetPayload {
+  userContributionBoxset: UserContributionBoxset
+  errors: [AddDiscToBoxsetError!]
+}
+
+type RemoveDiscFromBoxsetPayload {
+  userContributionBoxset: UserContributionBoxset
+  errors: [RemoveDiscFromBoxsetError!]
+}
+
+type ReorderBoxsetMembersPayload {
+  userContributionBoxset: UserContributionBoxset
+  errors: [ReorderBoxsetMembersError!]
+}
+
+"A connection to a list of items."
+type BoxsetContributionsConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [BoxsetContributionsEdge!]
+  "A flattened list of the nodes."
+  nodes: [UserContributionBoxset!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
+}
+
+"An edge in a connection."
+type BoxsetContributionsEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: UserContributionBoxset!
+}
+
+"A connection to a list of items."
+type MyBoxsetsConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [MyBoxsetsEdge!]
+  "A flattened list of the nodes."
+  nodes: [UserContributionBoxset!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
+}
+
+"An edge in a connection."
+type MyBoxsetsEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: UserContributionBoxset!
+}
+
+input CreateBoxsetInput {
+  input: BoxsetMutationRequestInput!
+}
+
+input UpdateBoxsetInput {
+  boxsetId: String!
+  input: BoxsetMutationRequestInput!
+}
+
+input DeleteBoxsetInput {
+  boxsetId: String!
+}
+
+input AddDiscToBoxsetInput {
+  boxsetId: String!
+  discId: String!
+}
+
+input RemoveDiscFromBoxsetInput {
+  boxsetId: String!
+  discId: String!
+}
+
+input ReorderBoxsetMembersInput {
+  boxsetId: String!
+  discIds: [String!]!
+}
+
+input BoxsetMutationRequestInput {
+  title: String!
+  sortTitle: String
+  slug: String!
+  frontImageUrl: String
+  backImageUrl: String
+  asin: String
+  upc: String
+  releaseDate: DateTime
+  locale: String
+  regionCode: String
+}
+
+input UserContributionBoxsetFilterInput {
+  and: [UserContributionBoxsetFilterInput!]
+  or: [UserContributionBoxsetFilterInput!]
+  encodedId: EncodedIdOperationFilterInput @cost(weight: "10")
+  status: UserContributionStatusOperationFilterInput @cost(weight: "10")
+  title: StringOperationFilterInput @cost(weight: "10")
+  slug: StringOperationFilterInput @cost(weight: "10")
+  created: DateTimeOperationFilterInput @cost(weight: "10")
+}
+
+input UserContributionBoxsetSortInput {
+  id: SortEnumType @cost(weight: "10")
+  title: SortEnumType @cost(weight: "10")
+  status: SortEnumType @cost(weight: "10")
+  created: SortEnumType @cost(weight: "10")
+  slug: SortEnumType @cost(weight: "10")
+}
+
+input UserContributionBoxsetMemberFilterInput {
+  and: [UserContributionBoxsetMemberFilterInput!]
+  or: [UserContributionBoxsetMemberFilterInput!]
+  sortOrder: IntOperationFilterInput @cost(weight: "10")
+}
+
+input UserContributionBoxsetMemberSortInput {
+  sortOrder: SortEnumType @cost(weight: "10")
+}
 
 "The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
 scalar Long

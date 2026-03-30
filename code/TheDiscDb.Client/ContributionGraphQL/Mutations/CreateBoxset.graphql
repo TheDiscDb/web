@@ -1,0 +1,13 @@
+mutation CreateBoxset($input: CreateBoxsetInput!) {
+  createBoxset(input: $input) {
+    userContributionBoxset {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

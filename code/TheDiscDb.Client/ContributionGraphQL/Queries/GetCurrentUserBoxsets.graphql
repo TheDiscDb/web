@@ -1,0 +1,28 @@
+query GetCurrentUserBoxsets($where: UserContributionBoxsetFilterInput, $first: Int, $after: String) {
+  myBoxsets(where: $where, first: $first, after: $after) {
+    nodes {
+      encodedId
+      title
+      slug
+      status
+      frontImageUrl
+      created
+      members {
+        sortOrder
+        disc {
+          encodedId
+          name
+          format
+          slug
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    totalCount
+  }
+}

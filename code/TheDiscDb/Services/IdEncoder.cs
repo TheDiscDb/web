@@ -108,4 +108,27 @@ public class IdEncoder
     {
         item?.EncodedId = this.idEncoder.Encode(item.Id);
     }
+
+    public void EncodeInPlace(UserContributionBoxset? boxset)
+    {
+        if (boxset == null)
+        {
+            return;
+        }
+
+        boxset.EncodedId = this.idEncoder.Encode(boxset.Id);
+    }
+
+    public void EncodeInPlace(IEnumerable<UserContributionBoxset>? boxsets)
+    {
+        if (boxsets == null)
+        {
+            return;
+        }
+
+        foreach (var boxset in boxsets)
+        {
+            EncodeInPlace(boxset);
+        }
+    }
 }

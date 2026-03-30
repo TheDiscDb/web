@@ -1,0 +1,98 @@
+@page "/admin/boxset/{BoxsetId}"
+@using Syncfusion.Blazor.Popups
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Boxset Details</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink()]" PrimaryText="@Boxset?.Title" />
+
+<h1>Boxset Details</h1>
+@if (Boxset != null)
+{
+    <h2>@Boxset.Title</h2>
+    <p>Slug: <code>@Boxset.Slug</code> &middot; Status: <strong>@Boxset.Status</strong></p>
+
+    <section class="info-card mb-3">
+        <h3>Metadata</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <dl>
+                    <dt>ASIN</dt><dd>@(Boxset.Asin ?? "—")</dd>
+                    <dt>UPC</dt><dd>@(Boxset.Upc ?? "—")</dd>
+                    <dt>Locale</dt><dd>@(Boxset.Locale ?? "—")</dd>
+                    <dt>Region Code</dt><dd>@(Boxset.RegionCode ?? "—")</dd>
+                    <dt>Release Date</dt><dd>@(Boxset.ReleaseDate?.ToString("yyyy-MM-dd") ?? "—")</dd>
+                </dl>
+            </div>
+            @if (!string.IsNullOrEmpty(Boxset.FrontImageUrl))
+            {
+                <div class="col-md-6">
+                    <img src="@Boxset.FrontImageUrl" alt="Front cover" style="max-height: 200px;" />
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="info-card mb-3">
+        <h3>Discs (@Boxset.Members.Count)</h3>
+        <table class="table table-sm">
+            <thead><tr><th>Index</th><th>Name</th><th>Format</th><th>Slug</th><th>From Contribution</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var member in Boxset.Members.OrderBy(m => m.SortOrder))
+                {
+                    <tr>
+                        <td>@(member.SortOrder + 1)</td>
+                        <td>@member.Disc.Name</td>
+                        <td>@member.Disc.Format</td>
+                        <td><code>@member.Disc.Slug</code></td>
+                        <td>
+                            <a href="/admin/contribution/@IdEncoder.Encode(member.Disc.UserContribution.Id)">
+                                @member.Disc.UserContribution.Title (@member.Disc.UserContribution.Year)
+                            </a>
+                        </td>
+                        <td><span class="badge bg-secondary">@member.Disc.UserContribution.Status</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <section class="d-flex gap-2 flex-wrap mb-3">
+        @if (Boxset.Status == UserContributionStatus.ReadyForReview)
+        {
+            <button class="btn btn-success" @onclick="ApproveClicked">Mark as Approved</button>
+        }
+        @if (Boxset.Status == UserContributionStatus.Approved)
+        {
+            <button class="btn btn-primary" @onclick="MarkAsImported">Mark as Imported</button>
+        }
+        <button class="btn btn-warning" @onclick="() => ShowMessageDialog(true)">Request Changes</button>
+        <button class="btn btn-danger" @onclick="() => ShowMessageDialog(false)">Reject</button>
+    </section>
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert alert-info">@statusMessage</div>
+    }
+}
+else
+{
+    <div class="alert alert-danger">Boxset not found.</div>
+}
+
+<SfDialog @bind-Visible="@showMessageDialog" Width="500px" IsModal="true" ShowCloseIcon="true" Header="@messageDialogHeader">
+    <ChildContent>
+        <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+        <div class="mb-3">
+            <label class="form-label">Message (Markdown supported)</label>
+            <textarea class="form-control" rows="5" @bind="adminMessage"></textarea>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+            <button class="btn btn-secondary" @onclick="CancelMessageDialog">Cancel</button>
+            <button class="btn btn-primary" @onclick="ConfirmStatusChange">Confirm</button>
+        </div>
+    </ChildContent>
+</SfDialog>
+
+<Syncfusion.Blazor.Popups.SfDialogProvider />

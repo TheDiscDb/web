@@ -1,0 +1,13 @@
+mutation ReorderBoxsetMembers($input: ReorderBoxsetMembersInput!) {
+  reorderBoxsetMembers(input: $input) {
+    userContributionBoxset {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

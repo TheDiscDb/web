@@ -1,0 +1,18 @@
+query GetEligibleContributions($first: Int, $after: String) {
+  myContributions(first: $first, after: $after) {
+    nodes {
+      encodedId
+      title
+      year
+      releaseTitle
+      mediaType
+      status
+      frontImageUrl
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}

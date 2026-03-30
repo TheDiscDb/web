@@ -161,6 +161,29 @@ public class ContributionQuery(IdEncoder idEncoder)
             .ToList();
     }
 
+    [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize, IncludeTotalCount = true)]
+    [UseProjection]
+    [UseFiltering]
+    [UseSorting]
+    [Authorize("Admin")]
+    public IQueryable<UserContributionBoxset> GetBoxsetContributions(SqlServerDataContext context) => context.UserContributionBoxsets;
+
+    [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize, IncludeTotalCount = true)]
+    [UseProjection]
+    [UseFiltering]
+    [UseSorting]
+    [Authorize]
+    public IQueryable<UserContributionBoxset> GetMyBoxsets(SqlServerDataContext context, ClaimsPrincipal user)
+    {
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Enumerable.Empty<UserContributionBoxset>().AsQueryable();
+        }
+
+        return context.UserContributionBoxsets.Where(b => b.UserId == userId);
+    }
+
     [Authorize]
     public async Task<AmazonProductMetadata?> GetAmazonProductMetadata(string asin, IAmazonImporter importer, ILogger<ContributionQuery> logger, CancellationToken cancellationToken)
     {

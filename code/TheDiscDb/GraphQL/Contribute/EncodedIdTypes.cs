@@ -85,6 +85,18 @@ public class UserContributionDiscHashItemTypeExtension : EncodedIdTypeExtension<
 {
 }
 
+public class UserContributionBoxsetTypeExtension : EncodedIdTypeExtension<UserContributionBoxset>
+{
+    protected override void Configure(IObjectTypeDescriptor<UserContributionBoxset> descriptor)
+    {
+        base.Configure(descriptor);
+
+        descriptor.Field(t => t.Members)
+                  .UseFiltering()
+                  .UseSorting();
+    }
+}
+
 public class EncodedIdFilterConvention : FilterConvention
 {
     protected override void Configure(IFilterConventionDescriptor descriptor)
@@ -98,6 +110,7 @@ public class EncodedIdFilterConvention : FilterConvention
         descriptor.BindRuntimeType<UserContributionAudioTrack, EncodedIdFilterType<UserContributionAudioTrack>>();
         descriptor.BindRuntimeType<UserContributionChapter, EncodedIdFilterType<UserContributionChapter>>();
         descriptor.BindRuntimeType<UserContributionDiscHashItem, EncodedIdFilterType<UserContributionDiscHashItem>>();
+        descriptor.BindRuntimeType<UserContributionBoxset, EncodedIdFilterType<UserContributionBoxset>>();
 
         // Register the custom provider with encodedId handlers
         descriptor.Provider<EncodedIdQueryableFilterProvider>();

@@ -114,6 +114,22 @@ public class SqlServerDataContext : DbContext
         userMessage.HasIndex(x => x.ContributionId);
         userMessage.HasIndex(x => new { x.ToUserId, x.IsRead });
 
+        var contributionBoxset = modelBuilder.Entity<UserContributionBoxset>();
+        contributionBoxset.HasKey(x => x.Id);
+        contributionBoxset.Property(x => x.Status)
+            .HasConversion<string>();
+        contributionBoxset.HasMany(x => x.Members)
+            .WithOne(x => x.Boxset)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        var contributionBoxsetMember = modelBuilder.Entity<UserContributionBoxsetMember>();
+        contributionBoxsetMember.HasKey(x => x.Id);
+        contributionBoxsetMember.HasOne(x => x.Disc)
+            .WithOne()
+            .HasForeignKey<UserContributionBoxsetMember>("DiscId")
+            .OnDelete(DeleteBehavior.NoAction);
+        contributionBoxsetMember.HasIndex("DiscId").IsUnique();
+
         var apiKeyEntity = modelBuilder.Entity<ApiKey>();
         apiKeyEntity.HasKey(x => x.Id);
         apiKeyEntity.HasIndex(x => x.KeyHash).IsUnique();
@@ -280,6 +296,8 @@ public class SqlServerDataContext : DbContext
     public DbSet<Contributor> Contributors { get; set; } = null!;
     public DbSet<ApiKey> ApiKeys { get; set; } = null!;
     public DbSet<ApiKeyUsageLog> ApiKeyUsageLogs { get; set; } = null!;
+    public DbSet<UserContributionBoxset> UserContributionBoxsets { get; set; } = null!;
+    public DbSet<UserContributionBoxsetMember> UserContributionBoxsetMembers { get; set; } = null!;
 }
 
 public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser
@@ -496,6 +514,41 @@ public class UserMessage
     public bool IsRead { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public UserMessageType Type { get; set; }
+}
+
+public class UserContributionBoxset : IHasId
+{
+    [JsonIgnore]
+    public int Id { get; set; }
+    [NotMapped]
+    [GraphQLIgnore]
+    public string EncodedId { get; set; } = default!;
+    [JsonIgnore]
+    public string UserId { get; set; } = default!;
+
+    public DateTimeOffset Created { get; set; }
+    public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
+
+    public string Title { get; set; } = string.Empty;
+    public string? SortTitle { get; set; }
+    public string Slug { get; set; } = string.Empty;
+    public string? FrontImageUrl { get; set; }
+    public string? BackImageUrl { get; set; }
+    public string? Asin { get; set; }
+    public string? Upc { get; set; }
+    public DateTimeOffset? ReleaseDate { get; set; }
+    public string? Locale { get; set; }
+    public string? RegionCode { get; set; }
+
+    public ICollection<UserContributionBoxsetMember> Members { get; set; } = new HashSet<UserContributionBoxsetMember>();
+}
+
+public class UserContributionBoxsetMember
+{
+    public int Id { get; set; }
+    public UserContributionBoxset Boxset { get; set; } = default!;
+    public UserContributionDisc Disc { get; set; } = default!;
+    public int SortOrder { get; set; }
 }
 
 public static class DefaultRoles

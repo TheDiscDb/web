@@ -1,0 +1,13 @@
+mutation DeleteBoxset($input: DeleteBoxsetInput!) {
+  deleteBoxset(input: $input) {
+    userContributionBoxset {
+      __typename
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}
