@@ -58,7 +58,7 @@ public class ClientApiController : ControllerBase
     }
 
     [Authorize("Admin")]
-    [HttpPost("search/rebuild-index")]
+    [HttpGet("search/rebuild-index")]
     public async Task<BuildIndexSummary> RebuildIndex()
     {
         return await this.searchIndex.BuildIndex();
