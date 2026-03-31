@@ -51,7 +51,7 @@
 
         try {
             const res = await fetch(
-                `/api/search/suggest?q=${encodeURIComponent(query)}&limit=${LIMIT}`,
+                `/api/search?q=${encodeURIComponent(query)}&limit=${LIMIT}`,
                 { signal: controller.signal }
             );
             if (!res.ok) return;

@@ -32,13 +32,20 @@
             this.client = new SearchClient(new Uri(options.Value.Endpoint), options.Value.Index, new AzureKeyCredential(options.Value.ApiKey));
         }
 
-        public async Task<IEnumerable<SearchEntry>> Search(string term, CancellationToken cancellationToken = default)
+        private const string TypeFilter = "Type eq 'Movie' or Type eq 'Series' or Type eq 'Boxset'";
+
+        public async Task<IEnumerable<SearchEntry>> Search(string term, int? limit = null, CancellationToken cancellationToken = default)
         {
             var searchOptions = new Azure.Search.Documents.SearchOptions
             {
                 Filter = TypeFilter,
                 QueryType = Azure.Search.Documents.Models.SearchQueryType.Simple
             };
+
+            if (limit.HasValue)
+            {
+                searchOptions.Size = Math.Max(limit.Value * 5, 25);
+            }
 
             var response = await this.client.SearchAsync<SearchEntry>(term, searchOptions, cancellationToken);
 
@@ -55,42 +62,14 @@
                     results.Add((item.Document, item.Score));
                     dedupe.Add(item.Document.RelativeUrl);
                 }
+
+                if (limit.HasValue && results.Count >= limit.Value)
+                    break;
             }
 
             return results
                 .OrderByDescending(r => r.Score ?? 0)
                 .Select(r => r.Document);
-        }
-        private const string TypeFilter = "Type eq 'Movie' or Type eq 'Series' or Type eq 'Boxset'";
-
-        public async Task<IEnumerable<SearchEntry>> Suggest(string term, int limit = 5, CancellationToken cancellationToken = default)
-        {
-            var searchOptions = new Azure.Search.Documents.SearchOptions
-            {
-                Size = Math.Max(limit * 5, 25),
-                Filter = TypeFilter,
-                QueryType = Azure.Search.Documents.Models.SearchQueryType.Simple
-            };
-
-            var response = await this.client.SearchAsync<SearchEntry>(term, searchOptions, cancellationToken);
-
-            List<SearchEntry> candidates = new();
-            HashSet<string> dedupe = new();
-
-            foreach (var item in response.Value.GetResults())
-            {
-                if (item?.Document?.RelativeUrl == null || item.Document.Type == null)
-                    continue;
-
-                if (!dedupe.Contains(item.Document.RelativeUrl))
-                {
-                    candidates.Add(item.Document);
-                    dedupe.Add(item.Document.RelativeUrl);
-                }
-            }
-
-            return candidates
-                .Take(limit);
         }
     }
 }

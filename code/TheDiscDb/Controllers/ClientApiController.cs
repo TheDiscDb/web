@@ -19,19 +19,15 @@ public class ClientApiController : ControllerBase
     }
 
     [HttpGet("search")]
-    public async Task<IEnumerable<SearchEntry>> Search(string s)
-    {
-        var results = await this.search.Search(s);
-        return results;
-    }
-
-    [HttpGet("search/suggest")]
-    public async Task<IEnumerable<SearchEntry>> Suggest(string q, int limit = 5, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<SearchEntry>> Search(string q, int? limit = null, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
             return [];
 
-        return await this.search.Suggest(q, Math.Min(limit, 10), cancellationToken);
+        if (limit.HasValue)
+            limit = Math.Min(limit.Value, 10);
+
+        return await this.search.Search(q, limit, cancellationToken);
     }
 
     [HttpGet("barcode")]
