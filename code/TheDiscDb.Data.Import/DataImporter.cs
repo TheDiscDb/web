@@ -66,6 +66,13 @@
                     var existingContributor = await dbContext.Contributors
                         .FirstOrDefaultAsync(c => c.Name == contributor.Name);
 
+                    // Also check the change tracker for contributors added in this batch but not yet saved
+                    existingContributor ??= dbContext.ChangeTracker
+                        .Entries<InputModels.Contributor>()
+                        .Where(e => e.State == EntityState.Added)
+                        .Select(e => e.Entity)
+                        .FirstOrDefault(c => string.Equals(c.Name, contributor.Name, StringComparison.OrdinalIgnoreCase));
+
                     if (existingContributor == null)
                     {
                         release.Contributors.Add(new InputModels.Contributor
