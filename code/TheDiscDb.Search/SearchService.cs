@@ -44,6 +44,9 @@
                 if (item?.Document?.Type == null || item.Document.RelativeUrl == null)
                     continue;
 
+                if (!IsAllowedType(item.Document.Type))
+                    continue;
+
                 if (!dedupe.Contains(item.Document.RelativeUrl))
                 {
                     results.Add((item.Document, item.Score));
@@ -51,28 +54,28 @@
                 }
             }
 
-            // Prioritize media items and releases, then sort by relevance within each tier
             return results
                 .OrderBy(r => TypePriority(r.Document.Type))
                 .ThenByDescending(r => r.Score ?? 0)
                 .Select(r => r.Document);
         }
+        private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "movie", "series", "boxset", "release"
+        };
+
         private static readonly HashSet<string> TopLevelTypes = new(StringComparer.OrdinalIgnoreCase)
         {
             "movie", "series", "boxset"
         };
 
-        private static readonly HashSet<string> SecondaryTypes = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "release"
-        };
+        private static bool IsAllowedType(string? type) => type != null && AllowedTypes.Contains(type);
 
         private static int TypePriority(string? type)
         {
             if (type == null) return 99;
             if (TopLevelTypes.Contains(type)) return 0;
-            if (SecondaryTypes.Contains(type)) return 1;
-            return 2; // disc, title, etc.
+            return 1; // release
         }
 
         public async Task<IEnumerable<SearchEntry>> Suggest(string term, int limit = 5, CancellationToken cancellationToken = default)
@@ -92,6 +95,9 @@
             foreach (var item in response.Value.GetResults())
             {
                 if (item?.Document?.RelativeUrl == null || item.Document.Type == null)
+                    continue;
+
+                if (!IsAllowedType(item.Document.Type))
                     continue;
 
                 if (!dedupe.Contains(item.Document.RelativeUrl))
