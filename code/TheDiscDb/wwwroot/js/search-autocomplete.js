@@ -24,6 +24,7 @@
         autocomplete.dataset.acInit = 'true';
 
         input.addEventListener('input', () => onInput(input, autocomplete));
+        input.addEventListener('search', () => onInput(input, autocomplete));
         input.addEventListener('keydown', (e) => onKeyDown(e, input, autocomplete));
         input.addEventListener('focus', () => onFocus(input, autocomplete));
         document.addEventListener('click', (e) => {

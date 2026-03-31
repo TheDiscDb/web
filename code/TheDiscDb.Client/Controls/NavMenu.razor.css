@@ -8,6 +8,16 @@
     width: 20em;
 }
 
+/* Style the native clear button on type="search" */
+.main-search-box::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    height: 20px;
+    width: 20px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%236c757d' d='M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E") no-repeat center;
+    background-size: contain;
+    cursor: pointer;
+}
+
 .navbar-brand {
     padding-top: .8rem;
     padding-bottom: .8rem;
