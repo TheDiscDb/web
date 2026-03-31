@@ -100,6 +100,10 @@
 
         existing.innerHTML = html;
         existing.style.display = '';
+
+        existing.querySelectorAll('.option').forEach(el => {
+            el.addEventListener('click', () => hideDropdown(autocomplete));
+        });
     }
 
     function hideDropdown(autocomplete) {
@@ -129,6 +133,7 @@
             case 'Enter':
                 if (selectedIndex >= 0 && selectedIndex < suggestions.length) {
                     e.preventDefault();
+                    hideDropdown(autocomplete);
                     const url = suggestions[selectedIndex].relativeUrl;
                     if (url) window.location.href = url.toLowerCase();
                 }
