@@ -131,12 +131,36 @@ public static class SearchEntryExtensions
             Title = item.Title,
             ImageUrl = item.ImageUrl,
             RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}",
+            Identifiers = CollectIdentifiers(item.Externalids, item.Releases),
             MediaItem = new ItemInfo
             {
                 Slug = item.Slug,
                 ImageUrl = item.ImageUrl
             }
         };
+    }
+
+    private static IList<string>? CollectIdentifiers(ExternalIds? externalIds, IEnumerable<Release>? releases)
+    {
+        var ids = new List<string>();
+
+        if (externalIds != null)
+        {
+            if (!string.IsNullOrWhiteSpace(externalIds.Imdb)) ids.Add(externalIds.Imdb);
+            if (!string.IsNullOrWhiteSpace(externalIds.Tmdb)) ids.Add(externalIds.Tmdb);
+            if (!string.IsNullOrWhiteSpace(externalIds.Tvdb)) ids.Add(externalIds.Tvdb);
+        }
+
+        if (releases != null)
+        {
+            foreach (var r in releases)
+            {
+                if (!string.IsNullOrWhiteSpace(r.Upc)) ids.Add(r.Upc);
+                if (!string.IsNullOrWhiteSpace(r.Asin)) ids.Add(r.Asin);
+            }
+        }
+
+        return ids.Count > 0 ? ids : null;
     }
 
     private static IEnumerable<SearchEntry> ToSearchEntries(MediaItem item, IEnumerable<InputModels.Release> releases)
