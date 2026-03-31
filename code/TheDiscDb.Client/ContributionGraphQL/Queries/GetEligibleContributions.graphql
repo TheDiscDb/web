@@ -8,6 +8,12 @@ query GetEligibleContributions($first: Int, $after: String) {
       mediaType
       status
       frontImageUrl
+      discs {
+        encodedId
+        name
+        format
+        slug
+      }
     }
     pageInfo {
       hasNextPage

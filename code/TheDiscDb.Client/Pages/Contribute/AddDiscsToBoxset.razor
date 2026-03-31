@@ -1,0 +1,92 @@
+@page "/contribution/boxset/{BoxsetId}/add"
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Add Discs" Items='[("Home", "/"), ("Contribute", "/contribute"), ("My Contributions", "/contribute/my")]' />
+
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <h1>Add Discs to Boxset</h1>
+        <p>Select individual discs from your contributions to add to this boxset.</p>
+    </section>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    @if (isLoading)
+    {
+        <section class="info-card">
+            <p>Loading contributions...</p>
+        </section>
+    }
+    else if (Contributions == null || !Contributions.Any())
+    {
+        <section class="info-card">
+            <div class="alert alert-info">You have no contributions with discs. Create a contribution first, then add its discs to this boxset.</div>
+            <a class="btn btn-secondary" href="/contribution/boxset/@BoxsetId">Back to Boxset</a>
+        </section>
+    }
+    else
+    {
+        @foreach (var contribution in Contributions)
+        {
+            <section class="info-card mb-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h3 class="mb-1">@contribution.Title (@contribution.Year)</h3>
+                        <p class="text-muted mb-2">@contribution.ReleaseTitle &middot; @contribution.MediaType</p>
+                    </div>
+                </div>
+
+                @if (contribution.Discs != null && contribution.Discs.Any())
+                {
+                    <div class="list-group">
+                        @foreach (var disc in contribution.Discs)
+                        {
+                            var isAlreadyAdded = addedDiscIds.Contains(disc.EncodedId);
+                            var isAdding = addingDiscIds.Contains(disc.EncodedId);
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@disc.Name</strong>
+                                    <span class="badge bg-info ms-1">@disc.Format</span>
+                                    <small class="text-muted ms-2">@disc.Slug</small>
+                                </div>
+                                @if (isAlreadyAdded)
+                                {
+                                    <span class="badge bg-success">Added</span>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-primary"
+                                            disabled="@isAdding"
+                                            @onclick="() => AddDisc(disc.EncodedId)">
+                                        @if (isAdding)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                        }
+                                        Add to Boxset
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted fst-italic">No discs in this contribution.</p>
+                }
+            </section>
+        }
+
+        <div class="d-flex gap-2 mt-3">
+            <a class="btn btn-primary" href="/contribution/boxset/@BoxsetId">Done — Back to Boxset</a>
+        </div>
+    }
+</div>
