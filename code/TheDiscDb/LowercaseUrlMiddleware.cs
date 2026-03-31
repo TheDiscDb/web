@@ -9,7 +9,8 @@ public class LowercaseUrlMiddleware(RequestDelegate next)
         "/admin",
         "/api",
         "/graphql",
-        "/images"
+        "/images",
+        "/_framework"
     ];
 
     public Task InvokeAsync(HttpContext context)

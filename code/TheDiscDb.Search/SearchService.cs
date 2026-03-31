@@ -80,10 +80,10 @@
 
         public async Task<IEnumerable<SearchEntry>> Suggest(string term, int limit = 5, CancellationToken cancellationToken = default)
         {
-            // Fetch more than needed so we can prioritize top-level items
+            // Fetch many more results because most will be filtered out (discs, titles, etc.)
             var searchOptions = new Azure.Search.Documents.SearchOptions
             {
-                Size = limit * 5,
+                Size = Math.Max(limit * 20, 50),
                 QueryType = Azure.Search.Documents.Models.SearchQueryType.Simple
             };
 
