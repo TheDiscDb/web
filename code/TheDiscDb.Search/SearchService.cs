@@ -55,28 +55,15 @@
             }
 
             return results
-                .OrderBy(r => TypePriority(r.Document.Type))
-                .ThenByDescending(r => r.Score ?? 0)
+                .OrderByDescending(r => r.Score ?? 0)
                 .Select(r => r.Document);
         }
         private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "movie", "series", "boxset", "release"
-        };
-
-        private static readonly HashSet<string> TopLevelTypes = new(StringComparer.OrdinalIgnoreCase)
         {
             "movie", "series", "boxset"
         };
 
         private static bool IsAllowedType(string? type) => type != null && AllowedTypes.Contains(type);
-
-        private static int TypePriority(string? type)
-        {
-            if (type == null) return 99;
-            if (TopLevelTypes.Contains(type)) return 0;
-            return 1; // release
-        }
 
         public async Task<IEnumerable<SearchEntry>> Suggest(string term, int limit = 5, CancellationToken cancellationToken = default)
         {
@@ -108,7 +95,6 @@
             }
 
             return candidates
-                .OrderBy(c => TypePriority(c.Type))
                 .Take(limit);
         }
     }
