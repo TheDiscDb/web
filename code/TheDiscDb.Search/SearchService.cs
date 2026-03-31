@@ -34,7 +34,13 @@
 
         public async Task<IEnumerable<SearchEntry>> Search(string term, CancellationToken cancellationToken = default)
         {
-            var response = await this.client.SearchAsync<SearchEntry>(term, cancellationToken: cancellationToken);
+            var searchOptions = new Azure.Search.Documents.SearchOptions
+            {
+                Filter = TypeFilter,
+                QueryType = Azure.Search.Documents.Models.SearchQueryType.Simple
+            };
+
+            var response = await this.client.SearchAsync<SearchEntry>(term, searchOptions, cancellationToken);
 
             List<(SearchEntry Document, double? Score)> results = new();
             HashSet<string> dedupe = new();
@@ -42,9 +48,6 @@
             foreach (var item in response.Value.GetResults())
             {
                 if (item?.Document?.Type == null || item.Document.RelativeUrl == null)
-                    continue;
-
-                if (!IsAllowedType(item.Document.Type))
                     continue;
 
                 if (!dedupe.Contains(item.Document.RelativeUrl))
@@ -58,19 +61,14 @@
                 .OrderByDescending(r => r.Score ?? 0)
                 .Select(r => r.Document);
         }
-        private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "movie", "series", "boxset"
-        };
-
-        private static bool IsAllowedType(string? type) => type != null && AllowedTypes.Contains(type);
+        private const string TypeFilter = "Type eq 'Movie' or Type eq 'Series' or Type eq 'Boxset'";
 
         public async Task<IEnumerable<SearchEntry>> Suggest(string term, int limit = 5, CancellationToken cancellationToken = default)
         {
-            // Fetch many more results because most will be filtered out (discs, titles, etc.)
             var searchOptions = new Azure.Search.Documents.SearchOptions
             {
-                Size = Math.Max(limit * 20, 50),
+                Size = Math.Max(limit * 5, 25),
+                Filter = TypeFilter,
                 QueryType = Azure.Search.Documents.Models.SearchQueryType.Simple
             };
 
@@ -82,9 +80,6 @@
             foreach (var item in response.Value.GetResults())
             {
                 if (item?.Document?.RelativeUrl == null || item.Document.Type == null)
-                    continue;
-
-                if (!IsAllowedType(item.Document.Type))
                     continue;
 
                 if (!dedupe.Contains(item.Document.RelativeUrl))
