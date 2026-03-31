@@ -7,6 +7,7 @@ public class SearchEntry
     public string? Title { get; set; }
     public string? ImageUrl { get; set; }
     public string? RelativeUrl { get; set; }
+    public IList<string> Identifiers { get; set; } = new List<string>();
 
     public ItemInfo? MediaItem { get; set; }
     public ItemInfo? Release { get; set; }

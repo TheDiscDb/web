@@ -1,0 +1,114 @@
+.search-results-page {
+    max-width: 1200px;
+}
+
+.search-results-page h1 {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+}
+
+.search-results-page h1 em {
+    font-style: normal;
+    color: #00213F;
+}
+
+.search-count {
+    color: #666;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.search-empty,
+.search-loading {
+    color: #666;
+    padding: 2rem 0;
+}
+
+.search-result-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+@media (min-width: 576px) {
+    .search-result-list {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 16px;
+    }
+}
+
+@media (min-width: 992px) {
+    .search-result-list {
+        grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+        gap: 20px;
+    }
+}
+
+.search-result-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 6px;
+    display: block;
+    text-decoration: none;
+    color: #fff;
+}
+
+.search-result-card:hover {
+    text-decoration: none;
+    color: #fff;
+}
+
+::deep img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.search-result-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 24px 6px 6px;
+    background: linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,.45) 60%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.search-result-title {
+    font-size: 0.72rem;
+    line-height: 1.2;
+    text-align: center;
+    color: #fff;
+}
+
+.search-result-type {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.type-movie {
+    background: rgba(21, 101, 192, 0.85);
+    color: #fff;
+}
+
+.type-series {
+    background: rgba(123, 31, 162, 0.85);
+    color: #fff;
+}
+
+.type-boxset {
+    background: rgba(230, 81, 0, 0.85);
+    color: #fff;
+}
+
+.type-release {
+    background: rgba(46, 125, 50, 0.85);
+    color: #fff;
+}

@@ -3,24 +3,44 @@
 @using System.Web
 @using TheDiscDb.Client.Controls
 
-<PageTitle>
-    Search results for '@SearchTerm' - TheDiscDb
-</PageTitle>
+<PageTitle>Search results for '@SearchTerm' - TheDiscDb</PageTitle>
 <HeadContent>
     <meta name="description" content="Search results for '@SearchTerm' on TheDiscDb. Find movies, TV series, boxsets, and disc details matching your query." />
     <link rel="canonical" href="https://thediscdb.com/search?q=@Uri.EscapeDataString(SearchTerm)" />
 </HeadContent>
 
-<h1>Search results for '@SearchTerm'</h1>
-@if (Results != null)
-{
-    <div class="media-item-list">
-    @foreach (var item in Results)
+<div class="search-results-page">
+    <h1>Search results for '<em>@SearchTerm</em>'</h1>
+
+    @if (string.IsNullOrWhiteSpace(SearchTerm))
     {
-        <a href="@item.RelativeUrl?.ToLower()" class="media-item-card" title="@item.Title">
-            <MediaImage Url="@item?.ImageUrl" Width="156" Height="231" Title="@item?.Title" />
-            <span class="media-item-label">@item.Title</span>
-        </a>
+        <p class="search-empty">Enter a search term to find movies, series, boxsets, and more.</p>
     }
-    </div>
-}
+    else if (Results == null)
+    {
+        <p class="search-loading">Searching...</p>
+    }
+    else if (!Results.Any())
+    {
+        <p class="search-empty">No results found for '<strong>@SearchTerm</strong>'. Try a different search term.</p>
+    }
+    else
+    {
+        <p class="search-count">@Results.Count() result(s)</p>
+        <div class="search-result-list">
+            @foreach (var item in Results)
+            {
+                <a href="@item.RelativeUrl?.ToLower()" class="search-result-card" title="@item.Title">
+                    <MediaImage Url="@item?.ImageUrl" Width="156" Height="231" Title="@item?.Title" />
+                    <div class="search-result-overlay">
+                        <span class="search-result-title">@item.Title</span>
+                        @if (!string.IsNullOrEmpty(item.Type))
+                        {
+                            <span class="search-result-type type-@item.Type?.ToLower()">@item.Type</span>
+                        }
+                    </div>
+                </a>
+            }
+        </div>
+    }
+</div>
