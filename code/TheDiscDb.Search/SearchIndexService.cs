@@ -290,7 +290,7 @@ public class SearchIndexService : ISearchIndexService
         return actions;
     }
 
-    private static IList<string>? CollectIdentifiers(
+    private static IList<string> CollectIdentifiers(
         InputModels.ExternalIds? externalIds = null,
         IEnumerable<InputModels.Release>? releases = null,
         InputModels.Release? release = null)
@@ -319,6 +319,6 @@ public class SearchIndexService : ISearchIndexService
             if (!string.IsNullOrWhiteSpace(release.Asin)) ids.Add(release.Asin);
         }
 
-        return ids.Count > 0 ? ids : null;
+        return ids;
     }
 }

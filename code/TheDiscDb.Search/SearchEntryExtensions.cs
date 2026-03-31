@@ -140,7 +140,7 @@ public static class SearchEntryExtensions
         };
     }
 
-    private static IList<string>? CollectIdentifiers(ExternalIds? externalIds, IEnumerable<Release>? releases)
+    private static IList<string> CollectIdentifiers(ExternalIds? externalIds, IEnumerable<Release>? releases)
     {
         var ids = new List<string>();
 
@@ -160,7 +160,7 @@ public static class SearchEntryExtensions
             }
         }
 
-        return ids.Count > 0 ? ids : null;
+        return ids;
     }
 
     private static IEnumerable<SearchEntry> ToSearchEntries(MediaItem item, IEnumerable<InputModels.Release> releases)
