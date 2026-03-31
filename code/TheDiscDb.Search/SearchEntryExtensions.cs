@@ -1,9 +1,15 @@
-﻿using TheDiscDb.InputModels;
+using System.Text.RegularExpressions;
+using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Search;
 
-public static class SearchEntryExtensions
+public static partial class SearchEntryExtensions
 {
+    // Azure Search keys only allow letters, digits, underscore, dash, or equals
+    [GeneratedRegex(@"[^a-zA-Z0-9_\-=]")]
+    private static partial Regex InvalidKeyCharsRegex();
+
+    internal static string SanitizeKey(string key) => InvalidKeyCharsRegex().Replace(key, "_");
     public static IEnumerable<SearchEntry> ToSearchEntries(this MediaItem item)
     {
         yield return ToSearchEntry(item);
@@ -43,7 +49,7 @@ public static class SearchEntryExtensions
     {
         var searchItem = new SearchEntry
         {
-            id = string.Join('-', item.Id, "Boxset"),
+            id = SanitizeKey(string.Join('-', item.Id, "Boxset")),
             Type = "Boxset",
             Title = item.Title,
             ImageUrl = item.ImageUrl,
@@ -66,7 +72,7 @@ public static class SearchEntryExtensions
         {
             searchItem = new SearchEntry
             {
-                id = string.Join('-', disc.Id, "BoxsetDisc"),
+                id = SanitizeKey(string.Join('-', disc.Id, "BoxsetDisc")),
                 Type = "BoxsetDisc",
                 Title = disc.Name,
                 ImageUrl = item.ImageUrl,
@@ -95,7 +101,7 @@ public static class SearchEntryExtensions
                 {
                     searchItem = new SearchEntry
                     {
-                        id = string.Join('-', title.Id, "BoxsetTitle"),
+                        id = SanitizeKey(string.Join('-', title.Id, "BoxsetTitle")),
                         Type = title.Item.Type,
                         Title = title.Item.Title,
                         ImageUrl = item.ImageUrl,
@@ -126,7 +132,7 @@ public static class SearchEntryExtensions
     {
         return new SearchEntry
         {
-            id = string.Join('-', item.Type, item.Slug),
+            id = SanitizeKey(string.Join('-', item.Type, item.Slug)),
             Type = item.Type,
             Title = item.Title,
             ImageUrl = item.ImageUrl,
@@ -169,7 +175,7 @@ public static class SearchEntryExtensions
         {
             var searchItem = new SearchEntry
             {
-                id = string.Join('-', "Release", release.Slug),
+                id = SanitizeKey(string.Join('-', "Release", release.Slug)),
                 Type = "Release",
                 Title = release.Title,
                 ImageUrl = release.ImageUrl,
@@ -196,7 +202,7 @@ public static class SearchEntryExtensions
         {
             var searchItem = new SearchEntry
             {
-                id = string.Join('-', disc.Id, "Disc"),
+                id = SanitizeKey(string.Join('-', disc.Id, "Disc")),
                 Type = "Disc",
                 Title = disc.Name,
                 ImageUrl = release.ImageUrl,
@@ -229,7 +235,7 @@ public static class SearchEntryExtensions
             {
                 var searchItem = new SearchEntry
                 {
-                    id = string.Join('-', title.Id, "Title"),
+                    id = SanitizeKey(string.Join('-', title.Id, "Title")),
                     Type = title.Item.Type,
                     Title = title.Item.Title,
                     ImageUrl = release.ImageUrl,

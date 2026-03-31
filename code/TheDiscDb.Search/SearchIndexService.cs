@@ -192,7 +192,7 @@ public class SearchIndexService : ISearchIndexService
         {
             var searchItem = new SearchEntry
             {
-                id = string.Join('-', item.Id, "Boxset"),
+                id = SearchEntryExtensions.SanitizeKey(string.Join('-', item.Id, "Boxset")),
                 Type = "Boxset",
                 Title = item.Title,
                 ImageUrl = item.ImageUrl,
@@ -216,7 +216,7 @@ public class SearchIndexService : ISearchIndexService
             {
                 searchItem = new SearchEntry
                 {
-                    id = string.Join('-', "BoxsetDisc", disc.SlugOrIndex()),
+                    id = SearchEntryExtensions.SanitizeKey(string.Join('-', "BoxsetDisc", disc.SlugOrIndex())),
                     Type = "BoxsetDisc",
                     Title = disc.Name,
                     ImageUrl = item.ImageUrl,
@@ -245,7 +245,7 @@ public class SearchIndexService : ISearchIndexService
                     {
                         searchItem = new SearchEntry
                         {
-                            id = string.Join('-', "BoxsetTitle", item.Slug, disc.SlugOrIndex(), title.SegmentMap, title.SourceFile),
+                            id = SearchEntryExtensions.SanitizeKey(string.Join('-', "BoxsetTitle", item.Slug, disc.SlugOrIndex(), title.SegmentMap, title.SourceFile)),
                             Type = title.Item.Type,
                             Title = title.Item.Title,
                             ImageUrl = item.ImageUrl,
