@@ -129,7 +129,7 @@ public class SearchEntryExtensionsTests
 
         var entries = item.ToSearchEntries().ToList();
 
-        await Assert.That(entries.First().id).IsEqualTo("Movie-test-slug");
+        await Assert.That(entries.First().id).IsEqualTo("movie-test-slug");
     }
 
     private static MediaItem CreateMediaItem(string type, string slug, string title)
