@@ -1,12 +1,10 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.SplitButtons;
 using TheDiscDb.Client.Contributions;
-using TheDiscDb.Search;
 
 namespace TheDiscDb.Client.Controls;
 
@@ -14,9 +12,6 @@ public partial class NavMenu : ComponentBase
 {
     [Inject]
     public NavigationManager? NavigationManager { get; set; }
-
-    [Inject]
-    public ApiClient SearchClient { get; set; } = null!;
 
     [Inject]
     public IJSRuntime JS { get; set; } = null!;
@@ -27,16 +22,10 @@ public partial class NavMenu : ComponentBase
     [Inject]
     IContributionClient? ContributionClient { get; set; }
 
-    public IEnumerable<SearchEntry>? SearchResults { get; set; }
-
     string DisplayName { get; set; } = "";
     string ShortName { get; set; } = "";
     bool isAuthenticated;
     bool hasUnreadMessages;
-
-#pragma warning disable IDE0044 // Add readonly modifier
-    private string? searchQuery;
-#pragma warning restore IDE0044 // Add readonly modifier
 
     protected override async Task OnInitializedAsync()
     {
@@ -105,22 +94,5 @@ public partial class NavMenu : ComponentBase
                 NavigationManager?.NavigateTo("/Account/Login", forceLoad: true);
                 break;
         }
-    }
-
-    public async Task KeyPressed(KeyboardEventArgs e)
-    {
-        if (e.Code == "Enter" || e.Code == "NumpadEnter")
-        {
-            await Task.Yield();
-            TryNavigateToSearch();
-        }
-    }
-
-    private void TryNavigateToSearch()
-    {
-        if (string.IsNullOrWhiteSpace(searchQuery)) return;
-
-        string url = $"/search?q={Uri.EscapeDataString(searchQuery)}";
-        NavigationManager?.NavigateTo(url);
     }
 }

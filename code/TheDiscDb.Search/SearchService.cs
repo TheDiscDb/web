@@ -32,49 +32,44 @@
             this.client = new SearchClient(new Uri(options.Value.Endpoint), options.Value.Index, new AzureKeyCredential(options.Value.ApiKey));
         }
 
-        public async Task<IEnumerable<SearchEntry>> Search(string term, CancellationToken cancellationToken = default)
+        private const string TypeFilter = "Type eq 'Movie' or Type eq 'Series' or Type eq 'Boxset'";
+
+        public async Task<IEnumerable<SearchEntry>> Search(string term, int? limit = null, CancellationToken cancellationToken = default)
         {
-            var response = await this.client.SearchAsync<SearchEntry>(term, cancellationToken: cancellationToken);
+            var searchOptions = new Azure.Search.Documents.SearchOptions
+            {
+                Filter = TypeFilter,
+                QueryType = Azure.Search.Documents.Models.SearchQueryType.Simple
+            };
 
-            List<SearchEntry> results = new();
-            List<SearchEntry> subResults = new();
+            if (limit.HasValue)
+            {
+                searchOptions.Size = Math.Max(limit.Value * 5, 25);
+            }
 
-            HashSet<string> dedupe = new();
+            var response = await this.client.SearchAsync<SearchEntry>(term, searchOptions, cancellationToken);
+
+            List<(SearchEntry Document, double? Score)> results = new();
+            HashSet<string> dedupe = new(StringComparer.OrdinalIgnoreCase);
 
             foreach (var item in response.Value.GetResults())
             {
-                if (item?.Document?.Type == null)
-                {
+                if (item?.Document?.Type == null || item.Document.RelativeUrl == null)
                     continue;
+
+                if (!dedupe.Contains(item.Document.RelativeUrl))
+                {
+                    results.Add((item.Document, item.Score));
+                    dedupe.Add(item.Document.RelativeUrl);
                 }
 
-                if (item.Document.Type.Equals("movie", StringComparison.OrdinalIgnoreCase) ||
-                    item.Document.Type.Equals("series", StringComparison.OrdinalIgnoreCase) ||
-                    item.Document.Type.Equals("boxset", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (item?.Document.RelativeUrl != null && !dedupe.Contains(item.Document.RelativeUrl))
-                    {
-                        results.Add(item.Document);
-                        dedupe.Add(item.Document.RelativeUrl);
-                    }
-                }
-                else
-                {
-                    subResults.Add(item.Document);
-                }
+                if (limit.HasValue && results.Count >= limit.Value)
+                    break;
             }
 
-            //TODO: Figure out sub items
-            //foreach (var subItem in subResults)
-            //{
-            //    var parent = results.FirstOrDefault(p => p.id.Equals($"{p.id}-{p.Type}", StringComparison.OrdinalIgnoreCase));
-            //    if (parent != null)
-            //    {
-
-            //    }
-            //}
-
-            return results;
+            return results
+                .OrderByDescending(r => r.Score ?? 0)
+                .Select(r => r.Document);
         }
     }
 }

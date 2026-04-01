@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Processing;
 using TheDiscDb.Client;
@@ -12,17 +13,24 @@ namespace TheDiscDb.Web.Controllers;
 public class ClientApiController : ControllerBase
 {
     private readonly ISearchService search;
+    private readonly ISearchIndexService searchIndex;
 
-    public ClientApiController(ISearchService search)
+    public ClientApiController(ISearchService search, ISearchIndexService searchIndex)
     {
         this.search = search ?? throw new System.ArgumentNullException(nameof(search));
+        this.searchIndex = searchIndex ?? throw new System.ArgumentNullException(nameof(searchIndex));
     }
 
     [HttpGet("search")]
-    public async Task<IEnumerable<SearchEntry>> Search(string s)
+    public async Task<IEnumerable<SearchEntry>> Search(string q, int? limit = null, CancellationToken cancellationToken = default)
     {
-        var results = await this.search.Search(s);
-        return results;
+        if (string.IsNullOrWhiteSpace(q) || q.Length < 2)
+            return [];
+
+        if (limit.HasValue)
+            limit = Math.Min(limit.Value, 10);
+
+        return await this.search.Search(q, limit, cancellationToken);
     }
 
     [HttpGet("barcode")]
@@ -47,6 +55,13 @@ public class ClientApiController : ControllerBase
     {
         var hash = request.Files.OrderBy(f => f.Name).CalculateHash();
         return new HashResponse { Hash = hash };
+    }
+
+    [Authorize("Admin")]
+    [HttpGet("search/rebuild-index")]
+    public async Task<BuildIndexSummary> RebuildIndex()
+    {
+        return await this.searchIndex.BuildIndex();
     }
 
     [HttpGet("search/external")]

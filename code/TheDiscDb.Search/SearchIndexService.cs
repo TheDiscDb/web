@@ -3,6 +3,7 @@ using Azure.Search.Documents.Indexes;
 using Azure.Search.Documents.Indexes.Models;
 using Azure.Search.Documents.Models;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Search;
@@ -73,6 +74,7 @@ public class SearchIndexService : ISearchIndexService
         var stopwatch = Stopwatch.StartNew();
 
         var index = new SearchIndex(IndexName, this.GetIndexFields());
+        await this.client.DeleteIndexAsync(IndexName);
         await this.client.CreateOrUpdateIndexAsync(index);
 
         using (var dbContext = this.dbFactory.CreateDbContext())
@@ -144,6 +146,11 @@ public class SearchIndexService : ISearchIndexService
             IsFacetable = true
         };
 
+        yield return new SearchableField("Identifiers", collection: true)
+        {
+            AnalyzerName = LexicalAnalyzerName.Keyword
+        };
+
         yield return this.GetItemInfoField("MediaItem");
         yield return this.GetItemInfoField("Release");
         yield return this.GetItemInfoField("Disc");
@@ -186,11 +193,12 @@ public class SearchIndexService : ISearchIndexService
         {
             var searchItem = new SearchEntry
             {
-                id = string.Join('-', item.Id, "Boxset"),
+                id = SearchEntryExtensions.SanitizeKey(string.Join('-', item.Id, "Boxset")),
                 Type = "Boxset",
                 Title = item.Title,
                 ImageUrl = item.ImageUrl,
                 RelativeUrl = $"/boxset/{item.Slug}",
+                Identifiers = CollectIdentifiers(release: item.Release),
                 MediaItem = new ItemInfo
                 {
                     Slug = item.Slug,
@@ -209,7 +217,7 @@ public class SearchIndexService : ISearchIndexService
             {
                 searchItem = new SearchEntry
                 {
-                    id = string.Join('-', "BoxsetDisc", disc.SlugOrIndex()),
+                    id = SearchEntryExtensions.SanitizeKey(string.Join('-', "BoxsetDisc", disc.SlugOrIndex())),
                     Type = "BoxsetDisc",
                     Title = disc.Name,
                     ImageUrl = item.ImageUrl,
@@ -238,7 +246,7 @@ public class SearchIndexService : ISearchIndexService
                     {
                         searchItem = new SearchEntry
                         {
-                            id = string.Join('-', "BoxsetTitle", item.Slug, disc.SlugOrIndex(), title.SegmentMap, title.SourceFile),
+                            id = SearchEntryExtensions.SanitizeKey(string.Join('-', "BoxsetTitle", item.Slug, disc.SlugOrIndex(), title.SegmentMap, title.SourceFile)),
                             Type = title.Item.Type,
                             Title = title.Item.Title,
                             ImageUrl = item.ImageUrl,
@@ -270,6 +278,7 @@ public class SearchIndexService : ISearchIndexService
     {
         List<SearchEntry> actions = new();
         foreach (var item in dbContext.MediaItems
+            .Include(p => p.Externalids)
             .Include(p => p.Releases)
             .ThenInclude(r => r.Discs)
             .ThenInclude(d => d.Titles)
@@ -280,5 +289,37 @@ public class SearchIndexService : ISearchIndexService
         }
 
         return actions;
+    }
+
+    private static IList<string> CollectIdentifiers(
+        InputModels.ExternalIds? externalIds = null,
+        IEnumerable<InputModels.Release>? releases = null,
+        InputModels.Release? release = null)
+    {
+        var ids = new List<string>();
+
+        if (externalIds != null)
+        {
+            if (!string.IsNullOrWhiteSpace(externalIds.Imdb)) ids.Add(externalIds.Imdb);
+            if (!string.IsNullOrWhiteSpace(externalIds.Tmdb)) ids.Add(externalIds.Tmdb);
+            if (!string.IsNullOrWhiteSpace(externalIds.Tvdb)) ids.Add(externalIds.Tvdb);
+        }
+
+        if (releases != null)
+        {
+            foreach (var r in releases)
+            {
+                if (!string.IsNullOrWhiteSpace(r.Upc)) ids.Add(r.Upc);
+                if (!string.IsNullOrWhiteSpace(r.Asin)) ids.Add(r.Asin);
+            }
+        }
+
+        if (release != null)
+        {
+            if (!string.IsNullOrWhiteSpace(release.Upc)) ids.Add(release.Upc);
+            if (!string.IsNullOrWhiteSpace(release.Asin)) ids.Add(release.Asin);
+        }
+
+        return ids;
     }
 }

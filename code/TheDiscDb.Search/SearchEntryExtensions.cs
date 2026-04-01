@@ -1,9 +1,15 @@
-﻿using TheDiscDb.InputModels;
+using System.Text.RegularExpressions;
+using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Search;
 
-public static class SearchEntryExtensions
+public static partial class SearchEntryExtensions
 {
+    // Azure Search keys only allow letters, digits, underscore, dash, or equals
+    [GeneratedRegex(@"[^a-zA-Z0-9_\-=]")]
+    private static partial Regex InvalidKeyCharsRegex();
+
+    internal static string SanitizeKey(string key) => InvalidKeyCharsRegex().Replace(key, "_");
     public static IEnumerable<SearchEntry> ToSearchEntries(this MediaItem item)
     {
         yield return ToSearchEntry(item);
@@ -12,10 +18,7 @@ public static class SearchEntryExtensions
         {
             foreach (var release in item.Releases)
             {
-                foreach (var releaseEntry in ToSearchEntries(item, item.Releases))
-                {
-                    yield return releaseEntry;
-                }
+                yield return ToReleaseSearchEntry(item, release);
 
                 if (release.Discs != null && release.Discs.Any())
                 {
@@ -43,7 +46,7 @@ public static class SearchEntryExtensions
     {
         var searchItem = new SearchEntry
         {
-            id = string.Join('-', item.Id, "Boxset"),
+            id = SanitizeKey(string.Join('-', item.Id, "Boxset")),
             Type = "Boxset",
             Title = item.Title,
             ImageUrl = item.ImageUrl,
@@ -66,7 +69,7 @@ public static class SearchEntryExtensions
         {
             searchItem = new SearchEntry
             {
-                id = string.Join('-', disc.Id, "BoxsetDisc"),
+                id = SanitizeKey(string.Join('-', disc.Id, "BoxsetDisc")),
                 Type = "BoxsetDisc",
                 Title = disc.Name,
                 ImageUrl = item.ImageUrl,
@@ -95,7 +98,7 @@ public static class SearchEntryExtensions
                 {
                     searchItem = new SearchEntry
                     {
-                        id = string.Join('-', title.Id, "BoxsetTitle"),
+                        id = SanitizeKey(string.Join('-', title.Id, "BoxsetTitle")),
                         Type = title.Item.Type,
                         Title = title.Item.Title,
                         ImageUrl = item.ImageUrl,
@@ -126,11 +129,12 @@ public static class SearchEntryExtensions
     {
         return new SearchEntry
         {
-            id = string.Join('-', item.Type, item.Slug),
+            id = SanitizeKey(string.Join('-', item.Type?.ToLower(), item.Slug)),
             Type = item.Type,
             Title = item.Title,
             ImageUrl = item.ImageUrl,
             RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}",
+            Identifiers = CollectIdentifiers(item.Externalids, item.Releases),
             MediaItem = new ItemInfo
             {
                 Slug = item.Slug,
@@ -139,31 +143,49 @@ public static class SearchEntryExtensions
         };
     }
 
-    private static IEnumerable<SearchEntry> ToSearchEntries(MediaItem item, IEnumerable<InputModels.Release> releases)
+    private static IList<string> CollectIdentifiers(ExternalIds? externalIds, IEnumerable<Release>? releases)
     {
-        foreach (var release in releases)
-        {
-            var searchItem = new SearchEntry
-            {
-                id = string.Join('-', "Release", release.Slug),
-                Type = "Release",
-                Title = release.Title,
-                ImageUrl = release.ImageUrl,
-                RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}/releases/{release.Slug}",
-                MediaItem = new ItemInfo
-                {
-                    Slug = item.Slug,
-                    ImageUrl = item.ImageUrl
-                },
-                Release = new ItemInfo
-                {
-                    Slug = release.Slug,
-                    ImageUrl = release.ImageUrl
-                }
-            };
+        var ids = new List<string>();
 
-            yield return searchItem;
+        if (externalIds != null)
+        {
+            if (!string.IsNullOrWhiteSpace(externalIds.Imdb)) ids.Add(externalIds.Imdb);
+            if (!string.IsNullOrWhiteSpace(externalIds.Tmdb)) ids.Add(externalIds.Tmdb);
+            if (!string.IsNullOrWhiteSpace(externalIds.Tvdb)) ids.Add(externalIds.Tvdb);
         }
+
+        if (releases != null)
+        {
+            foreach (var r in releases)
+            {
+                if (!string.IsNullOrWhiteSpace(r.Upc)) ids.Add(r.Upc);
+                if (!string.IsNullOrWhiteSpace(r.Asin)) ids.Add(r.Asin);
+            }
+        }
+
+        return ids;
+    }
+
+    private static SearchEntry ToReleaseSearchEntry(MediaItem item, InputModels.Release release)
+    {
+        return new SearchEntry
+        {
+            id = SanitizeKey(string.Join('-', "Release", release.Slug)),
+            Type = "Release",
+            Title = release.Title,
+            ImageUrl = release.ImageUrl,
+            RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}/releases/{release.Slug}",
+            MediaItem = new ItemInfo
+            {
+                Slug = item.Slug,
+                ImageUrl = item.ImageUrl
+            },
+            Release = new ItemInfo
+            {
+                Slug = release.Slug,
+                ImageUrl = release.ImageUrl
+            }
+        };
     }
 
     private static IEnumerable<SearchEntry> ToSearchEntries(MediaItem item, InputModels.Release release, IEnumerable<InputModels.Disc> discs)
@@ -172,7 +194,7 @@ public static class SearchEntryExtensions
         {
             var searchItem = new SearchEntry
             {
-                id = string.Join('-', disc.Id, "Disc"),
+                id = SanitizeKey(string.Join('-', disc.Id, "Disc")),
                 Type = "Disc",
                 Title = disc.Name,
                 ImageUrl = release.ImageUrl,
@@ -205,7 +227,7 @@ public static class SearchEntryExtensions
             {
                 var searchItem = new SearchEntry
                 {
-                    id = string.Join('-', title.Id, "Title"),
+                    id = SanitizeKey(string.Join('-', title.Id, "Title")),
                     Type = title.Item.Type,
                     Title = title.Item.Title,
                     ImageUrl = release.ImageUrl,
