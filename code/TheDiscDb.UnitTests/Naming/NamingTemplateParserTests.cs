@@ -184,4 +184,80 @@ public class NamingTemplateParserTests
         await Assert.That(result.Errors!).HasCount().EqualTo(1);
         await Assert.That(result.Errors![0].Message).Contains("Empty token name");
     }
+
+    [Test]
+    public async Task Parse_UnknownToken_ErrorPositionAndLength_AtOffset()
+    {
+        var result = NamingTemplate.Parse("abc{foo}xyz");
+
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Errors![0].Position).IsEqualTo(3);
+        await Assert.That(result.Errors![0].Length).IsEqualTo(5);
+    }
+
+    [Test]
+    public async Task Parse_UnclosedBrace_ErrorLength_SpansToEnd()
+    {
+        var result = NamingTemplate.Parse("abc{title");
+
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Errors![0].Position).IsEqualTo(3);
+        await Assert.That(result.Errors![0].Length).IsEqualTo(6);
+    }
+
+    [Test]
+    public async Task Parse_UnmatchedClosingBrace_ErrorPositionAndLength()
+    {
+        var result = NamingTemplate.Parse("abc}def");
+
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Errors![0].Position).IsEqualTo(3);
+        await Assert.That(result.Errors![0].Length).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task Parse_EmptyToken_ErrorLength_IncludesBraces()
+    {
+        var result = NamingTemplate.Parse("ab{}cd");
+
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Errors![0].Position).IsEqualTo(2);
+        await Assert.That(result.Errors![0].Length).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task Parse_MixedValidAndInvalidTokens_ReportsErrorAtCorrectOffset()
+    {
+        var result = NamingTemplate.Parse("{title} {foo} {year}");
+
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Errors!).HasCount().EqualTo(1);
+        await Assert.That(result.Errors![0].Position).IsEqualTo(8);
+        await Assert.That(result.Errors![0].Message).Contains("Unknown token 'foo'");
+    }
+
+    [Test]
+    public async Task Parse_MultipleDifferentErrorTypes_ReportsAll()
+    {
+        // {unknown} is unknown token, {} is empty token, trailing } is unmatched
+        var result = NamingTemplate.Parse("{unknown} {} x}");
+
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Errors!).HasCount().EqualTo(3);
+        await Assert.That(result.Errors![0].Message).Contains("Unknown token");
+        await Assert.That(result.Errors![1].Message).Contains("Empty token name");
+        await Assert.That(result.Errors![2].Message).Contains("Unexpected '}'");
+    }
+
+    [Test]
+    public async Task Parse_NestedBraces_ReportsUnknownToken()
+    {
+        // Parser finds { at 0, searches for }, finds it at position 11 (end of "year")
+        // Token name extracted: "title{year" — unknown
+        // Then trailing } at 12 is an unmatched closing brace
+        var result = NamingTemplate.Parse("{title{year}}");
+
+        await Assert.That(result.IsSuccess).IsFalse();
+        await Assert.That(result.Errors!).HasCount().EqualTo(2);
+    }
 }
