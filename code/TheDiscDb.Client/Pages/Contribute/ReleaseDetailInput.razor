@@ -24,7 +24,8 @@
         <label>ASIN<span class="required">*</span></label>
         <InputText class="form-control" @bind-Value="request.Asin" @oninput="OnAsinInput" />
         <ValidationMessage For="@(() => request.Asin)" />
-        <button type="button" class="btn btn-secondary" disabled="@ImportFromAmazonDisabled" @onclick="ImportFromAmazon">Import</button>
+        @* Amazon import disabled — Amazon blocks server-side scraping from cloud IPs.
+           TODO: Replace with Amazon Creators API when available. *@
     </div>
     <div class="mb-3">
         <label>UPC/EAN<span class="required">*</span></label>
@@ -96,11 +97,6 @@
         <button type="submit" class="btn btn-primary">Save Release Details</button>
     </div>
 </EditForm>
-
-<div id="container">
-    <SfSpinner @bind-Visible="@IsAmazonImportInProgress" Label="Importing from Amazon...">
-    </SfSpinner>
-</div>
 
 <div class="col-lg-12 control-section toast-default-section">
     <SfToast ID="toast_default" @ref="toast" Title="User Message" Content="@toastContent" Timeout="5000" Icon="e-meeting">
