@@ -6,4 +6,12 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="TheDiscDb.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TheDiscDb.Core" Version="2.1.0" />
+  </ItemGroup>
+
 </Project>
