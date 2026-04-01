@@ -1,9 +1,9 @@
-﻿using System.Text.Json;
+﻿using System.Net;
+using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
-using ScrapySharp.Extensions;
-using ScrapySharp.Network;
 using TheDiscDb.Data.Import;
 
 namespace TheDiscDb.Services;
@@ -21,13 +21,54 @@ public class AmazonImportException : Exception
 
 public class AmazonImporter : IAmazonImporter
 {
-    private readonly ScrapingBrowser browser;
-    private readonly IStaticAssetStore assets;
+    private static readonly string[] UserAgents =
+    [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    ];
 
-    public AmazonImporter(IStaticAssetStore assets)
+    private readonly HttpClient httpClient;
+    private readonly IStaticAssetStore assets;
+    private readonly ILogger<AmazonImporter> logger;
+
+    public AmazonImporter(IStaticAssetStore assets, ILogger<AmazonImporter> logger)
     {
-        this.browser = new ScrapingBrowser();
         this.assets = assets ?? throw new ArgumentNullException(nameof(assets));
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+        var handler = new HttpClientHandler
+        {
+            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+            UseCookies = true,
+            CookieContainer = new CookieContainer(),
+        };
+
+        this.httpClient = new HttpClient(handler);
+    }
+
+    private HttpRequestMessage CreateRequest(Uri url)
+    {
+        string userAgent = UserAgents[Random.Shared.Next(UserAgents.Length)];
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.TryAddWithoutValidation("User-Agent", userAgent);
+        request.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
+        request.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
+        request.Headers.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate, br");
+        request.Headers.TryAddWithoutValidation("Cache-Control", "no-cache");
+        request.Headers.TryAddWithoutValidation("Pragma", "no-cache");
+        request.Headers.TryAddWithoutValidation("Sec-Ch-Ua", "\"Chromium\";v=\"131\", \"Not_A Brand\";v=\"24\"");
+        request.Headers.TryAddWithoutValidation("Sec-Ch-Ua-Mobile", "?0");
+        request.Headers.TryAddWithoutValidation("Sec-Ch-Ua-Platform", "\"Windows\"");
+        request.Headers.TryAddWithoutValidation("Sec-Fetch-Dest", "document");
+        request.Headers.TryAddWithoutValidation("Sec-Fetch-Mode", "navigate");
+        request.Headers.TryAddWithoutValidation("Sec-Fetch-Site", "none");
+        request.Headers.TryAddWithoutValidation("Sec-Fetch-User", "?1");
+        request.Headers.TryAddWithoutValidation("Upgrade-Insecure-Requests", "1");
+
+        return request;
     }
 
     private async Task SaveResponse(string response, string remotePath, CancellationToken cancellationToken = default)
@@ -50,43 +91,54 @@ public class AmazonImporter : IAmazonImporter
     {
         try
         {
-            AmazonProductMetadata result = new AmazonProductMetadata();
-            WebPage html = await browser.NavigateToPageAsync(GetUrl(asin));
+            var url = GetUrl(asin);
+            using var request = CreateRequest(url);
+            using var response = await this.httpClient.SendAsync(request, cancellationToken);
 
-            if (html.RawResponse.StatusCode < 200 || html.RawResponse.StatusCode > 299)
+            if (!response.IsSuccessStatusCode)
             {
-                throw new AmazonImportException($"Failed to retrieve Amazon page for ASIN {asin}. Status code: {html.RawResponse.StatusCode}");
+                throw new AmazonImportException($"Failed to retrieve Amazon page for ASIN {asin}. Status code: {(int)response.StatusCode}");
             }
 
-            if (string.IsNullOrEmpty(html.Content))
+            string content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (string.IsNullOrEmpty(content))
             {
                 throw new AmazonImportException($"Could not retrieve Amazon page for ASIN {asin}. Empty content.");
             }
 
-            var nodes = html.Html.CssSelect("div#detailBullets_feature_div");
-            var node = nodes.FirstOrDefault();
+            // Detect bot blocking
+            if (content.Contains("To discuss automated access to Amazon data", StringComparison.OrdinalIgnoreCase)
+                || content.Contains("api-services-support@amazon.com", StringComparison.OrdinalIgnoreCase))
+            {
+                this.logger.LogWarning("Amazon bot detection triggered for ASIN {Asin}", asin);
+                throw new AmazonImportException($"Amazon blocked the request for ASIN {asin}. Bot detection triggered.");
+            }
+
+            var doc = new HtmlDocument();
+            doc.LoadHtml(content);
+
+            AmazonProductMetadata result;
+            var node = doc.GetElementbyId("detailBullets_feature_div");
             if (node != null)
             {
-                var listItems = node.Descendants()
-                    .Where(n => n.Name == "li")
-                    .ToList();
-
+                var listItems = node.Descendants("li").ToList();
                 var details = ParseDetails(listItems);
                 result = BuildMetadata(details);
             }
             else
             {
                 string logPath = $"logs/{asin}-{Guid.NewGuid()}.html";
-                await SaveResponse(html.RawResponse.ToString(), logPath, cancellationToken);
+                await SaveResponse(content, logPath, cancellationToken);
                 throw new AmazonImportException("Could not find detail bullets on Amazon page. " + logPath);
             }
 
-            var imageData = GetImageData(html.RawResponse.ToString());
+            var imageData = GetImageData(content);
 
             if (imageData == null)
             {
                 string logPath = $"logs/{asin}-{Guid.NewGuid()}.html";
-                await SaveResponse(html.RawResponse.ToString(), logPath, cancellationToken);
+                await SaveResponse(content, logPath, cancellationToken);
                 throw new AmazonImportException("Could not find image data on Amazon page. " + logPath);
             }
 
@@ -111,6 +163,10 @@ public class AmazonImporter : IAmazonImporter
             }
 
             return result;
+        }
+        catch (AmazonImportException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -209,18 +265,20 @@ public class AmazonImporter : IAmazonImporter
 
         foreach (var item in listItem)
         {
-            var children = item.Descendants()
-                .First(n => n.Name == "span")
-                .Descendants()
-                .Where(n => n.Name == "span")
-                .ToList();
+            var firstSpan = item.Descendants("span").FirstOrDefault();
+            if (firstSpan == null)
+            {
+                continue;
+            }
+
+            var children = firstSpan.Descendants("span").ToList();
             if (children.Count >= 2)
             {
                 var key = children[0].InnerText.Trim();
 
                 // Normalize whitespace and remove HTML entities
                 key = System.Net.WebUtility.HtmlDecode(key);
-                key = System.Text.RegularExpressions.Regex.Replace(key, @"\s+", " ")
+                key = Regex.Replace(key, @"\s+", " ")
                     .Replace(" : ", "")
                     .Trim();
 
