@@ -68,6 +68,9 @@
                             <dt>User</dt>
                             <dd><a href="/admin/user/@this.Contribution.UserId">@this.User.UserName</a></dd>
                         }
+
+                        <dt>EncodedId</dt>
+                        <dd>@this.IdEncoder.Encode(Contribution.Id)</dd>
                     </dl>
                 </div>
             </article>
