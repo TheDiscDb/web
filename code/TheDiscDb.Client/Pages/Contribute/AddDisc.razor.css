@@ -1,0 +1,21 @@
+.manual-hash-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.manual-hash-divider {
+    text-align: center;
+    color: var(--text-muted, #888);
+    margin-bottom: 0.5rem;
+}
+
+.manual-hash-input-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: start;
+}
+
+.manual-hash-input-row .form-control {
+    flex: 1;
+}

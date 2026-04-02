@@ -16,7 +16,7 @@
             <p>Ensure the disc you would like to add is in your optical drive.</p>
         </section>
 
-        @if (handler is null)
+        @if (handler is null && !manualHashMode)
         {
             <section class="info-card">
                 <p>
@@ -24,6 +24,17 @@
                     in the database. Your browser may request file-system access.
                 </p>
                 <button class="btn btn-primary" @onclick="OpenFolderAsync">Select Disc Root Folder</button>
+                @if (IsDevelopmentMode)
+                {
+                    <div class="manual-hash-section">
+                        <p class="manual-hash-divider">— or —</p>
+                        <p>Enter a disc content hash manually <strong>(development only)</strong>.</p>
+                        <div class="manual-hash-input-row">
+                            <input type="text" class="form-control" @bind="manualHash" @bind:event="oninput" placeholder="Enter content hash" />
+                            <button type="button" class="btn btn-secondary" @onclick="SubmitManualHash" disabled="@string.IsNullOrWhiteSpace(manualHash)">Use Manual Hash</button>
+                        </div>
+                    </div>
+                }
             </section>
         }
         else
