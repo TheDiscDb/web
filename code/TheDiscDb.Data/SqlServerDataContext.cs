@@ -130,6 +130,17 @@ public class SqlServerDataContext : DbContext
             .HasForeignKey(x => x.ApiKeyId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        var engramSubmission = modelBuilder.Entity<EngramSubmission>();
+        engramSubmission.HasKey(x => x.Id);
+        engramSubmission.HasIndex(x => x.ContentHash).IsUnique();
+        engramSubmission.HasMany(x => x.Titles)
+            .WithOne(x => x.Submission)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        var engramTitle = modelBuilder.Entity<EngramTitle>();
+        engramTitle.HasKey(x => x.Id);
+        engramTitle.HasIndex(x => new { x.EngramSubmissionId, x.TitleIndex }).IsUnique();
+
         BuildIdentityModel(modelBuilder);
     }
 
@@ -280,6 +291,8 @@ public class SqlServerDataContext : DbContext
     public DbSet<Contributor> Contributors { get; set; } = null!;
     public DbSet<ApiKey> ApiKeys { get; set; } = null!;
     public DbSet<ApiKeyUsageLog> ApiKeyUsageLogs { get; set; } = null!;
+    public DbSet<EngramSubmission> EngramSubmissions { get; set; } = null!;
+    public DbSet<EngramTitle> EngramTitles { get; set; } = null!;
 }
 
 public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser
@@ -497,6 +510,50 @@ public class UserMessage
     public bool IsRead { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public UserMessageType Type { get; set; }
+}
+
+public class EngramSubmission
+{
+    public int Id { get; set; }
+    public string ContentHash { get; set; } = string.Empty;
+    public string VolumeLabel { get; set; } = string.Empty;
+    public string ContentType { get; set; } = string.Empty;
+    public int? DiscNumber { get; set; }
+    public int? TmdbId { get; set; }
+    public string? DetectedTitle { get; set; }
+    public int? DetectedSeason { get; set; }
+    public string? ClassificationSource { get; set; }
+    public double? ClassificationConfidence { get; set; }
+    public string? Upc { get; set; }
+    public string? FrontImageUrl { get; set; }
+    public string? BackImageUrl { get; set; }
+    public string? ScanLogPath { get; set; }
+    public string EngramVersion { get; set; } = string.Empty;
+    public string ExportVersion { get; set; } = string.Empty;
+    public int ContributionTier { get; set; }
+    public DateTimeOffset ReceivedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
+    public ICollection<EngramTitle> Titles { get; set; } = new List<EngramTitle>();
+}
+
+public class EngramTitle
+{
+    public int Id { get; set; }
+    public int EngramSubmissionId { get; set; }
+    public int TitleIndex { get; set; }
+    public string? SourceFilename { get; set; }
+    public int? DurationSeconds { get; set; }
+    public long? SizeBytes { get; set; }
+    public int? ChapterCount { get; set; }
+    public int? SegmentCount { get; set; }
+    public string? SegmentMap { get; set; }
+    public string? TitleType { get; set; }
+    public string? MatchedEpisode { get; set; }
+    public double? MatchConfidence { get; set; }
+    public string? MatchSource { get; set; }
+    public string? Edition { get; set; }
+    public string? RipLogPath { get; set; }
+    public EngramSubmission Submission { get; set; } = null!;
 }
 
 public static class DefaultRoles

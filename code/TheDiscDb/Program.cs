@@ -34,6 +34,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddTransient<ContributionEndpoints>();
+builder.Services.AddTransient<EngramEndpoints>();
 
 builder.Services.AddControllersWithViews( options =>
 {
@@ -311,6 +312,9 @@ var app = builder.Build();
 
 var contributionEndpoints = app.Services.GetRequiredService<ContributionEndpoints>();
 contributionEndpoints.MapEndpoints(app);
+
+var engramEndpoints = app.Services.GetRequiredService<EngramEndpoints>();
+engramEndpoints.MapEndpoints(app);
 
 app.MapDefaultEndpoints();
 
