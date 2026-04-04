@@ -63,21 +63,25 @@
             {
                 foreach (var contributor in releaseFile.Contributors)
                 {
-                    var existingContributor = await dbContext.Contributors
-                        .FirstOrDefaultAsync(c => c.Name == contributor.Name);
+                    // Check both the change tracker and the database to avoid
+                    // duplicate inserts when multiple releases share a contributor
+                    // within the same SaveChanges batch.
+                    var existingContributor = dbContext.Contributors.Local
+                        .FirstOrDefault(c => string.Equals(c.Name, contributor.Name, StringComparison.OrdinalIgnoreCase))
+                        ?? await dbContext.Contributors
+                            .FirstOrDefaultAsync(c => c.Name == contributor.Name);
 
                     if (existingContributor == null)
                     {
-                        release.Contributors.Add(new InputModels.Contributor
+                        existingContributor = new InputModels.Contributor
                         {
                             Name = contributor.Name,
                             Source = contributor.Source
-                        });
+                        };
+                        dbContext.Contributors.Add(existingContributor);
                     }
-                    else
-                    {
-                        release.Contributors.Add(existingContributor);
-                    }
+
+                    release.Contributors.Add(existingContributor);
                 }
             }
         }

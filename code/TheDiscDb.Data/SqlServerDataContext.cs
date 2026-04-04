@@ -368,6 +368,7 @@ public class UserContributionDisc : IHasId
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public bool LogsUploaded { get; set; } = false;
+    public string? LogUploadError { get; set; }
     public string? ExistingDiscPath { get; set; } = default!;
 
     public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();

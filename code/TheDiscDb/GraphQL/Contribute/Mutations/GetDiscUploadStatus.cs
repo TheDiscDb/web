@@ -36,6 +36,6 @@ public partial class ContributionMutations
             throw new DiscNotFoundException(discId);
         }
 
-        return new DiscUploadStatus(disc.LogsUploaded);
+        return new DiscUploadStatus(disc.LogsUploaded, disc.LogUploadError);
     }
 }

@@ -20,6 +20,8 @@ public class ContributionEndpoints
         contribute.MapPost("{contributionId}/discs/{discId}/logs", SaveDiscLogs)
             .AllowAnonymous()
             .Accepts<string>("text/plain");
+        contribute.MapDelete("{contributionId}/discs/{discId}/logs/error", ClearDiscLogError)
+            .AllowAnonymous();
         contribute.MapGet("externalsearch/{type}", ExternalSearch);
 
         contribute.MapPost("images/front/upload/{id:guid}", UploadFrontImage)
@@ -143,12 +145,23 @@ public class ContributionEndpoints
 
                     try
                     {
-                        _ = LogParser.Parse(allLines);
+                        var parsed = LogParser.Parse(allLines).ToList();
+                        if (parsed.Count == 0)
+                        {
+                            disc.LogsUploaded = false;
+                            disc.LogUploadError = "Log file contains no valid MakeMKV log entries";
+                            await dbContext.SaveChangesAsync(cancellationToken);
+                            return Result.Fail(disc.LogUploadError);
+                        }
 
+                        LogParser.Organize(parsed);
                     }
                     catch (Exception)
                     {
-                        return Result.Fail($"Could not parse log file");
+                        disc.LogsUploaded = false;
+                        disc.LogUploadError = "Could not parse log file";
+                        await dbContext.SaveChangesAsync(cancellationToken);
+                        return Result.Fail(disc.LogUploadError);
                     }
                 }
 
@@ -160,12 +173,31 @@ public class ContributionEndpoints
             }
 
             disc.LogsUploaded = true;
+            disc.LogUploadError = null;
             await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         return Result.Ok();
 
         //TODO: Notify the client a disc has been added? (to prevent the client having to poll)
+    }
+
+    public async Task<IResult> ClearDiscLogError(IDbContextFactory<SqlServerDataContext> dbContextFactory, IdEncoder idEncoder, string contributionId, string discId, CancellationToken cancellationToken)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        int realDiscId = idEncoder.Decode(discId);
+        var disc = await dbContext.UserContributionDiscs
+            .FirstOrDefaultAsync(d => d.Id == realDiscId, cancellationToken);
+
+        if (disc == null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        disc.LogUploadError = null;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Results.Ok();
     }
 
     #region Image Upload

@@ -247,6 +247,7 @@ type DiscNotFoundError implements Error {
 
 type DiscUploadStatus {
   logsUploaded: Boolean!
+  logUploadError: String
 }
 
 type DiscUploadStatusPayload {
