@@ -3,7 +3,9 @@ using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.QuickGrid;
 using StrawberryShake;
+using TheDiscDb.Client.Services;
 using TheDiscDb.InputModels;
+using TheDiscDb.Naming;
 
 namespace TheDiscDb.Client.Pages;
 
@@ -17,6 +19,9 @@ public partial class DiscDetail : ComponentBase
 
     [Inject]
     public GetDiscDetailByContentHashQuery? ContentHashQuery { get; set; }
+
+    [Inject]
+    public IClipboardService? ClipboardService { get; set; }
 
     [Parameter]
     public string? Type { get; set; }
@@ -45,6 +50,13 @@ public partial class DiscDetail : ComponentBase
     private IQueryable<IDiscItem> FilteredTitles { get; set; } = new List<IDiscItem>().AsQueryable();
     private readonly GridSort<IDiscItem> SortSourceFile = GridSort<IDiscItem>.ByAscending(u => u.SourceFile);
 
+    private string? MediaItemYear { get; set; }
+    private string? TmdbId { get; set; }
+    private string? ImdbId { get; set; }
+    private string? TvdbId { get; set; }
+
+    private ParsedTemplate? CurrentTemplate { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         if (!string.IsNullOrEmpty(this.ContentHash))
@@ -70,6 +82,10 @@ public partial class DiscDetail : ComponentBase
             this.Item = item;
             if (Item != null)
             {
+                MediaItemYear = item!.Year.ToString();
+                TmdbId = item.Externalids?.Tmdb;
+                ImdbId = item.Externalids?.Imdb;
+
                 var release = item!.Releases!.First();
                 this.Release = release;
 
@@ -98,6 +114,11 @@ public partial class DiscDetail : ComponentBase
             this.Item = item;
             if (Item != null)
             {
+                MediaItemYear = item!.Year.ToString();
+                TmdbId = item.Externalids?.Tmdb;
+                ImdbId = item.Externalids?.Imdb;
+                TvdbId = item.Externalids?.Tvdb;
+
                 var release = item!.Releases!.First();
                 this.Release = release;
 
@@ -156,6 +177,39 @@ public partial class DiscDetail : ComponentBase
 
         this.StateHasChanged();
         return Task.CompletedTask;
+    }
+
+    private void OnTemplateChanged(ParsedTemplate? template)
+    {
+        CurrentTemplate = template;
+        StateHasChanged();
+    }
+
+    private string? GenerateFilename(IDiscItem title)
+    {
+        if (CurrentTemplate is null || !title.HasItem || Item is null || Disc is null)
+        {
+            return null;
+        }
+
+        var context = NamingContextBuilder.Build(
+            Item,
+            Disc,
+            title,
+            MediaItemYear,
+            TmdbId,
+            ImdbId,
+            TvdbId);
+
+        return CurrentTemplate.Format(context);
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        if (ClipboardService is not null)
+        {
+            await ClipboardService.WriteTextAsync(text);
+        }
     }
 
     public string TitleDetailUrl(IDiscItem title)

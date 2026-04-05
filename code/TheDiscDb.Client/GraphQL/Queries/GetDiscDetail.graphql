@@ -13,6 +13,11 @@ query GetDiscDetail($slug: String, $releaseSlug: String, $discNumber: Int, $disc
         slug
         imageUrl
         type
+        externalids {
+          tmdb
+          imdb
+          tvdb
+        }
         releases (where: { slug: { eq: $releaseSlug } }) {
           slug
           isbn

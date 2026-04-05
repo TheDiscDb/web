@@ -1,0 +1,84 @@
+.filename-generator {
+    margin-bottom: 1rem;
+}
+
+.filename-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.875rem;
+}
+
+.toggle-icon {
+    font-size: 0.75rem;
+    width: 0.75rem;
+    display: inline-block;
+}
+
+.filename-controls {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 0.375rem;
+    background: var(--bs-body-bg, #fff);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.preset-row,
+.template-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.preset-row .form-label,
+.template-row .form-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.parse-errors {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.parse-error {
+    font-size: 0.8125rem;
+    color: var(--bs-danger, #dc3545);
+}
+
+.token-reference {
+    font-size: 0.8125rem;
+    margin-top: 0.25rem;
+}
+
+.token-reference summary {
+    cursor: pointer;
+    color: var(--bs-secondary, #6c757d);
+    font-weight: 500;
+}
+
+.token-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+}
+
+.token-list code {
+    padding: 0.125rem 0.375rem;
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+}
+
+.token-hint {
+    margin-top: 0.375rem;
+    margin-bottom: 0;
+    color: var(--bs-secondary, #6c757d);
+    font-size: 0.75rem;
+}

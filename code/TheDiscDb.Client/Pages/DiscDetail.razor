@@ -1,4 +1,7 @@
-﻿@if (Item == null || Disc == null || Release == null)
+﻿@using TheDiscDb.Client.Controls
+@using TheDiscDb.Naming
+
+@if (Item == null || Disc == null || Release == null)
 {
     <div>Loading titles...</div>
 }
@@ -8,6 +11,8 @@ else
         <SfSwitch TChecked="bool" ValueChange="e => AllTitlesChanged(e)" />
         <label>Show all titles</label>
     </div>
+
+    <FilenameGenerator MediaType="@Item.Type" TemplateChanged="OnTemplateChanged" />
 
     <div class="table-responsive">
     <QuickGrid Items="FilteredTitles">
@@ -24,6 +29,23 @@ else
         <PropertyColumn Property="@(t => t.SegmentMap)" Sortable="true" />
         <PropertyColumn Property="@(t => t.Duration)" Sortable="true" />
         <PropertyColumn Property="@(t => t.DisplaySize)" Sortable="true" />
+        @if (CurrentTemplate is not null)
+        {
+            <TemplateColumn Title="Filename">
+                @{ var filename = GenerateFilename(context); }
+                @if (!string.IsNullOrEmpty(filename))
+                {
+                    <div class="filename-cell">
+                        <span class="filename-text">@filename</span>
+                        <button class="btn btn-sm btn-outline-secondary copy-btn"
+                                title="Copy to clipboard"
+                                @onclick="() => CopyToClipboard(filename)">
+                            📋
+                        </button>
+                    </div>
+                }
+            </TemplateColumn>
+        }
     </QuickGrid>
     </div>
 }

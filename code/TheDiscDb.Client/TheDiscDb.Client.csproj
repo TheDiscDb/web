@@ -59,6 +59,7 @@
         <PackageReference Include="HighlightBlazor" Version="0.1.10" />
     </ItemGroup>
     <ItemGroup>
+        <ProjectReference Include="..\TheDiscDb.Naming\TheDiscDb.Naming.csproj" />
         <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />
     </ItemGroup>
 </Project>

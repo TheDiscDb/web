@@ -1,0 +1,22 @@
+.filename-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    max-width: 100%;
+}
+
+.filename-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.8125rem;
+}
+
+.copy-btn {
+    flex-shrink: 0;
+    padding: 0.125rem 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    border-radius: 0.25rem;
+}

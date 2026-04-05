@@ -1,0 +1,65 @@
+@using TheDiscDb.Client.Services
+@using TheDiscDb.Naming
+
+<div class="filename-generator">
+    <button class="btn btn-sm btn-outline-secondary filename-toggle" @onclick="ToggleExpanded">
+        <span class="toggle-icon">@(IsExpanded ? "▾" : "▸")</span>
+        Filename Generator
+    </button>
+
+    @if (IsExpanded)
+    {
+        <div class="filename-controls">
+            <div class="preset-row">
+                <label class="form-label">Preset</label>
+                <SfDropDownList TValue="string"
+                                TItem="FileNamePreset"
+                                DataSource="@Presets"
+                                Placeholder="Select a naming preset..."
+                                @bind-Value="SelectedPresetName">
+                    <DropDownListFieldSettings Text="Name" Value="Name" />
+                    <DropDownListEvents TValue="string" TItem="FileNamePreset" ValueChange="OnPresetChanged" />
+                </SfDropDownList>
+            </div>
+
+            <div class="template-row">
+                <label class="form-label">Template</label>
+                <SfTextBox @bind-Value="TemplateText"
+                           Placeholder="e.g. {fulltitle} {resolution}.mkv"
+                           Input="OnTemplateInput" />
+            </div>
+
+            @if (ParseErrors is { Count: > 0 })
+            {
+                <div class="parse-errors">
+                    @foreach (var error in ParseErrors)
+                    {
+                        <span class="parse-error">@error.Message</span>
+                    }
+                </div>
+            }
+
+            <details class="token-reference">
+                <summary>Available tokens</summary>
+                <div class="token-list">
+                    <code>{title}</code>
+                    <code>{year}</code>
+                    <code>{fulltitle}</code>
+                    <code>{resolution}</code>
+                    <code>{format}</code>
+                    <code>{tmdbid}</code>
+                    <code>{imdbid}</code>
+                    <code>{tvdbid}</code>
+                    <code>{edition}</code>
+                    <code>{part}</code>
+                    <code>{extratype}</code>
+                    <code>{seasonnumber}</code>
+                    <code>{episodenumber}</code>
+                    <code>{episodename}</code>
+                    <code>{airdate}</code>
+                </div>
+                <p class="token-hint">Use <code>{{</code> and <code>}}</code> for literal braces.</p>
+            </details>
+        </div>
+    }
+</div>
