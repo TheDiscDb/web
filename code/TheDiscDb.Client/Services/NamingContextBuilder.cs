@@ -34,18 +34,22 @@ public static class NamingContextBuilder
         string? episodeNumber = PadNumber(title.Episode);
 
         bool isMainMovie = string.Equals(title.ItemType, "MainMovie", StringComparison.OrdinalIgnoreCase);
+        bool isEpisode = !string.IsNullOrWhiteSpace(title.Season) || !string.IsNullOrWhiteSpace(title.Episode);
 
-        // {title} always maps to the disc item's own title (the Description column)
-        string? itemTitle = title.Description;
+        // {title}: show name for episodes, item title (Description column) for everything else
+        string? titleValue = isEpisode ? mediaItem.Title : title.Description;
 
-        // {fulltitle} is "MediaName (Year)" for MainMovie, otherwise same as {title}
-        string? fullTitle = isMainMovie
+        // {episodename}: always the item's own title (Description column)
+        string? episodeName = title.Description;
+
+        // {fulltitle}: "ShowName (Year)" for MainMovie and episodes, otherwise same as {title}
+        string? fullTitle = (isMainMovie || isEpisode)
             ? BuildFullTitle(mediaItem.Title, yearStr)
-            : itemTitle;
+            : titleValue;
 
         return new NamingContext
         {
-            Title = itemTitle,
+            Title = titleValue,
             Year = yearStr,
             FullTitle = fullTitle,
             Format = disc.Format,
@@ -55,7 +59,7 @@ public static class NamingContextBuilder
             TvdbId = tvdbId,
             SeasonNumber = seasonNumber,
             EpisodeNumber = episodeNumber,
-            EpisodeName = itemTitle,
+            EpisodeName = episodeName,
             ExtraType = MapExtraType(title.ItemType),
         };
     }
