@@ -35,13 +35,9 @@ else
                 @{ var filename = GenerateFilename(context); }
                 @if (!string.IsNullOrEmpty(filename))
                 {
-                    <div class="filename-cell">
+                    <div class="filename-cell" title="Click to copy" @onclick="() => CopyToClipboard(filename)">
                         <span class="filename-text">@filename</span>
-                        <button class="btn btn-sm btn-outline-secondary copy-btn"
-                                title="Copy to clipboard"
-                                @onclick="() => CopyToClipboard(filename)">
-                            <i class="e-icons e-copy"></i>
-                        </button>
+                        <i class="e-icons e-copy copy-icon"></i>
                     </div>
                 }
             </TemplateColumn>
