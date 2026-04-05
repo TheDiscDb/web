@@ -29,6 +29,19 @@ else
                     <h1>@Item.FullTitle</h1>
                     <h2>@Release?.FullTitle</h2>
                     <div>Released @string.Format("{0:d}", @Release?.ReleaseDate)</div>
+                    @if (!string.IsNullOrEmpty(Release?.Upc))
+                    {
+                        <div class="upc-line">
+                            UPC: <span class="upc-link" onclick="document.getElementById('barcode-dialog').showModal()">@Release.Upc</span>
+                        </div>
+                        <dialog id="barcode-dialog" class="barcode-dialog" onclick="if(event.target===this)this.close()">
+                            <button class="barcode-dialog-close" onclick="document.getElementById('barcode-dialog').close()" aria-label="Close">&times;</button>
+                            <div class="barcode-dialog-content">
+                                <img src="/api/barcode?data=@Release.Upc&width=300&showLabel=false" alt="Barcode for @Release.Upc" />
+                                <div class="barcode-dialog-upc">@Release.Upc</div>
+                            </div>
+                        </dialog>
+                    }
                     <AmazonAssociatesButton Asin="@Release?.Asin" Width="25" />
                     <ul>
                         @if (Release?.Discs != null)

@@ -34,11 +34,11 @@ public class ClientApiController : ControllerBase
     }
 
     [HttpGet("barcode")]
-    public FileContentResult Barcode(string data, int width = 200)
+    public FileContentResult Barcode(string data, int width = 200, bool showLabel = true)
     {
         var barcode = new Barcode.Barcode(data)
         {
-            ShowLabel = true
+            ShowLabel = showLabel
         };
 
         var image = barcode.GenerateImage();
