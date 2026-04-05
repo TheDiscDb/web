@@ -20,6 +20,8 @@ public partial class FilenameGenerator : ComponentBase
     private IReadOnlyList<TemplateParseError>? ParseErrors { get; set; }
     private IReadOnlyList<FileNamePreset> Presets { get; set; } = [];
 
+    private bool IsSeries => string.Equals(MediaType, "series", StringComparison.OrdinalIgnoreCase);
+
     protected override void OnParametersSet()
     {
         Presets = FileNamePresets.GetPresetsForType(MediaType);

@@ -53,10 +53,13 @@
                     <code>{edition}</code>
                     <code>{part}</code>
                     <code>{extratype}</code>
-                    <code>{seasonnumber}</code>
-                    <code>{episodenumber}</code>
-                    <code>{episodename}</code>
-                    <code>{airdate}</code>
+                    @if (IsSeries)
+                    {
+                        <code>{seasonnumber}</code>
+                        <code>{episodenumber}</code>
+                        <code>{episodename}</code>
+                        <code>{airdate}</code>
+                    }
                 </div>
                 <p class="token-hint">Use <code>{{</code> and <code>}}</code> for literal braces.</p>
             </details>

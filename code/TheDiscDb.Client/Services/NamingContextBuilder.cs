@@ -29,23 +29,33 @@ public static class NamingContextBuilder
         string? tvdbId = null)
     {
         string? yearStr = !string.IsNullOrWhiteSpace(year) ? year : null;
-        string? fullTitle = BuildFullTitle(mediaItem.Title, yearStr);
-
+        string? resolution = ResolveResolutionFromFormat(disc.Format);
         string? seasonNumber = PadNumber(title.Season);
         string? episodeNumber = PadNumber(title.Episode);
 
+        bool isMainMovie = string.Equals(title.ItemType, "MainMovie", StringComparison.OrdinalIgnoreCase);
+
+        // {title} always maps to the disc item's own title (the Description column)
+        string? itemTitle = title.Description;
+
+        // {fulltitle} is "MediaName (Year)" for MainMovie, otherwise same as {title}
+        string? fullTitle = isMainMovie
+            ? BuildFullTitle(mediaItem.Title, yearStr)
+            : itemTitle;
+
         return new NamingContext
         {
-            Title = mediaItem.Title,
+            Title = itemTitle,
             Year = yearStr,
             FullTitle = fullTitle,
             Format = disc.Format,
+            Resolution = resolution,
             TmdbId = tmdbId,
             ImdbId = imdbId,
             TvdbId = tvdbId,
             SeasonNumber = seasonNumber,
             EpisodeNumber = episodeNumber,
-            EpisodeName = title.Description,
+            EpisodeName = itemTitle,
             ExtraType = MapExtraType(title.ItemType),
         };
     }
@@ -68,6 +78,26 @@ public static class NamingContextBuilder
         }
 
         return int.TryParse(value, out int number) ? number.ToString("D2") : value;
+    }
+
+    /// <summary>
+    /// Derives resolution from the disc format name.
+    /// </summary>
+    private static string? ResolveResolutionFromFormat(string? format)
+    {
+        if (string.IsNullOrWhiteSpace(format))
+        {
+            return null;
+        }
+
+        return format.ToLowerInvariant() switch
+        {
+            "4k ultra hd" or "uhd" or "4k uhd" or "ultra hd blu-ray" => "2160p",
+            "blu-ray" or "bluray" or "bd" => "1080p",
+            "dvd" => "480p",
+            "hd dvd" or "hd-dvd" => "720p",
+            _ => null,
+        };
     }
 
     /// <summary>
