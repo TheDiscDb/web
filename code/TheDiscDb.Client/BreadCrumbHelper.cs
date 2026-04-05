@@ -33,7 +33,7 @@ public static partial class BreadCrumbHelper
         return (Text: GetContributionLinkText(contribution), Url: $"/contribution/{contribution.EncodedId}");
     }
 
-    public static (string Text, string Url) GetContributionDiscLink(IContributionDisplay contribution, IContributiionDiscDisplay disc)
+    public static (string Text, string Url) GetContributionDiscLink(IContributionDisplay contribution, IContributionDiscDisplay disc)
     {
         return (Text: $"{disc.Name} ({disc.Format})", Url: $"/contribution/{contribution.EncodedId}/discs/{disc.EncodedId}");
     }

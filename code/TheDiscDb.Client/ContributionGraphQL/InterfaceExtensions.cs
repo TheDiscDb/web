@@ -14,6 +14,6 @@ public partial interface IGetDiscLogs_DiscLogs_DiscLogs_Contribution : IContribu
 {
 }
 
-public partial interface IGetDiscLogs_DiscLogs_DiscLogs_Disc : IContributiionDiscDisplay
+public partial interface IGetDiscLogs_DiscLogs_DiscLogs_Disc : IContributionDiscDisplay
 {
 }
