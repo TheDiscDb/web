@@ -23,9 +23,15 @@ public class SqlServerDataContext : DbContext
 
         var release = modelBuilder.Entity<Release>();
         release.HasMany(x => x.Discs).WithOne(x => x.Release);
+        release.HasMany(x => x.ReleaseGroups).WithOne(x => x.Release);
         release.HasMany(x => x.Contributors)
             .WithMany(x => x.Releases)
             .UsingEntity(j => j.ToTable("ReleaseContributor"));
+
+        var releaseGroup = modelBuilder.Entity<ReleaseGroup>();
+        releaseGroup.HasOne(x => x.Release).WithMany(x => x.ReleaseGroups);
+        releaseGroup.HasOne(x => x.Group).WithMany(x => x.ReleaseGroups);
+        releaseGroup.HasIndex(x => new { x.ReleaseId, x.GroupId }).IsUnique();
 
         var contributor = modelBuilder.Entity<Contributor>();
         contributor
@@ -54,6 +60,7 @@ public class SqlServerDataContext : DbContext
 
         var groups = modelBuilder.Entity<Group>();
         groups.HasMany(x => x.MediaItemGroups).WithOne(x => x.Group);
+        groups.HasMany(x => x.ReleaseGroups).WithOne(x => x.Group);
         groups.HasIndex(x => x.Slug).IsUnique();
 
         var userContribution = modelBuilder.Entity<UserContribution>();
@@ -131,6 +138,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<Track> Tracks { get; set; } = null!;
     public DbSet<Group> Groups { get; set; } = null!;
     public DbSet<MediaItemGroup> MediaItemGroup { get; set; } = null!;
+    public DbSet<ReleaseGroup> ReleaseGroups { get; set; } = null!;
 
     public DbSet<TheDiscDbUser> Users { get; set; } = null!;
     public DbSet<UserContribution> UserContributions { get; set; } = null!;
