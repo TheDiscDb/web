@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageId>TheDiscDb.Core</PackageId>
+		<Version>3.0.0</Version>
+		<Authors>lfoust</Authors>
+		<Company>TheDiscDb</Company>
+		<PackageDescription>The base models and helper classes for thediscdb.com</PackageDescription>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>discdb;disc;bluray;4k;media;metadata</PackageTags>
+		<PackageProjectUrl>https://thediscdb.com</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/TheDiscDb/web</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="HotChocolate.Data" Version="15.1.12" />
+	</ItemGroup>
+
+</Project>

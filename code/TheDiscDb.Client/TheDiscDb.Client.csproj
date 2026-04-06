@@ -48,7 +48,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.2" />
         <PackageReference Include="Sqids" Version="3.2.0" />
         <PackageReference Include="StrawberryShake.Blazor" Version="15.1.12" />
-        <PackageReference Include="TheDiscDb.MakeMkv" Version="2.0.3" />
+        <ProjectReference Include="..\TheDiscDb.MakeMkv\TheDiscDb.MakeMkv.csproj" />
         <PackageReference Include="Syncfusion.Blazor.Inputs" Version="32.1.23" />
         <PackageReference Include="Syncfusion.Blazor.Themes" Version="32.1.23" />
         <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="32.1.23" />

@@ -84,6 +84,41 @@
                     release.Contributors.Add(existingContributor);
                 }
             }
+
+            if (releaseFile.Groups != null && releaseFile.Groups.Count > 0)
+            {
+                foreach (var groupName in releaseFile.Groups)
+                {
+                    var group = await TryGetGroup(groupName, null, CancellationToken.None);
+                    if (group == null)
+                    {
+                        group = new Group
+                        {
+                            Name = groupName,
+                            Slug = groupName.Slugify()
+                        };
+                        groupCache.TryAdd(groupName, group);
+                    }
+
+                    var existingReleaseGroup = release.ReleaseGroups
+                        .FirstOrDefault(rg => rg.Group != null && string.Equals(rg.Group.Name, groupName, StringComparison.OrdinalIgnoreCase));
+
+                    if (existingReleaseGroup == null)
+                    {
+                        existingReleaseGroup = release.ReleaseGroups
+                            .FirstOrDefault(rg => rg.GroupId == group.Id && group.Id != 0);
+                    }
+
+                    if (existingReleaseGroup == null)
+                    {
+                        release.ReleaseGroups.Add(new ReleaseGroup
+                        {
+                            Release = release,
+                            Group = group
+                        });
+                    }
+                }
+            }
         }
 
         private Series MapSeries(MetadataFile metadata)
@@ -354,6 +389,9 @@
                         .ThenInclude(i => i.Group)
                         .Include(i => i.Releases)
                         .ThenInclude(r => r.Discs)
+                        .Include(i => i.Releases)
+                        .ThenInclude(r => r.ReleaseGroups)
+                        .ThenInclude(rg => rg.Group)
                         .FirstOrDefaultAsync(s => s.Slug == metadata.Slug);
                     if (movie != null)
                     {
@@ -526,6 +564,9 @@
                         var movie = await this.dbContext.MediaItems
                             .Include(i => i.Releases)
                             .ThenInclude(r => r.Discs)
+                            .Include(i => i.Releases)
+                            .ThenInclude(r => r.ReleaseGroups)
+                            .ThenInclude(rg => rg.Group)
                             .FirstOrDefaultAsync(s => s.Slug == singleMetadata.Slug);
                         if (movie != null)
                         {

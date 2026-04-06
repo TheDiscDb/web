@@ -32,9 +32,12 @@ public class Query
     {
         if (string.IsNullOrEmpty(role))
         {
-            return context.MediaItems.Where(i => i.MediaItemGroups.Any(g => g != null && g.Group != null && g.Group.Slug == slug));
+            return context.MediaItems.Where(i =>
+                i.MediaItemGroups.Any(g => g != null && g.Group != null && g.Group.Slug == slug) ||
+                i.Releases.Any(r => r.ReleaseGroups.Any(rg => rg.Group != null && rg.Group.Slug == slug)));
         }
 
-        return context.MediaItems.Where(i => i.MediaItemGroups.Any(g => g != null && g.Group != null && g.Role == role && g.Group.Slug == slug));
+        return context.MediaItems.Where(i =>
+            i.MediaItemGroups.Any(g => g != null && g.Group != null && g.Role == role && g.Group.Slug == slug));
     }
 }

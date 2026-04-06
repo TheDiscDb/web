@@ -65,6 +65,8 @@ public class CacheHelper
                 .Include("Releases.Discs.Titles")
                 .Include("Releases.Discs.Titles.Item")
                 .Include("Releases.Contributors")
+                .Include("Releases.ReleaseGroups")
+                .Include("Releases.ReleaseGroups.Group")
                 .Include("MediaItemGroups")
                 .Include("MediaItemGroups.Group")
                 .AsSplitQuery()
