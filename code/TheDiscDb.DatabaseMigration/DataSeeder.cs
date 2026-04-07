@@ -32,14 +32,32 @@ public class DataSeeder
 
     public async Task SeedDataAsync(CancellationToken cancellationToken)
     {
-        await SeedFromFolder("movie", cancellationToken);
-        await SeedFromFolder("series", cancellationToken);
-        await SeedFromFolder("sets", cancellationToken);
+        var plan = await CreateSeedPlan(cancellationToken);
+        await SeedItems(plan.Movies, cancellationToken);
+        await SeedItems(plan.Series, cancellationToken);
+        await SeedItems(plan.Sets, cancellationToken);
     }
 
-    private async Task SeedFromFolder(string name, CancellationToken cancellationToken)
+    public async Task<SeedPlan> CreateSeedPlan(CancellationToken cancellationToken)
     {
-        var items = await GetRandomSubdirectories(this.fileSystem.Path.Combine(options.Value.DataDirectoryRoot, name), options.Value.MaxItemsToImportPerMediaType, cancellationToken);
+        var movies = await GetRandomSubdirectories(
+            this.fileSystem.Path.Combine(options.Value.DataDirectoryRoot, "movie"),
+            options.Value.MaxItemsToImportPerMediaType,
+            cancellationToken);
+        var series = await GetRandomSubdirectories(
+            this.fileSystem.Path.Combine(options.Value.DataDirectoryRoot, "series"),
+            options.Value.MaxItemsToImportPerMediaType,
+            cancellationToken);
+        var sets = await GetRandomSubdirectories(
+            this.fileSystem.Path.Combine(options.Value.DataDirectoryRoot, "sets"),
+            options.Value.MaxItemsToImportPerMediaType,
+            cancellationToken);
+
+        return new SeedPlan(movies.ToList(), series.ToList(), sets.ToList());
+    }
+
+    public async Task SeedItems(IEnumerable<string> items, CancellationToken cancellationToken)
+    {
         foreach (var item in items)
         {
             this.logger.LogInformation("Importing {Path}", item);
@@ -49,9 +67,15 @@ public class DataSeeder
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex, "Unable to import {Path}", item); 
+                this.logger.LogError(ex, "Unable to import {Path}", item);
             }
         }
+    }
+
+    private async Task SeedFromFolder(string name, CancellationToken cancellationToken)
+    {
+        var items = await GetRandomSubdirectories(this.fileSystem.Path.Combine(options.Value.DataDirectoryRoot, name), options.Value.MaxItemsToImportPerMediaType, cancellationToken);
+        await SeedItems(items, cancellationToken);
     }
 
     private async Task<IEnumerable<string>> GetRandomSubdirectories(string directory, int max, CancellationToken cancellationToken)
@@ -152,3 +176,8 @@ public class DataSeeder
         logger.LogInformation("Seeded API key '{Name}' (prefix: {KeyPrefix})", name, apiKey.KeyPrefix);
     }
 }
+
+public record SeedPlan(
+    IReadOnlyList<string> Movies,
+    IReadOnlyList<string> Series,
+    IReadOnlyList<string> Sets);

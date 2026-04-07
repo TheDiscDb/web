@@ -1,0 +1,31 @@
+name: Publish TheDiscDb.MakeMkv NuGet
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+            10.0.x
+
+      - name: Restore
+        run: dotnet restore code/TheDiscDb.MakeMkv/TheDiscDb.MakeMkv.csproj
+
+      - name: Build
+        run: dotnet build code/TheDiscDb.MakeMkv/TheDiscDb.MakeMkv.csproj --configuration Release --no-restore
+
+      - name: Pack
+        run: dotnet pack code/TheDiscDb.MakeMkv/TheDiscDb.MakeMkv.csproj --configuration Release --no-build --output ./nupkg
+
+      - name: Push to NuGet.org
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

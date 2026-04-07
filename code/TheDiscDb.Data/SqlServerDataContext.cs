@@ -1,11 +1,5 @@
 ﻿namespace TheDiscDb.Web.Data;
 
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
-using HotChocolate;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
 
@@ -14,11 +8,6 @@ public class SqlServerDataContext : DbContext
     public SqlServerDataContext(DbContextOptions<SqlServerDataContext> options)
         : base(options)
     {
-    }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        base.OnConfiguring(optionsBuilder);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -34,9 +23,15 @@ public class SqlServerDataContext : DbContext
 
         var release = modelBuilder.Entity<Release>();
         release.HasMany(x => x.Discs).WithOne(x => x.Release);
+        release.HasMany(x => x.ReleaseGroups).WithOne(x => x.Release);
         release.HasMany(x => x.Contributors)
             .WithMany(x => x.Releases)
             .UsingEntity(j => j.ToTable("ReleaseContributor"));
+
+        var releaseGroup = modelBuilder.Entity<ReleaseGroup>();
+        releaseGroup.HasOne(x => x.Release).WithMany(x => x.ReleaseGroups);
+        releaseGroup.HasOne(x => x.Group).WithMany(x => x.ReleaseGroups);
+        releaseGroup.HasIndex(x => new { x.ReleaseId, x.GroupId }).IsUnique();
 
         var contributor = modelBuilder.Entity<Contributor>();
         contributor
@@ -65,14 +60,13 @@ public class SqlServerDataContext : DbContext
 
         var groups = modelBuilder.Entity<Group>();
         groups.HasMany(x => x.MediaItemGroups).WithOne(x => x.Group);
+        groups.HasMany(x => x.ReleaseGroups).WithOne(x => x.Group);
         groups.HasIndex(x => x.Slug).IsUnique();
 
         var userContribution = modelBuilder.Entity<UserContribution>();
         userContribution.HasKey(x => x.Id);
         userContribution.Property(x => x.Status)
             .HasConversion<string>();
-        //userContribution.HasOne(x => x.User).WithOne()
-        //    .HasForeignKey<UserContribution>(x => x.UserId);
         userContribution.HasMany(x => x.Discs)
             .WithOne(x => x.UserContribution)
             .OnDelete(DeleteBehavior.Cascade);
@@ -141,130 +135,7 @@ public class SqlServerDataContext : DbContext
         engramTitle.HasKey(x => x.Id);
         engramTitle.HasIndex(x => new { x.EngramSubmissionId, x.TitleIndex }).IsUnique();
 
-        BuildIdentityModel(modelBuilder);
-    }
-
-    private static void BuildIdentityModel(ModelBuilder modelBuilder)
-    {
-        // Taken from Asp.net core docs https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/security/authentication/customize-identity-model.md
-        modelBuilder.Entity<TheDiscDbUser>(b =>
-        {
-            // Primary key
-            b.HasKey(u => u.Id);
-
-            // Indexes for "normalized" username and email, to allow efficient lookups
-            b.HasIndex(u => u.NormalizedUserName).HasDatabaseName("UserNameIndex").IsUnique();
-            b.HasIndex(u => u.NormalizedEmail).HasDatabaseName("EmailIndex");
-
-            // Maps to the AspNetUsers table
-            b.ToTable("AspNetUsers");
-
-            // A concurrency token for use with the optimistic concurrency checking
-            b.Property(u => u.ConcurrencyStamp).IsConcurrencyToken();
-
-            // Limit the size of columns to use efficient database types
-            b.Property(u => u.UserName).HasMaxLength(256);
-            b.Property(u => u.NormalizedUserName).HasMaxLength(256);
-            b.Property(u => u.Email).HasMaxLength(256);
-            b.Property(u => u.NormalizedEmail).HasMaxLength(256);
-
-            // The relationships between User and other entity types
-            // Note that these relationships are configured with no navigation properties
-
-            // Each User can have many UserClaims
-            b.HasMany<IdentityUserClaim<string>>().WithOne().HasForeignKey(uc => uc.UserId).IsRequired();
-
-            // Each User can have many UserLogins
-            b.HasMany<IdentityUserLogin<string>>().WithOne().HasForeignKey(ul => ul.UserId).IsRequired();
-
-            // Each User can have many UserTokens
-            b.HasMany<IdentityUserToken<string>>().WithOne().HasForeignKey(ut => ut.UserId).IsRequired();
-
-            // Each User can have many entries in the UserRole join table
-            b.HasMany<IdentityUserRole<string>>().WithOne().HasForeignKey(ur => ur.UserId).IsRequired();
-        });
-
-        modelBuilder.Entity<IdentityUserClaim<string>>(b =>
-        {
-            // Primary key
-            b.HasKey(uc => uc.Id);
-
-            // Maps to the AspNetUserClaims table
-            b.ToTable("AspNetUserClaims");
-        });
-
-        modelBuilder.Entity<IdentityUserLogin<string>>(b =>
-        {
-            // Composite primary key consisting of the LoginProvider and the key to use
-            // with that provider
-            b.HasKey(l => new { l.LoginProvider, l.ProviderKey });
-
-            // Limit the size of the composite key columns due to common DB restrictions
-            b.Property(l => l.LoginProvider).HasMaxLength(128);
-            b.Property(l => l.ProviderKey).HasMaxLength(128);
-
-            // Maps to the AspNetUserLogins table
-            b.ToTable("AspNetUserLogins");
-        });
-
-        modelBuilder.Entity<IdentityUserToken<string>>(b =>
-        {
-            // Composite primary key consisting of the UserId, LoginProvider and Name
-            b.HasKey(t => new { t.UserId, t.LoginProvider, t.Name });
-
-            // Limit the size of the composite key columns due to common DB restrictions
-            b.Property(t => t.LoginProvider).HasMaxLength(128);
-            b.Property(t => t.Name).HasMaxLength(128);
-
-            // Maps to the AspNetUserTokens table
-            b.ToTable("AspNetUserTokens");
-        });
-
-        modelBuilder.Entity<IdentityRole>(b =>
-        {
-            // Primary key
-            b.HasKey(r => r.Id);
-
-            // Index for "normalized" role name to allow efficient lookups
-            b.HasIndex(r => r.NormalizedName).HasDatabaseName("RoleNameIndex").IsUnique();
-
-            // Maps to the AspNetRoles table
-            b.ToTable("AspNetRoles");
-
-            // A concurrency token for use with the optimistic concurrency checking
-            b.Property(r => r.ConcurrencyStamp).IsConcurrencyToken();
-
-            // Limit the size of columns to use efficient database types
-            b.Property(u => u.Name).HasMaxLength(256);
-            b.Property(u => u.NormalizedName).HasMaxLength(256);
-
-            // The relationships between Role and other entity types
-            // Note that these relationships are configured with no navigation properties
-
-            // Each Role can have many entries in the UserRole join table
-            b.HasMany<IdentityUserRole<string>>().WithOne().HasForeignKey(ur => ur.RoleId).IsRequired();
-
-            // Each Role can have many associated RoleClaims
-            b.HasMany<IdentityRoleClaim<string>>().WithOne().HasForeignKey(rc => rc.RoleId).IsRequired();
-        });
-
-        modelBuilder.Entity<IdentityRoleClaim<string>>(b =>
-        {
-            // Primary key
-            b.HasKey(rc => rc.Id);
-
-            // Maps to the AspNetRoleClaims table
-            b.ToTable("AspNetRoleClaims");
-        });
-
-        modelBuilder.Entity<IdentityUserRole<string>>(b =>
-        {
-            // Primary key
-            b.HasKey(r => new { r.UserId, r.RoleId });
-
-            // Maps to the AspNetUserRoles table
-            b.ToTable("AspNetUserRoles");
-        });
+        IdentityModelConfiguration.ConfigureIdentityModel(modelBuilder);
     }
 
     public DbSet<MediaItem> MediaItems { get; set; } = null!;
@@ -278,6 +149,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<Track> Tracks { get; set; } = null!;
     public DbSet<Group> Groups { get; set; } = null!;
     public DbSet<MediaItemGroup> MediaItemGroup { get; set; } = null!;
+    public DbSet<ReleaseGroup> ReleaseGroups { get; set; } = null!;
 
     public DbSet<TheDiscDbUser> Users { get; set; } = null!;
     public DbSet<UserContribution> UserContributions { get; set; } = null!;
@@ -293,223 +165,6 @@ public class SqlServerDataContext : DbContext
     public DbSet<ApiKeyUsageLog> ApiKeyUsageLogs { get; set; } = null!;
     public DbSet<EngramSubmission> EngramSubmissions { get; set; } = null!;
     public DbSet<EngramTitle> EngramTitles { get; set; } = null!;
-}
-
-public class TheDiscDbUser : Microsoft.AspNetCore.Identity.IdentityUser
-{
-}
-
-public enum UserContributionStatus
-{
-    Pending,
-    ReadyForReview,
-    Approved,
-    ChangesRequested,
-    Rejected,
-    Imported
-}
-
-public interface IHasId
-{
-    int Id { get; set; }
-}
-
-public interface IContributionDisplay
-{
-    string EncodedId { get; }
-    string? Title { get; }
-    string? Year { get; }
-    string? ReleaseTitle { get; }
-}
-
-public interface IContributiionDiscDisplay
-{
-    string EncodedId { get; }
-    string Name { get; }
-    string Format { get; }
-}
-
-public class UserContribution : IHasId, IContributionDisplay
-{
-    [JsonIgnore]
-    //[GraphQLIgnore]
-    public int Id { get; set; }
-    [NotMapped]
-    [GraphQLIgnore]
-    public string EncodedId { get; set; } = default!;
-    [JsonIgnore]
-    public string UserId { get; set; } = default!;
-    //public TheDiscDbUser User { get; set; } = null!;
-
-    public DateTimeOffset Created { get; set; }
-    public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
-
-    public ICollection<UserContributionDisc> Discs { get; set; } = new HashSet<UserContributionDisc>();
-    public ICollection<UserContributionDiscHashItem> HashItems { get; set; } = new HashSet<UserContributionDiscHashItem>();
-
-    public string MediaType { get; set; } = string.Empty;
-    public string ExternalId { get; set; } = string.Empty;
-    public string ExternalProvider { get; set; } = string.Empty;
-    public DateTimeOffset ReleaseDate { get; set; }
-    public string Asin { get; set; } = string.Empty;
-    public string Upc { get; set; } = string.Empty;
-    public string FrontImageUrl { get; set; } = string.Empty;
-    public string? BackImageUrl { get; set; } = string.Empty;
-    public string ReleaseTitle { get; set; } = string.Empty;
-    public string? ReleaseSlug { get; set; } = string.Empty;
-    public string Locale { get; set; } = string.Empty;
-    public string RegionCode { get; set; } = string.Empty;
-
-    // These are mostly used for display and lookup but are redundant data
-    public string? Title { get; set; } = string.Empty;
-    public string? Year { get; set; } = string.Empty;
-    public string TitleSlug { get; set; } = string.Empty;
-}
-
-public class UserContributionDisc : IHasId
-{
-    [JsonIgnore]
-    //[GraphQLIgnore]
-    public int Id { get; set; }
-    [NotMapped]
-    [GraphQLIgnore]
-    public string EncodedId { get; set; } = default!;
-    [JsonIgnore]
-    public UserContribution UserContribution { get; set; } = default!;
-    public string ContentHash { get; set; } = string.Empty;
-    public string Format { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string Slug { get; set; } = string.Empty;
-    public bool LogsUploaded { get; set; } = false;
-    public string? LogUploadError { get; set; }
-    public string? ExistingDiscPath { get; set; } = default!;
-
-    public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();
-
-    public static string GenerateDiscPath(string mediaType, string externalId, string releaseSlug, string discSlug) => $"{mediaType}/{externalId}/{releaseSlug}/{discSlug}";
-    public static (string MediaType, string ExternalId, string ReleaseSlug, string DiscSlug) ParseDiscPath(string discPath)
-    {
-        if (string.IsNullOrEmpty(discPath))
-        {
-            throw new ArgumentException("Disc path cannot be null or empty", nameof(discPath));
-        }
-
-        var parts = discPath.Split('/');
-        if (parts.Length != 4)
-        {
-            throw new ArgumentException("Invalid disc path format", nameof(discPath));
-        }
-
-        return (parts[0], parts[1], parts[2], parts[3]);
-    }
-}
-
-public class UserContributionDiscItem : IHasId
-{
-    [JsonIgnore]
-    //[GraphQLIgnore]
-    public int Id { get; set; }
-    [NotMapped]
-    [GraphQLIgnore]
-    public string EncodedId { get; set; } = default!;
-    [JsonIgnore]
-    public UserContributionDisc Disc { get; set; } = default!;
-    public string Name { get; set; } = string.Empty;
-    public string Source { get; set; } = string.Empty;
-    public string Duration { get; set; } = string.Empty;
-    public string Size { get; set; } = string.Empty;
-    public int ChapterCount { get; set; } = 0;
-    public int SegmentCount { get; set; } = 0;
-    public string SegmentMap { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty;
-    public string? Description { get; set; } = string.Empty;
-    public string? Season { get; set; } = string.Empty;
-    public string? Episode { get; set; } = string.Empty;
-
-    public ICollection<UserContributionChapter> Chapters { get; set; } = new HashSet<UserContributionChapter>();
-    public ICollection<UserContributionAudioTrack> AudioTracks { get; set; } = new HashSet<UserContributionAudioTrack>();
-}
-
-public class UserContributionChapter : IHasId
-{
-    [JsonIgnore]
-    //[GraphQLIgnore]
-    public int Id { get; set; }
-    [NotMapped]
-    [GraphQLIgnore]
-    public string EncodedId { get; set; } = default!;
-    public int Index { get; set; }
-    public string Title { get; set; } = default!;
-    [JsonIgnore]
-    public UserContributionDiscItem Item { get; set; } = default!;
-}
-
-public class UserContributionAudioTrack : IHasId
-{
-    [JsonIgnore]
-    //[GraphQLIgnore]
-    public int Id { get; set; }
-    [NotMapped]
-    [GraphQLIgnore]
-    public string EncodedId { get; set; } = default!;
-    public int Index { get; set; }
-    public string Title { get; set; } = default!;
-    [JsonIgnore]
-    public UserContributionDiscItem Item { get; set; } = default!;
-}
-
-public class UserContributionDiscHashItem : IHasId
-{
-    [JsonIgnore]
-    //[GraphQLIgnore]
-    public int Id { get; set; }
-    [NotMapped]
-    [GraphQLIgnore]
-    public string EncodedId { get; set; } = default!;
-    [JsonIgnore]
-    public UserContribution UserContribution { get; set; } = default!;
-    public string DiscHash { get; set; } = default!;
-    public int Index { get; set; }
-    public string Name { get; set; } = default!;
-    public DateTime CreationTime { get; set; }
-    public long Size { get; set; }
-}
-
-public enum ContributionHistoryType
-{
-    Created,
-    StatusChanged,
-    Deleted,
-    AdminMessage,
-    UserMessage
-}
-
-public class ContributionHistory
-{
-    public int Id { get; set; }
-    public int ContributionId { get; set; }
-    public DateTimeOffset TimeStamp { get; set; }
-    public string Description { get; set; } = string.Empty;
-    public string UserId { get; set; } = string.Empty;
-    public ContributionHistoryType Type { get; set; }
-}
-
-public enum UserMessageType
-{
-    AdminMessage,
-    UserMessage
-}
-
-public class UserMessage
-{
-    public int Id { get; set; }
-    public int ContributionId { get; set; }
-    public string FromUserId { get; set; } = string.Empty;
-    public string ToUserId { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-    public bool IsRead { get; set; }
-    public DateTimeOffset CreatedAt { get; set; }
-    public UserMessageType Type { get; set; }
 }
 
 public class EngramSubmission
@@ -556,9 +211,4 @@ public class EngramTitle
     public string? Edition { get; set; }
     public EngramSubmission Submission { get; set; } = null!;
 }
-
-public static class DefaultRoles
-{
-    public const string Administrator = nameof(Administrator);
-    public const string Contributor = nameof(Contributor);
 }

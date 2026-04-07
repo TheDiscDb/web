@@ -8,6 +8,12 @@ using TheDiscDb.Web.Data;
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.AddServiceDefaults();
+
+var seedingHealthCheck = new SeedingHealthCheck();
+builder.Services.AddSingleton(seedingHealthCheck);
+builder.Services.AddHealthChecks()
+    .AddCheck("seeding", seedingHealthCheck);
+
 builder.Services.AddHostedService<Worker>();
 
 builder.Services.AddOpenTelemetry()

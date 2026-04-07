@@ -13,6 +13,8 @@
   <Project Path="TheDiscDb.Search/TheDiscDb.Search.csproj" />
   <Project Path="TheDiscDb.ServiceDefaults/TheDiscDb.ServiceDefaults.csproj" />
   <Project Path="TheDiscDb/TheDiscDb.csproj" />
+  <Project Path="TheDiscDb.Core/TheDiscDb.Core.csproj" />
+  <Project Path="TheDiscDb.MakeMkv/TheDiscDb.MakeMkv.csproj" />
   <Project Path="TheDiscDb.Naming/TheDiscDb.Naming.csproj" />
   <Project Path="TheDiscDb.UnitTests/TheDiscDb.UnitTests.csproj" />
 </Solution>

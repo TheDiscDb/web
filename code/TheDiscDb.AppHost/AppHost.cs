@@ -44,7 +44,7 @@ var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
     .WithReference(db)
     .WithReference(blobs)
     .WithReference(migrations)
-    .WaitForCompletion(migrations)
+    .WaitFor(migrations)
     .WithChildRelationship(migrations)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__ApiKey", adminApiKey)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__PublicApiKey", publicApiKey);

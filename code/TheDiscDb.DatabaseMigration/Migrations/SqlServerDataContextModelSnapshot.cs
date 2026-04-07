@@ -527,6 +527,30 @@ namespace TheDiscDb.Web.Migrations
                     b.ToTable("Releases");
                 });
 
+            modelBuilder.Entity("TheDiscDb.InputModels.ReleaseGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReleaseId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("ReleaseId", "GroupId")
+                        .IsUnique();
+
+                    b.ToTable("ReleaseGroups");
+                });
+
             modelBuilder.Entity("TheDiscDb.InputModels.Title", b =>
                 {
                     b.Property<int>("Id")
@@ -1375,6 +1399,25 @@ namespace TheDiscDb.Web.Migrations
                     b.Navigation("MediaItem");
                 });
 
+            modelBuilder.Entity("TheDiscDb.InputModels.ReleaseGroup", b =>
+                {
+                    b.HasOne("TheDiscDb.InputModels.Group", "Group")
+                        .WithMany("ReleaseGroups")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TheDiscDb.InputModels.Release", "Release")
+                        .WithMany("ReleaseGroups")
+                        .HasForeignKey("ReleaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Release");
+                });
+
             modelBuilder.Entity("TheDiscDb.InputModels.Title", b =>
                 {
                     b.HasOne("TheDiscDb.InputModels.Disc", "Disc")
@@ -1496,6 +1539,8 @@ namespace TheDiscDb.Web.Migrations
             modelBuilder.Entity("TheDiscDb.InputModels.Group", b =>
                 {
                     b.Navigation("MediaItemGroups");
+
+                    b.Navigation("ReleaseGroups");
                 });
 
             modelBuilder.Entity("TheDiscDb.InputModels.MediaItem", b =>
@@ -1510,6 +1555,8 @@ namespace TheDiscDb.Web.Migrations
                     b.Navigation("Boxset");
 
                     b.Navigation("Discs");
+
+                    b.Navigation("ReleaseGroups");
                 });
 
             modelBuilder.Entity("TheDiscDb.InputModels.Title", b =>
