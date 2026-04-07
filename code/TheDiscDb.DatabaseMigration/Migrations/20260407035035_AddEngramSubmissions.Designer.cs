@@ -9,11 +9,11 @@ using TheDiscDb.Web.Data;
 
 #nullable disable
 
-namespace TheDiscDb.DatabaseMigration.Migrations
+namespace TheDiscDb.Web.Migrations
 {
     [DbContext(typeof(SqlServerDataContext))]
-    [Migration("20260405161955_AddReleaseGroups")]
-    partial class AddReleaseGroups
+    [Migration("20260407035035_AddEngramSubmissions")]
+    partial class AddEngramSubmissions
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -766,6 +766,142 @@ namespace TheDiscDb.DatabaseMigration.Migrations
                     b.ToTable("ContributionHistory");
                 });
 
+            modelBuilder.Entity("TheDiscDb.Web.Data.EngramSubmission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BackImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double?>("ClassificationConfidence")
+                        .HasColumnType("float");
+
+                    b.Property<string>("ClassificationSource")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ContributionTier")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DetectedSeason")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DetectedTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("DiscNumber")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EngramVersion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExportVersion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FrontImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ReleaseId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ScanLogPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("TmdbId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Upc")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("VolumeLabel")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentHash")
+                        .IsUnique();
+
+                    b.ToTable("EngramSubmissions");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.EngramTitle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("ChapterCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DurationSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Edition")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EngramSubmissionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Episode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double?>("MatchConfidence")
+                        .HasColumnType("float");
+
+                    b.Property<string>("MatchSource")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Season")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("SegmentCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SegmentMap")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SourceFilename")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TitleIndex")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TitleType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EngramSubmissionId", "TitleIndex")
+                        .IsUnique();
+
+                    b.ToTable("EngramTitles");
+                });
+
             modelBuilder.Entity("TheDiscDb.Web.Data.TheDiscDbUser", b =>
                 {
                     b.Property<string>("Id")
@@ -1323,6 +1459,17 @@ namespace TheDiscDb.DatabaseMigration.Migrations
                     b.Navigation("ApiKey");
                 });
 
+            modelBuilder.Entity("TheDiscDb.Web.Data.EngramTitle", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.EngramSubmission", "Submission")
+                        .WithMany("Titles")
+                        .HasForeignKey("EngramSubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Submission");
+                });
+
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionAudioTrack", b =>
                 {
                     b.HasOne("TheDiscDb.Web.Data.UserContributionDiscItem", "Item")
@@ -1426,6 +1573,11 @@ namespace TheDiscDb.DatabaseMigration.Migrations
             modelBuilder.Entity("TheDiscDb.Web.Data.ApiKey", b =>
                 {
                     b.Navigation("UsageLogs");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.EngramSubmission", b =>
+                {
+                    b.Navigation("Titles");
                 });
 
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContribution", b =>

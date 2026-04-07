@@ -814,6 +814,9 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<DateTimeOffset>("ReceivedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("ReleaseId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ScanLogPath")
                         .HasColumnType("nvarchar(max)");
 
@@ -858,16 +861,16 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<int>("EngramSubmissionId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Episode")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<double?>("MatchConfidence")
                         .HasColumnType("float");
 
                     b.Property<string>("MatchSource")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("MatchedEpisode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RipLogPath")
+                    b.Property<string>("Season")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("SegmentCount")

@@ -1,0 +1,46 @@
+.engram-submission {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+
+.engram-details dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.25rem 1rem;
+    margin: 0;
+}
+
+.engram-details dt {
+    font-weight: 600;
+    color: #555;
+}
+
+.engram-details dd {
+    margin: 0;
+}
+
+.engram-titles-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.engram-titles-table th,
+.engram-titles-table td {
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+.engram-titles-table th {
+    font-weight: 600;
+    color: #555;
+    border-bottom: 2px solid #ddd;
+}
+
+.engram-titles-table tr:hover {
+    background: #f8f8f8;
+}

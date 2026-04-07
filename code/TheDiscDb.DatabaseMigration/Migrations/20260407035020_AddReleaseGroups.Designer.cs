@@ -12,8 +12,8 @@ using TheDiscDb.Web.Data;
 namespace TheDiscDb.Web.Migrations
 {
     [DbContext(typeof(SqlServerDataContext))]
-    [Migration("20260404202529_AddEngramSubmissions")]
-    partial class AddEngramSubmissions
+    [Migration("20260407035020_AddReleaseGroups")]
+    partial class AddReleaseGroups
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -530,6 +530,30 @@ namespace TheDiscDb.Web.Migrations
                     b.ToTable("Releases");
                 });
 
+            modelBuilder.Entity("TheDiscDb.InputModels.ReleaseGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GroupId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReleaseId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("ReleaseId", "GroupId")
+                        .IsUnique();
+
+                    b.ToTable("ReleaseGroups");
+                });
+
             modelBuilder.Entity("TheDiscDb.InputModels.Title", b =>
                 {
                     b.Property<int>("Id")
@@ -793,6 +817,9 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<DateTimeOffset>("ReceivedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("ReleaseId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ScanLogPath")
                         .HasColumnType("nvarchar(max)");
 
@@ -837,16 +864,16 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<int>("EngramSubmissionId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Episode")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<double?>("MatchConfidence")
                         .HasColumnType("float");
 
                     b.Property<string>("MatchSource")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("MatchedEpisode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RipLogPath")
+                    b.Property<string>("Season")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("SegmentCount")
@@ -1378,6 +1405,25 @@ namespace TheDiscDb.Web.Migrations
                     b.Navigation("MediaItem");
                 });
 
+            modelBuilder.Entity("TheDiscDb.InputModels.ReleaseGroup", b =>
+                {
+                    b.HasOne("TheDiscDb.InputModels.Group", "Group")
+                        .WithMany("ReleaseGroups")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TheDiscDb.InputModels.Release", "Release")
+                        .WithMany("ReleaseGroups")
+                        .HasForeignKey("ReleaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Release");
+                });
+
             modelBuilder.Entity("TheDiscDb.InputModels.Title", b =>
                 {
                     b.HasOne("TheDiscDb.InputModels.Disc", "Disc")
@@ -1499,6 +1545,8 @@ namespace TheDiscDb.Web.Migrations
             modelBuilder.Entity("TheDiscDb.InputModels.Group", b =>
                 {
                     b.Navigation("MediaItemGroups");
+
+                    b.Navigation("ReleaseGroups");
                 });
 
             modelBuilder.Entity("TheDiscDb.InputModels.MediaItem", b =>
@@ -1513,6 +1561,8 @@ namespace TheDiscDb.Web.Migrations
                     b.Navigation("Boxset");
 
                     b.Navigation("Discs");
+
+                    b.Navigation("ReleaseGroups");
                 });
 
             modelBuilder.Entity("TheDiscDb.InputModels.Title", b =>

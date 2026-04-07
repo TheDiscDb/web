@@ -1,5 +1,7 @@
 ﻿namespace TheDiscDb.Web.Data;
 
+using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
 
@@ -210,5 +212,4 @@ public class EngramTitle
     public string? MatchSource { get; set; }
     public string? Edition { get; set; }
     public EngramSubmission Submission { get; set; } = null!;
-}
 }
