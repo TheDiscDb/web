@@ -17,6 +17,7 @@ namespace TheDiscDb.Web.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    ReleaseId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ContentHash = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     VolumeLabel = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ContentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -56,11 +57,11 @@ namespace TheDiscDb.Web.Migrations
                     SegmentCount = table.Column<int>(type: "int", nullable: true),
                     SegmentMap = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     TitleType = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    MatchedEpisode = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Season = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Episode = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     MatchConfidence = table.Column<double>(type: "float", nullable: true),
                     MatchSource = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Edition = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    RipLogPath = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Edition = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {

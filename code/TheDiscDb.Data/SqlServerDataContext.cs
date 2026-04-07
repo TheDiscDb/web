@@ -515,6 +515,7 @@ public class UserMessage
 public class EngramSubmission
 {
     public int Id { get; set; }
+    public string? ReleaseId { get; set; }
     public string ContentHash { get; set; } = string.Empty;
     public string VolumeLabel { get; set; } = string.Empty;
     public string ContentType { get; set; } = string.Empty;
@@ -548,11 +549,11 @@ public class EngramTitle
     public int? SegmentCount { get; set; }
     public string? SegmentMap { get; set; }
     public string? TitleType { get; set; }
-    public string? MatchedEpisode { get; set; }
+    public string? Season { get; set; }
+    public string? Episode { get; set; }
     public double? MatchConfidence { get; set; }
     public string? MatchSource { get; set; }
     public string? Edition { get; set; }
-    public string? RipLogPath { get; set; }
     public EngramSubmission Submission { get; set; } = null!;
 }
 

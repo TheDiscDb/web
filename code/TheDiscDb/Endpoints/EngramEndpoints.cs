@@ -36,8 +36,6 @@ public partial class EngramEndpoints
         engram.MapPost("disc", SubmitDisc);
         engram.MapPost("disc/{contentHash}/logs/scan", UploadScanLog)
             .Accepts<string>("text/plain");
-        engram.MapPost("disc/{contentHash}/logs/rip/{titleIndex:int}", UploadRipLog)
-            .Accepts<string>("text/plain");
         engram.MapPost("disc/{contentHash}/images/front", UploadFrontImage)
             .DisableAntiforgery();
         engram.MapPost("disc/{contentHash}/images/back", UploadBackImage)
@@ -166,43 +164,6 @@ public partial class EngramEndpoints
         return Results.Ok(new { path = blobPath });
     }
 
-    public async Task<IResult> UploadRipLog(
-        IDbContextFactory<SqlServerDataContext> dbContextFactory,
-        IStaticAssetStore assetStore,
-        HttpRequest request,
-        string contentHash,
-        int titleIndex,
-        CancellationToken cancellationToken)
-    {
-        var hashError = ValidateContentHash(contentHash);
-        if (hashError != null) return hashError;
-
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        var submission = await dbContext.EngramSubmissions
-            .Include(s => s.Titles)
-            .FirstOrDefaultAsync(s => s.ContentHash == contentHash, cancellationToken);
-
-        if (submission == null)
-        {
-            return TypedResults.NotFound($"No submission found for content hash '{contentHash}'");
-        }
-
-        var title = submission.Titles.FirstOrDefault(t => t.TitleIndex == titleIndex);
-        if (title == null)
-        {
-            return TypedResults.NotFound($"No title with index {titleIndex} found for content hash '{contentHash}'");
-        }
-
-        var blobPath = $"engram/{contentHash}/rip_{titleIndex}.log";
-        await assetStore.Delete(blobPath, cancellationToken);
-        await assetStore.Save(request.Body, blobPath, "text/plain", cancellationToken);
-
-        title.RipLogPath = blobPath;
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        return Results.Ok(new { path = blobPath });
-    }
-
     public async Task<IResult> UploadFrontImage(
         IDbContextFactory<SqlServerDataContext> dbContextFactory,
         [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore assetStore,
@@ -282,6 +243,7 @@ public partial class EngramEndpoints
         submission.VolumeLabel = payload.Disc.VolumeLabel ?? string.Empty;
         submission.ContentType = payload.Disc.ContentType ?? string.Empty;
         submission.DiscNumber = payload.Disc.DiscNumber;
+        submission.ReleaseId = payload.Disc?.ReleaseId;
         submission.EngramVersion = payload.EngramVersion ?? string.Empty;
         submission.ExportVersion = payload.ExportVersion ?? string.Empty;
         submission.ContributionTier = payload.ContributionTier;
@@ -321,7 +283,8 @@ public partial class EngramEndpoints
                 SegmentCount = t.SegmentCount,
                 SegmentMap = t.SegmentMap,
                 TitleType = t.TitleType,
-                MatchedEpisode = t.MatchedEpisode,
+                Season = t.Season,
+                Episode = t.Episode,
                 MatchConfidence = t.MatchConfidence,
                 MatchSource = t.MatchSource,
                 Edition = t.Edition
@@ -375,6 +338,8 @@ public class EngramDiscDto
 
     [JsonPropertyName("disc_number")]
     public int? DiscNumber { get; set; }
+    [JsonPropertyName("release_id")]
+    public string? ReleaseId { get; set; }
 }
 
 public class EngramIdentificationDto
@@ -421,8 +386,11 @@ public class EngramTitleDto
     [JsonPropertyName("title_type")]
     public string? TitleType { get; set; }
 
-    [JsonPropertyName("matched_episode")]
-    public string? MatchedEpisode { get; set; }
+    [JsonPropertyName("season")]
+    public string? Season { get; set; }
+
+    [JsonPropertyName("episode")]
+    public string? Episode { get; set; }
 
     [JsonPropertyName("match_confidence")]
     public double? MatchConfidence { get; set; }
