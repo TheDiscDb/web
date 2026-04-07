@@ -1,0 +1,86 @@
+﻿@page "/contribution/{contributionId}/edit"
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@if (isLoading)
+{
+    <div class="contribute-layout">
+        <section class="contribute-hero compact">
+            <h1>Loading...</h1>
+        </section>
+    </div>
+}
+else if (Contribution is not null)
+{
+    <Breadcrumb PrimaryText="Edit Release Details" Items="[GetRootContributionLink(), GetContributionLink(Contribution)]" />
+
+    <div class="contribute-layout">
+        <section class="contribute-hero compact">
+            <h1>Edit Release Details</h1>
+            <p>Update the release information for @Contribution.Title (@Contribution.Year).</p>
+        </section>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <section class="info-grid single-column">
+            <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label>ASIN<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="request.Asin" />
+                    <ValidationMessage For="@(() => request.Asin)" />
+                </div>
+                <div class="mb-3">
+                    <label>UPC/EAN<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="request.Upc" />
+                    <ValidationMessage For="@(() => request.Upc)" />
+                </div>
+                <div class="mb-3">
+                    <label>Release Date<span class="required">*</span></label>
+                    <SfDatePicker TValue="DateTimeOffset" class="form-control" @bind-Value="request.ReleaseDate" />
+                    <ValidationMessage For="@(() => request.ReleaseDate)" />
+                </div>
+                <div class="mb-3">
+                    <label>Release Title<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="request.ReleaseTitle" />
+                    <ValidationMessage For="@(() => request.ReleaseTitle)" />
+                </div>
+                <div class="mb-3">
+                    <label>Release Slug<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="request.ReleaseSlug" />
+                    <ValidationMessage For="@(() => request.ReleaseSlug)" />
+                </div>
+                <div class="mb-3">
+                    <label>Locale</label>
+                    <InputText class="form-control" @bind-Value="request.Locale" />
+                    <ValidationMessage For="@(() => request.Locale)" />
+                </div>
+                <div class="mb-3">
+                    <label>Region Code</label>
+                    <InputText class="form-control" @bind-Value="request.RegionCode" />
+                    <ValidationMessage For="@(() => request.RegionCode)" />
+                </div>
+
+                <div class="cta-row split">
+                    <a class="btn btn-secondary" href="/contribution/@ContributionId">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </EditForm>
+        </section>
+    </div>
+}
+else
+{
+    <div class="contribute-layout">
+        <section class="contribute-hero compact">
+            <h1>Contribution Not Found</h1>
+            <p>@(errorMessage ?? "The requested contribution could not be loaded.")</p>
+            <a class="btn btn-secondary" href="/contribute/my">Back to My Contributions</a>
+        </section>
+    </div>
+}

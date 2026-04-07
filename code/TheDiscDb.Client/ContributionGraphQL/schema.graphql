@@ -116,6 +116,7 @@ type ContributionMutations {
   sendUserMessage(input: SendUserMessageInput!): SendUserMessagePayload! @authorize @cost(weight: "10")
   markMessagesAsRead(input: MarkMessagesAsReadInput!): MarkMessagesAsReadPayload! @authorize @cost(weight: "10")
   updateDisc(input: UpdateDiscInput!): UpdateDiscPayload! @authorize @cost(weight: "10")
+  updateContribution(input: UpdateContributionInput!): UpdateContributionPayload! @authorize @cost(weight: "10")
 }
 
 type ContributionNotFoundError implements Error {
@@ -410,6 +411,11 @@ type UpdateDiscPayload {
   errors: [UpdateDiscError!]
 }
 
+type UpdateContributionPayload {
+  userContribution: UserContribution
+  errors: [UpdateContributionError!]
+}
+
 type UserMessage {
   id: Int!
   contributionId: Int!
@@ -540,6 +546,8 @@ union SendUserMessageError = ContributionNotFoundError | AuthenticationError | I
 union MarkMessagesAsReadError = AuthenticationError
 
 union UpdateDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+union UpdateContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 input AddAudioTrackToItemInput {
   contributionId: String!
@@ -814,6 +822,17 @@ input UpdateDiscInput {
   format: String!
   name: String!
   slug: String!
+}
+
+input UpdateContributionInput {
+  contributionId: String!
+  asin: String!
+  upc: String!
+  releaseDate: DateTime!
+  releaseTitle: String!
+  releaseSlug: String!
+  locale: String!
+  regionCode: String!
 }
 
 input UserContributionAudioTrackFilterInput {

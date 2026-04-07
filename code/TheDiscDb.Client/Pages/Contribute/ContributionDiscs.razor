@@ -26,7 +26,7 @@
                     </div>
                     <dl>
                         <dt>Release title</dt>
-                        <dd>@Contribution.ReleaseTitle</dd>
+                        <dd>@Contribution.ReleaseTitle <a href="/contribution/@ContributionId/edit" class="edit-link" title="Edit release details">✏️</a></dd>
 
                         <dt>Release date</dt>
                         <dd>@string.Format("{0:yyyy-MM-dd}", Contribution.ReleaseDate)</dd>
@@ -71,7 +71,7 @@
             <QuickGrid Items="Discs" class="striped-grid contribute-grid" ItemKey="d => d.EncodedId">
                 <TemplateColumn Title="Name">
                     <div class="disc-name">
-                        <a href="/contribution/@ContributionId/discs/@context!.EncodedId/identify" title="Edit Disc">@context.Name</a>
+                        <a href="/contribution/@ContributionId/discs/@context!.EncodedId/identify" title="Identify Disc">@context.Name</a>
                     </div>
                 </TemplateColumn>
                 <PropertyColumn Property="d => d!.Format"></PropertyColumn>
@@ -84,6 +84,9 @@
                     {
                         <span>@(context.LogsUploaded ? "Uploaded" : "Pending")</span>
                     }
+                </TemplateColumn>
+                <TemplateColumn Title="">
+                    <a href="/contribution/@ContributionId/disc/@context!.EncodedId/edit" title="Edit disc details">✏️ Edit</a>
                 </TemplateColumn>
             </QuickGrid>
         </section>
