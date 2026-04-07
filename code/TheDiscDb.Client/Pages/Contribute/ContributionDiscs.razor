@@ -26,7 +26,7 @@
                     </div>
                     <dl>
                         <dt>Release title</dt>
-                        <dd>@Contribution.ReleaseTitle <a href="/contribution/@ContributionId/edit" class="edit-link" title="Edit release details">✏️</a></dd>
+                        <dd>@Contribution.ReleaseTitle <a href="/contribution/@ContributionId/edit" class="edit-link" title="Edit release details"><i class="e-icons e-edit"></i></a></dd>
 
                         <dt>Release date</dt>
                         <dd>@string.Format("{0:yyyy-MM-dd}", Contribution.ReleaseDate)</dd>
@@ -86,7 +86,7 @@
                     }
                 </TemplateColumn>
                 <TemplateColumn Title="">
-                    <a href="/contribution/@ContributionId/disc/@context!.EncodedId/edit" title="Edit disc details">✏️ Edit</a>
+                    <a href="/contribution/@ContributionId/disc/@context!.EncodedId/edit" title="Edit disc details"><i class="e-icons e-edit"></i> Edit</a>
                 </TemplateColumn>
             </QuickGrid>
         </section>
