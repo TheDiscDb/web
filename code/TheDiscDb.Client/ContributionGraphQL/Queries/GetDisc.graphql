@@ -1,5 +1,5 @@
 query GetDisc($contrubtionId: EncodedIdFilter!, $discId: EncodedIdFilter!) {
-  contributions(
+  myContributions(
     where: {
       encodedId:  {
          eq: $contrubtionId

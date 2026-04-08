@@ -15,23 +15,28 @@ public partial class EditDisc : ComponentBase
     [Parameter]
     public string? DiscId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
     [Inject]
     public IContributionClient ContributionClient { get; set; } = default!;
 
     [Inject]
     public NavigationManager Navigation { get; set; } = default!;
 
-    private readonly SaveDiscRequest request = new SaveDiscRequest
-    {
-    };
-    readonly string[] formats = [ "4K", "Blu-ray", "DVD" ];
+    private readonly SaveDiscRequest request = new();
+    private readonly string[] formats = ["4K", "Blu-ray", "DVD"];
+
+    private bool isLoading = true;
+    private bool discFound;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
         var result = await this.ContributionClient.GetDisc.ExecuteAsync(this.ContributionId!, this.DiscId!);
-        if (result?.Data?.Contributions?.Nodes != null && result.IsSuccessResult())
+        if (result?.Data?.MyContributions?.Nodes != null && result.IsSuccessResult())
         {
-            var contribution = result.Data.Contributions.Nodes.FirstOrDefault();
+            var contribution = result.Data.MyContributions.Nodes.FirstOrDefault();
             if (contribution != null)
             {
                 var disc = contribution.Discs.FirstOrDefault();
@@ -41,9 +46,17 @@ public partial class EditDisc : ComponentBase
                     this.request.Name = disc.Name;
                     this.request.Slug = disc.Slug;
                     this.request.Format = disc.Format;
+                    this.discFound = true;
                 }
             }
         }
+
+        if (!this.discFound)
+        {
+            this.errorMessage = "Disc not found.";
+        }
+
+        this.isLoading = false;
     }
 
     async Task HandleValidSubmit()
@@ -59,7 +72,10 @@ public partial class EditDisc : ComponentBase
 
         if (response.IsSuccessResult())
         {
-            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{this.DiscId}");
+            var returnUrl = !string.IsNullOrEmpty(this.ReturnUrl)
+                ? this.ReturnUrl
+                : $"/contribution/{this.ContributionId}/discs/{this.DiscId}";
+            this.Navigation!.NavigateTo(returnUrl);
         }
     }
 
