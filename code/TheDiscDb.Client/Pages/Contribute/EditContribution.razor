@@ -40,7 +40,7 @@ else if (Contribution is not null)
                         @if (!string.IsNullOrEmpty(currentFrontImageUrl))
                         {
                             <div class="cover-preview">
-                                <img src="@(currentFrontImageUrl)?width=156&height=231" alt="Front cover" />
+                                <img src="@(currentFrontImageUrl)?width=156&height=231@cacheBuster" alt="Front cover" />
                             </div>
                         }
                         @if (IsEditable)
@@ -58,7 +58,7 @@ else if (Contribution is not null)
                         @if (!string.IsNullOrEmpty(currentBackImageUrl))
                         {
                             <div class="cover-preview">
-                                <img src="@(currentBackImageUrl)?width=156&height=231" alt="Back cover" />
+                                <img src="@(currentBackImageUrl)?width=156&height=231@cacheBuster" alt="Back cover" />
                             </div>
                             @if (IsEditable)
                             {
