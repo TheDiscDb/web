@@ -28,7 +28,7 @@
                 @if (!string.IsNullOrEmpty(this.Contribution.FrontImageUrl))
                 {
                     <div class="mb-2">
-                        <img src="@BreadCrumbHelper.GetDirectImageUrl(this.Contribution.FrontImageUrl)" width="156" height="231" alt="Front cover" class="border rounded p-1" />
+                        <img src="@BreadCrumbHelper.GetDirectImageUrl(this.Contribution.FrontImageUrl, imageVersion)" width="156" height="231" alt="Front cover" class="border rounded p-1" />
                     </div>
                 }
                 <InputFile OnChange="OnFrontImageSelected" accept=".jpg,.jpeg" class="form-control" />
@@ -39,7 +39,7 @@
                 @if (!string.IsNullOrEmpty(this.Contribution.BackImageUrl))
                 {
                     <div class="mb-2">
-                        <img src="@BreadCrumbHelper.GetDirectImageUrl(this.Contribution.BackImageUrl)" width="156" height="231" alt="Back cover" class="border rounded p-1" />
+                        <img src="@BreadCrumbHelper.GetDirectImageUrl(this.Contribution.BackImageUrl, imageVersion)" width="156" height="231" alt="Back cover" class="border rounded p-1" />
                     </div>
                     <button type="button" class="btn btn-outline-danger btn-sm mb-2" @onclick="DeleteBackImage">Delete Back Image</button>
                 }

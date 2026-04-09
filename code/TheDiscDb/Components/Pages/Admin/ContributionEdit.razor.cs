@@ -65,6 +65,7 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
 
     private string? imageMessage;
     private bool imageMessageIsError;
+    private long imageVersion;
 
     private IStaticAssetStore ImageStore => ServiceProvider.GetRequiredKeyedService<IStaticAssetStore>(KeyedServiceNames.ImagesAssetStore);
     private IStaticAssetStore AssetStore => ServiceProvider.GetRequiredService<IStaticAssetStore>();
@@ -171,7 +172,8 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
                 this.Contribution.BackImageUrl = imageUrl;
 
             await database.SaveChangesAsync();
-            imageMessage = $"{(name == "front" ? "Front" : "Back")} image updated. The preview may take a moment to refresh.";
+            imageVersion = DateTimeOffset.UtcNow.Ticks;
+            imageMessage = $"{(name == "front" ? "Front" : "Back")} image updated.";
         }
         catch (Exception ex)
         {
