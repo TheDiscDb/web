@@ -25,11 +25,11 @@
                     <div class="cover-stack">
                         @if (!string.IsNullOrEmpty(Contribution.FrontImageUrl))
                         {
-                            <a href="@Contribution.FrontImageUrl" target="_blank"><img src="@Contribution.FrontImageUrl?width=180&height=260" alt="Front cover" class="cover" /></a>
+                            <a href="@BreadCrumbHelper.GetDirectImageUrl(Contribution.FrontImageUrl)" target="_blank"><img src="@BreadCrumbHelper.GetDirectImageUrl(Contribution.FrontImageUrl)" width="180" height="260" alt="Front cover" class="cover" /></a>
                         }
                         @if (!string.IsNullOrEmpty(Contribution.BackImageUrl))
                         {
-                            <a href="@Contribution.BackImageUrl" target="_blank"><img src="@Contribution.BackImageUrl?width=120&height=170" alt="Back cover" class="cover secondary" /></a>
+                            <a href="@BreadCrumbHelper.GetDirectImageUrl(Contribution.BackImageUrl)" target="_blank"><img src="@BreadCrumbHelper.GetDirectImageUrl(Contribution.BackImageUrl)" width="120" height="170" alt="Back cover" class="cover secondary" /></a>
                         }
                     </div>
                     <dl>

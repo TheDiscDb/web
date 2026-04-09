@@ -31,7 +31,7 @@ public partial class EditContribution : ComponentBase
     private string? successMessage;
     private bool imageUpdatePending;
     private bool backImageDeleted;
-    private string cacheBuster = "";
+    private long imageVersion;
 
     private string? currentFrontImageUrl;
     private string? currentBackImageUrl;
@@ -120,7 +120,7 @@ public partial class EditContribution : ComponentBase
 
     private void FrontImageUploadSuccess(SuccessEventArgs args)
     {
-        cacheBuster = $"&_t={DateTimeOffset.UtcNow.Ticks}";
+        imageVersion = DateTimeOffset.UtcNow.Ticks;
         imageUpdatePending = true;
         StateHasChanged();
     }
@@ -136,7 +136,7 @@ public partial class EditContribution : ComponentBase
         string encodedId = ContributionId!;
         currentBackImageUrl = $"/images/Contributions/{encodedId}/back.jpg";
         backImageDeleted = false;
-        cacheBuster = $"&_t={DateTimeOffset.UtcNow.Ticks}";
+        imageVersion = DateTimeOffset.UtcNow.Ticks;
         imageUpdatePending = true;
         StateHasChanged();
     }

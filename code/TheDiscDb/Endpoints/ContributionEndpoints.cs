@@ -44,6 +44,8 @@ public class ContributionEndpoints
             .DisableAntiforgery();
         contribute.MapPost("{contributionId}/images/back/delete", DeleteContributionBackImage)
             .DisableAntiforgery();
+
+        contribute.MapGet("images/{**path}", ServeContributionImage);
     }
 
     public async Task<IResult> ExternalSearch(IExternalSearchService service, string type, [FromQuery] string query, CancellationToken cancellationToken)
@@ -385,6 +387,31 @@ public class ContributionEndpoints
             return (null, TypedResults.BadRequest($"Cannot edit images for a contribution with status '{contribution.Status}'."));
 
         return (contribution, null);
+    }
+
+    #endregion
+
+    #region Direct image serving (bypasses ImageSharp caching)
+
+    public async Task<IResult> ServeContributionImage(
+        string path,
+        [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore imageStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(path) || !path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+            return TypedResults.BadRequest("Invalid image path.");
+
+        try
+        {
+            var data = await imageStore.Download(path, cancellationToken);
+            httpContext.Response.Headers.CacheControl = "no-store";
+            return Results.Bytes(data.ToArray(), "image/jpeg");
+        }
+        catch
+        {
+            return TypedResults.NotFound();
+        }
     }
 
     #endregion
