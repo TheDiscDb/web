@@ -7,7 +7,7 @@
 
 <PageTitle>Admin - Contribution Details</PageTitle>
 
-<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink()]" PrimaryText="@this.Contribution?.Title" />
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink(), GetAdminContributionLink(this.Contribution)]" PrimaryText="Edit" />
 
 <h1>Contribution Details</h1>
 @if (this.Contribution != null)

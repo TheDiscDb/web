@@ -1,16 +1,24 @@
-﻿using TheDiscDb.Client;
+﻿using Microsoft.JSInterop;
+using TheDiscDb.Client;
 
 namespace TheDiscDb;
 
 public class ServerClipboardService : IClipboardService
 {
+    private readonly IJSRuntime jsRuntime;
+
+    public ServerClipboardService(IJSRuntime jsRuntime)
+    {
+        this.jsRuntime = jsRuntime;
+    }
+
     public ValueTask<string> ReadTextAsync()
     {
-        return ValueTask.FromResult(string.Empty);
+        return jsRuntime.InvokeAsync<string>("navigator.clipboard.readText");
     }
 
     public ValueTask WriteTextAsync(string text)
     {
-        return ValueTask.CompletedTask;
+        return jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
     }
 }

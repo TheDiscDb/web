@@ -98,17 +98,13 @@
         </section>
     }
 
-    @if (this.Contribution.Status == UserContributionStatus.Approved)
-    {
-        <section class="info-card discs-card">
-            <CodeHighlight CodeLanguage="PowerShell" Code="@PowershellCommand" />
-            <button class="btn btn-primary copy-command" @onclick="CopyTextToClipboard">
-                <i class="e-icons e-copy"></i>
-                <span>Copy</span>
-            </button>
-        </section>
-        
-    }
+    <section class="info-card discs-card">
+        <CodeHighlight CodeLanguage="PowerShell" Code="@PowershellCommand" />
+        <button class="btn btn-primary copy-command" @onclick="CopyTextToClipboard">
+            <i class="e-icons e-copy"></i>
+            <span>Copy</span>
+        </button>
+    </section>
 
     @if (this.Contribution.Status != UserContributionStatus.Imported)
     {
