@@ -47,7 +47,7 @@ else if (Contribution is not null)
                         {
                             <SfUploader @ref="frontImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
                                 <UploaderButtons Browse="@(string.IsNullOrEmpty(currentFrontImageUrl) ? "Upload Front Image" : "Replace Front Image")"></UploaderButtons>
-                                <UploaderEvents Success="FrontImageUploadSuccess" Failure="FrontImageUploadFailure"></UploaderEvents>
+                                <UploaderEvents Success="FrontImageUploadSuccess" OnFailure="FrontImageUploadFailure"></UploaderEvents>
                                 <UploaderAsyncSettings SaveUrl="@frontImageUploadUrl"></UploaderAsyncSettings>
                             </SfUploader>
                         }
@@ -71,7 +71,7 @@ else if (Contribution is not null)
                         {
                             <SfUploader @ref="backImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
                                 <UploaderButtons Browse="@(string.IsNullOrEmpty(currentBackImageUrl) ? "Upload Back Image" : "Replace Back Image")"></UploaderButtons>
-                                <UploaderEvents Success="BackImageUploadSuccess" Failure="BackImageUploadFailure"></UploaderEvents>
+                                <UploaderEvents Success="BackImageUploadSuccess" OnFailure="BackImageUploadFailure"></UploaderEvents>
                                 <UploaderAsyncSettings SaveUrl="@backImageUploadUrl"></UploaderAsyncSettings>
                             </SfUploader>
                         }
