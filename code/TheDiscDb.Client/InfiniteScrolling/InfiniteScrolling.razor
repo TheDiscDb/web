@@ -26,6 +26,7 @@
     private IJSObjectReference? _module;
     private IJSObjectReference? _instance;
     private bool _loading = false;
+    private bool _newItemsAdded = false;
     private CancellationTokenSource? _loadItemsCts;
 
     [Parameter]
@@ -64,11 +65,7 @@
             {
                 var newItems = await ItemsProvider(new InfiniteScrollingItemsProviderRequest(_items.Count, _loadItemsCts.Token));
                 _items.AddRange(newItems);
-                var task = _instance?.InvokeVoidAsync("onNewItems");
-                if (task != null && task.HasValue)
-                {
-                    await task.Value;
-                }
+                _newItemsAdded = true;
             }
             catch (OperationCanceledException oce) when (_loadItemsCts == null || oce.CancellationToken == _loadItemsCts.Token)
             {
@@ -92,21 +89,28 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_jsInitialized)
+        if (!_jsInitialized)
         {
-            return;
+            if (string.IsNullOrEmpty(_lastItemIndicator.Id))
+            {
+                return;
+            }
+
+            _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/infinite-scrolling.js");
+            _currentComponentReference = DotNetObjectReference.Create(this);
+            _instance = await _module.InvokeAsync<IJSObjectReference>("initialize", _lastItemIndicator, _currentComponentReference);
+            _jsInitialized = true;
         }
 
-        // The ref isn't populated until the element is attached to the browser DOM.
-        if (string.IsNullOrEmpty(_lastItemIndicator.Id))
+        if (_newItemsAdded)
         {
-            return;
+            _newItemsAdded = false;
+            var task = _instance?.InvokeVoidAsync("onNewItems");
+            if (task != null && task.HasValue)
+            {
+                await task.Value;
+            }
         }
-
-        _module ??= await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/infinite-scrolling.js");
-        _currentComponentReference = DotNetObjectReference.Create(this);
-        _instance = await _module.InvokeAsync<IJSObjectReference>("initialize", _lastItemIndicator, _currentComponentReference);
-        _jsInitialized = true;
     }
 
     public async ValueTask DisposeAsync()

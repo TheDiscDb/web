@@ -33,11 +33,13 @@ function dispose(observer) {
 }
 
 // Find the parent element with a vertical scrollbar
-// This container should be use as the root for the IntersectionObserver
+// This container should be used as the root for the IntersectionObserver.
+// Only returns an element that actually constrains content (scrollHeight > clientHeight),
+// not one that merely has overflow-y set but grows to fit all content.
 function findClosestScrollContainer(element) {
     while (element) {
         const style = getComputedStyle(element);
-        if (style.overflowY !== 'visible') {
+        if (style.overflowY !== 'visible' && element.scrollHeight > element.clientHeight) {
             return element;
         }
         element = element.parentElement;
