@@ -54,7 +54,10 @@
 
                         <dt>Status</dt>
                         <dd><span class="badge bg-@GetStatusBadgeClass()">@Contribution.Status</span></dd>
-                        <a href="/contribution/@ContributionId/edit" class="edit-link" title="Edit release details"><i class="e-icons e-edit"></i> Edit release details</a>
+                        @if (IsEditable)
+                        {
+                            <a href="/contribution/@ContributionId/edit" class="edit-link" title="Edit release details"><i class="e-icons e-edit"></i> Edit release details</a>
+                        }
                     </dl>
                 </div>
             </article>

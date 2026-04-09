@@ -23,6 +23,11 @@ public partial class ContributionDiscs : ComponentBase
 
     public bool IsCompleteButtonDisabled => Discs == null || !Discs.Any();
 
+    private bool IsEditable => Contribution?.Status is
+        UserContributionStatus.Pending or
+        UserContributionStatus.ChangesRequested or
+        UserContributionStatus.Rejected;
+
     protected override async Task OnInitializedAsync()
     {
         if (this.ContributionClient == null)

@@ -1,0 +1,38 @@
+.cover-images-section {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.cover-image-slot {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.cover-image-slot h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.cover-preview {
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    display: inline-block;
+    background: var(--bs-tertiary-bg, #f8f9fa);
+}
+
+.cover-preview img {
+    display: block;
+    border-radius: 0.25rem;
+}
+
+.image-update-note {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+}

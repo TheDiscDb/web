@@ -1,8 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Client;
+using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
@@ -44,6 +47,9 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
     [Inject]
     private IContributionHistoryService HistoryService { get; set; } = null!;
 
+    [Inject]
+    private IServiceProvider ServiceProvider { get; set; } = null!;
+
     [Parameter]
     public string? ContributionId { get; set; }
 
@@ -56,6 +62,12 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
     private readonly EditContributionRequest request = new EditContributionRequest
     {
     };
+
+    private string? imageMessage;
+    private bool imageMessageIsError;
+
+    private IStaticAssetStore ImageStore => ServiceProvider.GetRequiredKeyedService<IStaticAssetStore>(KeyedServiceNames.ImagesAssetStore);
+    private IStaticAssetStore AssetStore => ServiceProvider.GetRequiredService<IStaticAssetStore>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -111,6 +123,88 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
             {
                 await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, request.Status);
             }
+        }
+    }
+
+    private async Task OnFrontImageSelected(InputFileChangeEventArgs args)
+    {
+        await UploadImageFromFile(args.File, "front");
+    }
+
+    private async Task OnBackImageSelected(InputFileChangeEventArgs args)
+    {
+        await UploadImageFromFile(args.File, "back");
+    }
+
+    private async Task UploadImageFromFile(Microsoft.AspNetCore.Components.Forms.IBrowserFile file, string name)
+    {
+        imageMessage = null;
+        imageMessageIsError = false;
+
+        if (this.Contribution == null || file == null)
+            return;
+
+        try
+        {
+            string encodedId = this.Contribution.EncodedId;
+            string imageStorePath = $"Contributions/{encodedId}/{name}.jpg";
+            string assetStorePath = $"{encodedId}/{name}.jpg";
+
+            // Delete existing blobs first — Save() skips upload if blob already exists
+            await ImageStore.Delete(imageStorePath, default);
+            await AssetStore.Delete(assetStorePath, default);
+
+            using var memoryStream = new MemoryStream();
+            await using var fileStream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            await fileStream.CopyToAsync(memoryStream);
+
+            memoryStream.Position = 0;
+            await ImageStore.Save(memoryStream, imageStorePath, ContentTypes.ImageContentType, default);
+
+            memoryStream.Position = 0;
+            await AssetStore.Save(memoryStream, assetStorePath, ContentTypes.ImageContentType, default);
+
+            string imageUrl = $"/images/Contributions/{encodedId}/{name}.jpg";
+            if (name == "front")
+                this.Contribution.FrontImageUrl = imageUrl;
+            else
+                this.Contribution.BackImageUrl = imageUrl;
+
+            await database.SaveChangesAsync();
+            imageMessage = $"{(name == "front" ? "Front" : "Back")} image updated. The preview may take a moment to refresh.";
+        }
+        catch (Exception ex)
+        {
+            imageMessage = $"Failed to upload {name} image: {ex.Message}";
+            imageMessageIsError = true;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task DeleteBackImage()
+    {
+        imageMessage = null;
+        imageMessageIsError = false;
+
+        if (this.Contribution == null)
+            return;
+
+        try
+        {
+            string encodedId = this.Contribution.EncodedId;
+            await ImageStore.Delete($"Contributions/{encodedId}/back.jpg", default);
+            await AssetStore.Delete($"{encodedId}/back.jpg", default);
+
+            this.Contribution.BackImageUrl = null;
+            await database.SaveChangesAsync();
+
+            imageMessage = "Back image deleted.";
+        }
+        catch (Exception ex)
+        {
+            imageMessage = $"Failed to delete back image: {ex.Message}";
+            imageMessageIsError = true;
         }
     }
 }

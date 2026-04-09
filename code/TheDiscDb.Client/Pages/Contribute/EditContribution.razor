@@ -25,7 +25,67 @@ else if (Contribution is not null)
             <div class="alert alert-danger">@errorMessage</div>
         }
 
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success">@successMessage</div>
+        }
+
         <section class="info-grid single-column">
+            <article class="info-card">
+                <h3>Cover Images</h3>
+
+                <div class="cover-images-section">
+                    <div class="cover-image-slot">
+                        <h4>Front Cover<span class="required">*</span></h4>
+                        @if (!string.IsNullOrEmpty(currentFrontImageUrl))
+                        {
+                            <div class="cover-preview">
+                                <img src="@(currentFrontImageUrl)?width=156&height=231" alt="Front cover" />
+                            </div>
+                        }
+                        @if (IsEditable)
+                        {
+                            <SfUploader @ref="frontImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
+                                <UploaderButtons Browse="@(string.IsNullOrEmpty(currentFrontImageUrl) ? "Upload Front Image" : "Replace Front Image")"></UploaderButtons>
+                                <UploaderEvents Success="FrontImageUploadSuccess" Failure="FrontImageUploadFailure"></UploaderEvents>
+                                <UploaderAsyncSettings SaveUrl="@frontImageUploadUrl"></UploaderAsyncSettings>
+                            </SfUploader>
+                        }
+                    </div>
+
+                    <div class="cover-image-slot">
+                        <h4>Back Cover</h4>
+                        @if (!string.IsNullOrEmpty(currentBackImageUrl))
+                        {
+                            <div class="cover-preview">
+                                <img src="@(currentBackImageUrl)?width=156&height=231" alt="Back cover" />
+                            </div>
+                            @if (IsEditable)
+                            {
+                                <button type="button" class="btn btn-outline-danger btn-sm" @onclick="DeleteBackImage">
+                                    Delete Back Image
+                                </button>
+                            }
+                        }
+                        @if (IsEditable)
+                        {
+                            <SfUploader @ref="backImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
+                                <UploaderButtons Browse="@(string.IsNullOrEmpty(currentBackImageUrl) ? "Upload Back Image" : "Replace Back Image")"></UploaderButtons>
+                                <UploaderEvents Success="BackImageUploadSuccess" Failure="BackImageUploadFailure"></UploaderEvents>
+                                <UploaderAsyncSettings SaveUrl="@backImageUploadUrl"></UploaderAsyncSettings>
+                            </SfUploader>
+                        }
+                    </div>
+                </div>
+
+                @if (imageUpdatePending)
+                {
+                    <div class="alert alert-info image-update-note">
+                        Image updated. The preview may take a moment to refresh.
+                    </div>
+                }
+            </article>
+
             <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
                 <DataAnnotationsValidator />
                 <ValidationSummary />

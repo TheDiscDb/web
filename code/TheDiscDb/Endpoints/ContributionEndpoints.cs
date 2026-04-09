@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using FluentResults;
 using MakeMkv;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client;
@@ -33,6 +34,15 @@ public class ContributionEndpoints
             .WithMetadata(new DisableRequestSizeLimitAttribute())
             .DisableAntiforgery();
         contribute.MapPost("images/back/remove/{id:guid}", RemoveBackImage)
+            .DisableAntiforgery();
+
+        contribute.MapPost("{contributionId}/images/front/upload", UploadContributionFrontImage)
+            .WithMetadata(new DisableRequestSizeLimitAttribute())
+            .DisableAntiforgery();
+        contribute.MapPost("{contributionId}/images/back/upload", UploadContributionBackImage)
+            .WithMetadata(new DisableRequestSizeLimitAttribute())
+            .DisableAntiforgery();
+        contribute.MapPost("{contributionId}/images/back/delete", DeleteContributionBackImage)
             .DisableAntiforgery();
     }
 
@@ -200,7 +210,7 @@ public class ContributionEndpoints
         return Results.Ok();
     }
 
-    #region Image Upload
+    #region Image Upload (temp storage during creation)
 
     public async Task<IResult> RemoveFrontImage(Guid id, [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore service, CancellationToken cancellationToken)
         => await RemoveImage(id, "front", service, cancellationToken);
@@ -241,6 +251,141 @@ public class ContributionEndpoints
     }
 
     private static string GetReleaseImagePath(Guid id, string name) => $"Contributions/releaseImages/{id}/{name}.jpg";
+
+    #endregion
+
+    #region Image Upload (direct replacement for existing contributions)
+
+    private static readonly UserContributionStatus[] EditableStatuses =
+    [
+        UserContributionStatus.Pending,
+        UserContributionStatus.ChangesRequested,
+        UserContributionStatus.Rejected
+    ];
+
+    public async Task<IResult> UploadContributionFrontImage(
+        IFormFileCollection files,
+        string contributionId,
+        IDbContextFactory<SqlServerDataContext> dbFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore imageStore,
+        IStaticAssetStore assetStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+        => await UploadContributionImage(files, contributionId, "front", dbFactory, idEncoder, userManager, imageStore, assetStore, httpContext, cancellationToken);
+
+    public async Task<IResult> UploadContributionBackImage(
+        IFormFileCollection files,
+        string contributionId,
+        IDbContextFactory<SqlServerDataContext> dbFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore imageStore,
+        IStaticAssetStore assetStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+        => await UploadContributionImage(files, contributionId, "back", dbFactory, idEncoder, userManager, imageStore, assetStore, httpContext, cancellationToken);
+
+    public async Task<IResult> DeleteContributionBackImage(
+        string contributionId,
+        IDbContextFactory<SqlServerDataContext> dbFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore imageStore,
+        IStaticAssetStore assetStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var (contribution, error) = await VerifyContributionOwnership(contributionId, db, idEncoder, userManager, httpContext, cancellationToken);
+        if (error != null) return error;
+
+        string encodedId = idEncoder.Encode(contribution!.Id);
+        await imageStore.Delete($"Contributions/{encodedId}/back.jpg", cancellationToken);
+        await assetStore.Delete($"{encodedId}/back.jpg", cancellationToken);
+
+        contribution.BackImageUrl = null;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return TypedResults.Ok();
+    }
+
+    private async Task<IResult> UploadContributionImage(
+        IFormFileCollection files,
+        string contributionId,
+        string name,
+        IDbContextFactory<SqlServerDataContext> dbFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        IStaticAssetStore imageStore,
+        IStaticAssetStore assetStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var file = files.FirstOrDefault();
+        if (file == null || file.Length == 0)
+            return Results.BadRequest("No file uploaded.");
+
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var (contribution, error) = await VerifyContributionOwnership(contributionId, db, idEncoder, userManager, httpContext, cancellationToken);
+        if (error != null) return error;
+
+        string encodedId = idEncoder.Encode(contribution!.Id);
+
+        // Delete existing blobs first — Save() skips upload if blob already exists
+        string imageStorePath = $"Contributions/{encodedId}/{name}.jpg";
+        string assetStorePath = $"{encodedId}/{name}.jpg";
+        await imageStore.Delete(imageStorePath, cancellationToken);
+        await assetStore.Delete(assetStorePath, cancellationToken);
+
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream, cancellationToken);
+
+        memoryStream.Position = 0;
+        await imageStore.Save(memoryStream, imageStorePath, ContentTypes.ImageContentType, cancellationToken);
+
+        memoryStream.Position = 0;
+        await assetStore.Save(memoryStream, assetStorePath, ContentTypes.ImageContentType, cancellationToken);
+
+        string imageUrl = $"/images/Contributions/{encodedId}/{name}.jpg";
+        if (name == "front")
+            contribution.FrontImageUrl = imageUrl;
+        else
+            contribution.BackImageUrl = imageUrl;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return TypedResults.Ok(new { imageUrl });
+    }
+
+    private static async Task<(UserContribution? contribution, IResult? error)> VerifyContributionOwnership(
+        string contributionId,
+        SqlServerDataContext db,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        int decodedId = idEncoder.Decode(contributionId);
+        if (decodedId == 0)
+            return (null, TypedResults.BadRequest("Invalid contribution ID."));
+
+        var contribution = await db.UserContributions
+            .FirstOrDefaultAsync(c => c.Id == decodedId, cancellationToken);
+
+        if (contribution == null)
+            return (null, TypedResults.NotFound("Contribution not found."));
+
+        var userId = userManager.GetUserId(httpContext.User);
+        if (string.IsNullOrEmpty(userId) || contribution.UserId != userId)
+            return (null, TypedResults.Forbid());
+
+        if (!EditableStatuses.Contains(contribution.Status))
+            return (null, TypedResults.BadRequest($"Cannot edit images for a contribution with status '{contribution.Status}'."));
+
+        return (contribution, null);
+    }
 
     #endregion
 }

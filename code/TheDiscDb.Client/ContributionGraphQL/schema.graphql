@@ -411,6 +411,9 @@ input UpdateContributionInput {
   releaseSlug: String!
   locale: String!
   regionCode: String!
+  frontImageUrl: String
+  backImageUrl: String
+  deleteBackImage: Boolean!
 }
 
 union AddAudioTrackToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
@@ -879,7 +882,7 @@ type EpisodeNamesPayload {
   errors: [EpisodeNamesError!]
 }
 
-union UpdateContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+union UpdateContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
 
 input ApiKeyInfoSortInput {
   name: SortEnumType
