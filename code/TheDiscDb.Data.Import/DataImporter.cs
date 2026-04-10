@@ -57,6 +57,7 @@
             release.Year = releaseFile.Year;
             release.Title = releaseFile.Title;
             release.ImageUrl = releaseFile.ImageUrl;
+            release.BackImageUrl = releaseFile.BackImageUrl;
             release.ReleaseDate = releaseFile.ReleaseDate;
 
             if (releaseFile.Contributors != null && releaseFile.Contributors.Count > 0)
@@ -235,6 +236,20 @@
                 boxset.Release.ImageUrl = remotePath;
                 file.ImageUrl = remotePath;
                 boxset.ImageUrl = remotePath;
+
+                // re-save the boxset file
+                string json = JsonSerializer.Serialize(file, JsonOptions);
+                await this.fileSystem.File.WriteAllText(this.fileSystem.Path.Combine(boxSetDirectory, BoxSetReleaseFile.Filename), json, cancellationToken);
+            }
+
+            // Handle back cover image
+            string backImagePath = this.fileSystem.Path.Combine(boxSetDirectory, "back.jpg");
+            if (await this.fileSystem.File.Exists(backImagePath, cancellationToken))
+            {
+                string backRemotePath = string.Format("boxset/{0}-back.jpg", boxset.Slug);
+                await this.imageStore.Save(backImagePath, backRemotePath, ContentTypes.ImageContentType, cancellationToken);
+                boxset.Release.BackImageUrl = backRemotePath;
+                file.BackImageUrl = backRemotePath;
 
                 // re-save the boxset file
                 string json = JsonSerializer.Serialize(file, JsonOptions);
@@ -484,6 +499,27 @@
                             }
                         }
 
+                        // Handle back cover image
+                        string backImagePath = this.fileSystem.Path.Combine(releaseFolder, "back.jpg");
+                        if (await this.fileSystem.File.Exists(backImagePath, cancellationToken))
+                        {
+                            string backRemotePath = string.Format("{0}/{1}/{2}-back.jpg", metadata.Type, metadata.Slug, release.Slug);
+                            bool backExists = await this.imageStore.Exists(backRemotePath, cancellationToken);
+                            if (!backExists)
+                            {
+                                await this.imageStore.Save(backImagePath, backRemotePath, ContentTypes.ImageContentType, cancellationToken);
+                            }
+
+                            if (release.BackImageUrl != backRemotePath)
+                            {
+                                release.BackImageUrl = backRemotePath;
+                                releaseFile.BackImageUrl = backRemotePath;
+
+                                json = JsonSerializer.Serialize(releaseFile, JsonOptions);
+                                await this.fileSystem.File.WriteAllText(releaseFilePath, json, cancellationToken);
+                            }
+                        }
+
                         if (!dataImportOptions.Value.CleanImport)
                         {
                             release.Discs.Clear();
@@ -609,6 +645,19 @@
                         singleRelease.ImageUrl = remotePath;
 
                         // re-save the release file
+                        json = JsonSerializer.Serialize(singleRelease, JsonOptions);
+                        await this.fileSystem.File.WriteAllText(singleReleaseFile, json, cancellationToken);
+                    }
+
+                    // Handle back cover image
+                    string backImagePath = this.fileSystem.Path.Combine(inputDirectory, "back.jpg");
+                    if (await this.fileSystem.File.Exists(backImagePath, cancellationToken) && string.IsNullOrEmpty(release.BackImageUrl))
+                    {
+                        string backRemotePath = string.Format("{0}/{1}/{2}-back.jpg", singleMetadata.Type, singleMetadata.Slug, release.Slug);
+                        await this.imageStore.Save(backImagePath, backRemotePath, ContentTypes.ImageContentType, cancellationToken);
+                        release.BackImageUrl = backRemotePath;
+                        singleRelease.BackImageUrl = backRemotePath;
+
                         json = JsonSerializer.Serialize(singleRelease, JsonOptions);
                         await this.fileSystem.File.WriteAllText(singleReleaseFile, json, cancellationToken);
                     }

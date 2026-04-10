@@ -15,6 +15,7 @@ query GetRelease($slug: String, $releaseSlug: String, $mediaType: String) {
         year
         title
         imageUrl
+        backImageUrl
         asin
         upc
         releaseDate

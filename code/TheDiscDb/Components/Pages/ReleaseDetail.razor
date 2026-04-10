@@ -18,12 +18,26 @@ else
         <meta property="og:image" content="https://thediscdb.com/images/@(Release.ImageUrl)?width=600&amp;height=900" />
         <meta property="og:image:width" content="600" />
         <meta property="og:image:height" content="900" />
+        @if (!string.IsNullOrEmpty(Release.BackImageUrl))
+        {
+            <meta property="og:image" content="https://thediscdb.com/images/@(Release.BackImageUrl)?width=600&amp;height=900" />
+            <meta property="og:image:width" content="600" />
+            <meta property="og:image:height" content="900" />
+        }
         <meta property="og:site_name" content="TheDiscDb" />
     </HeadContent>
     <div class="vstack">
         <TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootLink(this.Item), GetMediaItemLink(this.Item)]" PrimaryText="@Release.Title" />
         <div class="d-flex flex-column flex-md-row gap-3 align-items-start">
-            <MediaImage Url="@Release?.ImageUrl" Width="413" Height="525" Title="@Release?.FullTitle" CssClass="mediaItemDetailCover img-fluid" Style="max-width: 413px;" />
+            <div class="cover-images">
+                <MediaImage Url="@Release?.ImageUrl" Width="413" Height="525" Title="@Release?.FullTitle" CssClass="mediaItemDetailCover img-fluid" Style="max-width: 413px;" />
+                @if (!string.IsNullOrEmpty(Release?.BackImageUrl))
+                {
+                    <a href="/images/@(Release.BackImageUrl)?width=800&height=1200" target="_blank" class="back-cover-link">
+                        <MediaImage Url="@Release.BackImageUrl" Width="120" Height="170" Title="Back cover" CssClass="back-cover-thumb" />
+                    </a>
+                }
+            </div>
             <div class="release-info-column">
                 <div>
                     <h1>@Item.FullTitle</h1>

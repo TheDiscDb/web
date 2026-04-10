@@ -211,6 +211,7 @@ input ReleaseFilterInput {
   isbn: StringOperationFilterInput
   asin: StringOperationFilterInput
   imageUrl: StringOperationFilterInput
+  backImageUrl: StringOperationFilterInput
   releaseDate: DateTimeOperationFilterInput
   dateAdded: DateTimeOperationFilterInput
   fullTitle: StringOperationFilterInput
@@ -233,6 +234,7 @@ input ReleaseSortInput {
   isbn: SortEnumType
   asin: SortEnumType
   imageUrl: SortEnumType
+  backImageUrl: SortEnumType
   releaseDate: SortEnumType
   dateAdded: SortEnumType
   fullTitle: SortEnumType
@@ -536,6 +538,7 @@ type Release {
   isbn: String
   asin: String
   imageUrl: String
+  backImageUrl: String
   releaseDate: DateTime!
   dateAdded: DateTime!
   fullTitle: String!

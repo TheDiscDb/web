@@ -18,6 +18,7 @@
         public string? Isbn { get; set; }
         public string? Type { get; set; }
         public string? ImageUrl { get; set; }
+        public string? BackImageUrl { get; set; }
         public DateTimeOffset ReleaseDate { get; set; }
         public DateTimeOffset DateAdded { get; set; }
         public ICollection<BoxSetDisc> Discs { get; set; } = new HashSet<BoxSetDisc>();

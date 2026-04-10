@@ -16,6 +16,7 @@
         public string? Isbn { get; set; }
         public string? Asin { get; set; }
         public string? ImageUrl { get; set; }
+        public string? BackImageUrl { get; set; }
         public DateTimeOffset ReleaseDate { get; set; }
         public DateTimeOffset DateAdded { get; set; }
 

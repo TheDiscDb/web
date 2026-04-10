@@ -16,6 +16,7 @@
         public string? SortTitle { get; set; }
         public string? Isbn { get; set; }
         public string? ImageUrl { get; set; }
+        public string? BackImageUrl { get; set; }
         public DateTimeOffset ReleaseDate { get; set; }
         public DateTimeOffset DateAdded { get; set; }
         public ICollection<Contributor> Contributors { get; set; } = new HashSet<Contributor>();
