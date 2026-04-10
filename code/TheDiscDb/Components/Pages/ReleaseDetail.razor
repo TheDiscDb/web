@@ -29,15 +29,7 @@ else
     <div class="vstack">
         <TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootLink(this.Item), GetMediaItemLink(this.Item)]" PrimaryText="@Release.Title" />
         <div class="d-flex flex-column flex-md-row gap-3 align-items-start">
-            <div class="cover-images">
-                <MediaImage Url="@Release?.ImageUrl" Width="413" Height="525" Title="@Release?.FullTitle" CssClass="mediaItemDetailCover img-fluid" Style="max-width: 413px;" />
-                @if (!string.IsNullOrEmpty(Release?.BackImageUrl))
-                {
-                    <a href="/images/@(Release.BackImageUrl)?width=800&height=1200" target="_blank" class="back-cover-link">
-                        <MediaImage Url="@Release.BackImageUrl" Width="120" Height="170" Title="Back cover" CssClass="back-cover-thumb" />
-                    </a>
-                }
-            </div>
+            <MediaImage Url="@Release?.ImageUrl" Width="413" Height="525" Title="@Release?.FullTitle" CssClass="mediaItemDetailCover img-fluid" Style="max-width: 413px;" />
             <div class="release-info-column">
                 <div>
                     <h1>@Item.FullTitle</h1>
@@ -121,5 +113,13 @@ else
                 }
             </div>
         </div>
+        @if (!string.IsNullOrEmpty(Release?.BackImageUrl))
+        {
+            <section class="back-cover-section">
+                <a href="/images/@(Release.BackImageUrl)" target="_blank" class="back-cover-link">
+                    <MediaImage Url="@Release.BackImageUrl" Width="200" Height="284" Title="Back cover" CssClass="back-cover-thumb" />
+                </a>
+            </section>
+        }
     </div>
 }
