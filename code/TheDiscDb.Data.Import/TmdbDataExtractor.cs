@@ -30,10 +30,20 @@ namespace TheDiscDb.Data.Import
         {
             var result = new TmdbMetadata();
 
-            result.Directors = ExtractDirectors(root);
-            result.Writers = ExtractWriters(root);
-            result.Stars = ExtractStars(root);
-            result.Genres = ExtractGenres(root);
+            result.DirectorList = GetCrewByJob(root, "Director");
+            // For series, fall back to created_by if no directors in crew
+            if (result.DirectorList.Count == 0 && root.TryGetProperty("created_by", out var createdBy))
+            {
+                result.DirectorList = ExtractNames(createdBy);
+            }
+            result.WriterList = ExtractWriterList(root);
+            result.StarList = ExtractStarList(root);
+            result.GenreList = ExtractGenreList(root);
+
+            result.Directors = result.DirectorList.Count > 0 ? string.Join(", ", result.DirectorList) : null;
+            result.Writers = result.WriterList.Count > 0 ? string.Join(", ", result.WriterList) : null;
+            result.Stars = result.StarList.Count > 0 ? string.Join(", ", result.StarList) : null;
+            result.Genres = result.GenreList.Count > 0 ? string.Join(", ", result.GenreList) : null;
             result.RuntimeMinutes = ExtractRuntime(root);
             result.ContentRating = ExtractContentRating(root);
             result.Tagline = GetStringProperty(root, "tagline");
@@ -49,20 +59,7 @@ namespace TheDiscDb.Data.Import
             return result;
         }
 
-        private static string? ExtractDirectors(JsonElement root)
-        {
-            var names = GetCrewByJob(root, "Director");
-
-            // For series, fall back to created_by if no directors in crew
-            if (names.Count == 0 && root.TryGetProperty("created_by", out var createdBy))
-            {
-                names = ExtractNames(createdBy);
-            }
-
-            return names.Count > 0 ? string.Join(", ", names) : null;
-        }
-
-        private static string? ExtractWriters(JsonElement root)
+        private static List<string> ExtractWriterList(JsonElement root)
         {
             var names = new List<string>();
             if (!root.TryGetProperty("credits", out var credits) ||
@@ -70,7 +67,7 @@ namespace TheDiscDb.Data.Import
                 !credits.TryGetProperty("crew", out var crew) ||
                 crew.ValueKind != JsonValueKind.Array)
             {
-                return null;
+                return names;
             }
 
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -86,43 +83,41 @@ namespace TheDiscDb.Data.Import
                 }
             }
 
-            return names.Count > 0 ? string.Join(", ", names) : null;
+            return names;
         }
 
-        private static string? ExtractStars(JsonElement root)
+        private static List<string> ExtractStarList(JsonElement root)
         {
             if (!root.TryGetProperty("credits", out var credits) ||
                 credits.ValueKind != JsonValueKind.Object ||
                 !credits.TryGetProperty("cast", out var cast) ||
                 cast.ValueKind != JsonValueKind.Array)
             {
-                return null;
+                return new List<string>();
             }
 
-            var names = cast.EnumerateArray()
+            return cast.EnumerateArray()
                 .OrderBy(c => c.TryGetProperty("order", out var o) ? o.GetInt32() : int.MaxValue)
                 .Take(MaxStars)
                 .Select(c => GetStringProperty(c, "name"))
                 .Where(n => n != null)
+                .Cast<string>()
                 .ToList();
-
-            return names.Count > 0 ? string.Join(", ", names) : null;
         }
 
-        private static string? ExtractGenres(JsonElement root)
+        private static List<string> ExtractGenreList(JsonElement root)
         {
             if (!root.TryGetProperty("genres", out var genres) ||
                 genres.ValueKind != JsonValueKind.Array)
             {
-                return null;
+                return new List<string>();
             }
 
-            var names = genres.EnumerateArray()
+            return genres.EnumerateArray()
                 .Select(g => GetStringProperty(g, "name"))
                 .Where(n => n != null)
+                .Cast<string>()
                 .ToList();
-
-            return names.Count > 0 ? string.Join(", ", names) : null;
         }
 
         private static int? ExtractRuntime(JsonElement root)
@@ -277,6 +272,15 @@ namespace TheDiscDb.Data.Import
         public string? Runtime { get; set; }
         public string? Tagline { get; set; }
         public string? Overview { get; set; }
+
+        /// <summary>Structured list of director names for group creation.</summary>
+        public List<string> DirectorList { get; set; } = new();
+        /// <summary>Structured list of writer names for group creation.</summary>
+        public List<string> WriterList { get; set; } = new();
+        /// <summary>Structured list of top-billed cast names for group creation.</summary>
+        public List<string> StarList { get; set; } = new();
+        /// <summary>Structured list of genre names for group creation.</summary>
+        public List<string> GenreList { get; set; } = new();
 
         /// <summary>
         /// Applies non-null TMDB fields to target, but only when the target field is empty.
