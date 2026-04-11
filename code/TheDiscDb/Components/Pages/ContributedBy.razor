@@ -13,10 +13,10 @@
 <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@Username" Items='[("Home", "/"), ("Contribute", "/contribute"), ("Leaderboard", "/leaderboard")]' />
 
 <div class="contribute-layout">
-    <section class="contribute-hero compact">
-        <h1>Contributions by @Username</h1>
-        <p>@(releases?.Count ?? 0) contribution@(releases?.Count == 1 ? "" : "s") and growing!</p>
-    </section>
+    <div class="page-header">
+        <h1>Contributions by <span class="page-header__accent">@Username</span></h1>
+        <div class="page-header__sub">@(releases?.Count ?? 0) contribution@(releases?.Count == 1 ? "" : "s") and growing!</div>
+    </div>
 
     @if (errorMessage != null)
     {

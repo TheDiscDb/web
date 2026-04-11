@@ -7,10 +7,10 @@
     <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Review" Items="[GetRootContributionLink(), GetContributionLink(this.Contribution)]" />
 
     <div class="contribute-layout contribution-review-page">
-        <section class="contribute-hero compact">
+        <div class="page-header">
             <h1>Review Your Contribution</h1>
-            <p>Thank you for your contribution - now for some final checks.</p>
-        </section>
+            <div class="page-header__sub">Thank you for your contribution — now for some final checks.</div>
+        </div>
 
         @if (Validators is not null && Validators.Any())
         {

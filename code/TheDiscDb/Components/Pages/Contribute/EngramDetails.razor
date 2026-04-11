@@ -4,13 +4,17 @@
 
 @if (Submissions == null || !Submissions.Any())
 {
-    <h1>Engram Submissions</h1>
+    <div class="page-header">
+        <h1>Engram Submissions</h1>
+    </div>
     <p>No submissions found for this release.</p>
 }
 else
 {
-    <h1>Engram Submissions</h1>
-    <p>@Submissions.Count submission(s) for release <code>@ReleaseId</code></p>
+    <div class="page-header">
+        <h1>Engram Submissions</h1>
+        <div class="page-header__sub">@Submissions.Count submission(s) for release <code>@ReleaseId</code></div>
+    </div>
 
     @foreach (var submission in Submissions)
     {
