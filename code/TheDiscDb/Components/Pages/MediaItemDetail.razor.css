@@ -70,6 +70,43 @@
     color: #00213F;
 }
 
+::deep .categories-section {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #eee;
+}
+
+::deep .categories-section h3 {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+}
+
+::deep .category-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+::deep .category-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    background: #e8f4f8;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #00213F;
+    text-decoration: none;
+    transition: background 0.15s;
+}
+
+::deep .category-chip:hover {
+    background: #cde8f0;
+    text-decoration: none;
+    color: #00213F;
+}
+
 ::deep .facts .chip-list {
     display: inline-flex;
 }

@@ -32,6 +32,16 @@ public partial class MediaItemDetail : ComponentBase
         !string.IsNullOrWhiteSpace(Item?.Stars) ||
         !string.IsNullOrWhiteSpace(Item?.Writers);
 
+    private List<Group> CustomGroups =>
+        Item?.MediaItemGroups
+            .Where(mig => mig.Group != null && !string.IsNullOrEmpty(mig.Group.Slug))
+            .Where(mig => string.Equals(mig.Role, "CustomGroup", StringComparison.OrdinalIgnoreCase)
+                       || string.Equals(mig.Role, "Genre", StringComparison.OrdinalIgnoreCase))
+            .Select(mig => mig.Group!)
+            .DistinctBy(g => g.Slug)
+            .OrderBy(g => g.Name)
+            .ToList() ?? [];
+
     protected override async Task OnInitializedAsync()
     {
         if (this.Cache == null)
