@@ -68,6 +68,13 @@ public class Worker(
                     logger.LogInformation("Phase 2 complete — all items imported");
                 }
             }
+
+            // Sync local image files to blob storage (non-blocking — web app is already running)
+            {
+                using var syncScope = serviceProvider.CreateScope();
+                var blobSync = syncScope.ServiceProvider.GetRequiredService<BlobSyncService>();
+                await blobSync.SyncAsync(cancellationToken);
+            }
         }
         catch (Exception ex)
         {

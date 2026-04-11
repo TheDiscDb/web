@@ -43,6 +43,7 @@ builder.Services.Configure<DataImporterOptions>(builder.Configuration.GetSection
 builder.Services.AddScoped<DataImporter>();
 builder.Services.Configure<DatabaseMigrationOptions>(builder.Configuration.GetSection("DatabaseMigration"));
 builder.Services.AddScoped<DataSeeder>();
+builder.Services.AddScoped<BlobSyncService>();
 
 var host = builder.Build();
 host.Run();
