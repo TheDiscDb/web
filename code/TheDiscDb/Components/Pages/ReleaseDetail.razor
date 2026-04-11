@@ -99,14 +99,14 @@ else
                     </section>
                 }
 
-                @if (Release?.ReleaseGroups != null && Release.ReleaseGroups.Any(rg => rg.Group != null))
+                @if (AllGroups.Count > 0)
                 {
                     <section class="categories-section">
                         <h3>Categories</h3>
                         <div class="category-list">
-                            @foreach (var rg in Release.ReleaseGroups.Where(rg => rg.Group != null))
+                            @foreach (var group in AllGroups)
                             {
-                                <a href="/g/@rg.Group!.Slug" class="category-chip">@rg.Group.Name</a>
+                                <a href="/g/@group.Slug" class="category-chip">@group.Name</a>
                             }
                         </div>
                     </section>
