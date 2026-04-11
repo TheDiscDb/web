@@ -40,16 +40,17 @@ public class DataSeeder
 
     public async Task<SeedPlan> CreateSeedPlan(CancellationToken cancellationToken)
     {
+        var dataRoot = options.Value.DataDirectoryRoot ?? throw new InvalidOperationException("DataDirectoryRoot is not configured.");
         var movies = await GetRandomSubdirectories(
-            this.fileSystem.Path.Combine(options.Value.DataDirectoryRoot, "movie"),
+            this.fileSystem.Path.Combine(dataRoot, "movie"),
             options.Value.MaxItemsToImportPerMediaType,
             cancellationToken);
         var series = await GetRandomSubdirectories(
-            this.fileSystem.Path.Combine(options.Value.DataDirectoryRoot, "series"),
+            this.fileSystem.Path.Combine(dataRoot, "series"),
             options.Value.MaxItemsToImportPerMediaType,
             cancellationToken);
         var sets = await GetRandomSubdirectories(
-            this.fileSystem.Path.Combine(options.Value.DataDirectoryRoot, "sets"),
+            this.fileSystem.Path.Combine(dataRoot, "sets"),
             options.Value.MaxItemsToImportPerMediaType,
             cancellationToken);
 
@@ -74,7 +75,8 @@ public class DataSeeder
 
     private async Task SeedFromFolder(string name, CancellationToken cancellationToken)
     {
-        var items = await GetRandomSubdirectories(this.fileSystem.Path.Combine(options.Value.DataDirectoryRoot, name), options.Value.MaxItemsToImportPerMediaType, cancellationToken);
+        var dataRoot = options.Value.DataDirectoryRoot ?? throw new InvalidOperationException("DataDirectoryRoot is not configured.");
+        var items = await GetRandomSubdirectories(this.fileSystem.Path.Combine(dataRoot, name), options.Value.MaxItemsToImportPerMediaType, cancellationToken);
         await SeedItems(items, cancellationToken);
     }
 

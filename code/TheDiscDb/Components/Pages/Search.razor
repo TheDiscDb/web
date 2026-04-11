@@ -33,7 +33,7 @@
             @foreach (var item in Results)
             {
                 <a href="@item.RelativeUrl?.ToLower()" class="search-result-card" title="@item.Title">
-                    <MediaImage Url="@item?.ImageUrl" Width="156" Height="231" Title="@item?.Title" />
+                    <MediaImage Url="@item.ImageUrl" Width="156" Height="231" Title="@item.Title" />
                     <div class="search-result-overlay">
                         <span class="search-result-title">@item.Title</span>
                         @if (!string.IsNullOrEmpty(item.Type))

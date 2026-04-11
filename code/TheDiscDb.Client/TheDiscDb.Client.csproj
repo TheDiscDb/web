@@ -7,6 +7,8 @@
         <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
         <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
         <UserSecretsId>6782684c-6982-45cd-af45-1668dbf88814</UserSecretsId>
+        <!-- CS0108: auto-generated GraphQL client hides inherited members; RZ10012: Syncfusion ContentTemplate -->
+        <NoWarn>CS0108;RZ10012</NoWarn>
     </PropertyGroup>
     <ItemGroup>
         <GraphQL Remove="contributiongraphql\mutations\addAudioTrackToItem.graphql" />

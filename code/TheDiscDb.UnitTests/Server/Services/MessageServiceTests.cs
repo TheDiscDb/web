@@ -66,7 +66,7 @@ public class MessageServiceTests
         var factory = new TestDbContextFactory(dbName);
         notifications = new RecordingNotificationService();
         var userStore = new InMemoryUserStore();
-        var userManager = new UserManager<TheDiscDbUser>(userStore, null, null, null, null, null, null, null, null);
+        var userManager = new UserManager<TheDiscDbUser>(userStore, null!, null!, null!, null!, null!, null!, null!, null!);
         var logger = NullLogger<MessageService>.Instance;
         return new MessageService(factory, notifications, userManager, logger);
     }
@@ -126,7 +126,7 @@ public class MessageServiceTests
         await Assert.That(result.ToUserId).IsEqualTo("user-1");
         await Assert.That(result.Message).IsEqualTo("Please fix the disc titles");
         await Assert.That(result.Type).IsEqualTo(UserMessageType.AdminMessage);
-        await Assert.That(result.IsRead).IsEqualTo(false);
+        await Assert.That(result.IsRead).IsFalse();
 
         // Verify persisted
         using var db = CreateDbContext(dbName);
@@ -146,7 +146,7 @@ public class MessageServiceTests
         await Assert.That(result.FromUserId).IsEqualTo("user-1");
         await Assert.That(result.Message).IsEqualTo("I've updated the disc list");
         await Assert.That(result.Type).IsEqualTo(UserMessageType.UserMessage);
-        await Assert.That(result.IsRead).IsEqualTo(false);
+        await Assert.That(result.IsRead).IsFalse();
     }
 
     [Test]

@@ -281,7 +281,7 @@ public partial class ReleaseDetailInput : ComponentBase
             {
                 try
                 {
-                    request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
+                    request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader) ?? string.Empty;
                     this.frontImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{id}/front.jpg";
                 }
                 catch (Exception ex)

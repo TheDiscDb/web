@@ -573,9 +573,8 @@
                 }
             }
 
-            // Disable single release support for now
-            return;
-
+            // Single release support is disabled
+#if false
             string singleReleaseFile = this.fileSystem.Path.Combine(inputDirectory, ReleaseFile.Filename);
             if (await this.fileSystem.File.Exists(singleReleaseFile, cancellationToken))
             {
@@ -709,6 +708,7 @@
                     }
                 }
             }
+#endif
         }
 
         public async Task ImportGroups(string inputDirectory, CancellationToken cancellationToken = default)

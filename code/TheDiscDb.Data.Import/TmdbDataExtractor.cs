@@ -1,3 +1,5 @@
+#nullable enable
+
 namespace TheDiscDb.Data.Import
 {
     using System;
