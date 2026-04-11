@@ -5,10 +5,10 @@
 }
 else
 {
-    <ul class="groupList">
+    <div class="chip-list">
         @foreach (var text in this.ListText.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
         {
             <RoleLink Item="@Item" Text="@text" Role="@Role" />
         }
-    </ul>
+    </div>
 }

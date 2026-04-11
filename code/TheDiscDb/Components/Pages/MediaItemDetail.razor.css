@@ -42,26 +42,34 @@
     margin-bottom: 0px;
 }
 
-::deep p.people {
+::deep .people {
     text-overflow: ellipsis;
 }
 
-::deep .groupList {
-    display: inline;
-    list-style: none;
-    padding-left: 0;
+::deep .chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
-::deep .groupList li {
-    display: inline;
+::deep .metadata-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    background: #f0f4f8;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #00213F;
+    text-decoration: none;
+    transition: background 0.15s;
 }
 
-/* Make the items comma delimited */
-::deep .groupList li:after {
-    content: ", ";
+::deep a.metadata-chip:hover {
+    background: #dce4ed;
+    text-decoration: none;
+    color: #00213F;
 }
 
-/* Remove the trailing comma */
-::deep .groupList li:last-child:after {
-    content: "";
+::deep .facts .chip-list {
+    display: inline-flex;
 }

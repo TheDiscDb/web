@@ -22,6 +22,16 @@ public partial class MediaItemDetail : ComponentBase
     private MediaItem? Item { get; set; }
     private IEnumerable<Release> Releases { get; set; } = new List<Release>();
 
+    private bool HasAnyFacts =>
+        !string.IsNullOrWhiteSpace(Item?.ContentRating) ||
+        !string.IsNullOrWhiteSpace(Item?.Genres) ||
+        !string.IsNullOrWhiteSpace(Item?.Runtime);
+
+    private bool HasAnyPeople =>
+        !string.IsNullOrWhiteSpace(Item?.Directors) ||
+        !string.IsNullOrWhiteSpace(Item?.Stars) ||
+        !string.IsNullOrWhiteSpace(Item?.Writers);
+
     protected override async Task OnInitializedAsync()
     {
         if (this.Cache == null)

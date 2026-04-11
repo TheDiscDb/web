@@ -358,6 +358,21 @@
                     imdbTitle = JsonSerializer.Deserialize<TitleData>(json, JsonOptions);
                 }
 
+                TmdbMetadata tmdbData = null;
+                var tmdbFilePath = this.fileSystem.Path.Combine(inputDirectory, "tmdb.json");
+                if (await this.fileSystem.File.Exists(tmdbFilePath, cancellationToken))
+                {
+                    try
+                    {
+                        json = await this.fileSystem.File.ReadAllText(tmdbFilePath, cancellationToken);
+                        tmdbData = TmdbDataExtractor.Extract(json);
+                    }
+                    catch (JsonException)
+                    {
+                        AnsiConsole.WriteLine($"Warning: Malformed tmdb.json in {inputDirectory}, skipping TMDB enrichment");
+                    }
+                }
+
                 if (string.IsNullOrEmpty(metadata.Type))
                 {
                     AnsiConsole.WriteLine("Unable to determine type of item being imported (series or movie)");
@@ -427,6 +442,12 @@
                     }
 
                     item = movie;
+                }
+
+                // Fill metadata gaps from TMDB data when available
+                if (item != null && tmdbData != null)
+                {
+                    tmdbData.FillGaps(item);
                 }
 
                 //if (imdbTitle != null)
@@ -713,6 +734,21 @@
                     imdbTitle = JsonSerializer.Deserialize<TitleData>(json, JsonOptions);
                 }
 
+                TmdbMetadata tmdbData = null;
+                var tmdbFilePath = this.fileSystem.Path.Combine(inputDirectory, "tmdb.json");
+                if (await this.fileSystem.File.Exists(tmdbFilePath, cancellationToken))
+                {
+                    try
+                    {
+                        json = await this.fileSystem.File.ReadAllText(tmdbFilePath, cancellationToken);
+                        tmdbData = TmdbDataExtractor.Extract(json);
+                    }
+                    catch (JsonException)
+                    {
+                        AnsiConsole.WriteLine($"Warning: Malformed tmdb.json in {inputDirectory}, skipping TMDB enrichment");
+                    }
+                }
+
                 MediaItem item = null;
                 string type = metadata.Type;
                 if (type.Equals("series", StringComparison.OrdinalIgnoreCase))
@@ -747,6 +783,12 @@
                     }
 
                     item = movie;
+                }
+
+                // Fill metadata gaps from TMDB data when available
+                if (item != null && tmdbData != null)
+                {
+                    tmdbData.FillGaps(item);
                 }
 
                 bool shouldSave = false;
