@@ -10,7 +10,9 @@
 </HeadContent>
 
 <div class="search-results-page">
-    <h1>Search results for '<em>@SearchTerm</em>'</h1>
+    <div class="page-header">
+        <h1>Search results for <span class="page-header__accent">'@SearchTerm'</span></h1>
+    </div>
 
     @if (string.IsNullOrWhiteSpace(SearchTerm))
     {
