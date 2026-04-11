@@ -150,7 +150,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -168,7 +168,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -186,7 +186,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -203,7 +203,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -221,7 +221,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -238,7 +238,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]

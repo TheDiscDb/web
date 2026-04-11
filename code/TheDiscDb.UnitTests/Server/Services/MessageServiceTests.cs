@@ -131,7 +131,7 @@ public class MessageServiceTests
         // Verify persisted
         using var db = CreateDbContext(dbName);
         var messages = await db.UserMessages.ToListAsync();
-        await Assert.That(messages).HasCount().EqualTo(1);
+        await Assert.That(messages).Count().IsEqualTo(1);
     }
 
     [Test]
@@ -248,7 +248,7 @@ public class MessageServiceTests
 
         await service.SendAdminMessageAsync(42, "admin-1", "user-1", "Changes needed");
 
-        await Assert.That(notifications.Calls).HasCount().EqualTo(1);
+        await Assert.That(notifications.Calls).Count().IsEqualTo(1);
         await Assert.That(notifications.Calls[0].Method).IsEqualTo("MessageFromAdmin");
         await Assert.That(notifications.Calls[0].ContributionId).IsEqualTo(42);
     }
@@ -262,7 +262,7 @@ public class MessageServiceTests
 
         await service.SendUserMessageAsync(42, "user-1", "I fixed everything");
 
-        await Assert.That(notifications.Calls).HasCount().EqualTo(1);
+        await Assert.That(notifications.Calls).Count().IsEqualTo(1);
         await Assert.That(notifications.Calls[0].Method).IsEqualTo("MessageFromUser");
         await Assert.That(notifications.Calls[0].ContributionId).IsEqualTo(42);
     }
@@ -276,6 +276,6 @@ public class MessageServiceTests
 
         await service.SendAdminMessageAsync(999, "admin-1", "user-1", "test");
 
-        await Assert.That(notifications.Calls).HasCount().EqualTo(0);
+        await Assert.That(notifications.Calls).Count().IsEqualTo(0);
     }
 }

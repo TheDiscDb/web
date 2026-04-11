@@ -11,16 +11,16 @@
     <ItemGroup>
         <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.2.2" />
         <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.2.2" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
     </ItemGroup>
 
     <!-- Remove after testing -->
     <ItemGroup>
-        <PackageReference Include="Sqids" Version="3.2.0" />
+        <PackageReference Include="Sqids" Version="3.2.1" />
     </ItemGroup>
 
     <ItemGroup>

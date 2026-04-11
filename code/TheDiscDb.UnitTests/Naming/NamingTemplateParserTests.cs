@@ -10,7 +10,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{title}");
 
         await Assert.That(result.IsSuccess).IsTrue();
-        await Assert.That(result.Template!.Segments).HasCount().EqualTo(1);
+        await Assert.That(result.Template!.Segments).Count().IsEqualTo(1);
         await Assert.That(result.Template.Segments[0]).IsTypeOf<TokenSegment>();
     }
 
@@ -20,7 +20,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("hello world.mkv");
 
         await Assert.That(result.IsSuccess).IsTrue();
-        await Assert.That(result.Template!.Segments).HasCount().EqualTo(1);
+        await Assert.That(result.Template!.Segments).Count().IsEqualTo(1);
         await Assert.That(result.Template.Segments[0]).IsTypeOf<LiteralSegment>();
     }
 
@@ -31,7 +31,7 @@ public class NamingTemplateParserTests
 
         await Assert.That(result.IsSuccess).IsTrue();
         // Segments: Token(title), Literal(" ("), Token(year), Literal(") ["), Token(resolution), Literal("].mkv")
-        await Assert.That(result.Template!.Segments).HasCount().EqualTo(6);
+        await Assert.That(result.Template!.Segments).Count().IsEqualTo(6);
     }
 
     [Test]
@@ -40,7 +40,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{title}{year}");
 
         await Assert.That(result.IsSuccess).IsTrue();
-        await Assert.That(result.Template!.Segments).HasCount().EqualTo(2);
+        await Assert.That(result.Template!.Segments).Count().IsEqualTo(2);
     }
 
     [Test]
@@ -49,7 +49,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{foo}");
 
         await Assert.That(result.IsSuccess).IsFalse();
-        await Assert.That(result.Errors!).HasCount().EqualTo(1);
+        await Assert.That(result.Errors!).Count().IsEqualTo(1);
         await Assert.That(result.Errors![0].Message).Contains("Unknown token 'foo'");
         await Assert.That(result.Errors![0].Position).IsEqualTo(0);
     }
@@ -60,7 +60,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{title");
 
         await Assert.That(result.IsSuccess).IsFalse();
-        await Assert.That(result.Errors!).HasCount().EqualTo(1);
+        await Assert.That(result.Errors!).Count().IsEqualTo(1);
         await Assert.That(result.Errors![0].Message).Contains("Unclosed token");
     }
 
@@ -70,7 +70,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("title}");
 
         await Assert.That(result.IsSuccess).IsFalse();
-        await Assert.That(result.Errors!).HasCount().EqualTo(1);
+        await Assert.That(result.Errors!).Count().IsEqualTo(1);
         await Assert.That(result.Errors![0].Message).Contains("Unexpected '}'");
     }
 
@@ -80,7 +80,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{}");
 
         await Assert.That(result.IsSuccess).IsFalse();
-        await Assert.That(result.Errors!).HasCount().EqualTo(1);
+        await Assert.That(result.Errors!).Count().IsEqualTo(1);
         await Assert.That(result.Errors![0].Message).Contains("Empty token name");
     }
 
@@ -90,7 +90,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{{hello}}");
 
         await Assert.That(result.IsSuccess).IsTrue();
-        await Assert.That(result.Template!.Segments).HasCount().EqualTo(1);
+        await Assert.That(result.Template!.Segments).Count().IsEqualTo(1);
 
         var literal = (LiteralSegment)result.Template.Segments[0];
         await Assert.That(literal.Text).IsEqualTo("{hello}");
@@ -118,7 +118,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("");
 
         await Assert.That(result.IsSuccess).IsTrue();
-        await Assert.That(result.Template!.Segments).HasCount().EqualTo(0);
+        await Assert.That(result.Template!.Segments).Count().IsEqualTo(0);
     }
 
     [Test]
@@ -127,7 +127,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{foo} {bar}");
 
         await Assert.That(result.IsSuccess).IsFalse();
-        await Assert.That(result.Errors!).HasCount().EqualTo(2);
+        await Assert.That(result.Errors!).Count().IsEqualTo(2);
     }
 
     [Test]
@@ -137,7 +137,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse(template);
 
         await Assert.That(result.IsSuccess).IsTrue();
-        await Assert.That(result.Template!.Segments).HasCount().EqualTo(15);
+        await Assert.That(result.Template!.Segments).Count().IsEqualTo(15);
     }
 
     [Test]
@@ -146,7 +146,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse(null!);
 
         await Assert.That(result.IsSuccess).IsFalse();
-        await Assert.That(result.Errors!).HasCount().EqualTo(1);
+        await Assert.That(result.Errors!).Count().IsEqualTo(1);
     }
 
     [Test]
@@ -166,7 +166,7 @@ public class NamingTemplateParserTests
 
         await Assert.That(result.IsSuccess).IsTrue();
         // Segments: Literal("{"), Token(title), Literal("}")
-        await Assert.That(result.Template!.Segments).HasCount().EqualTo(3);
+        await Assert.That(result.Template!.Segments).Count().IsEqualTo(3);
 
         var first = (LiteralSegment)result.Template.Segments[0];
         await Assert.That(first.Text).IsEqualTo("{");
@@ -181,7 +181,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{  }");
 
         await Assert.That(result.IsSuccess).IsFalse();
-        await Assert.That(result.Errors!).HasCount().EqualTo(1);
+        await Assert.That(result.Errors!).Count().IsEqualTo(1);
         await Assert.That(result.Errors![0].Message).Contains("Empty token name");
     }
 
@@ -231,7 +231,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{title} {foo} {year}");
 
         await Assert.That(result.IsSuccess).IsFalse();
-        await Assert.That(result.Errors!).HasCount().EqualTo(1);
+        await Assert.That(result.Errors!).Count().IsEqualTo(1);
         await Assert.That(result.Errors![0].Position).IsEqualTo(8);
         await Assert.That(result.Errors![0].Message).Contains("Unknown token 'foo'");
     }
@@ -243,7 +243,7 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{unknown} {} x}");
 
         await Assert.That(result.IsSuccess).IsFalse();
-        await Assert.That(result.Errors!).HasCount().EqualTo(3);
+        await Assert.That(result.Errors!).Count().IsEqualTo(3);
         await Assert.That(result.Errors![0].Message).Contains("Unknown token");
         await Assert.That(result.Errors![1].Message).Contains("Empty token name");
         await Assert.That(result.Errors![2].Message).Contains("Unexpected '}'");
@@ -258,6 +258,6 @@ public class NamingTemplateParserTests
         var result = NamingTemplate.Parse("{title{year}}");
 
         await Assert.That(result.IsSuccess).IsFalse();
-        await Assert.That(result.Errors!).HasCount().EqualTo(2);
+        await Assert.That(result.Errors!).Count().IsEqualTo(2);
     }
 }
