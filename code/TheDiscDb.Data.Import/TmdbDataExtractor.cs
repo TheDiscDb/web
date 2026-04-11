@@ -66,6 +66,7 @@ namespace TheDiscDb.Data.Import
         {
             var names = new List<string>();
             if (!root.TryGetProperty("credits", out var credits) ||
+                credits.ValueKind != JsonValueKind.Object ||
                 !credits.TryGetProperty("crew", out var crew) ||
                 crew.ValueKind != JsonValueKind.Array)
             {
@@ -91,6 +92,7 @@ namespace TheDiscDb.Data.Import
         private static string? ExtractStars(JsonElement root)
         {
             if (!root.TryGetProperty("credits", out var credits) ||
+                credits.ValueKind != JsonValueKind.Object ||
                 !credits.TryGetProperty("cast", out var cast) ||
                 cast.ValueKind != JsonValueKind.Array)
             {
@@ -158,6 +160,7 @@ namespace TheDiscDb.Data.Import
         {
             // Movie format: releases.countries[] with iso_3166_1 and certification
             if (root.TryGetProperty("releases", out var releases) &&
+                releases.ValueKind == JsonValueKind.Object &&
                 releases.TryGetProperty("countries", out var countries) &&
                 countries.ValueKind == JsonValueKind.Array)
             {
@@ -170,6 +173,7 @@ namespace TheDiscDb.Data.Import
 
             // Series format: content_ratings.results[] with Iso_3166_1 and Rating
             if (root.TryGetProperty("content_ratings", out var contentRatings) &&
+                contentRatings.ValueKind == JsonValueKind.Object &&
                 contentRatings.TryGetProperty("results", out var results) &&
                 results.ValueKind == JsonValueKind.Array)
             {
@@ -217,6 +221,7 @@ namespace TheDiscDb.Data.Import
         private static List<string> GetCrewByJob(JsonElement root, string job)
         {
             if (!root.TryGetProperty("credits", out var credits) ||
+                credits.ValueKind != JsonValueKind.Object ||
                 !credits.TryGetProperty("crew", out var crew) ||
                 crew.ValueKind != JsonValueKind.Array)
             {
