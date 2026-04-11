@@ -93,7 +93,7 @@
     display: inline-flex;
     align-items: center;
     padding: 4px 12px;
-    background: #e8f4f8;
+    background: #f0f4f8;
     border-radius: 20px;
     font-size: 0.85rem;
     color: #00213F;
@@ -102,7 +102,7 @@
 }
 
 ::deep .category-chip:hover {
-    background: #cde8f0;
+    background: #dce4ed;
     text-decoration: none;
     color: #00213F;
 }

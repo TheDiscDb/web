@@ -79,22 +79,21 @@ else
                         }
                     </div>
                 }
+
+                @if (CustomGroups.Count > 0)
+                {
+                    <section class="categories-section">
+                        <p class="people-role">Categories</p>
+                        <div class="category-list">
+                            @foreach (var group in CustomGroups)
+                            {
+                                <a href="/g/@group.Slug" class="category-chip">@group.Name</a>
+                            }
+                        </div>
+                    </section>
+                }
             </div>
         </div>
     </div>
-
-    @if (CustomGroups.Count > 0)
-    {
-        <section class="categories-section">
-            <h3>Categories</h3>
-            <div class="category-list">
-                @foreach (var group in CustomGroups)
-                {
-                    <a href="/g/@group.Slug" class="category-chip">@group.Name</a>
-                }
-            </div>
-        </section>
-    }
-
     <ReleaseList Item="@Item" Releases="Releases" />
 }
