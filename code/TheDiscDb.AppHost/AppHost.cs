@@ -1,19 +1,6 @@
 using System.Security.Cryptography;
-using Azure.Provisioning.AppService;
 
 var builder = DistributedApplication.CreateBuilder(args);
-
-builder.AddAzureAppServiceEnvironment("prod").ConfigureInfrastructure(infra =>
-{
-    var plan = infra.GetProvisionableResources()
-        .OfType<AppServicePlan>()
-        .Single();
-
-    plan.Sku = new AppServiceSkuDescription
-    {
-        Name = "P0V3"
-    };
-});
 
 var adminApiKey = ResolveApiKey(builder, "AdminApiKey", ".admin-apikey");
 var publicApiKey = ResolveApiKey(builder, "PublicApiKey", ".public-apikey");
@@ -45,7 +32,6 @@ var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
 
 if (useExternalSql)
 {
-    // Reads connection string from ConnectionStrings:thediscdb in appsettings or CLI args
     var db = builder.AddConnectionString("thediscdb");
     migrations.WithReference(db);
     backend.WithReference(db);

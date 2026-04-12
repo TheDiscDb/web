@@ -176,8 +176,9 @@ builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Confi
 builder.Services.AddScoped<Fantastic.TheMovieDb.TheMovieDbClient>();
 builder.Services.AddScoped<ExternalSearchDataAdaptor>();
 
-var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")!.Split(";");
-var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));
+var aspnetcoreUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+var serviceUrl = aspnetcoreUrls?.Split(";").FirstOrDefault(u => u.StartsWith("https"))
+    ?? $"https://localhost:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}";
 
 builder.Services
     .AddTheDiscDbClient()
