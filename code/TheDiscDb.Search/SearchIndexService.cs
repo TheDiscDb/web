@@ -162,6 +162,12 @@ public class SearchIndexService : ISearchIndexService
             AnalyzerName = LexicalAnalyzerName.Keyword
         };
 
+        yield return new SearchableField("Groups", collection: true)
+        {
+            SearchAnalyzerName = LexicalAnalyzerName.StandardLucene,
+            IndexAnalyzerName = LexicalAnalyzerName.StandardLucene
+        };
+
         yield return this.GetItemInfoField("MediaItem");
         yield return this.GetItemInfoField("Release");
         yield return this.GetItemInfoField("Disc");
@@ -199,6 +205,9 @@ public class SearchIndexService : ISearchIndexService
             .ThenInclude(r => r.Discs)
             .ThenInclude(d => d.Titles)
             .ThenInclude(t => t.Item)
+            .Include(p => p.Release)
+            .ThenInclude(r => r.ReleaseGroups)
+            .ThenInclude(rg => rg.Group)
             )
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
         {
@@ -210,6 +219,7 @@ public class SearchIndexService : ISearchIndexService
                 ImageUrl = item.ImageUrl,
                 RelativeUrl = $"/boxset/{item.Slug}",
                 Identifiers = CollectIdentifiers(release: item.Release),
+                Groups = CollectGroupNames(releaseGroups: item.Release?.ReleaseGroups),
                 MediaItem = new ItemInfo
                 {
                     Slug = item.Slug,
@@ -290,10 +300,15 @@ public class SearchIndexService : ISearchIndexService
         List<SearchEntry> actions = new();
         foreach (var item in dbContext.MediaItems
             .Include(p => p.Externalids)
+            .Include(p => p.MediaItemGroups)
+            .ThenInclude(mig => mig.Group)
             .Include(p => p.Releases)
             .ThenInclude(r => r.Discs)
             .ThenInclude(d => d.Titles)
             .ThenInclude(t => t.Item)
+            .Include(p => p.Releases)
+            .ThenInclude(r => r.ReleaseGroups)
+            .ThenInclude(rg => rg.Group)
             )
         {
             actions.AddRange(item.ToSearchEntries());
@@ -332,5 +347,32 @@ public class SearchIndexService : ISearchIndexService
         }
 
         return ids;
+    }
+
+    private static IList<string> CollectGroupNames(
+        IEnumerable<InputModels.MediaItemGroup>? mediaItemGroups = null,
+        IEnumerable<InputModels.ReleaseGroup>? releaseGroups = null)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (mediaItemGroups != null)
+        {
+            foreach (var mig in mediaItemGroups)
+            {
+                if (!string.IsNullOrWhiteSpace(mig.Group?.Name))
+                    names.Add(mig.Group.Name);
+            }
+        }
+
+        if (releaseGroups != null)
+        {
+            foreach (var rg in releaseGroups)
+            {
+                if (!string.IsNullOrWhiteSpace(rg.Group?.Name))
+                    names.Add(rg.Group.Name);
+            }
+        }
+
+        return names.ToList();
     }
 }
