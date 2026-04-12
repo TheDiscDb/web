@@ -114,6 +114,17 @@ public class SearchIndexService : ISearchIndexService
         return summary;
     }
 
+    public async Task DeleteItems(IEnumerable<string> keys)
+    {
+        var keyList = keys.ToList();
+        if (keyList.Count == 0) return;
+
+        var searchClient = this.client.GetSearchClient(IndexName);
+        var actions = keyList.Select(k => IndexDocumentsAction.Delete("id", k));
+        var batch = IndexDocumentsBatch.Create(actions.ToArray());
+        await searchClient.IndexDocumentsAsync(batch);
+    }
+
     private IEnumerable<SearchField> GetIndexFields()
     {
         yield return new SimpleField("id", SearchFieldDataType.String)

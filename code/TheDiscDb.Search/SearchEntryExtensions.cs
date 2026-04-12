@@ -9,7 +9,7 @@ public static partial class SearchEntryExtensions
     [GeneratedRegex(@"[^a-zA-Z0-9_\-=]")]
     private static partial Regex InvalidKeyCharsRegex();
 
-    internal static string SanitizeKey(string key) => InvalidKeyCharsRegex().Replace(key, "_");
+    public static string SanitizeKey(string key) => InvalidKeyCharsRegex().Replace(key, "_");
     public static IEnumerable<SearchEntry> ToSearchEntries(this MediaItem item)
     {
         yield return ToSearchEntry(item);
