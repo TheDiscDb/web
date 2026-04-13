@@ -178,7 +178,7 @@ builder.Services.AddScoped<ExternalSearchDataAdaptor>();
 
 var aspnetcoreUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
 var serviceUrl = aspnetcoreUrls?.Split(";").FirstOrDefault(u => u.StartsWith("https"))
-    ?? $"https://localhost:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}";
+    ?? $"http://localhost:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}";
 
 builder.Services
     .AddTheDiscDbClient()
