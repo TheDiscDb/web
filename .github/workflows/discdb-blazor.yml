@@ -1,9 +1,6 @@
 name: Build and deploy Blazor app
 on:
   workflow_dispatch:
-  push:
-    branches: ['main']
-    paths: ['code/**']
 env:
   AZURE_WEBAPP_NAME: thediscdb
   DOTNET_CORE_VERSION: 10.0.x
