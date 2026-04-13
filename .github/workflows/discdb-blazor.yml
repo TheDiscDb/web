@@ -5,7 +5,7 @@ on:
     branches: ['main']
     paths: ['code/**']
 env:
-  AZURE_WEBAPP_NAME: discdb
+  AZURE_WEBAPP_NAME: thediscdb
   DOTNET_CORE_VERSION: 10.0.x
 permissions:
   id-token: write
