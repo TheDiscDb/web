@@ -27,7 +27,7 @@ public class CacheHelper
         string cacheKey = $"Boxset|{normalizedSlug}";
         return await this.cache.GetOrCreateAsync<Boxset>(cacheKey, async entry =>
         {
-            var context = await this.context.CreateDbContextAsync();
+            await using var context = await this.context.CreateDbContextAsync();
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12);
 
 #pragma warning disable CS8603 // Possible null reference return.
@@ -36,6 +36,9 @@ public class CacheHelper
             .Include("Release.Discs")
             .Include("Release.Discs.Titles")
             .Include("Release.Discs.Titles.Item")
+            .Include("Release.Discs.Titles.Item.Chapters")
+            .Include("Release.Discs.Titles.Tracks")
+            .AsSplitQuery()
             .FirstOrDefaultAsync(i => i.Slug == slug, cancellationToken);
             return boxset;
 #pragma warning restore CS8603 // Possible null reference return.
@@ -55,7 +58,7 @@ public class CacheHelper
 
         return await this.cache.GetOrCreateAsync<MediaItem>(cacheKey, async entry =>
         {
-            var context = await this.context.CreateDbContextAsync();
+            await using var context = await this.context.CreateDbContextAsync();
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12);
 
 #pragma warning disable CS8603 // Possible null reference return.
@@ -64,6 +67,8 @@ public class CacheHelper
                 .Include("Releases.Discs")
                 .Include("Releases.Discs.Titles")
                 .Include("Releases.Discs.Titles.Item")
+                .Include("Releases.Discs.Titles.Item.Chapters")
+                .Include("Releases.Discs.Titles.Tracks")
                 .Include("Releases.Contributors")
                 .Include("Releases.ReleaseGroups")
                 .Include("Releases.ReleaseGroups.Group")
