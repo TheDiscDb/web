@@ -10,5 +10,6 @@ public class ImportItem
     public Boxset Boxset { get; set; }
     public MetadataFile Metadata { get; set; }
     public TitleData ImdbData { get; set; }
+    public TmdbMetadata TmdbData { get; set; }
     public string BasePath { get; set; }
 }

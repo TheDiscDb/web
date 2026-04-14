@@ -73,6 +73,21 @@ public class DataImportItemFactory
                     imdbTitle = JsonSerializer.Deserialize<TitleData>(json, DataImporter.JsonOptions);
                 }
 
+                TmdbMetadata tmdbData = null;
+                var tmdbFilePath = this.fileSystem.Path.Combine(inputDirectory, "tmdb.json");
+                if (await this.fileSystem.File.Exists(tmdbFilePath, cancellationToken))
+                {
+                    try
+                    {
+                        json = await this.fileSystem.File.ReadAllText(tmdbFilePath, cancellationToken);
+                        tmdbData = TmdbDataExtractor.Extract(json);
+                    }
+                    catch (JsonException)
+                    {
+                        AnsiConsole.WriteLine($"Warning: Malformed tmdb.json in {inputDirectory}, skipping TMDB enrichment");
+                    }
+                }
+
                 if (string.IsNullOrEmpty(metadata.Type))
                 {
                     // TODO: Throw exception here?
@@ -144,10 +159,17 @@ public class DataImportItemFactory
                     }
                 }
 
+                // Fill metadata gaps from TMDB data when available
+                if (item != null && tmdbData != null)
+                {
+                    tmdbData.FillGaps(item);
+                }
+
                 results.Add(new ImportItem
                 {
                     MediaItem = item,
                     ImdbData = imdbTitle,
+                    TmdbData = tmdbData,
                     Metadata = metadata,
                     BasePath = inputDirectory
                 });
@@ -298,6 +320,30 @@ public class DataImportItemFactory
                 Name = contributor.Name,
                 Source = contributor.Source
             });
+        }
+
+        if (releaseFile.Groups != null)
+        {
+            foreach (var groupName in releaseFile.Groups)
+            {
+                var existingReleaseGroup = release.ReleaseGroups
+                    .FirstOrDefault(rg => rg.Group != null && string.Equals(rg.Group.Name, groupName, StringComparison.OrdinalIgnoreCase));
+
+                if (existingReleaseGroup == null)
+                {
+                    var group = new Group
+                    {
+                        Name = groupName,
+                        Slug = groupName.Slugify()
+                    };
+
+                    release.ReleaseGroups.Add(new ReleaseGroup
+                    {
+                        Release = release,
+                        Group = group
+                    });
+                }
+            }
         }
     }
 

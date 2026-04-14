@@ -398,7 +398,15 @@
                 var dateAdded = DateTimeOffset.UtcNow;
                 if (type.Equals("series", StringComparison.OrdinalIgnoreCase))
                 {
-                    var series = await this.dbContext.MediaItems.FirstOrDefaultAsync(s => s.Slug == metadata.Slug);
+                    var series = await this.dbContext.MediaItems
+                        .Include(i => i.MediaItemGroups)
+                        .ThenInclude(i => i.Group)
+                        .Include(i => i.Releases)
+                        .ThenInclude(r => r.Discs)
+                        .Include(i => i.Releases)
+                        .ThenInclude(r => r.ReleaseGroups)
+                        .ThenInclude(rg => rg.Group)
+                        .FirstOrDefaultAsync(s => s.Slug == metadata.Slug);
                     if (series != null)
                     {
                         this.Map(series, metadata);
@@ -450,10 +458,14 @@
                     tmdbData.FillGaps(item);
                 }
 
-                //if (imdbTitle != null)
-                //{
-                //    await TryAddGroups(item, imdbTitle, cancellationToken);
-                //}
+                if (imdbTitle != null)
+                {
+                    await TryAddGroups(item, imdbTitle, metadata, cancellationToken);
+                }
+                else if (metadata.Groups?.Count > 0)
+                {
+                    await TryAddCustomGroups(item, metadata, cancellationToken);
+                }
 
                 await foreach (var releaseFolder in this.fileSystem.Directory.EnumerateDirectories(inputDirectory, cancellationToken))
                 {
@@ -753,7 +765,10 @@
                 string type = metadata.Type;
                 if (type.Equals("series", StringComparison.OrdinalIgnoreCase))
                 {
-                    var series = await this.dbContext.MediaItems.FirstOrDefaultAsync(s => s.Slug == metadata.Slug);
+                    var series = await this.dbContext.MediaItems
+                        .Include(i => i.MediaItemGroups)
+                        .ThenInclude(i => i.Group)
+                        .FirstOrDefaultAsync(s => s.Slug == metadata.Slug);
                     if (series != null)
                     {
                         this.Map(series, metadata);
@@ -797,7 +812,7 @@
                     await TryAddGroups(item, imdbTitle, metadata, cancellationToken);
                     shouldSave = true;
                 }
-                else if (metadata.Groups.Count > 0)
+                else if (metadata.Groups?.Count > 0)
                 {
                     await TryAddCustomGroups(item, metadata, cancellationToken);
                     shouldSave = true;
@@ -831,6 +846,8 @@
 
         private async Task TryAddCustomGroups(MediaItem item, MetadataFile metadata, CancellationToken cancellationToken)
         {
+            if (metadata.Groups == null) return;
+
             foreach (var groupName in metadata.Groups)
             {
                 var group = await TryGetGroup(groupName, null, cancellationToken);
@@ -849,11 +866,11 @@
                     {
                         Group = group,
                         MediaItem = item,
-                        Role = Roles.Genre
+                        Role = Roles.CustomGroup
                     };
 
                     item.MediaItemGroups.Add(mig);
-                    mediaItemGroupCache.TryAdd($"{Roles.Genre}-{slug}-{item.Id}", mig);
+                    mediaItemGroupCache.TryAdd($"{Roles.CustomGroup}-{slug}-{item.Id}", mig);
                 }
                 else
                 {
@@ -864,7 +881,7 @@
                         {
                             Group = group,
                             MediaItem = item,
-                            Role = Roles.Genre
+                            Role = Roles.CustomGroup
                         };
                         item.MediaItemGroups.Add(newGroup);
                         mediaItemGroupCache.TryAdd($"{Roles.CustomGroup}-{group.Slug}-{item.Id}", newGroup);
