@@ -3,13 +3,19 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using TheDiscDb.Data.Import;
+using TheDiscDb.Data.Import.Pipeline;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.DatabaseMigration;
 
 public class DataSeeder
 {
-    private readonly DataImporter dataImporter;
+    private readonly DataImportItemFactory itemFactory;
+    private readonly ExceptionHandlingMiddleware exceptionMiddleware;
+    private readonly DatabaseImportMiddleware databaseMiddleware;
+    private readonly GroupImportMiddleware groupImportMiddleware;
+    private readonly CoverImageUploadMiddleware coverImageUploadMiddleware;
+    private readonly LatestReleaseUpdateMiddleware latestReleaseMiddleware;
     private readonly IFileSystem fileSystem;
     private readonly IOptions<DatabaseMigrationOptions> options;
     private readonly RoleManager<IdentityRole> roleManager;
@@ -18,9 +24,27 @@ public class DataSeeder
     private readonly IConfiguration configuration;
     private readonly ILogger<DataSeeder> logger;
 
-    public DataSeeder(DataImporter dataImporter, IFileSystem fileSystem, IOptions<DatabaseMigrationOptions> options, RoleManager<IdentityRole> roleManager, UserManager<TheDiscDbUser> userManager, SqlServerDataContext dbContext, IConfiguration configuration, ILogger<DataSeeder> logger)
+    public DataSeeder(
+        DataImportItemFactory itemFactory,
+        ExceptionHandlingMiddleware exceptionMiddleware,
+        DatabaseImportMiddleware databaseMiddleware,
+        GroupImportMiddleware groupImportMiddleware,
+        CoverImageUploadMiddleware coverImageUploadMiddleware,
+        LatestReleaseUpdateMiddleware latestReleaseMiddleware,
+        IFileSystem fileSystem,
+        IOptions<DatabaseMigrationOptions> options,
+        RoleManager<IdentityRole> roleManager,
+        UserManager<TheDiscDbUser> userManager,
+        SqlServerDataContext dbContext,
+        IConfiguration configuration,
+        ILogger<DataSeeder> logger)
     {
-        this.dataImporter = dataImporter ?? throw new ArgumentNullException(nameof(dataImporter));
+        this.itemFactory = itemFactory ?? throw new ArgumentNullException(nameof(itemFactory));
+        this.exceptionMiddleware = exceptionMiddleware ?? throw new ArgumentNullException(nameof(exceptionMiddleware));
+        this.databaseMiddleware = databaseMiddleware ?? throw new ArgumentNullException(nameof(databaseMiddleware));
+        this.groupImportMiddleware = groupImportMiddleware ?? throw new ArgumentNullException(nameof(groupImportMiddleware));
+        this.coverImageUploadMiddleware = coverImageUploadMiddleware ?? throw new ArgumentNullException(nameof(coverImageUploadMiddleware));
+        this.latestReleaseMiddleware = latestReleaseMiddleware ?? throw new ArgumentNullException(nameof(latestReleaseMiddleware));
         this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
         this.options = options ?? throw new ArgumentNullException(nameof(options));
         this.roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
@@ -59,17 +83,36 @@ public class DataSeeder
 
     public async Task SeedItems(IEnumerable<string> items, CancellationToken cancellationToken)
     {
-        foreach (var item in items)
+        var pipeline = new DataImportPipelineBuilder()
+            .Use(this.exceptionMiddleware)
+            .Use(this.latestReleaseMiddleware)
+            .Use(this.coverImageUploadMiddleware)
+            .Use(this.databaseMiddleware)
+            .Use(this.groupImportMiddleware)
+            .Build();
+
+        try
         {
-            this.logger.LogInformation("Importing {Path}", item);
-            try
+            foreach (var itemPath in items)
             {
-                await dataImporter.Import(item, cancellationToken);
+                this.logger.LogInformation("Importing {Path}", itemPath);
+                try
+                {
+                    var importItems = await this.itemFactory.FindMediaItemsToProcess(itemPath, cancellationToken);
+                    foreach (var importItem in importItems)
+                    {
+                        await pipeline.ProcessItem(importItem, cancellationToken);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.logger.LogError(ex, "Unable to import {Path}", itemPath);
+                }
             }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex, "Unable to import {Path}", item);
-            }
+        }
+        finally
+        {
+            await pipeline.DisposeAsync();
         }
     }
 

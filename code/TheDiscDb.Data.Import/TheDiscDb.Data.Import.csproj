@@ -14,6 +14,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Data\TheDiscDb.Data.csproj" />
+        <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />
     </ItemGroup>
 
 </Project>
