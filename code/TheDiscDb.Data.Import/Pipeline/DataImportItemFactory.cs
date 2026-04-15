@@ -321,11 +321,6 @@ public class DataImportItemFactory
                 Source = contributor.Source
             });
         }
-
-        // Group and ReleaseGroup creation is handled by GroupImportMiddleware,
-        // which deduplicates via its groupCache and DB lookups. Creating inline
-        // Group entities here causes duplicate-key violations on IX_Groups_Slug
-        // when multiple items share the same group in a batch import.
     }
 
     private void Map(MediaItem instance, MetadataFile metadata)
