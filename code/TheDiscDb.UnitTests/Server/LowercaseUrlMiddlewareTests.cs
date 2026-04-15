@@ -150,7 +150,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -168,7 +168,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -186,7 +186,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -203,7 +203,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -221,7 +221,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -238,7 +238,7 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(wasCalled).IsTrue();
         await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
-        await Assert.That(context.Response.StatusCode).IsNotBetween(300, 399);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
     }
 
     [Test]
@@ -268,6 +268,102 @@ public class LowercaseUrlMiddlewareTests
 
         await Assert.That(context.Response.StatusCode).IsEqualTo(301);
         await Assert.That(context.Response.Headers.Location.ToString()).IsEqualTo("http://localhost/boxset/lotr-collection");
+    }
+
+    // ====================================================================
+    // Regression: Static file extensions embedded in page URLs
+    //
+    // When a cached page still has relative asset references (before the
+    // absolute-path fix is deployed), the browser resolves them against
+    // the current page URL. This produces requests like:
+    //   /series/.../discs/s01d01/00000/thediscdb.xyz.styles.css
+    // which match the TitleDetail Blazor route and return a full HTML 404
+    // page instead of a clean 404 status.
+    // ====================================================================
+
+    [Test]
+    public async Task Regression_EmbeddedCssRequest_Returns404()
+    {
+        var wasCalled = false;
+        RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
+        var middleware = new LowercaseUrlMiddleware(next);
+        var context = CreateHttpContext("GET",
+            "/series/band-of-brothers-2001/releases/2015-band-of-brothers-blu-ray/discs/s01d01/00000/thediscdb.0hudxurhxl.styles.css");
+
+        await middleware.InvokeAsync(context);
+
+        await Assert.That(wasCalled).IsFalse();
+        await Assert.That(context.Response.StatusCode).IsEqualTo(404);
+    }
+
+    [Test]
+    public async Task Regression_EmbeddedJsRequest_Returns404()
+    {
+        var wasCalled = false;
+        RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
+        var middleware = new LowercaseUrlMiddleware(next);
+        var context = CreateHttpContext("GET",
+            "/movie/the-matrix/releases/some-release/discs/disc-1/blazor.web.js");
+
+        await middleware.InvokeAsync(context);
+
+        await Assert.That(wasCalled).IsFalse();
+        await Assert.That(context.Response.StatusCode).IsEqualTo(404);
+    }
+
+    [Test]
+    public async Task Regression_RootLevelStaticFile_PassesThrough()
+    {
+        // Root-level static files like /favicon.ico should NOT be blocked
+        var wasCalled = false;
+        RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
+        var middleware = new LowercaseUrlMiddleware(next);
+        var context = CreateHttpContext("GET", "/favicon.ico");
+
+        await middleware.InvokeAsync(context);
+
+        await Assert.That(wasCalled).IsTrue();
+    }
+
+    [Test]
+    public async Task Regression_EmbeddedFontRequest_Returns404()
+    {
+        var wasCalled = false;
+        RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
+        var middleware = new LowercaseUrlMiddleware(next);
+        var context = CreateHttpContext("GET",
+            "/series/something/releases/r1/discs/d1/fonts/somefont.woff2");
+
+        await middleware.InvokeAsync(context);
+
+        await Assert.That(wasCalled).IsFalse();
+        await Assert.That(context.Response.StatusCode).IsEqualTo(404);
+    }
+
+    [Test]
+    public async Task Regression_FrameworkJs_PassesThrough()
+    {
+        var wasCalled = false;
+        RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
+        var middleware = new LowercaseUrlMiddleware(next);
+        var context = CreateHttpContext("GET", "/_framework/blazor.web.js");
+
+        await middleware.InvokeAsync(context);
+
+        await Assert.That(wasCalled).IsTrue();
+    }
+
+    [Test]
+    public async Task Regression_ContentCss_PassesThrough()
+    {
+        var wasCalled = false;
+        RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
+        var middleware = new LowercaseUrlMiddleware(next);
+        var context = CreateHttpContext("GET", "/_content/Syncfusion.Blazor.Themes/bootstrap5.css");
+
+        await middleware.InvokeAsync(context);
+
+        await Assert.That(wasCalled).IsTrue();
     }
 
     private static DefaultHttpContext CreateHttpContext(string method, string path, string queryString = "")

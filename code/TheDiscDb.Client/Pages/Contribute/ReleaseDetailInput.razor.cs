@@ -214,7 +214,7 @@ public partial class ReleaseDetailInput : ComponentBase
 
     private void FrontImageUploadSuccess(SuccessEventArgs args)
     {
-        this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{this.id}/front.jpg?width=156&height=231";
+        this.frontImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/front.jpg";
     }
 
     private void FrontImageRemoved(RemovingEventArgs args)
@@ -230,7 +230,7 @@ public partial class ReleaseDetailInput : ComponentBase
 
     private void BackImageUploadSuccess(SuccessEventArgs args)
     {
-        this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{this.id}/back.jpg?width=156&height=231";
+        this.backImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/back.jpg";
     }
 
     private void BackImageRemoved(RemovingEventArgs args)
@@ -281,8 +281,8 @@ public partial class ReleaseDetailInput : ComponentBase
             {
                 try
                 {
-                    request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader);
-                    this.frontImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/front.jpg?width=156&height=231";
+                    request.FrontImageUrl = await UploadImage(this.id.ToString(), details.FrontImageUrl, this.frontImageUploadUrl, "front", frontImageUploader) ?? string.Empty;
+                    this.frontImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{id}/front.jpg";
                 }
                 catch (Exception ex)
                 {
@@ -295,7 +295,7 @@ public partial class ReleaseDetailInput : ComponentBase
                 try
                 {
                     request.BackImageUrl = await UploadImage(this.id.ToString(), details.BackImageUrl, this.backImageUploadUrl, "back", backImageUploader);
-                    this.backImagePreviewUrl = $"/images/Contributions/releaseImages/{id}/back.jpg?width=156&height=231";
+                    this.backImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{id}/back.jpg";
                 }
                 catch (Exception ex)
                 {

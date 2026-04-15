@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
-using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages;
 
@@ -27,7 +25,7 @@ public partial class TitleDetail : ComponentBase
     public string? Extension { get; set; }
 
     [Inject]
-    IDbContextFactory<SqlServerDataContext>? Context { get; set; }
+    public CacheHelper? Cache { get; set; }
 
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
@@ -39,7 +37,12 @@ public partial class TitleDetail : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        if (this.Type!.Equals("Boxset", StringComparison.OrdinalIgnoreCase))
+        if (Cache == null || string.IsNullOrEmpty(Type) || string.IsNullOrEmpty(Slug))
+        {
+            return;
+        }
+
+        if (this.Type.Equals("Boxset", StringComparison.OrdinalIgnoreCase))
         {
             await HandleBoxset();
         }
@@ -57,63 +60,60 @@ public partial class TitleDetail : ComponentBase
         }
     }
 
-    protected async Task HandleMovieOrSeries()
+    private async Task HandleMovieOrSeries()
     {
-        var context = await this.Context!.CreateDbContextAsync();
-        var item = context.MediaItems
-            .Include("Releases")
-            .Include("Releases.Discs")
-            .Include("Releases.Discs.Titles")
-            .Include("Releases.Discs.Titles.Item")
-            .Include("Releases.Discs.Titles.Item.Chapters")
-            .Include("Releases.Discs.Titles.Tracks")
-            .FirstOrDefault(i => i.Type == Type && i.Slug == Slug);
+        var item = await Cache!.GetMediaItemDetail(Type!, Slug!);
         Item = item;
 
-        if (Item != null)
+        if (item == null)
         {
-            Release = item?.Releases.FirstOrDefault(r => !string.IsNullOrEmpty(r.Slug) && r.Slug.Equals(ReleaseSlug, StringComparison.OrdinalIgnoreCase));
+            return;
+        }
 
-            if (Release != null)
-            {
-                Disc = Release.Discs.FirstOrDefault(d => TheDiscDb.SlugOrIndex.Create(d.Slug, d.Index) == TheDiscDb.SlugOrIndex.Create(SlugOrIndex));
+        Release = item.Releases.FirstOrDefault(r =>
+            !string.IsNullOrEmpty(r.Slug) && r.Slug.Equals(ReleaseSlug, StringComparison.OrdinalIgnoreCase));
 
-                if (Disc != null && !string.IsNullOrEmpty(File))
-                {
-                    string sourceFile = NavigationExtensions.GetSourceFile(this.File, this.Extension);
-                    Title = Disc.Titles.FirstOrDefault(t => !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
-                }
-            }
+        if (Release == null)
+        {
+            return;
+        }
+
+        Disc = Release.Discs.FirstOrDefault(d =>
+            TheDiscDb.SlugOrIndex.Create(d.Slug, d.Index) == TheDiscDb.SlugOrIndex.Create(SlugOrIndex));
+
+        if (Disc != null && !string.IsNullOrEmpty(File))
+        {
+            string sourceFile = NavigationExtensions.GetSourceFile(this.File, this.Extension);
+            Title = Disc.Titles.FirstOrDefault(t =>
+                !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
         }
     }
 
-    protected async Task HandleBoxset()
+    private async Task HandleBoxset()
     {
-        var context = await this.Context!.CreateDbContextAsync();
-        var boxset = context.BoxSets
-            .Include("Release")
-            .Include("Release.Discs")
-            .Include("Release.Discs.Titles")
-            .Include("Release.Discs.Titles.Item")
-            .Include("Release.Discs.Titles.Item.Chapters")
-            .Include("Release.Discs.Titles.Tracks")
-            .FirstOrDefault(i => i.Slug == Slug);
+        var boxset = await Cache!.GetBoxsetAsync(Slug!);
         Item = boxset;
 
-        if (Item != null)
+        if (boxset == null)
         {
-            Release = boxset?.Release;
+            return;
+        }
 
-            if (Release != null)
-            {
-                Disc = Release.Discs.FirstOrDefault(d => TheDiscDb.SlugOrIndex.Create(d.Slug, d.Index) == TheDiscDb.SlugOrIndex.Create(SlugOrIndex));
+        Release = boxset.Release;
 
-                if (Disc != null && !string.IsNullOrEmpty(File) && !string.IsNullOrEmpty(Extension))
-                {
-                    string sourceFile = NavigationExtensions.GetSourceFile(this.File, this.Extension);
-                    Title = Disc.Titles.FirstOrDefault(t => !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
-                }
-            }
+        if (Release == null)
+        {
+            return;
+        }
+
+        Disc = Release.Discs.FirstOrDefault(d =>
+            TheDiscDb.SlugOrIndex.Create(d.Slug, d.Index) == TheDiscDb.SlugOrIndex.Create(SlugOrIndex));
+
+        if (Disc != null && !string.IsNullOrEmpty(File))
+        {
+            string sourceFile = NavigationExtensions.GetSourceFile(this.File, this.Extension);
+            Title = Disc.Titles.FirstOrDefault(t =>
+                !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

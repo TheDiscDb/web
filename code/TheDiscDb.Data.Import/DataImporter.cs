@@ -57,26 +57,66 @@
             release.Year = releaseFile.Year;
             release.Title = releaseFile.Title;
             release.ImageUrl = releaseFile.ImageUrl;
+            release.BackImageUrl = releaseFile.BackImageUrl;
             release.ReleaseDate = releaseFile.ReleaseDate;
 
             if (releaseFile.Contributors != null && releaseFile.Contributors.Count > 0)
             {
                 foreach (var contributor in releaseFile.Contributors)
                 {
-                    var existingContributor = await dbContext.Contributors
-                        .FirstOrDefaultAsync(c => c.Name == contributor.Name);
+                    // Check both the change tracker and the database to avoid
+                    // duplicate inserts when multiple releases share a contributor
+                    // within the same SaveChanges batch.
+                    var existingContributor = dbContext.Contributors.Local
+                        .FirstOrDefault(c => string.Equals(c.Name, contributor.Name, StringComparison.OrdinalIgnoreCase))
+                        ?? await dbContext.Contributors
+                            .FirstOrDefaultAsync(c => c.Name == contributor.Name);
 
                     if (existingContributor == null)
                     {
-                        release.Contributors.Add(new InputModels.Contributor
+                        existingContributor = new InputModels.Contributor
                         {
                             Name = contributor.Name,
                             Source = contributor.Source
-                        });
+                        };
+                        dbContext.Contributors.Add(existingContributor);
                     }
-                    else
+
+                    release.Contributors.Add(existingContributor);
+                }
+            }
+
+            if (releaseFile.Groups != null && releaseFile.Groups.Count > 0)
+            {
+                foreach (var groupName in releaseFile.Groups)
+                {
+                    var group = await TryGetGroup(groupName, null, CancellationToken.None);
+                    if (group == null)
                     {
-                        release.Contributors.Add(existingContributor);
+                        group = new Group
+                        {
+                            Name = groupName,
+                            Slug = groupName.Slugify()
+                        };
+                        groupCache.TryAdd(groupName, group);
+                    }
+
+                    var existingReleaseGroup = release.ReleaseGroups
+                        .FirstOrDefault(rg => rg.Group != null && string.Equals(rg.Group.Name, groupName, StringComparison.OrdinalIgnoreCase));
+
+                    if (existingReleaseGroup == null)
+                    {
+                        existingReleaseGroup = release.ReleaseGroups
+                            .FirstOrDefault(rg => rg.GroupId == group.Id && group.Id != 0);
+                    }
+
+                    if (existingReleaseGroup == null)
+                    {
+                        release.ReleaseGroups.Add(new ReleaseGroup
+                        {
+                            Release = release,
+                            Group = group
+                        });
                     }
                 }
             }
@@ -202,6 +242,20 @@
                 await this.fileSystem.File.WriteAllText(this.fileSystem.Path.Combine(boxSetDirectory, BoxSetReleaseFile.Filename), json, cancellationToken);
             }
 
+            // Handle back cover image
+            string backImagePath = this.fileSystem.Path.Combine(boxSetDirectory, "back.jpg");
+            if (await this.fileSystem.File.Exists(backImagePath, cancellationToken))
+            {
+                string backRemotePath = string.Format("boxset/{0}-back.jpg", boxset.Slug);
+                await this.imageStore.Save(backImagePath, backRemotePath, ContentTypes.ImageContentType, cancellationToken);
+                boxset.Release.BackImageUrl = backRemotePath;
+                file.BackImageUrl = backRemotePath;
+
+                // re-save the boxset file
+                string json = JsonSerializer.Serialize(file, JsonOptions);
+                await this.fileSystem.File.WriteAllText(this.fileSystem.Path.Combine(boxSetDirectory, BoxSetReleaseFile.Filename), json, cancellationToken);
+            }
+
             foreach (var discInfo in file.Discs)
             {
                 var foundDisc = await this.FindBoxsetDisc(baseDirectory, file, discInfo, cancellationToken);
@@ -304,6 +358,21 @@
                     imdbTitle = JsonSerializer.Deserialize<TitleData>(json, JsonOptions);
                 }
 
+                TmdbMetadata tmdbData = null;
+                var tmdbFilePath = this.fileSystem.Path.Combine(inputDirectory, "tmdb.json");
+                if (await this.fileSystem.File.Exists(tmdbFilePath, cancellationToken))
+                {
+                    try
+                    {
+                        json = await this.fileSystem.File.ReadAllText(tmdbFilePath, cancellationToken);
+                        tmdbData = TmdbDataExtractor.Extract(json);
+                    }
+                    catch (JsonException)
+                    {
+                        AnsiConsole.WriteLine($"Warning: Malformed tmdb.json in {inputDirectory}, skipping TMDB enrichment");
+                    }
+                }
+
                 if (string.IsNullOrEmpty(metadata.Type))
                 {
                     AnsiConsole.WriteLine("Unable to determine type of item being imported (series or movie)");
@@ -350,6 +419,9 @@
                         .ThenInclude(i => i.Group)
                         .Include(i => i.Releases)
                         .ThenInclude(r => r.Discs)
+                        .Include(i => i.Releases)
+                        .ThenInclude(r => r.ReleaseGroups)
+                        .ThenInclude(rg => rg.Group)
                         .FirstOrDefaultAsync(s => s.Slug == metadata.Slug);
                     if (movie != null)
                     {
@@ -370,6 +442,12 @@
                     }
 
                     item = movie;
+                }
+
+                // Fill metadata gaps from TMDB data when available
+                if (item != null && tmdbData != null)
+                {
+                    tmdbData.FillGaps(item);
                 }
 
                 //if (imdbTitle != null)
@@ -442,6 +520,27 @@
                             }
                         }
 
+                        // Handle back cover image
+                        string backImagePath = this.fileSystem.Path.Combine(releaseFolder, "back.jpg");
+                        if (await this.fileSystem.File.Exists(backImagePath, cancellationToken))
+                        {
+                            string backRemotePath = string.Format("{0}/{1}/{2}-back.jpg", metadata.Type, metadata.Slug, release.Slug);
+                            bool backExists = await this.imageStore.Exists(backRemotePath, cancellationToken);
+                            if (!backExists)
+                            {
+                                await this.imageStore.Save(backImagePath, backRemotePath, ContentTypes.ImageContentType, cancellationToken);
+                            }
+
+                            if (release.BackImageUrl != backRemotePath)
+                            {
+                                release.BackImageUrl = backRemotePath;
+                                releaseFile.BackImageUrl = backRemotePath;
+
+                                json = JsonSerializer.Serialize(releaseFile, JsonOptions);
+                                await this.fileSystem.File.WriteAllText(releaseFilePath, json, cancellationToken);
+                            }
+                        }
+
                         if (!dataImportOptions.Value.CleanImport)
                         {
                             release.Discs.Clear();
@@ -474,9 +573,8 @@
                 }
             }
 
-            // Disable single release support for now
-            return;
-
+            // Single release support is disabled
+#if false
             string singleReleaseFile = this.fileSystem.Path.Combine(inputDirectory, ReleaseFile.Filename);
             if (await this.fileSystem.File.Exists(singleReleaseFile, cancellationToken))
             {
@@ -522,6 +620,9 @@
                         var movie = await this.dbContext.MediaItems
                             .Include(i => i.Releases)
                             .ThenInclude(r => r.Discs)
+                            .Include(i => i.Releases)
+                            .ThenInclude(r => r.ReleaseGroups)
+                            .ThenInclude(rg => rg.Group)
                             .FirstOrDefaultAsync(s => s.Slug == singleMetadata.Slug);
                         if (movie != null)
                         {
@@ -568,6 +669,19 @@
                         await this.fileSystem.File.WriteAllText(singleReleaseFile, json, cancellationToken);
                     }
 
+                    // Handle back cover image
+                    string backImagePath = this.fileSystem.Path.Combine(inputDirectory, "back.jpg");
+                    if (await this.fileSystem.File.Exists(backImagePath, cancellationToken) && string.IsNullOrEmpty(release.BackImageUrl))
+                    {
+                        string backRemotePath = string.Format("{0}/{1}/{2}-back.jpg", singleMetadata.Type, singleMetadata.Slug, release.Slug);
+                        await this.imageStore.Save(backImagePath, backRemotePath, ContentTypes.ImageContentType, cancellationToken);
+                        release.BackImageUrl = backRemotePath;
+                        singleRelease.BackImageUrl = backRemotePath;
+
+                        json = JsonSerializer.Serialize(singleRelease, JsonOptions);
+                        await this.fileSystem.File.WriteAllText(singleReleaseFile, json, cancellationToken);
+                    }
+
                     if (!dataImportOptions.Value.CleanImport)
                     {
                         release.Discs.Clear();
@@ -594,6 +708,7 @@
                     }
                 }
             }
+#endif
         }
 
         public async Task ImportGroups(string inputDirectory, CancellationToken cancellationToken = default)
@@ -617,6 +732,21 @@
                 {
                     json = await this.fileSystem.File.ReadAllText(imdbFilePath, cancellationToken);
                     imdbTitle = JsonSerializer.Deserialize<TitleData>(json, JsonOptions);
+                }
+
+                TmdbMetadata tmdbData = null;
+                var tmdbFilePath = this.fileSystem.Path.Combine(inputDirectory, "tmdb.json");
+                if (await this.fileSystem.File.Exists(tmdbFilePath, cancellationToken))
+                {
+                    try
+                    {
+                        json = await this.fileSystem.File.ReadAllText(tmdbFilePath, cancellationToken);
+                        tmdbData = TmdbDataExtractor.Extract(json);
+                    }
+                    catch (JsonException)
+                    {
+                        AnsiConsole.WriteLine($"Warning: Malformed tmdb.json in {inputDirectory}, skipping TMDB enrichment");
+                    }
                 }
 
                 MediaItem item = null;
@@ -653,6 +783,12 @@
                     }
 
                     item = movie;
+                }
+
+                // Fill metadata gaps from TMDB data when available
+                if (item != null && tmdbData != null)
+                {
+                    tmdbData.FillGaps(item);
                 }
 
                 bool shouldSave = false;

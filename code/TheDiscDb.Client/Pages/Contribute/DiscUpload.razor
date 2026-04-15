@@ -17,7 +17,16 @@
             <p>Provide the MakeMKV log for this disc so we can analyze the structure and allow you to identify items.</p>
         </section>
 
-        @if (showSpinner)
+        @if (!string.IsNullOrEmpty(uploadError))
+        {
+            <div class="upload-error-banner">
+                <div class="alert alert-danger" role="alert">
+                    <strong>Upload failed:</strong> @uploadError
+                </div>
+                <button class="btn btn-secondary" @onclick="ResetError">Try again</button>
+            </div>
+        }
+        else if (showSpinner)
         {
             <div class="log-status">
                 <div class="lds-ripple" title="Checking for logs"><div></div><div></div></div>

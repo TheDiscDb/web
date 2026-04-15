@@ -8,7 +8,7 @@ public class LinqExtensionsTests
         var source = new[] { 1, 2, 3, 4, 5, 6 };
         var batches = source.Batch(3).ToList();
 
-        await Assert.That(batches).HasCount().EqualTo(2);
+        await Assert.That(batches).Count().IsEqualTo(2);
         await Assert.That(batches[0].ToList()).IsEquivalentTo(new[] { 1, 2, 3 });
         await Assert.That(batches[1].ToList()).IsEquivalentTo(new[] { 4, 5, 6 });
     }
@@ -19,7 +19,7 @@ public class LinqExtensionsTests
         var source = new[] { 1, 2, 3, 4, 5 };
         var batches = source.Batch(3).ToList();
 
-        await Assert.That(batches).HasCount().EqualTo(2);
+        await Assert.That(batches).Count().IsEqualTo(2);
         await Assert.That(batches[0].ToList()).IsEquivalentTo(new[] { 1, 2, 3 });
         await Assert.That(batches[1].ToList()).IsEquivalentTo(new[] { 4, 5 });
     }
@@ -30,7 +30,7 @@ public class LinqExtensionsTests
         var source = Array.Empty<int>();
         var batches = source.Batch(3).ToList();
 
-        await Assert.That(batches).HasCount().EqualTo(0);
+        await Assert.That(batches).Count().IsEqualTo(0);
     }
 
     [Test]
@@ -39,7 +39,7 @@ public class LinqExtensionsTests
         var source = new[] { 42 };
         var batches = source.Batch(3).ToList();
 
-        await Assert.That(batches).HasCount().EqualTo(1);
+        await Assert.That(batches).Count().IsEqualTo(1);
         await Assert.That(batches[0].ToList()).IsEquivalentTo(new[] { 42 });
     }
 
@@ -49,7 +49,7 @@ public class LinqExtensionsTests
         var source = new[] { 1, 2, 3 };
         var batches = source.Batch(1).ToList();
 
-        await Assert.That(batches).HasCount().EqualTo(3);
+        await Assert.That(batches).Count().IsEqualTo(3);
         await Assert.That(batches[0].ToList()).IsEquivalentTo(new[] { 1 });
         await Assert.That(batches[1].ToList()).IsEquivalentTo(new[] { 2 });
         await Assert.That(batches[2].ToList()).IsEquivalentTo(new[] { 3 });
@@ -61,7 +61,7 @@ public class LinqExtensionsTests
         var source = new[] { 1, 2 };
         var batches = source.Batch(10).ToList();
 
-        await Assert.That(batches).HasCount().EqualTo(1);
+        await Assert.That(batches).Count().IsEqualTo(1);
         await Assert.That(batches[0].ToList()).IsEquivalentTo(new[] { 1, 2 });
     }
 
@@ -71,7 +71,7 @@ public class LinqExtensionsTests
         var source = new[] { "a", "b", "c", "d" };
         var batches = source.Batch(2).ToList();
 
-        await Assert.That(batches).HasCount().EqualTo(2);
+        await Assert.That(batches).Count().IsEqualTo(2);
         await Assert.That(batches[0].ToList()).IsEquivalentTo(new[] { "a", "b" });
         await Assert.That(batches[1].ToList()).IsEquivalentTo(new[] { "c", "d" });
     }

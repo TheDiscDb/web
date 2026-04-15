@@ -7,5 +7,10 @@
     <link rel="canonical" href="https://thediscdb.com/movies" />
 </HeadContent>
 
-<h1>All Movies</h1>
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Movies" Items='[("Home", "/")]' />
+
+<div class="page-header">
+    <h1>All Movies</h1>
+    <div class="page-header__sub">Blu-ray, 4K UHD &amp; DVD releases</div>
+</div>
 <TheDiscDb.Client.Pages.Movies @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />

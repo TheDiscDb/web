@@ -34,6 +34,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 builder.Services.AddTransient<ContributionEndpoints>();
+builder.Services.AddTransient<EngramEndpoints>();
 
 builder.Services.AddControllersWithViews( options =>
 {
@@ -117,7 +118,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddScoped<TheDiscDb.Components.Account.IdentityRedirectManager>();
 
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JGaF5cXGpCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH1ceHRVQ2ZcVEV1V0BWYEs=");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdlWXtfcXVcRWdYVk13XUtWYEo=");
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddScoped<SfDialogService>();
 
@@ -175,8 +176,9 @@ builder.Services.Configure<Fantastic.TheMovieDb.TheMovieDbOptions>(builder.Confi
 builder.Services.AddScoped<Fantastic.TheMovieDb.TheMovieDbClient>();
 builder.Services.AddScoped<ExternalSearchDataAdaptor>();
 
-var urls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")!.Split(";");
-var serviceUrl = urls.FirstOrDefault(u => u.StartsWith("https"));
+var aspnetcoreUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+var serviceUrl = aspnetcoreUrls?.Split(";").FirstOrDefault(u => u.StartsWith("https"))
+    ?? $"http://localhost:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}";
 
 builder.Services
     .AddTheDiscDbClient()
@@ -311,6 +313,9 @@ var app = builder.Build();
 
 var contributionEndpoints = app.Services.GetRequiredService<ContributionEndpoints>();
 contributionEndpoints.MapEndpoints(app);
+
+var engramEndpoints = app.Services.GetRequiredService<EngramEndpoints>();
+engramEndpoints.MapEndpoints(app);
 
 app.MapDefaultEndpoints();
 

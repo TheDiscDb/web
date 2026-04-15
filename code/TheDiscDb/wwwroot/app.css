@@ -1,10 +1,57 @@
 body {
-    font-family: Arial;
+    font-family: 'DM Sans', Arial, sans-serif;
     overflow-x: hidden;
 }
 
 h1:focus {
     outline: none;
+}
+
+/* Page headers — refined editorial style */
+.page-header {
+    padding: 0.5rem 0 0.75rem;
+    margin-bottom: 1.25rem;
+    position: relative;
+}
+
+.page-header h1 {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 1.75rem;
+    letter-spacing: -0.02em;
+    color: #00213F;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.page-header h1 .page-header__accent {
+    font-weight: 400;
+    color: #5a7a94;
+}
+
+.page-header__sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: #5a7a94;
+    margin-top: 0.15rem;
+    letter-spacing: 0.02em;
+}
+
+.page-header__desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 400;
+    color: #5a7a94;
+    margin-top: 0.35rem;
+    max-width: 65ch;
+    line-height: 1.5;
+}
+
+@media (max-width: 575.98px) {
+    .page-header h1 {
+        font-size: 1.35rem;
+    }
 }
 
 /* Responsive heading sizes for mobile */
@@ -256,10 +303,14 @@ pre code {
     padding: 2rem;
     border-radius: 16px;
     box-shadow: 0 25px 60px rgba(0, 33, 63, 0.25);
+    font-family: 'DM Sans', sans-serif;
 }
 
     .contribute-hero h1 {
         margin-bottom: .5rem;
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.02em;
     }
 
     .contribute-hero p {
@@ -917,10 +968,6 @@ pre code {
 
 .about-page .info-card {
     padding: 1.75rem;
-}
-
-.about-hero p {
-    max-width: 65ch;
 }
 
 .about-page .contribute-cta-card {

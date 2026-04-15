@@ -26,35 +26,74 @@ else
             <img src="/images/@Item.ImageUrl?width=345&height=518" alt="@Item.FullTitle" class="mediaItemDetailCover img-fluid" style="max-width: 345px;" />
             <div class="vstack">
                 <h1>@Item.FullTitle</h1>
-                <div class="facts flex-wrap">
-                    <span class="certification">@Item.ContentRating</span>
-                    <span class="genres"><GroupList Item="@Item" ListText="@Item.Genres" Role="Genre" /></span>
-                    <span class="runtime">@Item.Runtime</span>
-                </div>
+                @if (HasAnyFacts)
+                {
+                    <div class="facts flex-wrap">
+                        @if (!string.IsNullOrWhiteSpace(Item.ContentRating))
+                        {
+                            <span class="certification">@Item.ContentRating</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Item.Genres))
+                        {
+                            <span class="genres"><GroupList Item="@Item" ListText="@Item.Genres" Role="Genre" /></span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Item.Runtime))
+                        {
+                            <span class="runtime">@Item.Runtime</span>
+                        }
+                    </div>
+                }
                 <div>
-                    <h3 class="tagline" dir="auto">@Item.Tagline</h3>
+                    @if (!string.IsNullOrWhiteSpace(Item.Tagline))
+                    {
+                        <h3 class="tagline" dir="auto">@Item.Tagline</h3>
+                    }
                     <h3 dir="auto">Overview</h3>
                     <div class="overview" dir="auto">
                         <p>@Item.Plot</p>
                     </div>
                 </div>
-                <div class="d-flex flex-column flex-sm-row gap-3">
-                    <div class="vstack">
-                        <p class="people-role">Directors</p>
-                        <p class="people"><GroupList Item="@Item" ListText="@Item.Directors" Role="Director" /></p>
+                @if (HasAnyPeople)
+                {
+                    <div class="d-flex flex-column flex-sm-row gap-3">
+                        @if (!string.IsNullOrWhiteSpace(Item.Directors))
+                        {
+                            <div class="vstack">
+                                <p class="people-role">Directors</p>
+                                <div class="people"><GroupList Item="@Item" ListText="@Item.Directors" Role="Director" /></div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Item.Stars))
+                        {
+                            <div class="vstack">
+                                <p class="people-role">Stars</p>
+                                <div class="people"><GroupList Item="@Item" ListText="@Item.Stars" Role="Actor" /></div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Item.Writers))
+                        {
+                            <div class="vstack">
+                                <p class="people-role">Writers</p>
+                                <div class="people"><GroupList Item="@Item" ListText="@Item.Writers" Role="Writer" /></div>
+                            </div>
+                        }
                     </div>
-                    <div class="vstack">
-                        <p class="people-role">Stars</p>
-                        <p class="people"><GroupList Item="@Item" ListText="@Item.Stars" Role="Actor" /></p>
-                    </div>
-                    <div class="vstack">
-                        <p class="people-role">Writers</p>
-                        <p class="people"><GroupList Item="@Item" ListText="@Item.Writers" Role="Writer" /></p>
-                    </div>
-                </div>
+                }
+
+                @if (CustomGroups.Count > 0)
+                {
+                    <section class="categories-section">
+                        <p class="people-role">Categories</p>
+                        <div class="category-list">
+                            @foreach (var group in CustomGroups)
+                            {
+                                <a href="/g/@group.Slug" class="category-chip">@group.Name</a>
+                            }
+                        </div>
+                    </section>
+                }
             </div>
         </div>
     </div>
-
     <ReleaseList Item="@Item" Releases="Releases" />
 }

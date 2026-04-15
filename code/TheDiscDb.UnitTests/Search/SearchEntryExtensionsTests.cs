@@ -59,7 +59,7 @@ public class SearchEntryExtensionsTests
 
         var entries = item.ToSearchEntries().ToList();
 
-        await Assert.That(entries).HasCount().EqualTo(1);
+        await Assert.That(entries).Count().IsEqualTo(1);
     }
 
     [Test]
@@ -95,7 +95,7 @@ public class SearchEntryExtensionsTests
 
         var entries = boxset.ToSearchEntries().ToList();
 
-        await Assert.That(entries).HasCount().EqualTo(1);
+        await Assert.That(entries).Count().IsEqualTo(1);
     }
 
     [Test]

@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>latest</LangVersion>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageId>TheDiscDb.MakeMkv</PackageId>
+		<Version>3.0.0</Version>
+		<Authors>lfoust</Authors>
+		<Company>TheDiscDb</Company>
+		<PackageDescription>Helper classes to interact with MakeMkv for thediscdb.com</PackageDescription>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>discdb;makemkv;disc;bluray;4k;ripping</PackageTags>
+		<PackageProjectUrl>https://thediscdb.com</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/TheDiscDb/web</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.5" />
+		<PackageReference Include="Fantastic.FileSystem" Version="2.0.0" />
+	</ItemGroup>
+
+</Project>

@@ -23,14 +23,14 @@ public class ContributionHistoryServiceTests
         await service.RecordCreatedAsync(42, "user-1");
 
         var entries = await db.ContributionHistory.ToListAsync();
-        await Assert.That(entries).HasCount().EqualTo(1);
+        await Assert.That(entries).Count().IsEqualTo(1);
 
         var entry = entries[0];
         await Assert.That(entry.ContributionId).IsEqualTo(42);
         await Assert.That(entry.UserId).IsEqualTo("user-1");
         await Assert.That(entry.Type).IsEqualTo(ContributionHistoryType.Created);
         await Assert.That(entry.Description).IsEqualTo("Contribution created");
-        await Assert.That(entry.TimeStamp).IsNotNull();
+        await Assert.That(entry.TimeStamp).IsNotEqualTo(default);
     }
 
     [Test]
@@ -42,7 +42,7 @@ public class ContributionHistoryServiceTests
         await service.RecordStatusChangedAsync(42, "user-1", UserContributionStatus.Pending, UserContributionStatus.Approved);
 
         var entries = await db.ContributionHistory.ToListAsync();
-        await Assert.That(entries).HasCount().EqualTo(1);
+        await Assert.That(entries).Count().IsEqualTo(1);
 
         var entry = entries[0];
         await Assert.That(entry.ContributionId).IsEqualTo(42);
@@ -59,7 +59,7 @@ public class ContributionHistoryServiceTests
         await service.RecordDeletedAsync(42, "user-1");
 
         var entries = await db.ContributionHistory.ToListAsync();
-        await Assert.That(entries).HasCount().EqualTo(1);
+        await Assert.That(entries).Count().IsEqualTo(1);
 
         var entry = entries[0];
         await Assert.That(entry.ContributionId).IsEqualTo(42);
@@ -93,7 +93,7 @@ public class ContributionHistoryServiceTests
         await service.RecordDeletedAsync(2, "user-2");
 
         var entries = await db.ContributionHistory.ToListAsync();
-        await Assert.That(entries).HasCount().EqualTo(3);
+        await Assert.That(entries).Count().IsEqualTo(3);
         await Assert.That(entries.Count(e => e.ContributionId == 1)).IsEqualTo(2);
         await Assert.That(entries.Count(e => e.ContributionId == 2)).IsEqualTo(1);
     }

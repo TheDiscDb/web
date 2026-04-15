@@ -34,7 +34,7 @@ public partial class Messages : ComponentBase
                 loadError = "Failed to load messages.";
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             loadError = "Failed to load messages. Please try again.";
         }

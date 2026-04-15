@@ -8,6 +8,12 @@ using TheDiscDb.Web.Data;
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.AddServiceDefaults();
+
+var seedingHealthCheck = new SeedingHealthCheck();
+builder.Services.AddSingleton(seedingHealthCheck);
+builder.Services.AddHealthChecks()
+    .AddCheck("seeding", seedingHealthCheck);
+
 builder.Services.AddHostedService<Worker>();
 
 builder.Services.AddOpenTelemetry()
@@ -37,6 +43,7 @@ builder.Services.Configure<DataImporterOptions>(builder.Configuration.GetSection
 builder.Services.AddScoped<DataImporter>();
 builder.Services.Configure<DatabaseMigrationOptions>(builder.Configuration.GetSection("DatabaseMigration"));
 builder.Services.AddScoped<DataSeeder>();
+builder.Services.AddScoped<BlobSyncService>();
 
 var host = builder.Build();
 host.Run();

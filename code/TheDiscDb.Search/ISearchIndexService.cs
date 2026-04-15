@@ -4,6 +4,7 @@ public interface ISearchIndexService
 {
     Task<BuildIndexSummary> BuildIndex();
     Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = 10);
+    Task DeleteItems(IEnumerable<string> keys);
 }
 
 public class NullSearchIndexService : ISearchIndexService
@@ -30,5 +31,10 @@ public class NullSearchIndexService : ISearchIndexService
         };
 
         return Task.FromResult(summary);
+    }
+
+    public Task DeleteItems(IEnumerable<string> keys)
+    {
+        return Task.CompletedTask;
     }
 }

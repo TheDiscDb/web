@@ -43,7 +43,7 @@ public class DataImportPipelineTests
 
         await pipeline.ProcessItem(new ImportItem());
 
-        await Assert.That(callOrder).HasCount().EqualTo(3);
+        await Assert.That(callOrder).Count().IsEqualTo(3);
         await Assert.That(callOrder[0]).IsEqualTo("first");
         await Assert.That(callOrder[1]).IsEqualTo("second");
         await Assert.That(callOrder[2]).IsEqualTo("third");
@@ -62,7 +62,7 @@ public class DataImportPipelineTests
 
         await pipeline.ProcessItem(new ImportItem());
 
-        await Assert.That(callOrder).HasCount().EqualTo(1);
+        await Assert.That(callOrder).Count().IsEqualTo(1);
         await Assert.That(callOrder[0]).IsEqualTo("first");
     }
 

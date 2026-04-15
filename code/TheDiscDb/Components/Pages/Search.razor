@@ -10,7 +10,9 @@
 </HeadContent>
 
 <div class="search-results-page">
-    <h1>Search results for '<em>@SearchTerm</em>'</h1>
+    <div class="page-header">
+        <h1>Search results for <span class="page-header__accent">'@SearchTerm'</span></h1>
+    </div>
 
     @if (string.IsNullOrWhiteSpace(SearchTerm))
     {
@@ -31,7 +33,7 @@
             @foreach (var item in Results)
             {
                 <a href="@item.RelativeUrl?.ToLower()" class="search-result-card" title="@item.Title">
-                    <MediaImage Url="@item?.ImageUrl" Width="156" Height="231" Title="@item?.Title" />
+                    <MediaImage Url="@item.ImageUrl" Width="156" Height="231" Title="@item.Title" />
                     <div class="search-result-overlay">
                         <span class="search-result-title">@item.Title</span>
                         @if (!string.IsNullOrEmpty(item.Type))

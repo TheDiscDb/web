@@ -83,7 +83,7 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
         return $"https://www.themoviedb.org/{type}/{this.Contribution?.ExternalId}";
     }
 
-    string PowershellCommand => $".\\ContributionBuddy.exe generate {this.Contribution?.EncodedId}";
+    string PowershellCommand => $".\\ContributionBuddy.exe generate {this.Contribution?.EncodedId} import pr";
 
     public async ValueTask DisposeAsync() => await database.DisposeAsync();
 

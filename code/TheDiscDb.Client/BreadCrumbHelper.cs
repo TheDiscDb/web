@@ -33,7 +33,7 @@ public static partial class BreadCrumbHelper
         return (Text: GetContributionLinkText(contribution), Url: $"/contribution/{contribution.EncodedId}");
     }
 
-    public static (string Text, string Url) GetContributionDiscLink(IContributionDisplay contribution, IContributiionDiscDisplay disc)
+    public static (string Text, string Url) GetContributionDiscLink(IContributionDisplay contribution, IContributionDiscDisplay disc)
     {
         return (Text: $"{disc.Name} ({disc.Format})", Url: $"/contribution/{contribution.EncodedId}/discs/{disc.EncodedId}");
     }
@@ -48,6 +48,29 @@ public static partial class BreadCrumbHelper
         (Text: $"{disc?.Name}", Url: $"/admin/contribution/{contribution?.Id}/discs/{disc?.Id}");
 
     public static (string Text, string Url) GetRootAdminLink() => (Text: "Admin", Url: "/admin");
+
+    /// <summary>
+    /// Converts an ImageSharp image URL (e.g., /images/Contributions/{id}/front.jpg)
+    /// to a direct blob-serving URL that bypasses ImageSharp caching.
+    /// Used on contribution pages where images may be replaced and need to be fresh.
+    /// </summary>
+    public static string GetDirectImageUrl(string? imageUrl)
+    {
+        if (string.IsNullOrEmpty(imageUrl))
+            return string.Empty;
+
+        // /images/Contributions/{id}/front.jpg → /api/contribute/images/Contributions/{id}/front.jpg
+        if (imageUrl.StartsWith("/images/", StringComparison.OrdinalIgnoreCase))
+            return "/api/contribute/images/" + imageUrl["/images/".Length..];
+
+        return imageUrl;
+    }
+
+    public static string GetDirectImageUrl(string? imageUrl, long version)
+    {
+        string url = GetDirectImageUrl(imageUrl);
+        return version > 0 ? $"{url}?v={version}" : url;
+    }
 }
 
 public static partial class BreadCrumbHelper

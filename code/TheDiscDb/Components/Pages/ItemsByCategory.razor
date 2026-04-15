@@ -13,6 +13,8 @@ else
         <link rel="canonical" href="https://thediscdb.com/g/@Uri.EscapeDataString(Slug ?? "")" />
     </HeadContent>
 
-    <h1>Items related to '@(groupName ?? Slug)'</h1>
+    <div class="page-header">
+        <h1>Items related to <span class="page-header__accent">'@(groupName ?? Slug)'</span></h1>
+    </div>
     <TheDiscDb.Client.Pages.ItemsByCategory Slug="@Slug" @rendermode="new InteractiveWebAssemblyRenderMode(prerender: true)" />
 }

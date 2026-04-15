@@ -1,4 +1,6 @@
-﻿namespace TheDiscDb.Data.Import
+﻿#nullable enable
+
+namespace TheDiscDb.Data.Import
 {
     using System.Collections.Generic;
 
@@ -10,8 +12,8 @@
 
     public class CompanyNameMapping
     {
-        public string FullName { get; set; }
-        public string ShortName { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string ShortName { get; set; } = string.Empty;
     }
 
     public class BlobStorageOptions

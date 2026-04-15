@@ -3,90 +3,91 @@ schema {
   mutation: ContributionMutations
 }
 
-interface Error {
+input UserContributionDiscHashItemSortInput {
+  id: SortEnumType
+  userContribution: UserContributionSortInput
+  discHash: SortEnumType
+  index: SortEnumType
+  name: SortEnumType
+  creationTime: SortEnumType
+  size: SortEnumType
+}
+
+type UpdateContributionPayload {
+  userContribution: UserContribution
+  errors: [UpdateContributionError!]
+}
+
+type ExternalDataForContributionPayload {
+  externalMetadata: ExternalMetadata
+  errors: [ExternalDataForContributionError!]
+}
+
+input ContributionHistorySortInput {
+  id: SortEnumType
+  contributionId: SortEnumType
+  timeStamp: SortEnumType
+  description: SortEnumType
+  userId: SortEnumType
+  type: SortEnumType
+}
+
+input MarkMessagesAsReadInput {
+  contributionId: String!
+}
+
+union DiscUploadStatusError = DiscNotFoundError | FieldRequiredError | InvalidIdError
+
+type LogsNotFoundError implements Error {
   message: String!
 }
 
-type AddAudioTrackToItemPayload {
-  userContributionAudioTrack: UserContributionAudioTrack
-  errors: [AddAudioTrackToItemError!]
+type CreateDiscPayload {
+  userContributionDisc: UserContributionDisc
+  errors: [CreateDiscError!]
 }
 
-type AddChapterToItemPayload {
-  userContributionChapter: UserContributionChapter
-  errors: [AddChapterToItemError!]
+input ApiKeyInfoFilterInput {
+  and: [ApiKeyInfoFilterInput!]
+  or: [ApiKeyInfoFilterInput!]
+  name: StringOperationFilterInput
+  keyPrefix: StringOperationFilterInput
+  isActive: BooleanOperationFilterInput
+  logUsage: BooleanOperationFilterInput
+  roles: StringOperationFilterInput
+  ownerEmail: StringOperationFilterInput
+  createdAt: DateTimeOperationFilterInput
+  expiresAt: DateTimeOperationFilterInput
+  lastUsedAt: DateTimeOperationFilterInput
 }
 
-type AddItemToDiscPayload {
-  userContributionDiscItem: UserContributionDiscItem
-  errors: [AddItemToDiscError!]
+input DateTimeOperationFilterInput {
+  eq: DateTime
+  neq: DateTime
+  in: [DateTime]
+  nin: [DateTime]
+  gt: DateTime
+  ngt: DateTime
+  gte: DateTime
+  ngte: DateTime
+  lt: DateTime
+  nlt: DateTime
+  lte: DateTime
+  nlte: DateTime
 }
 
-type AmazonProductMetadata {
-  asin: String
-  title: String
-  upc: String
-  frontImageUrl: String
-  backImageUrl: String
-  releaseDate: DateTime
-  numberOfDiscs: Int
-  aspectRatio: String
-  isDiscontinued: Boolean
-  mpaaRating: String
-  modelNumber: String
-  director: String
-  mediaFormat: String
-  actors: String
-  producers: String
-  language: String
-  dubbed: String
-  subtitles: String
-  studio: String
+type SeriesEpisodeNames {
+  tryFind(season: String! episode: String!): SeriesEpisodeNameEntry
+  seriesTitle: String!
+  seriesYear: String!
+  episodes: [SeriesEpisodeNameEntry!]!
 }
 
-type AuthenticationError implements Error {
-  message: String!
-}
-
-"A connection to a list of items."
-type ContributionChatConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [ContributionChatEdge!]
-  "A flattened list of the nodes."
-  nodes: [UserMessage!]
-  "Identifies the total count of items in the connection."
-  totalCount: Int! @cost(weight: "10")
-}
-
-"An edge in a connection."
-type ContributionChatEdge {
-  "A cursor for use in pagination."
-  cursor: String!
-  "The item at the end of the edge."
-  node: UserMessage!
-}
-
-type ContributionHistory {
-  id: Int!
-  contributionId: Int!
-  timeStamp: DateTime!
-  description: String!
-  userId: String!
-  type: ContributionHistoryType!
-}
-
-"A connection to a list of items."
-type ContributionHistoryConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [ContributionHistoryEdge!]
-  "A flattened list of the nodes."
-  nodes: [ContributionHistory!]
-  "Identifies the total count of items in the connection."
-  totalCount: Int! @cost(weight: "10")
+input UserContributionChapterSortInput {
+  id: SortEnumType
+  index: SortEnumType
+  title: SortEnumType
+  item: UserContributionDiscItemSortInput
 }
 
 "An edge in a connection."
@@ -97,86 +98,15 @@ type ContributionHistoryEdge {
   node: ContributionHistory!
 }
 
-type ContributionMutations {
-  addAudioTrackToItem(input: AddAudioTrackToItemInput!): AddAudioTrackToItemPayload! @authorize @cost(weight: "10")
-  addChapterToItem(input: AddChapterToItemInput!): AddChapterToItemPayload! @authorize @cost(weight: "10")
-  addItemToDisc(input: AddItemToDiscInput!): AddItemToDiscPayload! @authorize @cost(weight: "10")
-  createContribution(input: CreateContributionInput!): CreateContributionPayload! @authorize @cost(weight: "10")
-  createDisc(input: CreateDiscInput!): CreateDiscPayload! @authorize @cost(weight: "10")
-  deleteContribution(input: DeleteContributionInput!): DeleteContributionPayload! @cost(weight: "10")
-  deleteItemFromDisc(input: DeleteItemFromDiscInput!): DeleteItemFromDiscPayload! @cost(weight: "10")
-  editItemOnDisc(input: EditItemOnDiscInput!): EditItemOnDiscPayload! @authorize @cost(weight: "10")
-  discLogs(input: DiscLogsInput!): DiscLogsPayload! @authorize @cost(weight: "10")
-  discUploadStatus(input: DiscUploadStatusInput!): DiscUploadStatusPayload! @authorize @cost(weight: "10")
-  episodeNames(input: EpisodeNamesInput!): EpisodeNamesPayload! @authorize @cost(weight: "10")
-  externalData(input: ExternalDataInput!): ExternalDataPayload! @cost(weight: "10")
-  externalDataForContribution(input: ExternalDataForContributionInput!): ExternalDataForContributionPayload! @authorize @cost(weight: "10")
-  hashDisc(input: HashDiscInput!): HashDiscPayload! @authorize @cost(weight: "10")
-  sendAdminMessage(input: SendAdminMessageInput!): SendAdminMessagePayload! @authorize(policy: "Admin") @cost(weight: "10")
-  sendUserMessage(input: SendUserMessageInput!): SendUserMessagePayload! @authorize @cost(weight: "10")
-  markMessagesAsRead(input: MarkMessagesAsReadInput!): MarkMessagesAsReadPayload! @authorize @cost(weight: "10")
-  updateDisc(input: UpdateDiscInput!): UpdateDiscPayload! @authorize @cost(weight: "10")
-}
-
-type ContributionNotFoundError implements Error {
-  message: String!
-}
-
-type MessageThread {
-  contributionId: Int!
-  encodedContributionId: String!
-  contributionTitle: String!
-  mediaTitle: String
-  lastMessagePreview: String!
-  lastMessageAt: DateTime!
-  unreadCount: Int!
-  totalCount: Int!
-}
-
-type ContributionQuery {
-  contributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput @cost(weight: "10") order: [UserContributionSortInput!] @cost(weight: "10")): ContributionsConnection @authorize(policy: "Admin") @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
-  myContributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput @cost(weight: "10") order: [UserContributionSortInput!] @cost(weight: "10")): MyContributionsConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
-  contributionHistory(contributionId: Int! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [ContributionHistorySortInput!] @cost(weight: "10")): ContributionHistoryConnection @authorize(policy: "Admin") @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
-  contributionChat(contributionId: String! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [UserMessageSortInput!] @cost(weight: "10")): ContributionChatConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
-  hasUnreadMessages: Boolean! @authorize @cost(weight: "10")
-  myMessages("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [UserMessageSortInput!] @cost(weight: "10")): MyMessagesConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
-  messageThreads: [MessageThread!]! @authorize @cost(weight: "10")
-  amazonProductMetadata(asin: String!): AmazonProductMetadata @authorize @cost(weight: "10")
-}
-
-"A connection to a list of items."
-type ContributionsConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [ContributionsEdge!]
-  "A flattened list of the nodes."
-  nodes: [UserContribution!]
-  "Identifies the total count of items in the connection."
-  totalCount: Int! @cost(weight: "10")
-}
-
 "An edge in a connection."
-type ContributionsEdge {
+type MyContributionsEdge {
   "A cursor for use in pagination."
   cursor: String!
   "The item at the end of the edge."
   node: UserContribution!
 }
 
-type CouldNotParseLogsError implements Error {
-  message: String!
-}
-
-type CreateContributionPayload {
-  userContribution: UserContribution
-  errors: [CreateContributionError!]
-}
-
-type MarkMessagesAsReadPayload {
-  boolean: Boolean
-  errors: [MarkMessagesAsReadError!]
-}
+union DeleteItemFromDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 "A connection to a list of items."
 type MyMessagesConnection {
@@ -187,194 +117,26 @@ type MyMessagesConnection {
   "A flattened list of the nodes."
   nodes: [UserMessage!]
   "Identifies the total count of items in the connection."
-  totalCount: Int! @cost(weight: "10")
-}
-
-"An edge in a connection."
-type MyMessagesEdge {
-  "A cursor for use in pagination."
-  cursor: String!
-  "The item at the end of the edge."
-  node: UserMessage!
-}
-
-type CreateDiscPayload {
-  userContributionDisc: UserContributionDisc
-  errors: [CreateDiscError!]
-}
-
-type DeleteContributionPayload {
-  userContribution: UserContribution
-  errors: [DeleteContributionError!]
-}
-
-type DeleteItemFromDiscPayload {
-  userContributionDiscItem: UserContributionDiscItem
-  errors: [DeleteItemFromDiscError!]
+  totalCount: Int!
 }
 
 type DiscHash {
   hash: String!
 }
 
-type DiscInfo {
-  name: String
-  type: String
-  languageCode: String
-  language: String
-  titles: [Title!]!
-  hashInfo: [HashInfoLogLine!]!
-}
-
-type DiscItemNotFoundError implements Error {
-  message: String!
-}
-
-type DiscLogs {
-  info: DiscInfo
-  disc: UserContributionDisc
-  contribution: UserContribution
-}
-
-type DiscLogsPayload {
-  discLogs: DiscLogs
-  errors: [DiscLogsError!]
-}
-
-type DiscNotFoundError implements Error {
-  message: String!
-}
-
-type DiscUploadStatus {
-  logsUploaded: Boolean!
-}
-
-type DiscUploadStatusPayload {
-  discUploadStatus: DiscUploadStatus
-  errors: [DiscUploadStatusError!]
-}
-
-type EditItemOnDiscPayload {
-  userContributionDiscItem: UserContributionDiscItem
-  errors: [EditItemOnDiscError!]
-}
-
-type EpisodeNamesPayload {
-  seriesEpisodeNames: SeriesEpisodeNames
-  errors: [EpisodeNamesError!]
-}
-
-type ExternalDataForContributionPayload {
-  externalMetadata: ExternalMetadata
-  errors: [ExternalDataForContributionError!]
-}
-
-type ExternalDataNotFoundError implements Error {
-  message: String!
-}
-
-type ExternalDataPayload {
-  externalMetadata: ExternalMetadata
-  errors: [ExternalDataError!]
-}
-
-type ExternalDataSerializationError implements Error {
-  message: String!
-}
-
-type ExternalMetadata {
-  id: Int!
-  title: String!
-  year: Int!
-  imageUrl: String!
-}
-
-type FieldRequiredError implements Error {
-  message: String!
-}
-
-type HashDiscPayload {
-  discHash: DiscHash
-  errors: [HashDiscError!]
-}
-
-type HashInfoLogLine {
-  matches(prefix: String!): Boolean!
-  index: Int!
-  name: String
-  creationTime: DateTime!
-  size: Long!
-  originalLine: String
-  prefix: String
-}
-
-type InvalidContributionStatusError implements Error {
-  message: String!
-}
-
-type InvalidIdError implements Error {
-  message: String!
-}
-
-type InvalidOwnershipError implements Error {
-  message: String!
-}
-
-type LogsNotFoundError implements Error {
-  message: String!
-}
-
-"A connection to a list of items."
-type MyContributionsConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [MyContributionsEdge!]
-  "A flattened list of the nodes."
-  nodes: [UserContribution!]
-  "Identifies the total count of items in the connection."
-  totalCount: Int! @cost(weight: "10")
-}
-
-"An edge in a connection."
-type MyContributionsEdge {
-  "A cursor for use in pagination."
-  cursor: String!
-  "The item at the end of the edge."
-  node: UserContribution!
-}
-
-"Information about pagination in a connection."
-type PageInfo {
-  "Indicates whether more edges exist following the set defined by the clients arguments."
-  hasNextPage: Boolean!
-  "Indicates whether more edges exist prior the set defined by the clients arguments."
-  hasPreviousPage: Boolean!
-  "When paginating backwards, the cursor to continue."
-  startCursor: String
-  "When paginating forwards, the cursor to continue."
-  endCursor: String
-}
-
-type Segment {
-  index: Int!
-  type: String
-  name: String
-  audioType: String
-  languageCode: String
-  language: String
-  resolution: String
-  aspectRatio: String
+type ApiKeyUsageLogInfo {
+  apiKeyPrefix: String!
+  apiKeyName: String!
+  timestamp: DateTime!
+  operationName: String
+  fieldCost: Float!
+  typeCost: Float!
+  durationMs: Int!
 }
 
 type SendAdminMessagePayload {
   userMessage: UserMessage
   errors: [SendAdminMessageError!]
-}
-
-type SendUserMessagePayload {
-  userMessage: UserMessage
-  errors: [SendUserMessageError!]
 }
 
 type SeriesEpisodeNameEntry {
@@ -383,11 +145,88 @@ type SeriesEpisodeNameEntry {
   episodeName: String!
 }
 
-type SeriesEpisodeNames {
-  tryFind(season: String! episode: String!): SeriesEpisodeNameEntry
-  seriesTitle: String!
-  seriesYear: String!
-  episodes: [SeriesEpisodeNameEntry!]!
+type ApiKeyNotFoundError implements Error {
+  message: String!
+}
+
+input EditItemOnDiscInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+  name: String!
+  source: String!
+  duration: String!
+  size: String!
+  chapterCount: Int!
+  segmentCount: Int!
+  segmentMap: String!
+  type: String!
+  description: String
+  season: String
+  episode: String
+}
+
+input ListEncodedIdFilterTypeOfUserContributionDiscHashItemFilterInput {
+  all: UserContributionDiscHashItemFilterInput
+  none: UserContributionDiscHashItemFilterInput
+  some: UserContributionDiscHashItemFilterInput
+  any: Boolean
+}
+
+enum SortEnumType {
+  ASC
+  DESC
+}
+
+input FloatOperationFilterInput {
+  eq: Float
+  neq: Float
+  in: [Float]
+  nin: [Float]
+  gt: Float
+  ngt: Float
+  gte: Float
+  ngte: Float
+  lt: Float
+  nlt: Float
+  lte: Float
+  nlte: Float
+}
+
+input UserContributionDiscHashItemFilterInput {
+  and: [UserContributionDiscHashItemFilterInput!]
+  or: [UserContributionDiscHashItemFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  userContribution: UserContributionFilterInput
+  discHash: StringOperationFilterInput
+  index: IntOperationFilterInput
+  name: StringOperationFilterInput
+  creationTime: DateTimeOperationFilterInput
+  size: LongOperationFilterInput
+}
+
+input LongOperationFilterInput {
+  eq: Long
+  neq: Long
+  in: [Long]
+  nin: [Long]
+  gt: Long
+  ngt: Long
+  gte: Long
+  ngte: Long
+  lt: Long
+  nlt: Long
+  lte: Long
+  nlte: Long
+}
+
+input UserContributionChapterFilterInput {
+  and: [UserContributionChapterFilterInput!]
+  or: [UserContributionChapterFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  index: IntOperationFilterInput
+  title: StringOperationFilterInput
+  item: UserContributionDiscItemFilterInput
 }
 
 type Title {
@@ -404,29 +243,46 @@ type Title {
   lengthAsTimeSpan: TimeSpan!
 }
 
-type UpdateDiscPayload {
-  userContributionDisc: UserContributionDisc
-  errors: [UpdateDiscError!]
+union ExternalDataForContributionError = ContributionNotFoundError | ExternalDataSerializationError | ExternalDataNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+"Defines when a policy shall be executed."
+enum ApplyPolicy {
+  "Before the resolver was executed."
+  BEFORE_RESOLVER
+  "After the resolver was executed."
+  AFTER_RESOLVER
+  "The policy is applied in the validation step before the execution."
+  VALIDATION
 }
 
-type UserMessage {
-  id: Int!
-  contributionId: Int!
-  fromUserId: String!
-  toUserId: String!
-  message: String!
-  isRead: Boolean!
-  createdAt: DateTime!
-  type: UserMessageType!
+"A connection to a list of items."
+type ContributionsConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [ContributionsEdge!]
+  "A flattened list of the nodes."
+  nodes: [UserContribution!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int!
 }
+
+type DeleteContributionPayload {
+  userContribution: UserContribution
+  errors: [DeleteContributionError!]
+}
+
+union UpdateDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+union HashDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 type UserContribution {
   id: Int!
   userId: String!
   created: DateTime!
   status: UserContributionStatus!
-  discs(where: UserContributionDiscFilterInput @cost(weight: "10") order: [UserContributionDiscSortInput!] @cost(weight: "10")): [UserContributionDisc!]!
-  hashItems(where: UserContributionDiscHashItemFilterInput @cost(weight: "10") order: [UserContributionDiscHashItemSortInput!] @cost(weight: "10")): [UserContributionDiscHashItem!]!
+  discs(where: UserContributionDiscFilterInput order: [UserContributionDiscSortInput!]): [UserContributionDisc!]!
+  hashItems(where: UserContributionDiscHashItemFilterInput order: [UserContributionDiscHashItemSortInput!]): [UserContributionDiscHashItem!]!
   mediaType: String!
   externalId: String!
   externalProvider: String!
@@ -442,103 +298,76 @@ type UserContribution {
   title: String
   year: String
   titleSlug: String!
-  encodedId: EncodedId! @cost(weight: "10")
+  encodedId: EncodedId!
 }
 
-type UserContributionAudioTrack {
-  id: Int!
-  index: Int!
-  title: String!
-  item: UserContributionDiscItem!
-  encodedId: EncodedId! @cost(weight: "10")
-}
-
-type UserContributionChapter {
-  id: Int!
-  index: Int!
-  title: String!
-  item: UserContributionDiscItem!
-  encodedId: EncodedId! @cost(weight: "10")
-}
-
-type UserContributionDisc {
-  id: Int!
-  userContribution: UserContribution!
-  contentHash: String!
-  format: String!
-  name: String!
-  slug: String!
-  logsUploaded: Boolean!
-  existingDiscPath: String
-  items(where: UserContributionDiscItemFilterInput @cost(weight: "10") order: [UserContributionDiscItemSortInput!] @cost(weight: "10")): [UserContributionDiscItem!]!
-  encodedId: EncodedId! @cost(weight: "10")
-}
-
-type UserContributionDiscHashItem {
-  id: Int!
-  userContribution: UserContribution!
-  discHash: String!
-  index: Int!
-  name: String!
-  creationTime: DateTime!
-  size: Long!
-  encodedId: EncodedId! @cost(weight: "10")
-}
-
-type UserContributionDiscItem {
-  id: Int!
-  disc: UserContributionDisc!
-  name: String!
-  source: String!
-  duration: String!
-  size: String!
-  chapterCount: Int!
-  segmentCount: Int!
-  segmentMap: String!
-  type: String!
-  description: String
-  season: String
-  episode: String
-  chapters(where: UserContributionChapterFilterInput @cost(weight: "10") order: [UserContributionChapterSortInput!] @cost(weight: "10")): [UserContributionChapter!]!
-  audioTracks(where: UserContributionAudioTrackFilterInput @cost(weight: "10") order: [UserContributionAudioTrackSortInput!] @cost(weight: "10")): [UserContributionAudioTrack!]!
-  encodedId: EncodedId! @cost(weight: "10")
-}
-
-union AddAudioTrackToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
-
-union AddChapterToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
-
-union AddItemToDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
-
-union CreateContributionError = AuthenticationError
+"The `TimeSpan` scalar represents an ISO-8601 compliant duration type."
+scalar TimeSpan
 
 union CreateDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
-union DeleteContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
+input UserMessageSortInput {
+  id: SortEnumType
+  contributionId: SortEnumType
+  fromUserId: SortEnumType
+  toUserId: SortEnumType
+  message: SortEnumType
+  isRead: SortEnumType
+  createdAt: SortEnumType
+  type: SortEnumType
+}
 
-union DeleteItemFromDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+"A connection to a list of items."
+type ContributionChatConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [ContributionChatEdge!]
+  "A flattened list of the nodes."
+  nodes: [UserMessage!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int!
+}
 
-union DiscLogsError = LogsNotFoundError | ContributionNotFoundError | DiscNotFoundError | CouldNotParseLogsError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+input ExternalDataForContributionInput {
+  contributionId: String!
+}
 
-union DiscUploadStatusError = DiscNotFoundError | FieldRequiredError | InvalidIdError
+type UpdateDiscPayload {
+  userContributionDisc: UserContributionDisc
+  errors: [UpdateDiscError!]
+}
 
-union EditItemOnDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
-
-union EpisodeNamesError = ContributionNotFoundError | ExternalDataNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
-
-union ExternalDataError = ContributionNotFoundError | ExternalDataNotFoundError
-
-union ExternalDataForContributionError = ContributionNotFoundError | ExternalDataSerializationError | ExternalDataNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
-
-union HashDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+input UserContributionAudioTrackFilterInput {
+  and: [UserContributionAudioTrackFilterInput!]
+  or: [UserContributionAudioTrackFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  index: IntOperationFilterInput
+  title: StringOperationFilterInput
+  item: UserContributionDiscItemFilterInput
+}
 
 union SendAdminMessageError = ContributionNotFoundError | AuthenticationError
 
-union SendUserMessageError = ContributionNotFoundError | AuthenticationError | InvalidOwnershipError
+scalar EncodedIdFilter
 
-union MarkMessagesAsReadError = AuthenticationError
+input BooleanOperationFilterInput {
+  eq: Boolean
+  neq: Boolean
+}
 
-union UpdateDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+type RevokeApiKeyPayload {
+  apiKeyInfo: ApiKeyInfo
+  errors: [RevokeApiKeyError!]
+}
+
+interface Error {
+  message: String!
+}
+
+type DiscItemNotFoundError implements Error {
+  message: String!
+}
 
 input AddAudioTrackToItemInput {
   contributionId: String!
@@ -548,6 +377,12 @@ input AddAudioTrackToItemInput {
   trackName: String!
 }
 
+input DeleteItemFromDiscInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+}
+
 input AddChapterToItemInput {
   contributionId: String!
   discId: String!
@@ -555,6 +390,246 @@ input AddChapterToItemInput {
   chapterIndex: Int!
   chapterName: String!
 }
+
+type DiscNotFoundError implements Error {
+  message: String!
+}
+
+input UserContributionStatusOperationFilterInput {
+  eq: UserContributionStatus
+  neq: UserContributionStatus
+  in: [UserContributionStatus!]
+  nin: [UserContributionStatus!]
+}
+
+input UpdateContributionInput {
+  contributionId: String!
+  asin: String!
+  upc: String!
+  releaseDate: DateTime!
+  releaseTitle: String!
+  releaseSlug: String!
+  locale: String!
+  regionCode: String!
+  frontImageUrl: String
+  backImageUrl: String
+  deleteBackImage: Boolean!
+}
+
+union AddAudioTrackToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+type ExternalDataPayload {
+  externalMetadata: ExternalMetadata
+  errors: [ExternalDataError!]
+}
+
+type ApiKeyInfo {
+  name: String!
+  keyPrefix: String!
+  isActive: Boolean!
+  logUsage: Boolean!
+  roles: String
+  ownerEmail: String!
+  createdAt: DateTime!
+  expiresAt: DateTime
+  lastUsedAt: DateTime
+}
+
+enum UserMessageType {
+  ADMIN_MESSAGE
+  USER_MESSAGE
+}
+
+type MessageThread {
+  contributionId: Int!
+  encodedContributionId: String!
+  contributionTitle: String!
+  mediaTitle: String
+  lastMessagePreview: String!
+  lastMessageAt: DateTime!
+  unreadCount: Int!
+  totalCount: Int!
+}
+
+type InvalidOwnershipError implements Error {
+  message: String!
+}
+
+union AddItemToDiscError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+input StringOperationFilterInput {
+  and: [StringOperationFilterInput!]
+  or: [StringOperationFilterInput!]
+  eq: String
+  neq: String
+  contains: String
+  ncontains: String
+  in: [String]
+  nin: [String]
+  startsWith: String
+  nstartsWith: String
+  endsWith: String
+  nendsWith: String
+}
+
+"Information about pagination in a connection."
+type PageInfo {
+  "Indicates whether more edges exist following the set defined by the clients arguments."
+  hasNextPage: Boolean!
+  "Indicates whether more edges exist prior the set defined by the clients arguments."
+  hasPreviousPage: Boolean!
+  "When paginating backwards, the cursor to continue."
+  startCursor: String
+  "When paginating forwards, the cursor to continue."
+  endCursor: String
+}
+
+type UserMessage {
+  id: Int!
+  contributionId: Int!
+  fromUserId: String!
+  toUserId: String!
+  message: String!
+  isRead: Boolean!
+  createdAt: DateTime!
+  type: UserMessageType!
+}
+
+"A connection to a list of items."
+type MyContributionsConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [MyContributionsEdge!]
+  "A flattened list of the nodes."
+  nodes: [UserContribution!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int!
+}
+
+type ContributionMutations {
+  addAudioTrackToItem(input: AddAudioTrackToItemInput!): AddAudioTrackToItemPayload!
+  addChapterToItem(input: AddChapterToItemInput!): AddChapterToItemPayload!
+  addItemToDisc(input: AddItemToDiscInput!): AddItemToDiscPayload!
+  createContribution(input: CreateContributionInput!): CreateContributionPayload!
+  createDisc(input: CreateDiscInput!): CreateDiscPayload!
+  deleteContribution(input: DeleteContributionInput!): DeleteContributionPayload!
+  deleteItemFromDisc(input: DeleteItemFromDiscInput!): DeleteItemFromDiscPayload!
+  editItemOnDisc(input: EditItemOnDiscInput!): EditItemOnDiscPayload!
+  generateApiKey(input: GenerateApiKeyInput!): GenerateApiKeyPayload!
+  discLogs(input: DiscLogsInput!): DiscLogsPayload!
+  discUploadStatus(input: DiscUploadStatusInput!): DiscUploadStatusPayload!
+  episodeNames(input: EpisodeNamesInput!): EpisodeNamesPayload!
+  externalData(input: ExternalDataInput!): ExternalDataPayload!
+  externalDataForContribution(input: ExternalDataForContributionInput!): ExternalDataForContributionPayload!
+  hashDisc(input: HashDiscInput!): HashDiscPayload!
+  markMessagesAsRead(input: MarkMessagesAsReadInput!): MarkMessagesAsReadPayload!
+  revokeApiKey(input: RevokeApiKeyInput!): RevokeApiKeyPayload!
+  sendAdminMessage(input: SendAdminMessageInput!): SendAdminMessagePayload!
+  sendUserMessage(input: SendUserMessageInput!): SendUserMessagePayload!
+  updateContribution(input: UpdateContributionInput!): UpdateContributionPayload!
+  updateDisc(input: UpdateDiscInput!): UpdateDiscPayload!
+}
+
+type CreateContributionPayload {
+  userContribution: UserContribution
+  errors: [CreateContributionError!]
+}
+
+input ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput {
+  all: UserContributionDiscItemFilterInput
+  none: UserContributionDiscItemFilterInput
+  some: UserContributionDiscItemFilterInput
+  any: Boolean
+}
+
+type DiscLogs {
+  info: DiscInfo
+  disc: UserContributionDisc
+  contribution: UserContribution
+}
+
+"A connection to a list of items."
+type ApiKeyUsageLogsConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [ApiKeyUsageLogsEdge!]
+  "A flattened list of the nodes."
+  nodes: [ApiKeyUsageLogInfo!]
+}
+
+input ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput {
+  all: UserContributionAudioTrackFilterInput
+  none: UserContributionAudioTrackFilterInput
+  some: UserContributionAudioTrackFilterInput
+  any: Boolean
+}
+
+type UserContributionAudioTrack {
+  id: Int!
+  index: Int!
+  title: String!
+  item: UserContributionDiscItem!
+  encodedId: EncodedId!
+}
+
+type ContributionHistory {
+  id: Int!
+  contributionId: Int!
+  timeStamp: DateTime!
+  description: String!
+  userId: String!
+  type: ContributionHistoryType!
+}
+
+input FileHashInfoInput {
+  index: Int!
+  name: String
+  creationTime: DateTime!
+  size: Long!
+}
+
+"A connection to a list of items."
+type ApiKeysConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [ApiKeysEdge!]
+  "A flattened list of the nodes."
+  nodes: [ApiKeyInfo!]
+}
+
+type MarkMessagesAsReadPayload {
+  boolean: Boolean
+  errors: [MarkMessagesAsReadError!]
+}
+
+union EditItemOnDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+union DeleteContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
+
+type UserContributionDiscHashItem {
+  id: Int!
+  userContribution: UserContribution!
+  discHash: String!
+  index: Int!
+  name: String!
+  creationTime: DateTime!
+  size: Long!
+  encodedId: EncodedId!
+}
+
+type ContributionNotFoundError implements Error {
+  message: String!
+}
+
+type SendUserMessagePayload {
+  userMessage: UserMessage
+  errors: [SendUserMessageError!]
+}
+
+union EpisodeNamesError = ContributionNotFoundError | ExternalDataNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 input AddItemToDiscInput {
   contributionId: String!
@@ -572,19 +647,131 @@ input AddItemToDiscInput {
   episode: String
 }
 
-input BooleanOperationFilterInput {
-  eq: Boolean @cost(weight: "10")
-  neq: Boolean @cost(weight: "10")
+"The `DateTime` scalar represents an ISO-8601 compliant date time type."
+scalar DateTime
+
+input ListEncodedIdFilterTypeOfUserContributionChapterFilterInput {
+  all: UserContributionChapterFilterInput
+  none: UserContributionChapterFilterInput
+  some: UserContributionChapterFilterInput
+  any: Boolean
 }
 
-input ContributionHistorySortInput {
-  id: SortEnumType @cost(weight: "10")
-  contributionId: SortEnumType @cost(weight: "10")
-  timeStamp: SortEnumType @cost(weight: "10")
-  description: SortEnumType @cost(weight: "10")
-  userId: SortEnumType @cost(weight: "10")
-  type: SortEnumType @cost(weight: "10")
+type ExternalMetadata {
+  id: Int!
+  title: String!
+  year: Int!
+  imageUrl: String!
 }
+
+type UserContributionChapter {
+  id: Int!
+  index: Int!
+  title: String!
+  item: UserContributionDiscItem!
+  encodedId: EncodedId!
+}
+
+scalar EncodedId
+
+type InvalidIdError implements Error {
+  message: String!
+}
+
+type DeleteItemFromDiscPayload {
+  userContributionDiscItem: UserContributionDiscItem
+  errors: [DeleteItemFromDiscError!]
+}
+
+input UserContributionAudioTrackSortInput {
+  id: SortEnumType
+  index: SortEnumType
+  title: SortEnumType
+  item: UserContributionDiscItemSortInput
+}
+
+"A connection to a list of items."
+type ContributionHistoryConnection {
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "A list of edges."
+  edges: [ContributionHistoryEdge!]
+  "A flattened list of the nodes."
+  nodes: [ContributionHistory!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int!
+}
+
+input ListEncodedIdFilterTypeOfUserContributionDiscFilterInput {
+  all: UserContributionDiscFilterInput
+  none: UserContributionDiscFilterInput
+  some: UserContributionDiscFilterInput
+  any: Boolean
+}
+
+input ApiKeyUsageLogInfoFilterInput {
+  and: [ApiKeyUsageLogInfoFilterInput!]
+  or: [ApiKeyUsageLogInfoFilterInput!]
+  apiKeyPrefix: StringOperationFilterInput
+  apiKeyName: StringOperationFilterInput
+  timestamp: DateTimeOperationFilterInput
+  operationName: StringOperationFilterInput
+  fieldCost: FloatOperationFilterInput
+  typeCost: FloatOperationFilterInput
+  durationMs: IntOperationFilterInput
+}
+
+input HashDiscInput {
+  contributionId: String!
+  files: [FileHashInfoInput!]!
+}
+
+enum UserContributionStatus {
+  PENDING
+  READY_FOR_REVIEW
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+  IMPORTED
+}
+
+union DiscLogsError = LogsNotFoundError | ContributionNotFoundError | DiscNotFoundError | CouldNotParseLogsError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+input UserContributionDiscFilterInput {
+  and: [UserContributionDiscFilterInput!]
+  or: [UserContributionDiscFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  userContribution: UserContributionFilterInput
+  contentHash: StringOperationFilterInput
+  format: StringOperationFilterInput
+  name: StringOperationFilterInput
+  slug: StringOperationFilterInput
+  logsUploaded: BooleanOperationFilterInput
+  logUploadError: StringOperationFilterInput
+  existingDiscPath: StringOperationFilterInput
+  items: ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput
+}
+
+"The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
+scalar Long
+
+type InvalidContributionStatusError implements Error {
+  message: String!
+}
+
+type FieldRequiredError implements Error {
+  message: String!
+}
+
+"An edge in a connection."
+type ApiKeysEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: ApiKeyInfo!
+}
+
+union RevokeApiKeyError = ApiKeyNotFoundError
 
 input ContributionMutationRequestInput {
   mediaType: String!
@@ -605,83 +792,34 @@ input ContributionMutationRequestInput {
   status: UserContributionStatus!
 }
 
-input CreateContributionInput {
-  input: ContributionMutationRequestInput!
+type DiscLogsPayload {
+  discLogs: DiscLogs
+  errors: [DiscLogsError!]
 }
 
-input CreateDiscInput {
-  contributionId: String!
-  contentHash: String!
-  format: String!
-  name: String!
-  slug: String!
-  existingDiscPath: String
+type Segment {
+  index: Int!
+  type: String
+  name: String
+  audioType: String
+  languageCode: String
+  language: String
+  resolution: String
+  aspectRatio: String
 }
 
-input DateTimeOperationFilterInput {
-  eq: DateTime @cost(weight: "10")
-  neq: DateTime @cost(weight: "10")
-  in: [DateTime] @cost(weight: "10")
-  nin: [DateTime] @cost(weight: "10")
-  gt: DateTime @cost(weight: "10")
-  ngt: DateTime @cost(weight: "10")
-  gte: DateTime @cost(weight: "10")
-  ngte: DateTime @cost(weight: "10")
-  lt: DateTime @cost(weight: "10")
-  nlt: DateTime @cost(weight: "10")
-  lte: DateTime @cost(weight: "10")
-  nlte: DateTime @cost(weight: "10")
+scalar UUID
+
+type CouldNotParseLogsError implements Error {
+  message: String!
 }
 
-input DeleteContributionInput {
-  contributionId: String!
-}
-
-input DeleteItemFromDiscInput {
-  contributionId: String!
-  discId: String!
-  itemId: String!
-}
-
-input DiscLogsInput {
-  contributionId: String!
-  discId: String!
-}
-
-input DiscUploadStatusInput {
-  discId: String!
-}
-
-input EditItemOnDiscInput {
-  contributionId: String!
-  discId: String!
-  itemId: String!
-  name: String!
-  source: String!
-  duration: String!
-  size: String!
-  chapterCount: Int!
-  segmentCount: Int!
-  segmentMap: String!
-  type: String!
-  description: String
-  season: String
-  episode: String
-}
-
-input EncodedIdOperationFilterInput {
-  and: [EncodedIdOperationFilterInput!]
-  or: [EncodedIdOperationFilterInput!]
-  eq: EncodedIdFilter @cost(weight: "10")
-  neq: EncodedIdFilter @cost(weight: "10")
-}
-
-input EpisodeNamesInput {
-  contributionId: String!
-}
-
-input ExternalDataForContributionInput {
-  contributionId: String!
+"An edge in a connection."
+type ContributionsEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: UserContribution!
 }
 
 input ExternalDataInput {
@@ -690,244 +828,18 @@ input ExternalDataInput {
   provider: String!
 }
 
-input FileHashInfoInput {
-  index: Int!
-  name: String
-  creationTime: DateTime!
-  size: Long!
+type HashDiscPayload {
+  discHash: DiscHash
+  errors: [HashDiscError!]
 }
 
-input HashDiscInput {
-  contributionId: String!
-  files: [FileHashInfoInput!]!
-}
-
-input IntOperationFilterInput {
-  eq: Int @cost(weight: "10")
-  neq: Int @cost(weight: "10")
-  in: [Int] @cost(weight: "10")
-  nin: [Int] @cost(weight: "10")
-  gt: Int @cost(weight: "10")
-  ngt: Int @cost(weight: "10")
-  gte: Int @cost(weight: "10")
-  ngte: Int @cost(weight: "10")
-  lt: Int @cost(weight: "10")
-  nlt: Int @cost(weight: "10")
-  lte: Int @cost(weight: "10")
-  nlte: Int @cost(weight: "10")
-}
-
-input ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput {
-  all: UserContributionAudioTrackFilterInput @cost(weight: "10")
-  none: UserContributionAudioTrackFilterInput @cost(weight: "10")
-  some: UserContributionAudioTrackFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input ListEncodedIdFilterTypeOfUserContributionChapterFilterInput {
-  all: UserContributionChapterFilterInput @cost(weight: "10")
-  none: UserContributionChapterFilterInput @cost(weight: "10")
-  some: UserContributionChapterFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input ListEncodedIdFilterTypeOfUserContributionDiscFilterInput {
-  all: UserContributionDiscFilterInput @cost(weight: "10")
-  none: UserContributionDiscFilterInput @cost(weight: "10")
-  some: UserContributionDiscFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input ListEncodedIdFilterTypeOfUserContributionDiscHashItemFilterInput {
-  all: UserContributionDiscHashItemFilterInput @cost(weight: "10")
-  none: UserContributionDiscHashItemFilterInput @cost(weight: "10")
-  some: UserContributionDiscHashItemFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput {
-  all: UserContributionDiscItemFilterInput @cost(weight: "10")
-  none: UserContributionDiscItemFilterInput @cost(weight: "10")
-  some: UserContributionDiscItemFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input LongOperationFilterInput {
-  eq: Long @cost(weight: "10")
-  neq: Long @cost(weight: "10")
-  in: [Long] @cost(weight: "10")
-  nin: [Long] @cost(weight: "10")
-  gt: Long @cost(weight: "10")
-  ngt: Long @cost(weight: "10")
-  gte: Long @cost(weight: "10")
-  ngte: Long @cost(weight: "10")
-  lt: Long @cost(weight: "10")
-  nlt: Long @cost(weight: "10")
-  lte: Long @cost(weight: "10")
-  nlte: Long @cost(weight: "10")
-}
-
-input SendAdminMessageInput {
-  contributionId: String!
-  message: String!
+input DiscUploadStatusInput {
+  discId: String!
 }
 
 input SendUserMessageInput {
   contributionId: String!
   message: String!
-}
-
-input MarkMessagesAsReadInput {
-  contributionId: String!
-}
-
-input UserMessageSortInput {
-  id: SortEnumType @cost(weight: "10")
-  contributionId: SortEnumType @cost(weight: "10")
-  fromUserId: SortEnumType @cost(weight: "10")
-  toUserId: SortEnumType @cost(weight: "10")
-  message: SortEnumType @cost(weight: "10")
-  isRead: SortEnumType @cost(weight: "10")
-  createdAt: SortEnumType @cost(weight: "10")
-  type: SortEnumType @cost(weight: "10")
-}
-
-input StringOperationFilterInput {
-  and: [StringOperationFilterInput!]
-  or: [StringOperationFilterInput!]
-  eq: String @cost(weight: "10")
-  neq: String @cost(weight: "10")
-  contains: String @cost(weight: "20")
-  ncontains: String @cost(weight: "20")
-  in: [String] @cost(weight: "10")
-  nin: [String] @cost(weight: "10")
-  startsWith: String @cost(weight: "20")
-  nstartsWith: String @cost(weight: "20")
-  endsWith: String @cost(weight: "20")
-  nendsWith: String @cost(weight: "20")
-}
-
-input UpdateDiscInput {
-  contributionId: String!
-  discId: String!
-  format: String!
-  name: String!
-  slug: String!
-}
-
-input UserContributionAudioTrackFilterInput {
-  and: [UserContributionAudioTrackFilterInput!]
-  or: [UserContributionAudioTrackFilterInput!]
-  encodedId: EncodedIdOperationFilterInput
-  index: IntOperationFilterInput
-  title: StringOperationFilterInput
-  item: UserContributionDiscItemFilterInput
-}
-
-input UserContributionAudioTrackSortInput {
-  id: SortEnumType @cost(weight: "10")
-  index: SortEnumType @cost(weight: "10")
-  title: SortEnumType @cost(weight: "10")
-  item: UserContributionDiscItemSortInput @cost(weight: "10")
-}
-
-input UserContributionChapterFilterInput {
-  and: [UserContributionChapterFilterInput!]
-  or: [UserContributionChapterFilterInput!]
-  encodedId: EncodedIdOperationFilterInput
-  index: IntOperationFilterInput
-  title: StringOperationFilterInput
-  item: UserContributionDiscItemFilterInput
-}
-
-input UserContributionChapterSortInput {
-  id: SortEnumType @cost(weight: "10")
-  index: SortEnumType @cost(weight: "10")
-  title: SortEnumType @cost(weight: "10")
-  item: UserContributionDiscItemSortInput @cost(weight: "10")
-}
-
-input UserContributionDiscFilterInput {
-  and: [UserContributionDiscFilterInput!]
-  or: [UserContributionDiscFilterInput!]
-  encodedId: EncodedIdOperationFilterInput
-  userContribution: UserContributionFilterInput
-  contentHash: StringOperationFilterInput
-  format: StringOperationFilterInput
-  name: StringOperationFilterInput
-  slug: StringOperationFilterInput
-  logsUploaded: BooleanOperationFilterInput
-  existingDiscPath: StringOperationFilterInput
-  items: ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput
-}
-
-input UserContributionDiscHashItemFilterInput {
-  and: [UserContributionDiscHashItemFilterInput!]
-  or: [UserContributionDiscHashItemFilterInput!]
-  encodedId: EncodedIdOperationFilterInput
-  userContribution: UserContributionFilterInput
-  discHash: StringOperationFilterInput
-  index: IntOperationFilterInput
-  name: StringOperationFilterInput
-  creationTime: DateTimeOperationFilterInput
-  size: LongOperationFilterInput
-}
-
-input UserContributionDiscHashItemSortInput {
-  id: SortEnumType @cost(weight: "10")
-  userContribution: UserContributionSortInput @cost(weight: "10")
-  discHash: SortEnumType @cost(weight: "10")
-  index: SortEnumType @cost(weight: "10")
-  name: SortEnumType @cost(weight: "10")
-  creationTime: SortEnumType @cost(weight: "10")
-  size: SortEnumType @cost(weight: "10")
-}
-
-input UserContributionDiscItemFilterInput {
-  and: [UserContributionDiscItemFilterInput!]
-  or: [UserContributionDiscItemFilterInput!]
-  encodedId: EncodedIdOperationFilterInput
-  disc: UserContributionDiscFilterInput
-  name: StringOperationFilterInput
-  source: StringOperationFilterInput
-  duration: StringOperationFilterInput
-  size: StringOperationFilterInput
-  chapterCount: IntOperationFilterInput
-  segmentCount: IntOperationFilterInput
-  segmentMap: StringOperationFilterInput
-  type: StringOperationFilterInput
-  description: StringOperationFilterInput
-  season: StringOperationFilterInput
-  episode: StringOperationFilterInput
-  chapters: ListEncodedIdFilterTypeOfUserContributionChapterFilterInput
-  audioTracks: ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput
-}
-
-input UserContributionDiscItemSortInput {
-  id: SortEnumType @cost(weight: "10")
-  disc: UserContributionDiscSortInput @cost(weight: "10")
-  name: SortEnumType @cost(weight: "10")
-  source: SortEnumType @cost(weight: "10")
-  duration: SortEnumType @cost(weight: "10")
-  size: SortEnumType @cost(weight: "10")
-  chapterCount: SortEnumType @cost(weight: "10")
-  segmentCount: SortEnumType @cost(weight: "10")
-  segmentMap: SortEnumType @cost(weight: "10")
-  type: SortEnumType @cost(weight: "10")
-  description: SortEnumType @cost(weight: "10")
-  season: SortEnumType @cost(weight: "10")
-  episode: SortEnumType @cost(weight: "10")
-}
-
-input UserContributionDiscSortInput {
-  id: SortEnumType @cost(weight: "10")
-  userContribution: UserContributionSortInput @cost(weight: "10")
-  contentHash: SortEnumType @cost(weight: "10")
-  format: SortEnumType @cost(weight: "10")
-  name: SortEnumType @cost(weight: "10")
-  slug: SortEnumType @cost(weight: "10")
-  logsUploaded: SortEnumType @cost(weight: "10")
-  existingDiscPath: SortEnumType @cost(weight: "10")
 }
 
 input UserContributionFilterInput {
@@ -956,43 +868,109 @@ input UserContributionFilterInput {
   titleSlug: StringOperationFilterInput
 }
 
-input UserContributionSortInput {
-  id: SortEnumType @cost(weight: "10")
-  userId: SortEnumType @cost(weight: "10")
-  created: SortEnumType @cost(weight: "10")
-  status: SortEnumType @cost(weight: "10")
-  mediaType: SortEnumType @cost(weight: "10")
-  externalId: SortEnumType @cost(weight: "10")
-  externalProvider: SortEnumType @cost(weight: "10")
-  releaseDate: SortEnumType @cost(weight: "10")
-  asin: SortEnumType @cost(weight: "10")
-  upc: SortEnumType @cost(weight: "10")
-  frontImageUrl: SortEnumType @cost(weight: "10")
-  backImageUrl: SortEnumType @cost(weight: "10")
-  releaseTitle: SortEnumType @cost(weight: "10")
-  releaseSlug: SortEnumType @cost(weight: "10")
-  locale: SortEnumType @cost(weight: "10")
-  regionCode: SortEnumType @cost(weight: "10")
-  title: SortEnumType @cost(weight: "10")
-  year: SortEnumType @cost(weight: "10")
-  titleSlug: SortEnumType @cost(weight: "10")
+input SendAdminMessageInput {
+  contributionId: String!
+  message: String!
 }
 
-input UserContributionStatusOperationFilterInput {
-  eq: UserContributionStatus @cost(weight: "10")
-  neq: UserContributionStatus @cost(weight: "10")
-  in: [UserContributionStatus!] @cost(weight: "10")
-  nin: [UserContributionStatus!] @cost(weight: "10")
+input DeleteContributionInput {
+  contributionId: String!
 }
 
-"Defines when a policy shall be executed."
-enum ApplyPolicy {
-  "Before the resolver was executed."
-  BEFORE_RESOLVER
-  "After the resolver was executed."
-  AFTER_RESOLVER
-  "The policy is applied in the validation step before the execution."
-  VALIDATION
+type EpisodeNamesPayload {
+  seriesEpisodeNames: SeriesEpisodeNames
+  errors: [EpisodeNamesError!]
+}
+
+union UpdateContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
+
+input ApiKeyInfoSortInput {
+  name: SortEnumType
+  keyPrefix: SortEnumType
+  isActive: SortEnumType
+  logUsage: SortEnumType
+  roles: SortEnumType
+  ownerEmail: SortEnumType
+  createdAt: SortEnumType
+  expiresAt: SortEnumType
+  lastUsedAt: SortEnumType
+}
+
+type EditItemOnDiscPayload {
+  userContributionDiscItem: UserContributionDiscItem
+  errors: [EditItemOnDiscError!]
+}
+
+input CreateContributionInput {
+  input: ContributionMutationRequestInput!
+}
+
+"An edge in a connection."
+type ApiKeyUsageLogsEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: ApiKeyUsageLogInfo!
+}
+
+union CreateContributionError = AuthenticationError
+
+type ExternalDataNotFoundError implements Error {
+  message: String!
+}
+
+input IntOperationFilterInput {
+  eq: Int
+  neq: Int
+  in: [Int]
+  nin: [Int]
+  gt: Int
+  ngt: Int
+  gte: Int
+  ngte: Int
+  lt: Int
+  nlt: Int
+  lte: Int
+  nlte: Int
+}
+
+type AddChapterToItemPayload {
+  userContributionChapter: UserContributionChapter
+  errors: [AddChapterToItemError!]
+}
+
+type ExternalDataSerializationError implements Error {
+  message: String!
+}
+
+type AddItemToDiscPayload {
+  userContributionDiscItem: UserContributionDiscItem
+  errors: [AddItemToDiscError!]
+}
+
+union SendUserMessageError = ContributionNotFoundError | AuthenticationError | InvalidOwnershipError
+
+type HashInfoLogLine {
+  matches(prefix: String!): Boolean!
+  index: Int!
+  name: String
+  creationTime: DateTime!
+  size: Long!
+  originalLine: String
+  prefix: String
+}
+
+input CreateDiscInput {
+  contributionId: String!
+  contentHash: String!
+  format: String!
+  name: String!
+  slug: String!
+  existingDiscPath: String
+}
+
+input EpisodeNamesInput {
+  contributionId: String!
 }
 
 enum ContributionHistoryType {
@@ -1003,48 +981,244 @@ enum ContributionHistoryType {
   USER_MESSAGE
 }
 
-enum UserMessageType {
-  ADMIN_MESSAGE
-  USER_MESSAGE
+input ApiKeyUsageLogInfoSortInput {
+  apiKeyPrefix: SortEnumType
+  apiKeyName: SortEnumType
+  timestamp: SortEnumType
+  operationName: SortEnumType
+  fieldCost: SortEnumType
+  typeCost: SortEnumType
+  durationMs: SortEnumType
 }
 
-enum SortEnumType {
-  ASC
-  DESC
+type GenerateApiKeyPayload {
+  key: String!
+  keyPrefix: String!
+  name: String!
+  ownerEmail: String!
 }
 
-enum UserContributionStatus {
-  PENDING
-  READY_FOR_REVIEW
-  APPROVED
-  CHANGES_REQUESTED
-  REJECTED
-  IMPORTED
+union ExternalDataError = ContributionNotFoundError | ExternalDataNotFoundError
+
+input UserContributionSortInput {
+  id: SortEnumType
+  userId: SortEnumType
+  created: SortEnumType
+  status: SortEnumType
+  mediaType: SortEnumType
+  externalId: SortEnumType
+  externalProvider: SortEnumType
+  releaseDate: SortEnumType
+  asin: SortEnumType
+  upc: SortEnumType
+  frontImageUrl: SortEnumType
+  backImageUrl: SortEnumType
+  releaseTitle: SortEnumType
+  releaseSlug: SortEnumType
+  locale: SortEnumType
+  regionCode: SortEnumType
+  title: SortEnumType
+  year: SortEnumType
+  titleSlug: SortEnumType
 }
 
-"The authorize directive."
-directive @authorize("The name of the authorization policy that determines access to the annotated resource." policy: String "Roles that are allowed to access the annotated resource." roles: [String!] "Defines when when the authorize directive shall be applied.By default the authorize directives are applied during the validation phase." apply: ApplyPolicy! = BEFORE_RESOLVER) repeatable on OBJECT | FIELD_DEFINITION
+input UserContributionDiscSortInput {
+  id: SortEnumType
+  userContribution: UserContributionSortInput
+  contentHash: SortEnumType
+  format: SortEnumType
+  name: SortEnumType
+  slug: SortEnumType
+  logsUploaded: SortEnumType
+  logUploadError: SortEnumType
+  existingDiscPath: SortEnumType
+}
+
+input GenerateApiKeyInput {
+  name: String!
+  ownerEmail: String!
+  roles: [String!]
+  expiresAt: DateTime
+}
+
+input UserContributionDiscItemSortInput {
+  id: SortEnumType
+  disc: UserContributionDiscSortInput
+  name: SortEnumType
+  source: SortEnumType
+  duration: SortEnumType
+  size: SortEnumType
+  chapterCount: SortEnumType
+  segmentCount: SortEnumType
+  segmentMap: SortEnumType
+  type: SortEnumType
+  description: SortEnumType
+  season: SortEnumType
+  episode: SortEnumType
+}
+
+input EncodedIdOperationFilterInput {
+  and: [EncodedIdOperationFilterInput!]
+  or: [EncodedIdOperationFilterInput!]
+  eq: EncodedIdFilter
+  neq: EncodedIdFilter
+}
+
+union MarkMessagesAsReadError = AuthenticationError
+
+type AddAudioTrackToItemPayload {
+  userContributionAudioTrack: UserContributionAudioTrack
+  errors: [AddAudioTrackToItemError!]
+}
+
+type AmazonProductMetadata {
+  asin: String
+  title: String
+  upc: String
+  frontImageUrl: String
+  backImageUrl: String
+  releaseDate: DateTime
+  numberOfDiscs: Int
+  aspectRatio: String
+  isDiscontinued: Boolean
+  mpaaRating: String
+  modelNumber: String
+  director: String
+  mediaFormat: String
+  actors: String
+  producers: String
+  language: String
+  dubbed: String
+  subtitles: String
+  studio: String
+}
+
+"An edge in a connection."
+type ContributionChatEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: UserMessage!
+}
+
+type DiscUploadStatus {
+  logsUploaded: Boolean!
+  logUploadError: String
+}
+
+type UserContributionDiscItem {
+  id: Int!
+  disc: UserContributionDisc!
+  name: String!
+  source: String!
+  duration: String!
+  size: String!
+  chapterCount: Int!
+  segmentCount: Int!
+  segmentMap: String!
+  type: String!
+  description: String
+  season: String
+  episode: String
+  chapters(where: UserContributionChapterFilterInput order: [UserContributionChapterSortInput!]): [UserContributionChapter!]!
+  audioTracks(where: UserContributionAudioTrackFilterInput order: [UserContributionAudioTrackSortInput!]): [UserContributionAudioTrack!]!
+  encodedId: EncodedId!
+}
+
+type ContributionQuery {
+  contributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput order: [UserContributionSortInput!]): ContributionsConnection
+  myContributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput order: [UserContributionSortInput!]): MyContributionsConnection
+  contributionHistory(contributionId: Int! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [ContributionHistorySortInput!]): ContributionHistoryConnection
+  contributionChat(contributionId: String! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [UserMessageSortInput!]): ContributionChatConnection
+  hasUnreadMessages: Boolean!
+  myMessages("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [UserMessageSortInput!]): MyMessagesConnection
+  messageThreads: [MessageThread!]!
+  amazonProductMetadata(asin: String!): AmazonProductMetadata
+  apiKeys("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: ApiKeyInfoFilterInput order: [ApiKeyInfoSortInput!]): ApiKeysConnection
+  apiKeyUsageLogs("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: ApiKeyUsageLogInfoFilterInput order: [ApiKeyUsageLogInfoSortInput!]): ApiKeyUsageLogsConnection
+}
+
+type DiscUploadStatusPayload {
+  discUploadStatus: DiscUploadStatus
+  errors: [DiscUploadStatusError!]
+}
+
+type DiscInfo {
+  name: String
+  type: String
+  languageCode: String
+  language: String
+  titles: [Title!]!
+  hashInfo: [HashInfoLogLine!]!
+}
+
+type AuthenticationError implements Error {
+  message: String!
+}
+
+union AddChapterToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+input DiscLogsInput {
+  contributionId: String!
+  discId: String!
+}
+
+type UserContributionDisc {
+  id: Int!
+  userContribution: UserContribution!
+  contentHash: String!
+  format: String!
+  name: String!
+  slug: String!
+  logsUploaded: Boolean!
+  logUploadError: String
+  existingDiscPath: String
+  items(where: UserContributionDiscItemFilterInput order: [UserContributionDiscItemSortInput!]): [UserContributionDiscItem!]!
+  encodedId: EncodedId!
+}
+
+input UpdateDiscInput {
+  contributionId: String!
+  discId: String!
+  format: String!
+  name: String!
+  slug: String!
+}
+
+"An edge in a connection."
+type MyMessagesEdge {
+  "A cursor for use in pagination."
+  cursor: String!
+  "The item at the end of the edge."
+  node: UserMessage!
+}
+
+input RevokeApiKeyInput {
+  keyPrefix: String!
+}
+
+input UserContributionDiscItemFilterInput {
+  and: [UserContributionDiscItemFilterInput!]
+  or: [UserContributionDiscItemFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  disc: UserContributionDiscFilterInput
+  name: StringOperationFilterInput
+  source: StringOperationFilterInput
+  duration: StringOperationFilterInput
+  size: StringOperationFilterInput
+  chapterCount: IntOperationFilterInput
+  segmentCount: IntOperationFilterInput
+  segmentMap: StringOperationFilterInput
+  type: StringOperationFilterInput
+  description: StringOperationFilterInput
+  season: StringOperationFilterInput
+  episode: StringOperationFilterInput
+  chapters: ListEncodedIdFilterTypeOfUserContributionChapterFilterInput
+  audioTracks: ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput
+}
 
 "The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."
 directive @cost("The `weight` argument defines what value to add to the overall cost for every appearance, or possible appearance, of a type, field, argument, etc." weight: String!) on SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM | INPUT_FIELD_DEFINITION
 
 "The purpose of the `@listSize` directive is to either inform the static analysis about the size of returned lists (if that information is statically available), or to point the analysis to where to find that information."
 directive @listSize("The `assumedSize` argument can be used to statically define the maximum length of a list returned by a field." assumedSize: Int "The `slicingArguments` argument can be used to define which of the field's arguments with numeric type are slicing arguments, so that their value determines the size of the list returned by that field. It may specify a list of multiple slicing arguments." slicingArguments: [String!] "The `slicingArgumentDefaultValue` argument can be used to define a default value for a slicing argument, which is used if the argument is not present in a query." slicingArgumentDefaultValue: Int "The `sizedFields` argument can be used to define that the value of the `assumedSize` argument or of a slicing argument does not affect the size of a list returned by a field itself, but that of a list returned by one of its sub-fields." sizedFields: [String!] "The `requireOneSlicingArgument` argument can be used to inform the static analysis that it should expect that exactly one of the defined slicing arguments is present in a query. If that is not the case (i.e., if none or multiple slicing arguments are present), the static analysis may throw an error." requireOneSlicingArgument: Boolean! = true) on FIELD_DEFINITION
-
-"The `@specifiedBy` directive is used within the type system definition language to provide a URL for specifying the behavior of custom scalar definitions."
-directive @specifiedBy("The specifiedBy URL points to a human-readable specification. This field will only read a result for scalar types." url: String!) on SCALAR
-
-"The `DateTime` scalar represents an ISO-8601 compliant date time type."
-scalar DateTime @specifiedBy(url: "https:\/\/www.graphql-scalars.com\/date-time")
-
-scalar EncodedId
-
-scalar EncodedIdFilter
-
-"The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
-scalar Long
-
-"The `TimeSpan` scalar represents an ISO-8601 compliant duration type."
-scalar TimeSpan
-
-scalar UUID @specifiedBy(url: "https:\/\/tools.ietf.org\/html\/rfc4122")

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
+using System.Text.Json;
 using TheDiscDb.Client.Contributions;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -49,6 +50,7 @@ public partial class DiscUpload : ComponentBase
     private readonly string[] driveIndices = Enumerable.Range(0, 8).Select(i => i.ToString()).ToArray();
 
     private string GetUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/discs/{DiscId}/logs";
+    private string GetClearErrorUri() => $"{GetUri()}/error";
 
     private string GetMakeMkvPath() => "C:\\Program Files (x86)\\MakeMKV\\makemkvcon64.exe";
 
@@ -56,6 +58,7 @@ public partial class DiscUpload : ComponentBase
     private Timer? pollUploadedTimer;
 
     private bool showSpinner;
+    private string? uploadError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -87,10 +90,34 @@ public partial class DiscUpload : ComponentBase
 
         this.ContributionClient.GetDiscUploadStatus.ExecuteAsync(input).ContinueWith(t =>
         {
-            if (t != null && !t.IsFaulted && t.Result!.Data!.DiscUploadStatus!.DiscUploadStatus!.LogsUploaded)
+            if (t == null || t.IsFaulted)
             {
-                this.pollUploadedTimer?.Dispose();
-                JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
+                return;
+            }
+
+            var status = t.Result?.Data?.DiscUploadStatus?.DiscUploadStatus;
+            if (status == null)
+            {
+                return;
+            }
+
+            if (status.LogsUploaded)
+            {
+                InvokeAsync(() =>
+                {
+                    this.pollUploadedTimer?.Dispose();
+                    JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
+                });
+            }
+            else if (!string.IsNullOrEmpty(status.LogUploadError))
+            {
+                InvokeAsync(() =>
+                {
+                    this.pollUploadedTimer?.Dispose();
+                    this.uploadError = status.LogUploadError;
+                    this.showSpinner = false;
+                    StateHasChanged();
+                });
             }
         });
     }
@@ -124,13 +151,75 @@ public partial class DiscUpload : ComponentBase
                 {
                     using var reader = new StreamReader(stream);
                     string contents = await reader.ReadToEndAsync();
-                    await HttpClient.PostAsync(GetUri(), new StringContent(contents));
+                    var response = await HttpClient.PostAsync(GetUri(), new StringContent(contents));
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var body = await response.Content.ReadAsStringAsync();
+                        uploadError = ExtractErrorDetail(body);
+                        StateHasChanged();
+                        return;
+                    }
                 }
             }
         }
         catch (Exception ex)
         {
+            uploadError = "An unexpected error occurred uploading the log file.";
             Console.WriteLine(ex.Message);
+            StateHasChanged();
         }
+    }
+
+    private async Task ResetError()
+    {
+        this.uploadError = null;
+        this.showSpinner = false;
+        this.pollUploadedTimer?.Dispose();
+        this.pollUploadedTimer = null;
+        this.startSpinnerTimer?.Dispose();
+
+        await HttpClient.DeleteAsync(GetClearErrorUri());
+
+        this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
+    }
+
+    private static string ExtractErrorDetail(string responseBody)
+    {
+        const string fallback = "An error occurred uploading the log file.";
+        try
+        {
+            using var doc = JsonDocument.Parse(responseBody);
+            if (doc.RootElement.TryGetProperty("detail", out var detail))
+            {
+                var text = detail.GetString();
+                if (string.IsNullOrEmpty(text))
+                {
+                    return fallback;
+                }
+
+                // The ProblemDetails detail contains a wrapper like:
+                // "Unable to save disc logs...\r\nErrors:\r\n- Actual error message"
+                // Extract just the error line(s) after "Errors:" for a cleaner message.
+                var errorsIndex = text.IndexOf("Errors:", StringComparison.OrdinalIgnoreCase);
+                if (errorsIndex >= 0)
+                {
+                    var errorLines = text[(errorsIndex + "Errors:".Length)..]
+                        .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .Select(l => l.TrimStart('-', ' '))
+                        .Where(l => !string.IsNullOrEmpty(l));
+                    var joined = string.Join(" ", errorLines);
+                    return string.IsNullOrEmpty(joined) ? fallback : joined;
+                }
+
+                return text;
+            }
+        }
+        catch
+        {
+            // Not valid JSON, fall through
+        }
+
+        return fallback;
     }
 }

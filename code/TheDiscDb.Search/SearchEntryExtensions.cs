@@ -9,7 +9,7 @@ public static partial class SearchEntryExtensions
     [GeneratedRegex(@"[^a-zA-Z0-9_\-=]")]
     private static partial Regex InvalidKeyCharsRegex();
 
-    internal static string SanitizeKey(string key) => InvalidKeyCharsRegex().Replace(key, "_");
+    public static string SanitizeKey(string key) => InvalidKeyCharsRegex().Replace(key, "_");
     public static IEnumerable<SearchEntry> ToSearchEntries(this MediaItem item)
     {
         yield return ToSearchEntry(item);
@@ -135,6 +135,7 @@ public static partial class SearchEntryExtensions
             ImageUrl = item.ImageUrl,
             RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}",
             Identifiers = CollectIdentifiers(item.Externalids, item.Releases),
+            Groups = CollectGroupNames(item),
             MediaItem = new ItemInfo
             {
                 Slug = item.Slug,
@@ -166,6 +167,31 @@ public static partial class SearchEntryExtensions
         return ids;
     }
 
+    private static IList<string> CollectGroupNames(MediaItem item, Release? release = null)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (item.MediaItemGroups != null)
+        {
+            foreach (var mig in item.MediaItemGroups)
+            {
+                if (!string.IsNullOrWhiteSpace(mig.Group?.Name))
+                    names.Add(mig.Group.Name);
+            }
+        }
+
+        if (release?.ReleaseGroups != null)
+        {
+            foreach (var rg in release.ReleaseGroups)
+            {
+                if (!string.IsNullOrWhiteSpace(rg.Group?.Name))
+                    names.Add(rg.Group.Name);
+            }
+        }
+
+        return names.ToList();
+    }
+
     private static SearchEntry ToReleaseSearchEntry(MediaItem item, InputModels.Release release)
     {
         return new SearchEntry
@@ -175,6 +201,7 @@ public static partial class SearchEntryExtensions
             Title = release.Title,
             ImageUrl = release.ImageUrl,
             RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}/releases/{release.Slug}",
+            Groups = CollectGroupNames(item, release),
             MediaItem = new ItemInfo
             {
                 Slug = item.Slug,
@@ -199,6 +226,7 @@ public static partial class SearchEntryExtensions
                 Title = disc.Name,
                 ImageUrl = release.ImageUrl,
                 RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}/releases/{release.Slug}/discs/{disc.Index}",
+                Groups = CollectGroupNames(item, release),
                 MediaItem = new ItemInfo
                 {
                     Slug = item.Slug,
@@ -232,6 +260,7 @@ public static partial class SearchEntryExtensions
                     Title = title.Item.Title,
                     ImageUrl = release.ImageUrl,
                     RelativeUrl = $"/{item.Type?.ToLower()}/{item.Slug}/releases/{release.Slug}/discs/{disc.Index}",
+                    Groups = CollectGroupNames(item, release),
                     MediaItem = new ItemInfo
                     {
                         Slug = item.Slug,

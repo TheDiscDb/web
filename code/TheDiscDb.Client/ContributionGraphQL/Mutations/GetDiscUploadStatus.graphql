@@ -3,6 +3,7 @@ mutation GetDiscUploadStatus($input: DiscUploadStatusInput!) {
   {
     discUploadStatus {
       logsUploaded
+      logUploadError
     }
     errors {
       code: __typename
