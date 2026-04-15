@@ -14,9 +14,12 @@ var blobs = builder.AddAzureStorage("storage").RunAsEmulator(
                      })
     .AddBlobs("blobs");
 
+var dataDirectoryRoot = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "..", "..", "data", "data"));
+
 var migrations = builder.AddProject<Projects.TheDiscDb_DatabaseMigration>("migrations")
     .WithReference(blobs)
     .WaitFor(blobs)
+    .WithEnvironment("DatabaseMigration__DataDirectoryRoot", dataDirectoryRoot)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__AdminApiKey", adminApiKey)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__PublicApiKey", publicApiKey);
 
