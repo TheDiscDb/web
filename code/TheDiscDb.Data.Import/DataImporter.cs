@@ -1275,6 +1275,11 @@
                 return true;
             }
 
+            if (string.IsNullOrEmpty(url) || url.Contains("imdb-api.com", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
             try
             {
                 var httpClient = this.httpClientFactory.CreateClient();
