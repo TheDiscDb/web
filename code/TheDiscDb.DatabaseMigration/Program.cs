@@ -1,7 +1,9 @@
 using Fantastic.FileSystem;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using TheDiscDb.Data.Import;
+using TheDiscDb.Data.Import.Pipeline;
 using TheDiscDb.DatabaseMigration;
 using TheDiscDb.Web.Data;
 
@@ -40,7 +42,13 @@ builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IFileSystem, PhysicalFileSystem>();
 
 builder.Services.Configure<DataImporterOptions>(builder.Configuration.GetSection("DataImporter"));
-builder.Services.AddImportPipeline();
+builder.Services.AddImportPipeline(includeSearchIndex: false);
+
+// DatabaseImportMiddleware and GroupImportMiddleware depend on Scoped IDbContextFactory
+// and UserManager. Override their lifetime to Scoped for this host.
+builder.Services.Replace(ServiceDescriptor.Scoped<DatabaseImportMiddleware, DatabaseImportMiddleware>());
+builder.Services.Replace(ServiceDescriptor.Scoped<GroupImportMiddleware, GroupImportMiddleware>());
+
 builder.Services.Configure<DatabaseMigrationOptions>(builder.Configuration.GetSection("DatabaseMigration"));
 builder.Services.AddScoped<DataSeeder>();
 builder.Services.AddScoped<BlobSyncService>();

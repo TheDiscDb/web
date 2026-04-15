@@ -5,9 +5,8 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class ImportPipelineExtensions
     {
-        public static IServiceCollection AddImportPipeline(this IServiceCollection services)
+        public static IServiceCollection AddImportPipeline(this IServiceCollection services, bool includeSearchIndex = true)
         {
-            services.AddSingleton<IServiceCollection>(services);
             services.AddSingleton<DataImportPipelineBuilder>();
             services.AddSingleton<DataImportItemFactory>();
             services.AddSingleton<DatabaseImportMiddleware>();
@@ -15,7 +14,11 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<GroupImportMiddleware>();
             services.AddSingleton<CoverImageUploadMiddleware>();
             services.AddSingleton<LatestReleaseUpdateMiddleware>();
-            services.AddSingleton<SearchIndexUpdateMiddleware>();
+
+            if (includeSearchIndex)
+            {
+                services.AddSingleton<SearchIndexUpdateMiddleware>();
+            }
 
             services.AddSingleton<IItemHandler<MediaItem>, MediaItemHandler>();
             services.AddSingleton<IItemHandler<Boxset>, BoxsetItemHandler>();
