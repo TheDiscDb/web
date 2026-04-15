@@ -322,29 +322,10 @@ public class DataImportItemFactory
             });
         }
 
-        if (releaseFile.Groups != null)
-        {
-            foreach (var groupName in releaseFile.Groups)
-            {
-                var existingReleaseGroup = release.ReleaseGroups
-                    .FirstOrDefault(rg => rg.Group != null && string.Equals(rg.Group.Name, groupName, StringComparison.OrdinalIgnoreCase));
-
-                if (existingReleaseGroup == null)
-                {
-                    var group = new Group
-                    {
-                        Name = groupName,
-                        Slug = groupName.Slugify()
-                    };
-
-                    release.ReleaseGroups.Add(new ReleaseGroup
-                    {
-                        Release = release,
-                        Group = group
-                    });
-                }
-            }
-        }
+        // Group and ReleaseGroup creation is handled by GroupImportMiddleware,
+        // which deduplicates via its groupCache and DB lookups. Creating inline
+        // Group entities here causes duplicate-key violations on IX_Groups_Slug
+        // when multiple items share the same group in a batch import.
     }
 
     private void Map(MediaItem instance, MetadataFile metadata)
