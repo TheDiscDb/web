@@ -5,6 +5,7 @@ using KristofferStrube.Blazor.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.Popups;
@@ -52,11 +53,18 @@ public partial class AddDisc : ComponentBase
     [Inject]
     public SfDialogService DialogService { get; set; } = default!;
 
+    [Inject]
+    public IWebAssemblyHostEnvironment HostEnvironment { get; set; } = default!;
+
     FileSystemDirectoryHandleInProcess? handler;
     IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
     string hash = string.Empty;
     List<FileHashInfo>? hashItems = null;
     IContributionDiscs_MyContributions_Nodes? contribution = null;
+    bool manualHashMode;
+    string manualHash = string.Empty;
+
+    bool IsDevelopmentMode => HostEnvironment.Environment == "Development";
 
     private readonly SaveDiscRequest request = new SaveDiscRequest
     {
@@ -252,6 +260,15 @@ public partial class AddDisc : ComponentBase
             {
                 this.request.Slug = title.Slugify();
             }
+        }
+    }
+
+    private void SubmitManualHash()
+    {
+        if (!string.IsNullOrWhiteSpace(manualHash))
+        {
+            request.ContentHash = manualHash.Trim();
+            manualHashMode = true;
         }
     }
 }
