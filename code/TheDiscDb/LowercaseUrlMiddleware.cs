@@ -30,7 +30,7 @@ public class LowercaseUrlMiddleware(RequestDelegate next)
         ".css", ".js", ".map", ".mjs",
         ".woff", ".woff2", ".ttf", ".eot",
         ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico",
-        ".json", ".webmanifest"
+        ".json", ".webmanifest", ".wasm", ".dll"
     ];
 
     public Task InvokeAsync(HttpContext context)

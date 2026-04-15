@@ -341,6 +341,37 @@ public class LowercaseUrlMiddlewareTests
     }
 
     [Test]
+    public async Task Regression_StaleWasmRequest_Returns404()
+    {
+        var wasCalled = false;
+        RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
+        var middleware = new LowercaseUrlMiddleware(next);
+        var context = CreateHttpContext("GET",
+            "/_framework/System.Runtime.Serialization.qfpmfujegm.wasm");
+
+        await middleware.InvokeAsync(context);
+
+        // /_framework is a case-sensitive prefix, so the static file guard skips it
+        // and the request passes through to be handled by MapStaticAssets
+        await Assert.That(wasCalled).IsTrue();
+    }
+
+    [Test]
+    public async Task Regression_WasmInPageUrl_Returns404()
+    {
+        var wasCalled = false;
+        RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
+        var middleware = new LowercaseUrlMiddleware(next);
+        var context = CreateHttpContext("GET",
+            "/movie/the-matrix/releases/some-release/discs/disc-1/dotnet.native.abc123.wasm");
+
+        await middleware.InvokeAsync(context);
+
+        await Assert.That(wasCalled).IsFalse();
+        await Assert.That(context.Response.StatusCode).IsEqualTo(404);
+    }
+
+    [Test]
     public async Task Regression_FrameworkJs_PassesThrough()
     {
         var wasCalled = false;
