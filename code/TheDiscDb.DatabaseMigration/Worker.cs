@@ -22,7 +22,7 @@ public class Worker(
         {
             SeedPlan? seedPlan = null;
 
-            using (var scope = serviceProvider.CreateScope())
+            await using (var scope = serviceProvider.CreateAsyncScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<SqlServerDataContext>();
                 var options = scope.ServiceProvider.GetRequiredService<IOptions<DatabaseMigrationOptions>>();
@@ -51,7 +51,7 @@ public class Worker(
 
             if (seedPlan != null)
             {
-                using var bgScope = serviceProvider.CreateScope();
+                await using var bgScope = serviceProvider.CreateAsyncScope();
                 var bgOptions = bgScope.ServiceProvider.GetRequiredService<IOptions<DatabaseMigrationOptions>>();
                 int initialCount = bgOptions.Value.InitialSeedCount;
                 var bgSeeder = bgScope.ServiceProvider.GetRequiredService<DataSeeder>();
@@ -71,7 +71,7 @@ public class Worker(
 
             // Sync local image files to blob storage (non-blocking — web app is already running)
             {
-                using var syncScope = serviceProvider.CreateScope();
+                await using var syncScope = serviceProvider.CreateAsyncScope();
                 var blobSync = syncScope.ServiceProvider.GetRequiredService<BlobSyncService>();
                 await blobSync.SyncAsync(cancellationToken);
             }
