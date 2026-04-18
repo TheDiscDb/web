@@ -19,14 +19,17 @@ public partial class ContributionDiscs : ComponentBase
 
     private IContributionDiscs_MyContributions_Nodes? Contribution { get; set; }
 
-    private IQueryable<IContributionDiscs_MyContributions_Nodes_Discs?>? Discs { get; set; }
+    private List<IContributionDiscs_MyContributions_Nodes_Discs>? discList;
+    private IQueryable<IContributionDiscs_MyContributions_Nodes_Discs?>? Discs => discList?.AsQueryable();
 
-    public bool IsCompleteButtonDisabled => Discs == null || !Discs.Any();
+    public bool IsCompleteButtonDisabled => discList == null || discList.Count == 0;
 
     private bool IsEditable => Contribution?.Status is
         UserContributionStatus.Pending or
         UserContributionStatus.ChangesRequested or
         UserContributionStatus.Rejected;
+
+    private bool isSaving;
 
     protected override async Task OnInitializedAsync()
     {
@@ -41,7 +44,10 @@ public partial class ContributionDiscs : ComponentBase
             this.Contribution = result.Data!.MyContributions!.Nodes!.FirstOrDefault();
             if (this.Contribution != null)
             {
-                this.Discs = this.Contribution.Discs!.AsQueryable();
+                this.discList = this.Contribution.Discs!
+                    .OrderBy(d => d.Index ?? int.MaxValue)
+                    .ThenBy(d => d.EncodedId)
+                    .ToList();
             }
         }
     }
@@ -62,4 +68,45 @@ public partial class ContributionDiscs : ComponentBase
 
     private void NavigateToReview()
         => NavigationManager.NavigateTo($"/contribution/{ContributionId}/review");
+
+    private async Task MoveDiscUp(IContributionDiscs_MyContributions_Nodes_Discs disc)
+    {
+        if (discList == null || isSaving) return;
+        int idx = discList.IndexOf(disc);
+        if (idx <= 0) return;
+
+        (discList[idx - 1], discList[idx]) = (discList[idx], discList[idx - 1]);
+        await SaveDiscOrder();
+    }
+
+    private async Task MoveDiscDown(IContributionDiscs_MyContributions_Nodes_Discs disc)
+    {
+        if (discList == null || isSaving) return;
+        int idx = discList.IndexOf(disc);
+        if (idx < 0 || idx >= discList.Count - 1) return;
+
+        (discList[idx], discList[idx + 1]) = (discList[idx + 1], discList[idx]);
+        await SaveDiscOrder();
+    }
+
+    private async Task SaveDiscOrder()
+    {
+        if (discList == null) return;
+
+        isSaving = true;
+        try
+        {
+            var input = new ReorderDiscsInput
+            {
+                ContributionId = ContributionId!,
+                DiscIds = discList.Select(d => d.EncodedId).ToList()
+            };
+
+            await this.ContributionClient.ReorderDiscs.ExecuteAsync(input);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
 }

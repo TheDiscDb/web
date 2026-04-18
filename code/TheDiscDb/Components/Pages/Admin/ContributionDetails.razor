@@ -94,6 +94,10 @@
                         <span>@(context.LogsUploaded ? "Uploaded" : "Pending")</span>
                     }
                 </TemplateColumn>
+                <TemplateColumn Title="Order">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => MoveDiscUp(context)" title="Move up"><i class="e-icons e-arrow-up"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => MoveDiscDown(context)" title="Move down"><i class="e-icons e-arrow-down"></i></button>
+                </TemplateColumn>
             </QuickGrid>
         </section>
     }

@@ -1,0 +1,16 @@
+mutation ReorderDiscs($input: ReorderDiscsInput!) {
+  reorderDiscs(input: $input)
+  {
+    userContributionDisc {
+      encodedId
+      index
+      name
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

@@ -44,7 +44,10 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
 
     private SqlServerDataContext database = default!;
     private UserContribution? Contribution { get; set; }
-    private IQueryable<UserContributionDisc>? Discs => Contribution?.Discs.AsQueryable();
+    private IQueryable<UserContributionDisc>? Discs => Contribution?.Discs
+        .OrderBy(d => d.Index ?? int.MaxValue)
+        .ThenBy(d => d.Id)
+        .AsQueryable();
     private TheDiscDbUser? User { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -174,5 +177,51 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
 
         showStatusMessageDialog = false;
         statusMessage = string.Empty;
+    }
+
+    private async Task MoveDiscUp(UserContributionDisc disc)
+    {
+        if (this.Contribution == null) return;
+
+        var sorted = this.Contribution.Discs
+            .OrderBy(d => d.Index ?? int.MaxValue)
+            .ThenBy(d => d.Id)
+            .ToList();
+
+        int idx = sorted.IndexOf(disc);
+        if (idx <= 0) return;
+
+        sorted.RemoveAt(idx);
+        sorted.Insert(idx - 1, disc);
+        RebuildIndices(sorted);
+
+        await this.database.SaveChangesAsync();
+    }
+
+    private async Task MoveDiscDown(UserContributionDisc disc)
+    {
+        if (this.Contribution == null) return;
+
+        var sorted = this.Contribution.Discs
+            .OrderBy(d => d.Index ?? int.MaxValue)
+            .ThenBy(d => d.Id)
+            .ToList();
+
+        int idx = sorted.IndexOf(disc);
+        if (idx < 0 || idx >= sorted.Count - 1) return;
+
+        sorted.RemoveAt(idx);
+        sorted.Insert(idx + 1, disc);
+        RebuildIndices(sorted);
+
+        await this.database.SaveChangesAsync();
+    }
+
+    private static void RebuildIndices(List<UserContributionDisc> discs)
+    {
+        for (int i = 0; i < discs.Count; i++)
+        {
+            discs[i].Index = i + 1;
+        }
     }
 }

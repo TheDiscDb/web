@@ -25,6 +25,7 @@ query ContributionDiscs($contribtionId: EncodedIdFilter) {
       locale
       discs {
         encodedId
+        index
         name
         existingDiscPath
         logsUploaded

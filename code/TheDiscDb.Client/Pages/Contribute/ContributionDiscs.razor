@@ -92,6 +92,13 @@
                 <TemplateColumn Title="">
                     <a href="@($"/contribution/{ContributionId}/disc/{context!.EncodedId}/edit?returnUrl=/contribution/{ContributionId}")" title="Edit disc details"><i class="e-icons e-edit"></i> Edit</a>
                 </TemplateColumn>
+                @if (IsEditable)
+                {
+                    <TemplateColumn Title="Order">
+                        <button class="btn btn-sm btn-outline-secondary" disabled="@isSaving" @onclick="() => MoveDiscUp(context!)" title="Move up"><i class="e-icons e-arrow-up"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" disabled="@isSaving" @onclick="() => MoveDiscDown(context!)" title="Move down"><i class="e-icons e-arrow-down"></i></button>
+                    </TemplateColumn>
+                }
             </QuickGrid>
         </section>
 

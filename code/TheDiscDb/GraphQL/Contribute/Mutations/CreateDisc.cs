@@ -44,7 +44,25 @@ public partial class ContributionMutations
         }
         else
         {
-            contribution!.Discs.Add(disc);
+            // Normalize any existing null indices before computing max
+            var existingDiscs = contribution!.Discs
+                .OrderBy(d => d.Index ?? int.MaxValue)
+                .ThenBy(d => d.Id)
+                .ToList();
+
+            for (int i = 0; i < existingDiscs.Count; i++)
+            {
+                if (existingDiscs[i].Index == null)
+                {
+                    existingDiscs[i].Index = i + 1;
+                }
+            }
+
+            int maxIndex = existingDiscs.Any()
+                ? existingDiscs.Max(d => d.Index!.Value)
+                : 0;
+            disc.Index = maxIndex + 1;
+            contribution.Discs.Add(disc);
         }
 
         await database.SaveChangesAsync(cancellationToken);
