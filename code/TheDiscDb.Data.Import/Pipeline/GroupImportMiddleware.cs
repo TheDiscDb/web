@@ -55,6 +55,12 @@ namespace TheDiscDb.Data.Import.Pipeline
                     await TryAddGroups(item.MediaItem, item.ImdbData, item.Metadata, cancellationToken);
                     shouldSave = true;
                 }
+                else if (item.TmdbData != null)
+                {
+                    await TryAddGroupsFromTmdb(item.MediaItem, item.TmdbData, cancellationToken);
+                    await TryAddCustomGroups(item.MediaItem, item.Metadata, cancellationToken);
+                    shouldSave = true;
+                }
                 else if (item.Metadata.Groups.Count > 0)
                 {
                     await TryAddCustomGroups(item.MediaItem, item.Metadata, cancellationToken);
@@ -136,6 +142,75 @@ namespace TheDiscDb.Data.Import.Pipeline
                         item.MediaItemGroups.Add(newGroup);
                         mediaItemGroupCache.TryAdd($"{Roles.CustomGroup}-{group.Slug}-{item.Id}", newGroup);
                     }
+                }
+            }
+        }
+
+        private async Task TryAddGroupsFromTmdb(MediaItem item, TmdbMetadata tmdb, CancellationToken cancellationToken)
+        {
+            foreach (var genre in tmdb.GenreList)
+            {
+                await TryAddNameGroup(item, genre, Roles.Genre, isFeatured: false, cancellationToken);
+            }
+
+            foreach (var director in tmdb.DirectorList)
+            {
+                await TryAddNameGroup(item, director, Roles.Director, isFeatured: true, cancellationToken);
+            }
+
+            foreach (var writer in tmdb.WriterList)
+            {
+                await TryAddNameGroup(item, writer, Roles.Writer, isFeatured: false, cancellationToken);
+            }
+
+            foreach (var star in tmdb.StarList)
+            {
+                await TryAddNameGroup(item, star, Roles.Actor, isFeatured: false, cancellationToken);
+            }
+        }
+
+        private async Task TryAddNameGroup(MediaItem item, string name, string role, bool isFeatured, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return;
+
+            var group = await TryGetGroup(name, null!, cancellationToken);
+            if (group == null)
+            {
+                string slug = name.Slugify();
+
+                group = new Group
+                {
+                    Name = name,
+                    Slug = slug
+                };
+                groupCache.TryAdd(name, group);
+
+                var mig = new MediaItemGroup
+                {
+                    Group = group,
+                    MediaItem = item,
+                    Role = role,
+                    IsFeatured = isFeatured
+                };
+
+                this.dbContext.MediaItemGroup.Add(mig);
+                item.MediaItemGroups.Add(mig);
+                mediaItemGroupCache.TryAdd($"{role}-{slug}-{item.Id}", mig);
+            }
+            else
+            {
+                var mediaItemGroup = await TryGetMediaItemGroup(role, group, item.Id, cancellationToken);
+                if (mediaItemGroup == null)
+                {
+                    var newGroup = new MediaItemGroup
+                    {
+                        Group = group,
+                        MediaItem = item,
+                        Role = role,
+                        IsFeatured = isFeatured
+                    };
+                    item.MediaItemGroups.Add(newGroup);
+                    mediaItemGroupCache.TryAdd($"{role}-{group.Slug}-{item.Id}", newGroup);
                 }
             }
         }
