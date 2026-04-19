@@ -44,11 +44,12 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
 
     private SqlServerDataContext database = default!;
     private UserContribution? Contribution { get; set; }
-    private IQueryable<UserContributionDisc>? Discs => Contribution?.Discs
-        .OrderBy(d => d.Index ?? int.MaxValue)
-        .ThenBy(d => d.Id)
-        .AsQueryable();
+    private List<UserContributionDisc>? discList;
     private TheDiscDbUser? User { get; set; }
+
+    private UserContributionDisc? draggedDisc;
+    private UserContributionDisc? dragOverDisc;
+    private bool isSaving;
 
     protected override async Task OnInitializedAsync()
     {
@@ -62,6 +63,14 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
                 .FirstOrDefaultAsync(uc => uc.Id.ToString() == ContributionId);
 
             this.IdEncoder.EncodeInPlace(this.Contribution);
+
+            if (this.Contribution != null)
+            {
+                this.discList = this.Contribution.Discs
+                    .OrderBy(d => d.Index ?? int.MaxValue)
+                    .ThenBy(d => d.Id)
+                    .ToList();
+            }
 
             if (!string.IsNullOrEmpty(this.Contribution?.UserId))
             {
@@ -179,42 +188,50 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
         statusMessage = string.Empty;
     }
 
-    private async Task MoveDiscUp(UserContributionDisc disc)
+    private void OnDragStart(UserContributionDisc disc)
     {
-        if (this.Contribution == null) return;
-
-        var sorted = this.Contribution.Discs
-            .OrderBy(d => d.Index ?? int.MaxValue)
-            .ThenBy(d => d.Id)
-            .ToList();
-
-        int idx = sorted.IndexOf(disc);
-        if (idx <= 0) return;
-
-        sorted.RemoveAt(idx);
-        sorted.Insert(idx - 1, disc);
-        RebuildIndices(sorted);
-
-        await this.database.SaveChangesAsync();
+        if (isSaving) return;
+        draggedDisc = disc;
     }
 
-    private async Task MoveDiscDown(UserContributionDisc disc)
+    private void OnDragEnter(UserContributionDisc disc)
     {
-        if (this.Contribution == null) return;
+        if (draggedDisc == null || disc == draggedDisc || discList == null || isSaving) return;
+        dragOverDisc = disc;
 
-        var sorted = this.Contribution.Discs
-            .OrderBy(d => d.Index ?? int.MaxValue)
-            .ThenBy(d => d.Id)
-            .ToList();
+        int fromIndex = discList.IndexOf(draggedDisc);
+        int toIndex = discList.IndexOf(disc);
+        if (fromIndex < 0 || toIndex < 0) return;
 
-        int idx = sorted.IndexOf(disc);
-        if (idx < 0 || idx >= sorted.Count - 1) return;
+        discList.RemoveAt(fromIndex);
+        discList.Insert(toIndex, draggedDisc);
+    }
 
-        sorted.RemoveAt(idx);
-        sorted.Insert(idx + 1, disc);
-        RebuildIndices(sorted);
+    private async Task OnDragEnd()
+    {
+        var wasDragging = draggedDisc != null;
+        draggedDisc = null;
+        dragOverDisc = null;
 
-        await this.database.SaveChangesAsync();
+        if (!wasDragging || isSaving || discList == null) return;
+
+        isSaving = true;
+        try
+        {
+            RebuildIndices(discList);
+            await this.database.SaveChangesAsync();
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private string GetRowClass(UserContributionDisc disc)
+    {
+        if (disc == draggedDisc) return "dragging";
+        if (disc == dragOverDisc) return "drag-over";
+        return string.Empty;
     }
 
     private static void RebuildIndices(List<UserContributionDisc> discs)

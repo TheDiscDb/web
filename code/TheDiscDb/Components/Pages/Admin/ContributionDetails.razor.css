@@ -1,0 +1,29 @@
+.disc-reorder-table {
+    border-collapse: collapse;
+}
+
+.drag-handle {
+    cursor: grab;
+    text-align: center;
+    font-size: 1.3rem;
+    color: #999;
+    user-select: none;
+    width: 2rem;
+    letter-spacing: 0.1em;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+::deep tr.dragging {
+    opacity: 0.4;
+}
+
+::deep tr.drag-over {
+    border-top: 2px solid var(--accent-color, #0d6efd);
+}
+
+.drag-col {
+    width: 2rem;
+}
