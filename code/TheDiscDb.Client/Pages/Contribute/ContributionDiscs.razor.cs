@@ -20,7 +20,6 @@ public partial class ContributionDiscs : ComponentBase
     private IContributionDiscs_MyContributions_Nodes? Contribution { get; set; }
 
     private List<IContributionDiscs_MyContributions_Nodes_Discs>? discList;
-    private IQueryable<IContributionDiscs_MyContributions_Nodes_Discs?>? Discs => discList?.AsQueryable();
 
     public bool IsCompleteButtonDisabled => discList == null || discList.Count == 0;
 
@@ -30,6 +29,9 @@ public partial class ContributionDiscs : ComponentBase
         UserContributionStatus.Rejected;
 
     private bool isSaving;
+
+    private IContributionDiscs_MyContributions_Nodes_Discs? draggedDisc;
+    private IContributionDiscs_MyContributions_Nodes_Discs? dragOverDisc;
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,24 +71,40 @@ public partial class ContributionDiscs : ComponentBase
     private void NavigateToReview()
         => NavigationManager.NavigateTo($"/contribution/{ContributionId}/review");
 
-    private async Task MoveDiscUp(IContributionDiscs_MyContributions_Nodes_Discs disc)
+    private void OnDragStart(IContributionDiscs_MyContributions_Nodes_Discs disc)
     {
-        if (discList == null || isSaving) return;
-        int idx = discList.IndexOf(disc);
-        if (idx <= 0) return;
+        if (isSaving) return;
+        draggedDisc = disc;
+    }
 
-        (discList[idx - 1], discList[idx]) = (discList[idx], discList[idx - 1]);
+    private void OnDragEnter(IContributionDiscs_MyContributions_Nodes_Discs disc)
+    {
+        if (draggedDisc == null || disc == draggedDisc || discList == null || isSaving) return;
+        dragOverDisc = disc;
+
+        int fromIndex = discList.IndexOf(draggedDisc);
+        int toIndex = discList.IndexOf(disc);
+        if (fromIndex < 0 || toIndex < 0) return;
+
+        discList.RemoveAt(fromIndex);
+        discList.Insert(toIndex, draggedDisc);
+    }
+
+    private async Task OnDragEnd()
+    {
+        var wasDragging = draggedDisc != null;
+        draggedDisc = null;
+        dragOverDisc = null;
+
+        if (!wasDragging || isSaving) return;
         await SaveDiscOrder();
     }
 
-    private async Task MoveDiscDown(IContributionDiscs_MyContributions_Nodes_Discs disc)
+    private string GetRowClass(IContributionDiscs_MyContributions_Nodes_Discs disc)
     {
-        if (discList == null || isSaving) return;
-        int idx = discList.IndexOf(disc);
-        if (idx < 0 || idx >= discList.Count - 1) return;
-
-        (discList[idx], discList[idx + 1]) = (discList[idx + 1], discList[idx]);
-        await SaveDiscOrder();
+        if (disc == draggedDisc) return "dragging";
+        if (disc == dragOverDisc) return "drag-over";
+        return string.Empty;
     }
 
     private async Task SaveDiscOrder()

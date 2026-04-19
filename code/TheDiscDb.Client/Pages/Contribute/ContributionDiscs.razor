@@ -72,34 +72,58 @@
                 </a>
             </div>
 
-            <QuickGrid Items="Discs" class="striped-grid contribute-grid" ItemKey="d => d!.EncodedId">
-                <TemplateColumn Title="Name">
-                    <div class="disc-name">
-                        <a href="/contribution/@ContributionId/discs/@context!.EncodedId/identify" title="Identify Disc">@context.Name</a>
-                    </div>
-                </TemplateColumn>
-                <PropertyColumn Property="d => d!.Format"></PropertyColumn>
-                <TemplateColumn Title="Logs">
-                    @if (!string.IsNullOrEmpty(context!.ExistingDiscPath))
-                    {
-                        <span class="badge bg-light text-dark">Copied from another disc</span>
-                    }
-                    else
-                    {
-                        <span>@(context.LogsUploaded ? "Uploaded" : "Pending")</span>
-                    }
-                </TemplateColumn>
-                <TemplateColumn Title="">
-                    <a href="@($"/contribution/{ContributionId}/disc/{context!.EncodedId}/edit?returnUrl=/contribution/{ContributionId}")" title="Edit disc details"><i class="e-icons e-edit"></i> Edit</a>
-                </TemplateColumn>
-                @if (IsEditable)
-                {
-                    <TemplateColumn Title="Order">
-                        <button class="btn btn-sm btn-outline-secondary" disabled="@isSaving" @onclick="() => MoveDiscUp(context!)" title="Move up"><i class="e-icons e-arrow-up"></i></button>
-                        <button class="btn btn-sm btn-outline-secondary" disabled="@isSaving" @onclick="() => MoveDiscDown(context!)" title="Move down"><i class="e-icons e-arrow-down"></i></button>
-                    </TemplateColumn>
-                }
-            </QuickGrid>
+            @if (discList is { Count: > 0 })
+            {
+                <table class="striped-grid contribute-grid disc-reorder-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Format</th>
+                            <th>Logs</th>
+                            <th></th>
+                            @if (IsEditable)
+                            {
+                                <th class="drag-col"></th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var disc in discList)
+                        {
+                            <tr class="@GetRowClass(disc)"
+                                draggable="@IsEditable.ToString().ToLowerInvariant()"
+                                @ondragstart="() => OnDragStart(disc)"
+                                @ondragenter="() => OnDragEnter(disc)"
+                                @ondragover:preventDefault="true"
+                                @ondragend="OnDragEnd">
+                                <td>
+                                    <div class="disc-name">
+                                        <a href="/contribution/@ContributionId/discs/@disc.EncodedId/identify" title="Identify Disc">@disc.Name</a>
+                                    </div>
+                                </td>
+                                <td>@disc.Format</td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(disc.ExistingDiscPath))
+                                    {
+                                        <span class="badge bg-light text-dark">Copied from another disc</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@(disc.LogsUploaded ? "Uploaded" : "Pending")</span>
+                                    }
+                                </td>
+                                <td>
+                                    <a href="@($"/contribution/{ContributionId}/disc/{disc.EncodedId}/edit?returnUrl=/contribution/{ContributionId}")" title="Edit disc details"><i class="e-icons e-edit"></i> Edit</a>
+                                </td>
+                                @if (IsEditable)
+                                {
+                                    <td class="drag-handle" title="Drag to reorder">⋮</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
         </section>
 
         <div class="cta-row split">
