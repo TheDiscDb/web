@@ -75,32 +75,32 @@
                 </div>
             </article>
         </section>
-
-        <section class="info-card discs-card">
-            <QuickGrid Items="Discs" class="striped-grid contribute-grid">
-                <TemplateColumn Title="Name">
-                    <div class="disc-name">
-                        <a href="/admin/contribution/@ContributionId/discs/@context.Id" title="View Disc">@context.Name</a>
-                    </div>
-                </TemplateColumn>
-                <PropertyColumn Property="d => d.Format"></PropertyColumn>
-                <TemplateColumn Title="Logs">
-                    @if (!string.IsNullOrEmpty(context.ExistingDiscPath))
-                    {
-                        <span class="badge bg-light text-dark">Copied from another disc</span>
-                    }
-                    else
-                    {
-                        <span>@(context.LogsUploaded ? "Uploaded" : "Pending")</span>
-                    }
-                </TemplateColumn>
-                <TemplateColumn Title="Order">
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => MoveDiscUp(context)" title="Move up"><i class="e-icons e-arrow-up"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => MoveDiscDown(context)" title="Move down"><i class="e-icons e-arrow-down"></i></button>
-                </TemplateColumn>
-            </QuickGrid>
-        </section>
     }
+
+    <section class="info-card discs-card">
+        <QuickGrid Items="Discs" class="striped-grid contribute-grid">
+            <TemplateColumn Title="Name">
+                <div class="disc-name">
+                    <a href="/admin/contribution/@ContributionId/discs/@context.Id" title="View Disc">@context.Name</a>
+                </div>
+            </TemplateColumn>
+            <PropertyColumn Property="d => d.Format"></PropertyColumn>
+            <TemplateColumn Title="Logs">
+                @if (!string.IsNullOrEmpty(context.ExistingDiscPath))
+                {
+                    <span class="badge bg-light text-dark">Copied from another disc</span>
+                }
+                else
+                {
+                    <span>@(context.LogsUploaded ? "Uploaded" : "Pending")</span>
+                }
+            </TemplateColumn>
+            <TemplateColumn Title="Order">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="() => MoveDiscUp(context)" title="Move up"><i class="e-icons e-arrow-up"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="() => MoveDiscDown(context)" title="Move down"><i class="e-icons e-arrow-down"></i></button>
+            </TemplateColumn>
+        </QuickGrid>
+    </section>
 
     <section class="info-card discs-card">
         <CodeHighlight CodeLanguage="PowerShell" Code="@PowershellCommand" />
