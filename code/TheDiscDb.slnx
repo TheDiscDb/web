@@ -17,4 +17,5 @@
   <Project Path="TheDiscDb.MakeMkv/TheDiscDb.MakeMkv.csproj" />
   <Project Path="TheDiscDb.Naming/TheDiscDb.Naming.csproj" />
   <Project Path="TheDiscDb.UnitTests/TheDiscDb.UnitTests.csproj" />
+  <Project Path="TheDiscDb.IntegrationTests/TheDiscDb.IntegrationTests.csproj" />
 </Solution>
