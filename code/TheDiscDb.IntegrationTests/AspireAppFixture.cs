@@ -9,6 +9,8 @@ public class AspireAppFixture : IAsyncInitializer, IAsyncDisposable
 
     public HttpClient HttpClient { get; private set; } = default!;
 
+    public string PublicApiKey { get; private set; } = string.Empty;
+
     private static readonly TimeSpan StartupTimeout = TimeSpan.FromSeconds(120);
 
     public async Task InitializeAsync()
@@ -40,6 +42,25 @@ public class AspireAppFixture : IAsyncInitializer, IAsyncDisposable
             .WaitAsync(StartupTimeout, cts.Token);
 
         this.HttpClient = this.app.CreateHttpClient("thediscdb-web");
+
+        // Read the auto-generated public API key from the AppHost project directory
+        var appHostDir = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory, "..", "..", "..", "..", "TheDiscDb.AppHost"));
+        var keyFile = Path.Combine(appHostDir, ".public-apikey");
+        if (File.Exists(keyFile))
+        {
+            this.PublicApiKey = (await File.ReadAllTextAsync(keyFile)).Trim();
+        }
+
+        // Also try reading from the AppHost's bin output as a fallback
+        if (string.IsNullOrEmpty(this.PublicApiKey))
+        {
+            var altKeyFile = Path.Combine(appHostDir, "bin", "Debug", "net9.0", ".public-apikey");
+            if (File.Exists(altKeyFile))
+            {
+                this.PublicApiKey = (await File.ReadAllTextAsync(altKeyFile)).Trim();
+            }
+        }
     }
 
     public async ValueTask DisposeAsync()
