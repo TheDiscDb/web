@@ -63,7 +63,10 @@ namespace TheDiscDb.Data.Import.Pipeline
                 }
                 else
                 {
-                    item.MediaItem.DateAdded = DateTime.UtcNow;
+                    if (item.MediaItem.DateAdded == default)
+                    {
+                        item.MediaItem.DateAdded = DateTime.UtcNow;
+                    }
                     await this.HandleContributorsOnAdd(item.MediaItem, cancellationToken);
                     this.dbContext.MediaItems.Add(item.MediaItem);
                 }
@@ -88,7 +91,10 @@ namespace TheDiscDb.Data.Import.Pipeline
                 {
                     if (item.Boxset.Release != null)
                     {
-                        item.Boxset.Release.DateAdded = DateTime.UtcNow;
+                        if (item.Boxset.Release.DateAdded == default)
+                        {
+                            item.Boxset.Release.DateAdded = DateTime.UtcNow;
+                        }
                     }
                     this.dbContext.BoxSets.Add(item.Boxset);
                 }
