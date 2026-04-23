@@ -146,11 +146,9 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
                 return;
             }
 
-            // Use a fresh context with a transaction for atomicity
             await using var db = await DbFactory.CreateDbContextAsync();
-            await using var transaction = await db.Database.BeginTransactionAsync();
 
-            // Re-check that submissions aren't already linked (race condition guard)
+            // Check that submissions aren't already linked
             var alreadyLinked = await db.EngramSubmissions
                 .AnyAsync(s => s.ReleaseId == ReleaseId && s.UserContributionId != null);
 
@@ -235,12 +233,10 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
                 .Where(s => submissionIds.Contains(s.Id))
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.UserContributionId, contribution.Id));
 
-            await transaction.CommitAsync();
-
-            // Record history (separate context — non-critical, outside transaction)
+            // Record history
             await HistoryService.RecordCreatedAsync(contribution.Id, userId);
 
-            // Copy images directly to final contribution paths (best-effort, outside transaction)
+            // Copy images to final contribution paths (best-effort)
             await CopyEngramImageToContribution(request.FrontImageUrl, contribution.EncodedId, "front", db, contribution);
             await CopyEngramImageToContribution(request.BackImageUrl, contribution.EncodedId, "back", db, contribution);
 

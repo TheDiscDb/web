@@ -81,26 +81,11 @@ else
             </div>
             <div class="form-group">
                 <label for="regionCode">Region Code *</label>
-                <InputSelect id="regionCode" @bind-Value="request.RegionCode" class="form-control">
-                    <option value="">Select...</option>
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                    <option value="ABC">ABC (Region Free)</option>
-                </InputSelect>
+                <InputText id="regionCode" @bind-Value="request.RegionCode" class="form-control" />
             </div>
             <div class="form-group">
                 <label for="locale">Locale *</label>
-                <InputSelect id="locale" @bind-Value="request.Locale" class="form-control">
-                    <option value="">Select...</option>
-                    <option value="en-US">en-US</option>
-                    <option value="en-GB">en-GB</option>
-                    <option value="en-AU">en-AU</option>
-                    <option value="en-CA">en-CA</option>
-                    <option value="de-DE">de-DE</option>
-                    <option value="fr-FR">fr-FR</option>
-                    <option value="ja-JP">ja-JP</option>
-                </InputSelect>
+                <InputText id="locale" @bind-Value="request.Locale" class="form-control" />
             </div>
         </div>
 
