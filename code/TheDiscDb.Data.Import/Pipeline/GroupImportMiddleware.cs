@@ -82,6 +82,30 @@ namespace TheDiscDb.Data.Import.Pipeline
                     }
                     catch (Exception e)
                     {
+                        // Detach pending entities so they don't pollute subsequent items.
+                        foreach (var entry in this.dbContext.ChangeTracker.Entries()
+                            .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified)
+                            .ToList())
+                        {
+                            entry.State = EntityState.Detached;
+                        }
+
+                        // Purge in-memory caches of unsaved entities (Id == 0)
+                        foreach (var key in groupCache.Keys.ToList())
+                        {
+                            if (groupCache.TryGetValue(key, out var g) && g.Id == 0)
+                            {
+                                groupCache.TryRemove(key, out _);
+                            }
+                        }
+                        foreach (var key in mediaItemGroupCache.Keys.ToList())
+                        {
+                            if (mediaItemGroupCache.TryGetValue(key, out var mig) && mig.Id == 0)
+                            {
+                                mediaItemGroupCache.TryRemove(key, out _);
+                            }
+                        }
+
                         AnsiConsole.WriteLine($"Error Saving {item.Metadata.FullTitle}");
                         AnsiConsole.WriteException(e.InnerException ?? e);
                     }

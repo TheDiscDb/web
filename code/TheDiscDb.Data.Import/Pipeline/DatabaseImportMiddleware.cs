@@ -68,7 +68,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                     this.dbContext.MediaItems.Add(item.MediaItem);
                 }
 
-                await this.dbContext.SaveChangesAsync();
+                await this.SaveChangesAsync();
             }
             else if (item.Boxset != null)
             {
@@ -93,91 +93,98 @@ namespace TheDiscDb.Data.Import.Pipeline
                     this.dbContext.BoxSets.Add(item.Boxset);
                 }
 
-                await this.dbContext.SaveChangesAsync();
+                await this.SaveChangesAsync();
             }
 
             await this.Next(item, cancellationToken);
         }
 
+        private async Task SaveChangesAsync()
+        {
+            try
+            {
+                await this.dbContext.SaveChangesAsync();
+            }
+            catch
+            {
+                // Detach pending entities so they don't pollute subsequent items.
+                // After a failed SaveChanges, Added/Modified entities remain in the
+                // change tracker. If the next item shares an entity (e.g. same
+                // contributor), EF would try to insert duplicates.
+                foreach (var entry in this.dbContext.ChangeTracker.Entries()
+                    .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified)
+                    .ToList())
+                {
+                    entry.State = EntityState.Detached;
+                }
+                throw;
+            }
+        }
+
         private async Task HandleContributorsOnUpdate(MediaItem fromDatabase, MediaItem newItem, CancellationToken cancellationToken)
         {
+            // Track contributors seen across releases to avoid duplicate inserts
+            // (handles both within-release and cross-release duplicates)
+            var seenContributors = new Dictionary<string, Contributor>(StringComparer.OrdinalIgnoreCase);
+
             // this is called after the releases have been cleaned up for updates, so we can assume the releases match
             foreach (var fromDatabaseRelease in fromDatabase.Releases)
             {
                 var newRelease = newItem.Releases.FirstOrDefault(r => r.Slug == fromDatabaseRelease.Slug);
                 if (newRelease != null)
                 {
-                    var addedContributors = new List<Contributor>();
+                    var resolvedContributors = new List<Contributor>();
                     foreach (var contributor in newRelease.Contributors)
                     {
+                        if (contributor.Name == null)
+                        {
+                            continue;
+                        }
+
+                        // Already resolved this contributor name — reuse the same entity
+                        if (seenContributors.TryGetValue(contributor.Name, out var seen))
+                        {
+                            resolvedContributors.Add(seen);
+                            continue;
+                        }
+
                         var databaseContributor = fromDatabaseRelease.Contributors
                             .FirstOrDefault(c => c.Name == contributor.Name);
 
-                        if (databaseContributor == null)
+                        if (databaseContributor == null || databaseContributor.Id == 0)
                         {
-                            // Not in this release, check globally
+                            // Not in this release or pending add — check globally
                             var existingContributor = await this.dbContext.Contributors
                                 .FirstOrDefaultAsync(c => c.Name == contributor.Name, cancellationToken);
                             if (existingContributor != null)
                             {
-                                addedContributors.Add(existingContributor);
+                                seenContributors[contributor.Name] = existingContributor;
+                                resolvedContributors.Add(existingContributor);
                             }
                             else
                             {
-                                // New contributor, try looking up userId
-                                if (contributor.Name != null)
+                                var user = await this.userManager.FindByNameAsync(contributor.Name);
+                                if (user != null)
                                 {
-                                    var user = await this.userManager.FindByNameAsync(contributor.Name);
-                                    if (user != null)
-                                    {
-                                        contributor.UserId = user.Id;
-                                    }
+                                    contributor.UserId = user.Id;
                                 }
-                                fromDatabaseRelease.Contributors.Add(contributor);
+                                seenContributors[contributor.Name] = contributor;
+                                resolvedContributors.Add(contributor);
                             }
                         }
                         else
                         {
-                            if (databaseContributor.Id == 0)
-                            {
-                                // this is a pending add so do the add logic here
-                                // This happens when a new realease is being added to an existing media item
-                                var existingContributor = await this.dbContext.Contributors
-                                    .FirstOrDefaultAsync(c => c.Name == contributor.Name, cancellationToken);
-                                if (existingContributor != null)
-                                {
-                                    addedContributors.Add(existingContributor);
-                                }
-                                else
-                                {
-                                    // New contributor, try looking up userId
-                                    if (contributor.Name != null)
-                                    {
-                                        var user = await this.userManager.FindByNameAsync(contributor.Name);
-                                        if (user != null)
-                                        {
-                                            contributor.UserId = user.Id;
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                // This contributor is in the database but needs to be added to this release
-                                addedContributors.Add(databaseContributor);
-                            }
+                            // Tracked database contributor — reuse it
+                            seenContributors[databaseContributor.Name] = databaseContributor;
+                            resolvedContributors.Add(databaseContributor);
                         }
                     }
 
-                    // Replace contributors with the tracked entities
-                    foreach (var contributor in addedContributors)
+                    // Rebuild the collection on the database entity with resolved, deduplicated entities
+                    fromDatabaseRelease.Contributors.Clear();
+                    foreach (var contributor in resolvedContributors)
                     {
-                        var toRemove = newRelease.Contributors.FirstOrDefault(c => c.Name == contributor.Name);
-                        if (toRemove != null)
-                        {
-                            newRelease.Contributors.Remove(toRemove);
-                        }
-                        newRelease.Contributors.Add(contributor);
+                        fromDatabaseRelease.Contributors.Add(contributor);
                     }
                 }
             }
@@ -185,39 +192,50 @@ namespace TheDiscDb.Data.Import.Pipeline
 
         private async Task HandleContributorsOnAdd(MediaItem mediaItem, CancellationToken cancellationToken)
         {
+            // Track contributors seen across releases to avoid duplicate inserts
+            // (handles both within-release and cross-release duplicates)
+            var seenContributors = new Dictionary<string, Contributor>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var release in mediaItem.Releases)
             {
-                var addedContributors = new List<Contributor>();
+                var resolvedContributors = new List<Contributor>();
                 foreach (var contributor in release.Contributors)
                 {
+                    if (contributor.Name == null)
+                    {
+                        continue;
+                    }
+
+                    // Already resolved this contributor name — reuse the same entity
+                    if (seenContributors.TryGetValue(contributor.Name, out var seen))
+                    {
+                        resolvedContributors.Add(seen);
+                        continue;
+                    }
+
                     var existingContributor = await this.dbContext.Contributors
                         .FirstOrDefaultAsync(c => c.Name == contributor.Name, cancellationToken);
                     if (existingContributor != null)
                     {
-                        addedContributors.Add(existingContributor);
+                        seenContributors[contributor.Name] = existingContributor;
+                        resolvedContributors.Add(existingContributor);
                     }
                     else
                     {
-                        // New contributor, try looking up userId
-                        if (contributor.Name != null)
+                        var user = await this.userManager.FindByNameAsync(contributor.Name);
+                        if (user != null)
                         {
-                            var user = await this.userManager.FindByNameAsync(contributor.Name);
-                            if (user != null)
-                            {
-                                contributor.UserId = user.Id;
-                            }
+                            contributor.UserId = user.Id;
                         }
+                        seenContributors[contributor.Name] = contributor;
+                        resolvedContributors.Add(contributor);
                     }
                 }
 
-                // Replace contributors with the tracked entities
-                foreach (var contributor in addedContributors)
+                // Rebuild the collection with resolved, deduplicated entities
+                release.Contributors.Clear();
+                foreach (var contributor in resolvedContributors)
                 {
-                    var toRemove = release.Contributors.FirstOrDefault(c => c.Name == contributor.Name);
-                    if (toRemove != null)
-                    {
-                        release.Contributors.Remove(toRemove);
-                    }
                     release.Contributors.Add(contributor);
                 }
             }
