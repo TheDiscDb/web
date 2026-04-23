@@ -1,4 +1,5 @@
 @page "/contribute/engram/{releaseId}"
+@rendermode InteractiveServer
 
 <PageTitle>Engram Submission - TheDiscDb</PageTitle>
 
@@ -9,125 +10,149 @@
     </div>
     <p>No submissions found for this release.</p>
 }
-else
+else if (ExistingContributionId != null)
 {
     <div class="page-header">
         <h1>Engram Submissions</h1>
-        <div class="page-header__sub">@Submissions.Count submission(s) for release <code>@ReleaseId</code></div>
+        <div class="page-header__sub">This release has already been converted to a contribution.</div>
+    </div>
+    <a href="/contribution/@ExistingContributionEncodedId" class="btn btn-primary">Continue Editing Contribution</a>
+}
+else
+{
+    <div class="page-header">
+        <h1>Create Contribution from Engram</h1>
+        <div class="page-header__sub">@Submissions.Count disc(s) for release <code>@ReleaseId</code></div>
     </div>
 
-    @foreach (var submission in Submissions)
+    @if (!string.IsNullOrEmpty(ErrorMessage))
     {
-        <section class="engram-submission">
-            <h2>@submission.VolumeLabel</h2>
-            <div class="engram-details">
-                <dl>
-                    <dt>Content Hash</dt>
-                    <dd><code>@submission.ContentHash</code></dd>
-
-                    <dt>Content Type</dt>
-                    <dd>@submission.ContentType</dd>
-
-                    @if (submission.DiscNumber.HasValue)
-                    {
-                        <dt>Disc Number</dt>
-                        <dd>@submission.DiscNumber</dd>
-                    }
-
-                    @if (!string.IsNullOrEmpty(submission.DetectedTitle))
-                    {
-                        <dt>Detected Title</dt>
-                        <dd>@submission.DetectedTitle</dd>
-                    }
-
-                    @if (submission.TmdbId.HasValue)
-                    {
-                        <dt>TMDB ID</dt>
-                        <dd><a href="https://www.themoviedb.org/movie/@submission.TmdbId" target="_blank">@submission.TmdbId</a></dd>
-                    }
-
-                    @if (submission.DetectedSeason.HasValue)
-                    {
-                        <dt>Detected Season</dt>
-                        <dd>@submission.DetectedSeason</dd>
-                    }
-
-                    @if (!string.IsNullOrEmpty(submission.ClassificationSource))
-                    {
-                        <dt>Classification</dt>
-                        <dd>@submission.ClassificationSource (@(submission.ClassificationConfidence?.ToString("P0") ?? "N/A"))</dd>
-                    }
-
-                    @if (!string.IsNullOrEmpty(submission.Upc))
-                    {
-                        <dt>UPC</dt>
-                        <dd>@submission.Upc</dd>
-                    }
-
-                    <dt>Engram Version</dt>
-                    <dd>@submission.EngramVersion</dd>
-
-                    <dt>Export Version</dt>
-                    <dd>@submission.ExportVersion</dd>
-
-                    <dt>Contribution Tier</dt>
-                    <dd>@submission.ContributionTier</dd>
-
-                    <dt>Received</dt>
-                    <dd>@submission.ReceivedAt.ToString("g")</dd>
-
-                    @if (submission.UpdatedAt.HasValue)
-                    {
-                        <dt>Updated</dt>
-                        <dd>@submission.UpdatedAt.Value.ToString("g")</dd>
-                    }
-                </dl>
-            </div>
-
-            @if (submission.Titles.Any())
-            {
-                <h3>Titles (@submission.Titles.Count)</h3>
-                <table class="engram-titles-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Source</th>
-                            <th>Type</th>
-                            <th>Duration</th>
-                            <th>Size</th>
-                            <th>Chapters</th>
-                            <th>Segments</th>
-                            <th>Season</th>
-                            <th>Episode</th>
-                            <th>Edition</th>
-                            <th>Match</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var title in submission.Titles.OrderBy(t => t.TitleIndex))
-                        {
-                            <tr>
-                                <td>@title.TitleIndex</td>
-                                <td>@title.SourceFilename</td>
-                                <td>@title.TitleType</td>
-                                <td>@FormatDuration(title.DurationSeconds)</td>
-                                <td>@FormatSize(title.SizeBytes)</td>
-                                <td>@title.ChapterCount</td>
-                                <td>@title.SegmentCount (@title.SegmentMap)</td>
-                                <td>@title.Season</td>
-                                <td>@title.Episode</td>
-                                <td>@title.Edition</td>
-                                <td>
-                                    @if (title.MatchConfidence.HasValue)
-                                    {
-                                        <span title="@title.MatchSource">@title.MatchConfidence.Value.ToString("P0")</span>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
-        </section>
+        <div class="alert alert-danger">@ErrorMessage</div>
     }
+
+    <EditForm Model="request" OnValidSubmit="CreateContributionFromEngram" FormName="createContribution">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <h2>Release Information</h2>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="title">Title</label>
+                <InputText id="title" @bind-Value="request.Title" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label for="year">Year</label>
+                <InputText id="year" @bind-Value="request.Year" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label for="mediaType">Media Type</label>
+                <InputSelect id="mediaType" @bind-Value="request.MediaType" class="form-control">
+                    <option value="movie">Movie</option>
+                    <option value="series">Series</option>
+                </InputSelect>
+            </div>
+            <div class="form-group">
+                <label for="externalId">External ID (TMDB)</label>
+                <InputText id="externalId" @bind-Value="request.ExternalId" class="form-control" />
+            </div>
+        </div>
+
+        <h2>Release Details</h2>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="releaseTitle">Release Title *</label>
+                <InputText id="releaseTitle" @bind-Value="request.ReleaseTitle" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label for="releaseSlug">Release Slug *</label>
+                <InputText id="releaseSlug" @bind-Value="request.ReleaseSlug" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label for="releaseDate">Release Date *</label>
+                <InputDate id="releaseDate" @bind-Value="request.ReleaseDate" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label for="asin">ASIN *</label>
+                <InputText id="asin" @bind-Value="request.Asin" class="form-control" placeholder="10 characters" />
+            </div>
+            <div class="form-group">
+                <label for="upc">UPC *</label>
+                <InputText id="upc" @bind-Value="request.Upc" class="form-control" placeholder="12-13 digits" />
+            </div>
+            <div class="form-group">
+                <label for="regionCode">Region Code *</label>
+                <InputSelect id="regionCode" @bind-Value="request.RegionCode" class="form-control">
+                    <option value="">Select...</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="ABC">ABC (Region Free)</option>
+                </InputSelect>
+            </div>
+            <div class="form-group">
+                <label for="locale">Locale *</label>
+                <InputSelect id="locale" @bind-Value="request.Locale" class="form-control">
+                    <option value="">Select...</option>
+                    <option value="en-US">en-US</option>
+                    <option value="en-GB">en-GB</option>
+                    <option value="en-AU">en-AU</option>
+                    <option value="en-CA">en-CA</option>
+                    <option value="de-DE">de-DE</option>
+                    <option value="fr-FR">fr-FR</option>
+                    <option value="ja-JP">ja-JP</option>
+                </InputSelect>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(request.FrontImageUrl))
+        {
+            <p><strong>Front image:</strong> Will be copied from engram submission</p>
+        }
+        else
+        {
+            <p class="text-warning">No front image available from engram — you can upload one after the contribution is created.</p>
+        }
+
+        <h2>Discs (@Submissions.Count)</h2>
+        <table class="engram-titles-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Volume Label</th>
+                    <th>Format</th>
+                    <th>Content Hash</th>
+                    <th>Titles</th>
+                    <th>Scan Log</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int discNum = 1; }
+                @foreach (var submission in Submissions)
+                {
+                    <tr>
+                        <td>@(submission.DiscNumber ?? discNum)</td>
+                        <td>@submission.VolumeLabel</td>
+                        <td>@MapContentTypeToFormat(submission.ContentType)</td>
+                        <td><code>@submission.ContentHash[..Math.Min(12, submission.ContentHash.Length)]…</code></td>
+                        <td>@submission.Titles.Count</td>
+                        <td>@(string.IsNullOrEmpty(submission.ScanLogPath) ? "No" : "Yes")</td>
+                    </tr>
+                    discNum++;
+                }
+            </tbody>
+        </table>
+
+        <div class="form-actions" style="margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary" disabled="@IsCreating">
+                @if (IsCreating)
+                {
+                    <span>Creating…</span>
+                }
+                else
+                {
+                    <span>Create Contribution</span>
+                }
+            </button>
+        </div>
+    </EditForm>
 }

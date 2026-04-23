@@ -132,6 +132,10 @@ public class SqlServerDataContext : DbContext
         engramSubmission.HasMany(x => x.Titles)
             .WithOne(x => x.Submission)
             .OnDelete(DeleteBehavior.Cascade);
+        engramSubmission.HasOne(x => x.UserContribution)
+            .WithMany()
+            .HasForeignKey(x => x.UserContributionId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         var engramTitle = modelBuilder.Entity<EngramTitle>();
         engramTitle.HasKey(x => x.Id);
@@ -192,6 +196,8 @@ public class EngramSubmission
     public DateTimeOffset ReceivedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
     public ICollection<EngramTitle> Titles { get; set; } = new List<EngramTitle>();
+    public int? UserContributionId { get; set; }
+    public UserContribution? UserContribution { get; set; }
 }
 
 public class EngramTitle
