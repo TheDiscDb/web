@@ -28,6 +28,8 @@ public partial class ContributionMutations
         var decodedContributionId = this.idEncoder.Decode(contributionId);
         var contribution = await database.UserContributions
             .Include(c => c.Discs)
+            .Include(c => c.Boxset)
+                .ThenInclude(b => b!.Members)
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
 
         await EnsureOwnership(userManager, contribution, contributionId, cancellationToken: cancellationToken);
@@ -63,6 +65,23 @@ public partial class ContributionMutations
                 : 0;
             disc.Index = maxIndex + 1;
             contribution.Discs.Add(disc);
+
+            // If this contribution is part of a boxset (and the boxset is still editable),
+            // auto-add the new disc as a boxset member at the end of the existing list.
+            // Same-transaction insert keeps the disc + member in sync.
+            if (contribution.Boxset != null && contribution.Boxset.Status.IsEditableByOwner())
+            {
+                int maxSortOrder = contribution.Boxset.Members.Any()
+                    ? contribution.Boxset.Members.Max(m => m.SortOrder)
+                    : -1;
+
+                contribution.Boxset.Members.Add(new UserContributionBoxsetMember
+                {
+                    Boxset = contribution.Boxset,
+                    Disc = disc,
+                    SortOrder = maxSortOrder + 1,
+                });
+            }
         }
 
         await database.SaveChangesAsync(cancellationToken);

@@ -8,6 +8,7 @@ using TheDiscDb.Client;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
+using TheDiscDb.Validation;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages.Contribute;
@@ -369,10 +370,10 @@ public class CreateFromEngramRequest
     [Required(ErrorMessage = "Release Date is required")]
     public DateTimeOffset ReleaseDate { get; set; } = DateTimeOffset.UtcNow;
     [Required(ErrorMessage = "ASIN is required")]
-    [RegularExpression(@"\w{10}", ErrorMessage = "ASIN must be 10 characters")]
+    [Asin]
     public string? Asin { get; set; }
     [Required(ErrorMessage = "UPC is required")]
-    [RegularExpression(@"\d{12,13}", ErrorMessage = "UPC must be 12-13 digits")]
+    [Upc]
     public string? Upc { get; set; }
     public string? FrontImageUrl { get; set; }
     public string? BackImageUrl { get; set; }

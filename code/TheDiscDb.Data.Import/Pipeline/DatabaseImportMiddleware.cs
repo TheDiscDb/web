@@ -37,6 +37,7 @@ namespace TheDiscDb.Data.Import.Pipeline
             if (item.MediaItem != null)
             {
                 var fromDatabase = await this.dbContext.MediaItems
+                            .Include(i => i.Externalids)
                             .Include(i => i.MediaItemGroups)
                             .ThenInclude(i => i.Group)
                             .Include(i => i.Releases)

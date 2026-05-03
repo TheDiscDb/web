@@ -19,6 +19,12 @@ public class UserContribution : IHasId, IContributionDisplay
     public DateTimeOffset Created { get; set; }
     public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
 
+    [JsonIgnore]
+    public int? BoxsetId { get; set; }
+
+    [JsonIgnore]
+    public UserContributionBoxset? Boxset { get; set; }
+
     public ICollection<UserContributionDisc> Discs { get; set; } = new HashSet<UserContributionDisc>();
     public ICollection<UserContributionDiscHashItem> HashItems { get; set; } = new HashSet<UserContributionDiscHashItem>();
 

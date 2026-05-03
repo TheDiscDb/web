@@ -1,0 +1,258 @@
+@page "/contribution/boxset/{BoxsetId}"
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Popups
+@using TheDiscDb.Client.Contributions
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@(Boxset?.Title ?? "Boxset")" Items='[("Home", "/"), ("Contribute", "/contribute"), ("My Contributions", "/contribute/my")]' />
+
+<div class="contribute-layout">
+    @if (isLoading)
+    {
+        <section class="info-card">
+            <p>Loading boxset...</p>
+        </section>
+    }
+    else if (Boxset == null)
+    {
+        <section class="info-card">
+            <div class="alert alert-danger">Boxset not found.</div>
+        </section>
+    }
+    else
+    {
+        <section class="contribute-hero compact">
+            <h1>@Boxset.Title</h1>
+            <p><small class="text-white-50">@Boxset.Slug</small> &middot; Status: <span class="badge @GetStatusBadgeClass(Boxset.Status)">@Boxset.Status</span></p>
+            @if (Boxset.Status == UserContributionStatus.ChangesRequested)
+            {
+                <div class="alert alert-warning mt-2 mb-0">
+                    Changes were requested for this boxset. Review the
+                    <a href="/contribution/boxset/@BoxsetId/messages">admin's message</a>,
+                    make the requested edits, then re-submit for review.
+                </div>
+            }
+            else if (Boxset.Status == UserContributionStatus.Rejected)
+            {
+                <div class="alert alert-danger mt-2 mb-0">
+                    This boxset was rejected. Review the
+                    <a href="/contribution/boxset/@BoxsetId/messages">admin's message</a>
+                    to see why; you can edit and re-submit.
+                </div>
+            }
+        </section>
+
+        <section class="info-card">
+            <h2>Boxset Members</h2>
+            <p class="text-muted">Drag contributions to reorder. The disc index is computed from the order below.</p>
+
+            @if (Members.Count == 0)
+            {
+                <div class="alert alert-info">No discs added yet. Add discs from your contributions or from existing releases in the database.</div>
+            }
+            else
+            {
+                <table class="striped-grid contribute-grid disc-reorder-table">
+                    <thead>
+                        <tr>
+                            <th class="index-col">#</th>
+                            <th>Name</th>
+                            <th>Format</th>
+                            <th>Source</th>
+                            @if (CanModify)
+                            {
+                                <th></th>
+                                <th class="drag-col"></th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Members.Count; i++)
+                        {
+                            var member = Members[i];
+                            var position = i + 1;
+                            var discName = member.Disc?.Name ?? member.ExistingDiscName ?? "—";
+                            var discFormat = member.Disc?.Format ?? member.ExistingDiscFormat ?? "—";
+                            var discSlug = member.Disc?.Slug ?? member.ExistingDiscPath ?? "—";
+                            var isExisting = member.Disc == null && member.ExistingDiscPath != null;
+
+                            <tr class="@GetRowClass(member)"
+                                draggable="@CanModify.ToString().ToLowerInvariant()"
+                                @key="member.Id"
+                                @ondragstart="() => OnDragStart(member)"
+                                @ondragenter="() => OnDragEnter(member)"
+                                @ondragover:preventDefault="true"
+                                @ondragend="OnDragEnd">
+                                <td class="index-col">@position</td>
+                                <td>
+                                    <div class="disc-name">@discName</div>
+                                    <small class="text-muted">@discSlug</small>
+                                </td>
+                                <td>@discFormat</td>
+                                <td>
+                                    @if (isExisting)
+                                    {
+                                        <span class="badge bg-success">Database</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info">Contribution</span>
+                                    }
+                                </td>
+                                @if (CanModify)
+                                {
+                                    <td>
+                                        <button class="btn btn-sm" title="Remove"
+                                                @onclick="() => ConfirmRemove(member)"><i class="e-icons e-trash"></i></button>
+                                    </td>
+                                    <td class="drag-handle" title="Drag to reorder">⋮</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+            @if (CanModify)
+            {
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-outline-primary" @onclick="ShowAddDialog">Add Discs from Contributions</button>
+                    <button class="btn btn-outline-success" @onclick="ShowAddExistingDialog">Add Discs from Database</button>
+                </div>
+            }
+        </section>
+
+        <section class="info-card mt-3">
+            <div class="section-header d-flex justify-content-between align-items-center">
+                <h2>Boxset Details</h2>
+                @if (CanModify)
+                {
+                    <a href="/contribution/boxset/@BoxsetId/edit" class="edit-link" title="Edit boxset details"><i class="e-icons e-edit"></i> Edit details</a>
+                }
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <dl>
+                        <dt>ASIN</dt><dd>@(Boxset.Asin ?? "—")</dd>
+                        <dt>UPC</dt><dd>@(Boxset.Upc ?? "—")</dd>
+                        <dt>Locale</dt><dd>@(Boxset.Locale ?? "—")</dd>
+                        <dt>Region Code</dt><dd>@(Boxset.RegionCode ?? "—")</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl>
+                        <dt>Release Date</dt><dd>@(Boxset.ReleaseDate?.ToString("yyyy-MM-dd") ?? "—")</dd>
+                        <dt>Total Discs</dt><dd>@TotalDiscCount</dd>
+                        <dt>Total Contributions</dt><dd>@Members.Count</dd>
+                    </dl>
+                </div>
+            </div>
+        </section>
+
+        <section class="info-card mt-3">
+            <h2>Cover Images</h2>
+
+            <div class="cover-images-section">
+                <div class="cover-image-slot">
+                    <h4>Front Cover</h4>
+                    @if (!string.IsNullOrEmpty(currentFrontImageUrl))
+                    {
+                        <div class="cover-preview">
+                            <img src="@GetDirectImageUrl(currentFrontImageUrl, imageVersion)" width="156" height="231" alt="Front cover" />
+                        </div>
+                    }
+                    @if (CanModify)
+                    {
+                        <SfUploader @ref="frontImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
+                            <UploaderButtons Browse="@(string.IsNullOrEmpty(currentFrontImageUrl) ? "Upload Front Image" : "Replace Front Image")"></UploaderButtons>
+                            <UploaderEvents Success="FrontImageUploadSuccess" OnFailure="FrontImageUploadFailure"></UploaderEvents>
+                            <UploaderAsyncSettings SaveUrl="@frontImageUploadUrl"></UploaderAsyncSettings>
+                        </SfUploader>
+                        @if (!string.IsNullOrEmpty(currentFrontImageUrl))
+                        {
+                            <button type="button" class="btn btn-outline-danger btn-sm mt-1" @onclick="DeleteFrontImage">
+                                Delete Front Image
+                            </button>
+                        }
+                    }
+                </div>
+
+                <div class="cover-image-slot">
+                    <h4>Back Cover</h4>
+                    @if (!string.IsNullOrEmpty(currentBackImageUrl))
+                    {
+                        <div class="cover-preview">
+                            <img src="@GetDirectImageUrl(currentBackImageUrl, imageVersion)" width="156" height="231" alt="Back cover" />
+                        </div>
+                    }
+                    @if (CanModify)
+                    {
+                        <SfUploader @ref="backImageUploader" AutoUpload="true" ShowFileList="true" AllowMultiple="false" AllowedExtensions=".jpg, .jpeg">
+                            <UploaderButtons Browse="@(string.IsNullOrEmpty(currentBackImageUrl) ? "Upload Back Image" : "Replace Back Image")"></UploaderButtons>
+                            <UploaderEvents Success="BackImageUploadSuccess" OnFailure="BackImageUploadFailure"></UploaderEvents>
+                            <UploaderAsyncSettings SaveUrl="@backImageUploadUrl"></UploaderAsyncSettings>
+                        </SfUploader>
+                        @if (!string.IsNullOrEmpty(currentBackImageUrl))
+                        {
+                            <button type="button" class="btn btn-outline-danger btn-sm mt-1" @onclick="DeleteBackImage">
+                                Delete Back Image
+                            </button>
+                        }
+                    }
+                </div>
+            </div>
+
+            @if (imageUpdatePending)
+            {
+                <div class="alert alert-info mt-2">
+                    Image updated. The preview may take a moment to refresh.
+                </div>
+            }
+        </section>
+
+        @if (CanModify)
+        {
+            <section class="mt-3">
+                <div class="d-flex gap-2">
+                    <a class="btn btn-primary" href="/contribution/boxset/@BoxsetId/review">Review &amp; Submit</a>
+                    <a class="btn btn-outline-primary" href="/contribution/boxset/@BoxsetId/messages">Messages</a>
+                    <a class="btn btn-secondary" href="/contribute/my">Back to My Contributions</a>
+                </div>
+            </section>
+        }
+        else
+        {
+            <section class="mt-3">
+                <div class="d-flex gap-2">
+                    <a class="btn btn-outline-primary" href="/contribution/boxset/@BoxsetId/messages">Messages</a>
+                    <a class="btn btn-secondary" href="/contribute/my">Back to My Contributions</a>
+                </div>
+            </section>
+        }
+    }
+</div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger mt-3">@errorMessage</div>
+}
+
+@if (showRemoveDialog)
+{
+    <SfDialog Target="body" Width="400px" @bind-Visible="@showRemoveDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Remove Disc">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <p>Remove disc <strong>@(removingMember?.Disc?.Name ?? removingMember?.ExistingDiscName ?? "this disc")</strong> from this boxset?</p>
+            <p class="text-muted">@(removingMember?.Disc != null ? "The contribution itself will not be deleted." : "This removes the database disc reference.")</p>
+            <div class="e-footer-content">
+                <div class="button-container">
+                    <button type="button" class="e-btn e-normal" @onclick="CancelRemove">Cancel</button>
+                    <button type="button" class="e-btn e-normal e-danger" @onclick="ExecuteRemove">Remove</button>
+                </div>
+            </div>
+        </ChildContent>
+    </SfDialog>
+}
+
+<Syncfusion.Blazor.Popups.SfDialogProvider />

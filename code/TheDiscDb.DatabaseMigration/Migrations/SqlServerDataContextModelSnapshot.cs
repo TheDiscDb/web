@@ -987,6 +987,9 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<string>("BackImageUrl")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("BoxsetId")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("datetimeoffset");
 
@@ -1048,6 +1051,8 @@ namespace TheDiscDb.Web.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BoxsetId");
+
                     b.ToTable("UserContributions");
                 });
 
@@ -1074,6 +1079,99 @@ namespace TheDiscDb.Web.Migrations
                     b.HasIndex("ItemId");
 
                     b.ToTable("UserContributionAudioTracks");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionBoxset", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Asin")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BackImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("FrontImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Locale")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RegionCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("ReleaseDate")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SortTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Upc")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UserContributionBoxsets");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionBoxsetMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BoxsetId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DiscId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ExistingDiscFormat")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExistingDiscName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExistingDiscPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoxsetId");
+
+                    b.HasIndex("DiscId")
+                        .IsUnique()
+                        .HasFilter("[DiscId] IS NOT NULL");
+
+                    b.ToTable("UserContributionBoxsetMembers");
                 });
 
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionChapter", b =>
@@ -1247,7 +1345,10 @@ namespace TheDiscDb.Web.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ContributionId")
+                    b.Property<int?>("BoxsetId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ContributionId")
                         .HasColumnType("int");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -1273,6 +1374,8 @@ namespace TheDiscDb.Web.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BoxsetId");
 
                     b.HasIndex("ContributionId");
 
@@ -1488,6 +1591,16 @@ namespace TheDiscDb.Web.Migrations
                     b.Navigation("Submission");
                 });
 
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContribution", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.UserContributionBoxset", "Boxset")
+                        .WithMany()
+                        .HasForeignKey("BoxsetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Boxset");
+                });
+
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionAudioTrack", b =>
                 {
                     b.HasOne("TheDiscDb.Web.Data.UserContributionDiscItem", "Item")
@@ -1497,6 +1610,24 @@ namespace TheDiscDb.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionBoxsetMember", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.UserContributionBoxset", "Boxset")
+                        .WithMany("Members")
+                        .HasForeignKey("BoxsetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TheDiscDb.Web.Data.UserContributionDisc", "Disc")
+                        .WithOne()
+                        .HasForeignKey("TheDiscDb.Web.Data.UserContributionBoxsetMember", "DiscId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Boxset");
+
+                    b.Navigation("Disc");
                 });
 
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionChapter", b =>
@@ -1541,6 +1672,23 @@ namespace TheDiscDb.Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Disc");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserMessage", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.UserContributionBoxset", "Boxset")
+                        .WithMany()
+                        .HasForeignKey("BoxsetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("TheDiscDb.Web.Data.UserContribution", "Contribution")
+                        .WithMany()
+                        .HasForeignKey("ContributionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Boxset");
+
+                    b.Navigation("Contribution");
                 });
 
             modelBuilder.Entity("TheDiscDb.InputModels.Disc", b =>
@@ -1603,6 +1751,11 @@ namespace TheDiscDb.Web.Migrations
                     b.Navigation("Discs");
 
                     b.Navigation("HashItems");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionBoxset", b =>
+                {
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionDisc", b =>

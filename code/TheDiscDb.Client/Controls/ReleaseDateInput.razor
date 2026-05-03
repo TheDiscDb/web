@@ -1,0 +1,8 @@
+<div class="mb-3">
+    <label class="form-label">@Label@if (Required) { <span class="text-danger">*</span> }</label>
+    <InputText class="form-control" @bind-Value="dateText" @oninput="OnDateInput" @onblur="OnBlur" placeholder="@Placeholder" />
+    @if (!string.IsNullOrEmpty(validationMessage))
+    {
+        <div class="validation-message">@validationMessage</div>
+    }
+</div>

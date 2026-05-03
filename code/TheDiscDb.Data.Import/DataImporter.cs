@@ -72,6 +72,13 @@
                         ?? await dbContext.Contributors
                             .FirstOrDefaultAsync(c => c.Name == contributor.Name);
 
+                    // Also check the change tracker for contributors added in this batch but not yet saved
+                    existingContributor ??= dbContext.ChangeTracker
+                        .Entries<InputModels.Contributor>()
+                        .Where(e => e.State == EntityState.Added)
+                        .Select(e => e.Entity)
+                        .FirstOrDefault(c => string.Equals(c.Name, contributor.Name, StringComparison.OrdinalIgnoreCase));
+
                     if (existingContributor == null)
                     {
                         existingContributor = new InputModels.Contributor
@@ -296,7 +303,15 @@
                                 {
                                     json = await this.fileSystem.File.ReadAllText(discJsonPath, cancellationToken);
                                     var discFile = JsonSerializer.Deserialize<Disc>(json, JsonOptions);
+                                    // Boxset members reference discs by Slug when present, otherwise by
+                                    // Index (the SlugOrIndex convention used elsewhere on the site).
                                     if (!string.IsNullOrEmpty(discFile.Slug) && discFile.Slug.Equals(disc.Slug, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        return discFile;
+                                    }
+                                    if (string.IsNullOrEmpty(discFile.Slug) &&
+                                        int.TryParse(disc.Slug, out var refIndex) &&
+                                        discFile.Index == refIndex)
                                     {
                                         return discFile;
                                     }

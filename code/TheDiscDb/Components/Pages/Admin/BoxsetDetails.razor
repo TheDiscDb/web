@@ -1,0 +1,120 @@
+@page "/admin/boxset/{BoxsetId}"
+@using Syncfusion.Blazor.Popups
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Boxset Details</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink()]" PrimaryText="@Boxset?.Title" />
+
+<h1>Boxset Details</h1>
+@if (Boxset != null)
+{
+    <h2>@Boxset.Title</h2>
+    <p><small class="text-muted">@Boxset.Slug</small> &middot; Status: <strong>@Boxset.Status</strong></p>
+    <a href="/admin/boxset/@BoxsetId/edit" class="btn btn-outline-primary btn-sm mb-3">Edit Boxset</a>
+
+    <section class="info-card mb-3">
+        <h3>Metadata</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <dl>
+                    <dt>ASIN</dt><dd>@(Boxset.Asin ?? "—")</dd>
+                    <dt>UPC</dt><dd>@(Boxset.Upc ?? "—")</dd>
+                    <dt>Locale</dt><dd>@(Boxset.Locale ?? "—")</dd>
+                    <dt>Region Code</dt><dd>@(Boxset.RegionCode ?? "—")</dd>
+                    <dt>Release Date</dt><dd>@(Boxset.ReleaseDate?.ToString("yyyy-MM-dd") ?? "—")</dd>
+                </dl>
+            </div>
+            @if (!string.IsNullOrEmpty(Boxset.FrontImageUrl))
+            {
+                <div class="col-md-6">
+                    <img src="@Boxset.FrontImageUrl" alt="Front cover" style="max-height: 200px;" />
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="info-card mb-3">
+        <h3>Discs (@Boxset.Members.Count)</h3>
+        <table class="table table-sm">
+            <thead><tr><th>Index</th><th>Name</th><th>Format</th><th>Slug</th><th>From Contribution</th><th>Status</th></tr></thead>
+            <tbody>
+                @foreach (var member in Boxset.Members.OrderBy(m => m.SortOrder))
+                {
+                    <tr>
+                        <td>@(member.SortOrder + 1)</td>
+                        <td>@(member.Disc?.Name ?? member.ExistingDiscName ?? "—")</td>
+                        <td>@(member.Disc?.Format ?? member.ExistingDiscFormat ?? "—")</td>
+                        <td><code>@(member.Disc?.Slug ?? member.ExistingDiscPath ?? "—")</code></td>
+                        <td>
+                            @if (member.Disc?.UserContribution != null)
+                            {
+                                <a href="/admin/contribution/@member.Disc.UserContribution.Id">
+                                    @member.Disc.UserContribution.Title (@member.Disc.UserContribution.Year)
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="badge bg-info">Existing Release</span>
+                            }
+                        </td>
+                        <td>
+                            @if (member.Disc?.UserContribution != null)
+                            {
+                                <span class="badge bg-secondary">@member.Disc.UserContribution.Status</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">In Database</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <section class="d-flex gap-2 flex-wrap mb-3">
+        @if (Boxset.Status == UserContributionStatus.ReadyForReview)
+        {
+            <button class="btn btn-success" @onclick="ApproveClicked">Mark as Approved</button>
+        }
+        @if (Boxset.Status == UserContributionStatus.Approved)
+        {
+            <button class="btn btn-primary" @onclick="MarkAsImported">Mark as Imported</button>
+        }
+        <button class="btn btn-warning" @onclick="() => ShowMessageDialog(true)">Request Changes</button>
+        <button class="btn btn-danger" @onclick="() => ShowMessageDialog(false)">Reject</button>
+    </section>
+
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert alert-info">@statusMessage</div>
+    }
+}
+else
+{
+    <div class="alert alert-danger">Boxset not found.</div>
+}
+
+@if (showMessageDialog)
+{
+    <SfDialog Target="body" Width="500px" @bind-Visible="@showMessageDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="@messageDialogHeader">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <div class="mb-3">
+                <label class="form-label">Message (Markdown supported)</label>
+                <textarea class="form-control" rows="5" @bind="adminMessage"></textarea>
+            </div>
+            <div class="e-footer-content">
+                <div class="button-container">
+                    <button type="button" class="e-btn e-normal" @onclick="CancelMessageDialog">Cancel</button>
+                    <button type="button" class="e-btn e-normal e-primary" @onclick="ConfirmStatusChange">Confirm</button>
+                </div>
+            </div>
+        </ChildContent>
+    </SfDialog>
+}
+
+<Syncfusion.Blazor.Popups.SfDialogProvider />

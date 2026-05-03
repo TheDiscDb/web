@@ -2,6 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
+using HotChocolate;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
 
@@ -75,6 +78,12 @@ public class SqlServerDataContext : DbContext
         userContribution.HasMany(x => x.HashItems)
             .WithOne(x => x.UserContribution)
             .OnDelete(DeleteBehavior.Cascade);
+        userContribution.HasOne(x => x.Boxset)
+            .WithMany()
+            .HasForeignKey(x => x.BoxsetId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+        userContribution.HasIndex(x => x.BoxsetId);
 
         var userDiscContribution = modelBuilder.Entity<UserContributionDisc>();
         userDiscContribution.HasKey(x => x.Id);
@@ -108,7 +117,35 @@ public class SqlServerDataContext : DbContext
         userMessage.Property(x => x.Type)
             .HasConversion<string>();
         userMessage.HasIndex(x => x.ContributionId);
+        userMessage.HasIndex(x => x.BoxsetId);
         userMessage.HasIndex(x => new { x.ToUserId, x.IsRead });
+        userMessage.HasOne(x => x.Contribution)
+            .WithMany()
+            .HasForeignKey(x => x.ContributionId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+        userMessage.HasOne(x => x.Boxset)
+            .WithMany()
+            .HasForeignKey(x => x.BoxsetId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        var contributionBoxset = modelBuilder.Entity<UserContributionBoxset>();
+        contributionBoxset.HasKey(x => x.Id);
+        contributionBoxset.Property(x => x.Status)
+            .HasConversion<string>();
+        contributionBoxset.HasMany(x => x.Members)
+            .WithOne(x => x.Boxset)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        var contributionBoxsetMember = modelBuilder.Entity<UserContributionBoxsetMember>();
+        contributionBoxsetMember.HasKey(x => x.Id);
+        contributionBoxsetMember.HasOne(x => x.Disc)
+            .WithOne()
+            .HasForeignKey<UserContributionBoxsetMember>("DiscId")
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.NoAction);
+        contributionBoxsetMember.HasIndex("DiscId").IsUnique().HasFilter("[DiscId] IS NOT NULL");
 
         var apiKeyEntity = modelBuilder.Entity<ApiKey>();
         apiKeyEntity.HasKey(x => x.Id);
@@ -169,6 +206,8 @@ public class SqlServerDataContext : DbContext
     public DbSet<Contributor> Contributors { get; set; } = null!;
     public DbSet<ApiKey> ApiKeys { get; set; } = null!;
     public DbSet<ApiKeyUsageLog> ApiKeyUsageLogs { get; set; } = null!;
+    public DbSet<UserContributionBoxset> UserContributionBoxsets { get; set; } = null!;
+    public DbSet<UserContributionBoxsetMember> UserContributionBoxsetMembers { get; set; } = null!;
     public DbSet<EngramSubmission> EngramSubmissions { get; set; } = null!;
     public DbSet<EngramTitle> EngramTitles { get; set; } = null!;
 }
@@ -218,4 +257,43 @@ public class EngramTitle
     public string? MatchSource { get; set; }
     public string? Edition { get; set; }
     public EngramSubmission Submission { get; set; } = null!;
+}
+
+public class UserContributionBoxset : IHasId
+{
+    [JsonIgnore]
+    public int Id { get; set; }
+    [NotMapped]
+    [GraphQLIgnore]
+    public string EncodedId { get; set; } = default!;
+    [JsonIgnore]
+    public string UserId { get; set; } = default!;
+
+    public DateTimeOffset Created { get; set; }
+    public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
+
+    public string Title { get; set; } = string.Empty;
+    public string? SortTitle { get; set; }
+    public string Slug { get; set; } = string.Empty;
+    public string? FrontImageUrl { get; set; }
+    public string? BackImageUrl { get; set; }
+    public string? Asin { get; set; }
+    public string? Upc { get; set; }
+    public DateTimeOffset? ReleaseDate { get; set; }
+    public string? Locale { get; set; }
+    public string? RegionCode { get; set; }
+
+    public ICollection<UserContributionBoxsetMember> Members { get; set; } = new HashSet<UserContributionBoxsetMember>();
+}
+
+public class UserContributionBoxsetMember
+{
+    public int Id { get; set; }
+    public UserContributionBoxset Boxset { get; set; } = default!;
+    public UserContributionDisc? Disc { get; set; }
+    public int SortOrder { get; set; }
+
+    public string? ExistingDiscPath { get; set; }
+    public string? ExistingDiscName { get; set; }
+    public string? ExistingDiscFormat { get; set; }
 }

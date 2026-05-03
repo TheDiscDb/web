@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using StrawberryShake;
 using TheDiscDb.Client.Contributions;
@@ -9,6 +9,12 @@ namespace TheDiscDb.Client.Pages.Contribute;
 public partial class MyContributions : ComponentBase
 {
     private const int DefaultPageSize = 50;
+    // Server caps individual requests at 100 (UsePaging MaxPageSize). We follow cursors
+    // up to MaxItemsPerSource per source to keep the client-side merge bounded. Documented
+    // as a future scaling concern in the plan — server-side union pagination is the long-term
+    // fix when individual users routinely have more than this many of either type.
+    private const int ServerPageSize = 100;
+    private const int MaxItemsPerSource = 500;
 
     private static readonly UserContributionStatus[] DeletableStatuses =
     [
@@ -18,7 +24,10 @@ public partial class MyContributions : ComponentBase
     ];
 
     [Inject]
-    GetCurrentUserContributionsQuery Query { get; set; } = null!;
+    GetCurrentUserContributionsQuery ContributionsQuery { get; set; } = null!;
+
+    [Inject]
+    GetCurrentUserBoxsetsQuery BoxsetsQuery { get; set; } = null!;
 
     [Inject]
     NavigationManager Navigation { get; set; } = null!;
@@ -38,7 +47,7 @@ public partial class MyContributions : ComponentBase
     [SupplyParameterFromQuery(Name = "count")]
     public int? Count { get; set; }
 
-    public IQueryable<IGetCurrentUserContributions_MyContributions_Nodes>? Contributions { get; set; }
+    public IQueryable<MyItemRow>? Items { get; set; }
 
     public int CurrentPage { get; private set; } = 1;
     public int PageSize { get; private set; } = DefaultPageSize;
@@ -47,27 +56,29 @@ public partial class MyContributions : ComponentBase
     public bool HasNextPage => CurrentPage < TotalPages;
     public bool HasPreviousPage => CurrentPage > 1;
 
+    // Full merged list, kept in memory so paging doesn't refetch.
+    private List<MyItemRow> mergedRows = new();
+    // Monotonically increasing token used to discard stale loads when the filter changes mid-flight.
+    private int loadSequence;
+
     private bool showDeleteDialog;
     private bool isDeleting;
     private string? deleteErrorMessage;
-    private IGetCurrentUserContributions_MyContributions_Nodes? deletingContribution;
-
-    // Store the end cursor from each page so forward navigation doesn't re-fetch.
-    // Key = page number that this cursor leads to (i.e., page 2's entry = endCursor from page 1).
-    private readonly Dictionary<int, string?> endCursors = new() { { 1, null } };
+    private MyItemRow? deletingItem;
 
     protected override async Task OnInitializedAsync()
     {
         CurrentPage = Page is > 0 ? Page.Value : 1;
         PageSize = Count is > 0 ? Count.Value : DefaultPageSize;
 
-        // If deep-linking to page > 1, start at page 1 since we don't have the cursor
-        if (CurrentPage > 1 && !endCursors.ContainsKey(CurrentPage))
-        {
-            CurrentPage = 1;
-        }
+        await LoadAsync();
 
-        await LoadContributionsAsync();
+        // Clamp page to available range after load
+        if (CurrentPage > TotalPages)
+        {
+            CurrentPage = Math.Max(1, TotalPages);
+        }
+        ApplyPaging();
     }
 
     private async Task OnStatusFilterChanged(ChangeEventArgs e)
@@ -76,31 +87,27 @@ public partial class MyContributions : ComponentBase
         StatusFilter = string.IsNullOrEmpty(selected) ? null : selected;
 
         CurrentPage = 1;
-        endCursors.Clear();
-        endCursors[1] = null;
-
         UpdateUrl();
-        await LoadContributionsAsync();
+        await LoadAsync();
+        ApplyPaging();
     }
 
-    public async Task GoToNextPage()
+    public Task GoToNextPage()
     {
-        if (!HasNextPage)
-            return;
-
+        if (!HasNextPage) return Task.CompletedTask;
         CurrentPage++;
         UpdateUrl();
-        await LoadContributionsAsync();
+        ApplyPaging();
+        return Task.CompletedTask;
     }
 
-    public async Task GoToPreviousPage()
+    public Task GoToPreviousPage()
     {
-        if (!HasPreviousPage)
-            return;
-
+        if (!HasPreviousPage) return Task.CompletedTask;
         CurrentPage--;
         UpdateUrl();
-        await LoadContributionsAsync();
+        ApplyPaging();
+        return Task.CompletedTask;
     }
 
     private void UpdateUrl()
@@ -114,63 +121,134 @@ public partial class MyContributions : ComponentBase
         Navigation.NavigateTo(uri);
     }
 
-    private async Task LoadContributionsAsync()
+    private async Task LoadAsync()
     {
-        UserContributionFilterInput? input = null;
+        var thisLoad = ++loadSequence;
+
+        UserContributionFilterInput? contribFilter = null;
+        UserContributionBoxsetFilterInput? boxsetFilter = null;
         if (TryGetNormalizedStatus(out var normalizedStatus))
         {
-            input = new UserContributionFilterInput
+            contribFilter = new UserContributionFilterInput
             {
-                Status = new UserContributionStatusOperationFilterInput
-                {
-                    Eq = normalizedStatus!.Value
-                }
+                Status = new UserContributionStatusOperationFilterInput { Eq = normalizedStatus!.Value }
+            };
+            boxsetFilter = new UserContributionBoxsetFilterInput
+            {
+                Status = new UserContributionStatusOperationFilterInput { Eq = normalizedStatus.Value }
             };
         }
 
-        var afterCursor = endCursors.GetValueOrDefault(CurrentPage);
-        var results = await Query.ExecuteAsync(input, PageSize, afterCursor);
-        if (results != null && results.IsSuccessResult())
-        {
-            var connection = results.Data?.MyContributions;
-            var nodes = connection?.Nodes ?? Array.Empty<IGetCurrentUserContributions_MyContributions_Nodes>();
-            Contributions = nodes.AsQueryable();
-            TotalCount = connection?.TotalCount ?? 0;
+        // Fetch both sources in parallel, each following cursors up to MaxItemsPerSource.
+        var contribTask = FetchAllContributionsAsync(contribFilter);
+        var boxsetTask = FetchAllBoxsetsAsync(boxsetFilter);
+        await Task.WhenAll(contribTask, boxsetTask);
 
-            // Cache the end cursor so the next page can be fetched without re-querying
-            if (connection?.PageInfo.EndCursor != null)
+        // Discard stale loads (filter changed before we finished).
+        if (thisLoad != loadSequence) return;
+
+        var rows = new List<MyItemRow>();
+        rows.AddRange(await contribTask);
+        rows.AddRange(await boxsetTask);
+
+        mergedRows = rows.OrderByDescending(r => r.Created).ToList();
+        TotalCount = mergedRows.Count;
+    }
+
+    private async Task<List<MyItemRow>> FetchAllContributionsAsync(UserContributionFilterInput? filter)
+    {
+        var rows = new List<MyItemRow>();
+        string? after = null;
+        while (rows.Count < MaxItemsPerSource)
+        {
+            var pageSize = Math.Min(ServerPageSize, MaxItemsPerSource - rows.Count);
+            var result = await ContributionsQuery.ExecuteAsync(filter, pageSize, after);
+            if (result == null || !result.IsSuccessResult()) break;
+            var connection = result.Data?.MyContributions;
+            var nodes = connection?.Nodes;
+            if (nodes != null)
             {
-                endCursors[CurrentPage + 1] = connection.PageInfo.EndCursor;
+                foreach (var c in nodes)
+                {
+                    rows.Add(new MyItemRow(
+                        EncodedId: c.EncodedId,
+                        Name: !string.IsNullOrEmpty(c.ReleaseTitle) ? c.ReleaseTitle : (c.Title ?? "(untitled)"),
+                        Title: c.Title ?? string.Empty,
+                        Type: NormalizeMediaType(c.MediaType),
+                        Status: c.Status,
+                        Created: c.Created,
+                        IsBoxset: false,
+                        DetailUrl: $"/contribution/{c.EncodedId}"));
+                }
             }
+            if (connection?.PageInfo.HasNextPage != true) break;
+            after = connection.PageInfo.EndCursor;
+            if (string.IsNullOrEmpty(after)) break;
         }
+        return rows;
+    }
+
+    private async Task<List<MyItemRow>> FetchAllBoxsetsAsync(UserContributionBoxsetFilterInput? filter)
+    {
+        var rows = new List<MyItemRow>();
+        string? after = null;
+        while (rows.Count < MaxItemsPerSource)
+        {
+            var pageSize = Math.Min(ServerPageSize, MaxItemsPerSource - rows.Count);
+            var result = await BoxsetsQuery.ExecuteAsync(filter, pageSize, after);
+            if (result == null || !result.IsSuccessResult()) break;
+            var connection = result.Data?.MyBoxsets;
+            var nodes = connection?.Nodes;
+            if (nodes != null)
+            {
+                foreach (var b in nodes)
+                {
+                    rows.Add(new MyItemRow(
+                        EncodedId: b.EncodedId,
+                        Name: b.Title,
+                        Title: b.Title,
+                        Type: "Boxset",
+                        Status: b.Status,
+                        Created: b.Created,
+                        IsBoxset: true,
+                        DetailUrl: $"/contribution/boxset/{b.EncodedId}"));
+                }
+            }
+            if (connection?.PageInfo.HasNextPage != true) break;
+            after = connection.PageInfo.EndCursor;
+            if (string.IsNullOrEmpty(after)) break;
+        }
+        return rows;
+    }
+
+    private void ApplyPaging()
+    {
+        var skip = (CurrentPage - 1) * PageSize;
+        Items = mergedRows.Skip(skip).Take(PageSize).AsQueryable();
+    }
+
+    private static string NormalizeMediaType(string? mediaType)
+    {
+        if (string.IsNullOrWhiteSpace(mediaType)) return "—";
+        return mediaType.Equals("movie", StringComparison.OrdinalIgnoreCase) ? "Movie"
+            : mediaType.Equals("series", StringComparison.OrdinalIgnoreCase) ? "Series"
+            : mediaType;
     }
 
     private bool TryGetNormalizedStatus(out UserContributionStatus? normalizedStatus)
     {
         normalizedStatus = null;
-
-        if (string.IsNullOrWhiteSpace(StatusFilter))
-        {
-            return false;
-        }
-
-        if (!Enum.TryParse(StatusFilter.Trim(), ignoreCase: true, out UserContributionStatus parsedStatus))
-        {
-            return false;
-        }
-
+        if (string.IsNullOrWhiteSpace(StatusFilter)) return false;
+        if (!Enum.TryParse(StatusFilter.Trim(), ignoreCase: true, out UserContributionStatus parsedStatus)) return false;
         normalizedStatus = parsedStatus;
         return true;
     }
 
-    private static bool CanDelete(IGetCurrentUserContributions_MyContributions_Nodes contribution)
-    {
-        return DeletableStatuses.Contains(contribution.Status);
-    }
+    private static bool CanDelete(MyItemRow row) => DeletableStatuses.Contains(row.Status);
 
-    private void ConfirmDelete(IGetCurrentUserContributions_MyContributions_Nodes contribution)
+    private void ConfirmDelete(MyItemRow row)
     {
-        deletingContribution = contribution;
+        deletingItem = row;
         deleteErrorMessage = null;
         showDeleteDialog = true;
     }
@@ -178,56 +256,87 @@ public partial class MyContributions : ComponentBase
     private void CancelDelete()
     {
         showDeleteDialog = false;
-        deletingContribution = null;
+        deletingItem = null;
         deleteErrorMessage = null;
     }
 
     private async Task ExecuteDelete()
     {
-        if (deletingContribution == null)
-            return;
+        if (deletingItem == null) return;
 
         isDeleting = true;
         deleteErrorMessage = null;
 
         try
         {
-            var result = await ContributionClient.DeleteContribution.ExecuteAsync(new DeleteContributionInput
+            if (deletingItem.IsBoxset)
             {
-                ContributionId = deletingContribution.EncodedId
-            });
-
-            if (result.Data?.DeleteContribution?.Errors is { Count: > 0 } errors)
-            {
-                var error = errors[0];
-                deleteErrorMessage = error switch
+                var result = await ContributionClient.DeleteBoxset.ExecuteAsync(new DeleteBoxsetInput
                 {
-                    IDeleteContribution_DeleteContribution_Errors_InvalidContributionStatusError e => e.Message,
-                    IDeleteContribution_DeleteContribution_Errors_ContributionNotFoundError e => e.Message,
-                    IDeleteContribution_DeleteContribution_Errors_InvalidOwnershipError e => e.Message,
-                    IDeleteContribution_DeleteContribution_Errors_AuthenticationError e => e.Message,
-                    IDeleteContribution_DeleteContribution_Errors_InvalidIdError e => e.Message,
-                    _ => $"An unexpected error occurred ({error.Code})"
-                };
-                return;
+                    BoxsetId = deletingItem.EncodedId
+                });
+
+                if (result.Data?.DeleteBoxset?.Errors is { Count: > 0 } errors)
+                {
+                    var error = errors[0];
+                    deleteErrorMessage = error switch
+                    {
+                        IDeleteBoxset_DeleteBoxset_Errors_AuthenticationError e => e.Message,
+                        IDeleteBoxset_DeleteBoxset_Errors_BoxsetNotFoundError e => e.Message,
+                        IDeleteBoxset_DeleteBoxset_Errors_InvalidIdError e => e.Message,
+                        IDeleteBoxset_DeleteBoxset_Errors_InvalidOwnershipError e => e.Message,
+                        _ => $"An unexpected error occurred ({error.Code})"
+                    };
+                    return;
+                }
+            }
+            else
+            {
+                var result = await ContributionClient.DeleteContribution.ExecuteAsync(new DeleteContributionInput
+                {
+                    ContributionId = deletingItem.EncodedId
+                });
+
+                if (result.Data?.DeleteContribution?.Errors is { Count: > 0 } errors)
+                {
+                    var error = errors[0];
+                    deleteErrorMessage = error switch
+                    {
+                        IDeleteContribution_DeleteContribution_Errors_InvalidContributionStatusError e => e.Message,
+                        IDeleteContribution_DeleteContribution_Errors_ContributionNotFoundError e => e.Message,
+                        IDeleteContribution_DeleteContribution_Errors_InvalidOwnershipError e => e.Message,
+                        IDeleteContribution_DeleteContribution_Errors_AuthenticationError e => e.Message,
+                        IDeleteContribution_DeleteContribution_Errors_InvalidIdError e => e.Message,
+                        _ => $"An unexpected error occurred ({error.Code})"
+                    };
+                    return;
+                }
             }
 
             showDeleteDialog = false;
-            deletingContribution = null;
+            deletingItem = null;
 
-            // Refresh the list
             CurrentPage = 1;
-            endCursors.Clear();
-            endCursors[1] = null;
-            await LoadContributionsAsync();
+            await LoadAsync();
+            ApplyPaging();
         }
         catch (Exception)
         {
-            deleteErrorMessage = "An unexpected error occurred while deleting the contribution. Please try again.";
+            deleteErrorMessage = "An unexpected error occurred. Please try again.";
         }
         finally
         {
             isDeleting = false;
         }
     }
+
+    public record MyItemRow(
+        string EncodedId,
+        string Name,
+        string Title,
+        string Type,
+        UserContributionStatus Status,
+        DateTimeOffset Created,
+        bool IsBoxset,
+        string DetailUrl);
 }

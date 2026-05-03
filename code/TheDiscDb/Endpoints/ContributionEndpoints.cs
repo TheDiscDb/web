@@ -45,6 +45,17 @@ public class ContributionEndpoints
         contribute.MapPost("{contributionId}/images/back/delete", DeleteContributionBackImage)
             .DisableAntiforgery();
 
+        contribute.MapPost("boxset/{boxsetId}/images/front/upload", UploadBoxsetFrontImage)
+            .WithMetadata(new DisableRequestSizeLimitAttribute())
+            .DisableAntiforgery();
+        contribute.MapPost("boxset/{boxsetId}/images/back/upload", UploadBoxsetBackImage)
+            .WithMetadata(new DisableRequestSizeLimitAttribute())
+            .DisableAntiforgery();
+        contribute.MapPost("boxset/{boxsetId}/images/front/delete", DeleteBoxsetFrontImage)
+            .DisableAntiforgery();
+        contribute.MapPost("boxset/{boxsetId}/images/back/delete", DeleteBoxsetBackImage)
+            .DisableAntiforgery();
+
         contribute.MapGet("images/{**path}", ServeContributionImage);
     }
 
@@ -387,6 +398,160 @@ public class ContributionEndpoints
             return (null, TypedResults.BadRequest($"Cannot edit images for a contribution with status '{contribution.Status}'."));
 
         return (contribution, null);
+    }
+
+    #endregion
+
+    #region Boxset Image Upload
+
+    public async Task<IResult> UploadBoxsetFrontImage(
+        IFormFileCollection files,
+        string boxsetId,
+        IDbContextFactory<SqlServerDataContext> dbFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore imageStore,
+        IStaticAssetStore assetStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+        => await UploadBoxsetImage(files, boxsetId, "front", dbFactory, idEncoder, userManager, imageStore, assetStore, httpContext, cancellationToken);
+
+    public async Task<IResult> UploadBoxsetBackImage(
+        IFormFileCollection files,
+        string boxsetId,
+        IDbContextFactory<SqlServerDataContext> dbFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore imageStore,
+        IStaticAssetStore assetStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+        => await UploadBoxsetImage(files, boxsetId, "back", dbFactory, idEncoder, userManager, imageStore, assetStore, httpContext, cancellationToken);
+
+    public async Task<IResult> DeleteBoxsetFrontImage(
+        string boxsetId,
+        IDbContextFactory<SqlServerDataContext> dbFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore imageStore,
+        IStaticAssetStore assetStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+        => await DeleteBoxsetImage(boxsetId, "front", dbFactory, idEncoder, userManager, imageStore, assetStore, httpContext, cancellationToken);
+
+    public async Task<IResult> DeleteBoxsetBackImage(
+        string boxsetId,
+        IDbContextFactory<SqlServerDataContext> dbFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore imageStore,
+        IStaticAssetStore assetStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+        => await DeleteBoxsetImage(boxsetId, "back", dbFactory, idEncoder, userManager, imageStore, assetStore, httpContext, cancellationToken);
+
+    private async Task<IResult> UploadBoxsetImage(
+        IFormFileCollection files,
+        string boxsetId,
+        string name,
+        IDbContextFactory<SqlServerDataContext> dbFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        IStaticAssetStore imageStore,
+        IStaticAssetStore assetStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        var file = files.FirstOrDefault();
+        if (file == null || file.Length == 0)
+            return Results.BadRequest("No file uploaded.");
+
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var (boxset, error) = await VerifyBoxsetOwnership(boxsetId, db, idEncoder, userManager, httpContext, cancellationToken);
+        if (error != null) return error;
+
+        string encodedId = idEncoder.Encode(boxset!.Id);
+
+        string imageStorePath = $"Contributions/Boxsets/{encodedId}/{name}.jpg";
+        string assetStorePath = $"Boxsets/{encodedId}/{name}.jpg";
+        await imageStore.Delete(imageStorePath, cancellationToken);
+        await assetStore.Delete(assetStorePath, cancellationToken);
+
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream, cancellationToken);
+
+        memoryStream.Position = 0;
+        await imageStore.Save(memoryStream, imageStorePath, ContentTypes.ImageContentType, cancellationToken);
+
+        memoryStream.Position = 0;
+        await assetStore.Save(memoryStream, assetStorePath, ContentTypes.ImageContentType, cancellationToken);
+
+        string imageUrl = $"/api/contribute/images/Contributions/Boxsets/{encodedId}/{name}.jpg";
+        if (name == "front")
+            boxset.FrontImageUrl = imageUrl;
+        else
+            boxset.BackImageUrl = imageUrl;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return TypedResults.Ok(new { imageUrl });
+    }
+
+    private async Task<IResult> DeleteBoxsetImage(
+        string boxsetId,
+        string name,
+        IDbContextFactory<SqlServerDataContext> dbFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        IStaticAssetStore imageStore,
+        IStaticAssetStore assetStore,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        var (boxset, error) = await VerifyBoxsetOwnership(boxsetId, db, idEncoder, userManager, httpContext, cancellationToken);
+        if (error != null) return error;
+
+        string encodedId = idEncoder.Encode(boxset!.Id);
+        await imageStore.Delete($"Contributions/Boxsets/{encodedId}/{name}.jpg", cancellationToken);
+        await assetStore.Delete($"Boxsets/{encodedId}/{name}.jpg", cancellationToken);
+
+        if (name == "front")
+            boxset.FrontImageUrl = null;
+        else
+            boxset.BackImageUrl = null;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return TypedResults.Ok();
+    }
+
+    private static async Task<(UserContributionBoxset? boxset, IResult? error)> VerifyBoxsetOwnership(
+        string boxsetId,
+        SqlServerDataContext db,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        HttpContext httpContext,
+        CancellationToken cancellationToken)
+    {
+        int decodedId = idEncoder.Decode(boxsetId);
+        if (decodedId == 0)
+            return (null, TypedResults.BadRequest("Invalid boxset ID."));
+
+        var boxset = await db.UserContributionBoxsets
+            .FirstOrDefaultAsync(b => b.Id == decodedId, cancellationToken);
+
+        if (boxset == null)
+            return (null, TypedResults.NotFound("Boxset not found."));
+
+        var userId = userManager.GetUserId(httpContext.User);
+        if (string.IsNullOrEmpty(userId) || boxset.UserId != userId)
+            return (null, TypedResults.Forbid());
+
+        if (!EditableStatuses.Contains(boxset.Status))
+            return (null, TypedResults.BadRequest($"Cannot edit images for a boxset with status '{boxset.Status}'."));
+
+        return (boxset, null);
     }
 
     #endregion

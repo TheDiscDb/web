@@ -1,0 +1,22 @@
+mutation AddDiscToBoxset($input: AddDiscToBoxsetInput!) {
+  addDiscToBoxset(input: $input) {
+    userContributionBoxset {
+      encodedId
+      members {
+        sortOrder
+        disc {
+          encodedId
+          name
+          format
+          slug
+        }
+      }
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

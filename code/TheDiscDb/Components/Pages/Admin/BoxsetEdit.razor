@@ -1,0 +1,206 @@
+@page "/admin/boxset/{BoxsetId}/edit"
+@using System.Web
+@using TheDiscDb.Client.Controls
+@using Syncfusion.Blazor.Popups
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Edit Boxset</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink(), GetBoxsetDetailsLink()]" PrimaryText="Edit" />
+
+<h1>Edit Boxset</h1>
+
+@if (Boxset == null)
+{
+    <div class="alert alert-danger">Boxset not found.</div>
+}
+else
+{
+    <h2>@Boxset.Title</h2>
+    <p><small class="text-muted">@Boxset.Slug</small> &middot; Status: <strong>@Boxset.Status</strong></p>
+
+    <section class="info-card mb-3">
+        <h3>Cover Images</h3>
+
+        @if (!string.IsNullOrEmpty(imageMessage))
+        {
+            <div class="alert @(imageMessageIsError ? "alert-danger" : "alert-info")">@imageMessage</div>
+        }
+
+        <div class="d-flex gap-4 flex-wrap mb-3">
+            <div>
+                <h4>Front Cover</h4>
+                @if (!string.IsNullOrEmpty(Boxset.FrontImageUrl))
+                {
+                    <div class="mb-2">
+                        <img src="@BreadCrumbHelper.GetDirectImageUrl(Boxset.FrontImageUrl, imageVersion)" width="156" height="231" alt="Front cover" class="border rounded p-1" />
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm mb-2" @onclick="@(() => DeleteImage("front"))">Delete Front Image</button>
+                }
+                <InputFile OnChange="OnFrontImageSelected" accept=".jpg,.jpeg" class="form-control" />
+            </div>
+
+            <div>
+                <h4>Back Cover</h4>
+                @if (!string.IsNullOrEmpty(Boxset.BackImageUrl))
+                {
+                    <div class="mb-2">
+                        <img src="@BreadCrumbHelper.GetDirectImageUrl(Boxset.BackImageUrl, imageVersion)" width="156" height="231" alt="Back cover" class="border rounded p-1" />
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm mb-2" @onclick="@(() => DeleteImage("back"))">Delete Back Image</button>
+                }
+                <InputFile OnChange="OnBackImageSelected" accept=".jpg,.jpeg" class="form-control" />
+            </div>
+        </div>
+    </section>
+
+    <section class="info-card mb-3">
+        <h3>Metadata</h3>
+        @if (!string.IsNullOrEmpty(saveMessage))
+        {
+            <div class="alert @(saveMessageIsError ? "alert-danger" : "alert-success")">@saveMessage</div>
+        }
+        <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label>Status</label>
+                <SfDropDownList TValue="UserContributionStatus" TItem="UserContributionStatus" DataSource="statusList" class="form-control" @bind-Value="request.Status" Placeholder="Select status" />
+            </div>
+            <div class="mb-3">
+                <label>Title</label>
+                <InputText class="form-control" @bind-Value="request.Title" />
+                <ValidationMessage For="@(() => request.Title)" />
+            </div>
+            <div class="mb-3">
+                <label>Sort Title</label>
+                <InputText class="form-control" @bind-Value="request.SortTitle" />
+                <small class="text-muted">Leave empty to auto-generate from Title (e.g. "The Matrix" → "Matrix, The").</small>
+            </div>
+            <div class="mb-3">
+                <label>Slug</label>
+                <InputText class="form-control" @bind-Value="request.Slug" />
+                <ValidationMessage For="@(() => request.Slug)" />
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label>ASIN</label>
+                    <InputText class="form-control" @bind-Value="request.Asin" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label>UPC / EAN</label>
+                    <InputText class="form-control" @bind-Value="request.Upc" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label>Locale</label>
+                    <InputText class="form-control" @bind-Value="request.Locale" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label>Region Code</label>
+                    <InputText class="form-control" @bind-Value="request.RegionCode" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label>Release Date</label>
+                <InputDate class="form-control" @bind-Value="releaseDate" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="/admin/boxset/@BoxsetId" class="btn btn-secondary">Back to Boxset</a>
+        </EditForm>
+    </section>
+
+    <section class="info-card mb-3">
+        <h3>Discs (@Boxset.Members.Count)</h3>
+        @if (!string.IsNullOrEmpty(memberMessage))
+        {
+            <div class="alert @(memberMessageIsError ? "alert-danger" : "alert-info")">@memberMessage</div>
+        }
+        @if (Boxset.Members.Count == 0)
+        {
+            <p class="text-muted">No discs in this boxset.</p>
+        }
+        else
+        {
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th class="index-col">#</th>
+                        <th>Name</th>
+                        <th>Format</th>
+                        <th>Source</th>
+                        <th></th>
+                        <th class="drag-col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < orderedMembers.Count; i++)
+                    {
+                        var member = orderedMembers[i];
+                        var position = i + 1;
+                        <tr class="@GetRowClass(member)"
+                            draggable="true"
+                            @key="member.Id"
+                            @ondragstart="() => OnDragStart(member)"
+                            @ondragenter="() => OnDragEnter(member)"
+                            @ondragover:preventDefault="true"
+                            @ondragend="OnDragEnd">
+                            <td>@position</td>
+                            <td>
+                                <strong>@(member.Disc?.Name ?? member.ExistingDiscName ?? "—")</strong>
+                                @if (member.Disc?.UserContribution != null)
+                                {
+                                    <div class="small text-muted">
+                                        from
+                                        <a href="/admin/contribution/@member.Disc.UserContribution.Id">
+                                            @member.Disc.UserContribution.Title (@member.Disc.UserContribution.Year)
+                                        </a>
+                                    </div>
+                                }
+                            </td>
+                            <td>@(member.Disc?.Format ?? member.ExistingDiscFormat ?? "—")</td>
+                            <td>
+                                @if (member.Disc?.UserContribution != null)
+                                {
+                                    <span class="badge bg-secondary">@member.Disc.UserContribution.Status</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info">Existing Release</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm" title="Remove"
+                                        @onclick="() => ConfirmRemoveMember(member.Id)"><i class="e-icons e-trash"></i></button>
+                            </td>
+                            <td class="drag-handle" title="Drag to reorder">⋮</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}
+
+@if (showRemoveDialog)
+{
+    <SfDialog Target="body" Width="400px" @bind-Visible="@showRemoveDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Remove Disc">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <p>Remove this disc from the boxset?</p>
+            <p class="text-muted small">If the disc came from a contribution, the contribution itself is not deleted.</p>
+            <div class="e-footer-content">
+                <div class="button-container">
+                    <button type="button" class="e-btn e-normal" @onclick="CancelRemove">Cancel</button>
+                    <button type="button" class="e-btn e-normal e-danger" @onclick="ExecuteRemove">Remove</button>
+                </div>
+            </div>
+        </ChildContent>
+    </SfDialog>
+}
+
+<Syncfusion.Blazor.Popups.SfDialogProvider />

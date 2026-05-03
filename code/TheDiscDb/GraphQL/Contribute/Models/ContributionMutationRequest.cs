@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using TheDiscDb.Validation;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.GraphQL.Contribute.Models;
@@ -12,10 +13,10 @@ public class ContributionMutationRequest
     [Required]
     public DateTimeOffset ReleaseDate { get; set; }
     [Required]
-    [RegularExpression(@"\w{10}", ErrorMessage = "ASIN must be a combination 10 characters or numbers")]
+    [Asin]
     public string Asin { get; set; } = string.Empty;
     [Required]
-    [RegularExpression(@"\d{12,13}", ErrorMessage = "UPC/EAN must be exactly 12 digits")]
+    [Upc]
     public string Upc { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Front Image is required")]
@@ -33,6 +34,12 @@ public class ContributionMutationRequest
     public string Year { get; set; } = string.Empty;
     public Guid StorageId { get; set; } = Guid.Empty;
     public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
+
+    /// <summary>
+    /// Optional encoded boxset id. When provided, the new contribution will be linked to the
+    /// boxset and any discs subsequently added will be auto-included as boxset members.
+    /// </summary>
+    public string? BoxsetId { get; set; }
 
     public ContributionMutationRequest() { }
 

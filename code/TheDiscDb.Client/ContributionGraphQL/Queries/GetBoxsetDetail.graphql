@@ -1,0 +1,32 @@
+query GetBoxsetDetail($where: UserContributionBoxsetFilterInput) {
+  myBoxsets(where: $where, first: 1) {
+    nodes {
+      encodedId
+      title
+      sortTitle
+      slug
+      status
+      frontImageUrl
+      backImageUrl
+      asin
+      upc
+      releaseDate
+      locale
+      regionCode
+      created
+      members(order: { sortOrder: ASC }) {
+        id
+        sortOrder
+        existingDiscPath
+        existingDiscName
+        existingDiscFormat
+        disc {
+          encodedId
+          name
+          format
+          slug
+        }
+      }
+    }
+  }
+}

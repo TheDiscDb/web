@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components;
 using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.Validation;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -177,11 +178,11 @@ public partial class EditContribution : ComponentBase
 public class EditContributionRequest
 {
     [Required]
-    [RegularExpression(@"\w{10}", ErrorMessage = "ASIN must be a combination of 10 characters or numbers")]
+    [Asin]
     public string Asin { get; set; } = string.Empty;
 
     [Required]
-    [RegularExpression(@"\d{12,13}", ErrorMessage = "UPC/EAN must be exactly 12 or 13 digits")]
+    [Upc]
     public string Upc { get; set; } = string.Empty;
 
     [Required]

@@ -12,7 +12,6 @@
     <a href="/admin/apikeys" class="btn btn-outline-primary">Manage API Keys</a>
 </div>
 
-<h2>Pending Contributions</h2>
 <SfDropDownList TValue="UserContributionStatus"
                 TItem="UserContributionStatus"
                 DataSource="statusList"
@@ -21,6 +20,7 @@
                 ValueExpression="@(() => selectedStatus)"
                 Placeholder="Select status" />
 
+<h2 class="mt-4">Contributions</h2>
 <QuickGrid Items="PendingContributions" Class="striped-grid">
     <TemplateColumn Title="Item">
         <a href="/admin/contribution/@context.Id">@context.Title (@context.Year) @context.ReleaseTitle</a>
@@ -33,4 +33,19 @@
     <PropertyColumn Property="@(c => c.Status)" Sortable="true" />
     <PropertyColumn Property="@(c => c.Discs.Count)" Title="Discs" Sortable="true" />
     <PropertyColumn Property="@(c => !string.IsNullOrEmpty(c.FrontImageUrl))" Title="Cover Image" Sortable="true" />
+</QuickGrid>
+
+<h2 class="mt-4">Boxsets</h2>
+<QuickGrid Items="PendingBoxsets" Class="striped-grid">
+    <TemplateColumn Title="Boxset">
+        <a href="/admin/boxset/@IdEncoder.Encode(context.Id)">@context.Title</a>
+    </TemplateColumn>
+    <PropertyColumn Property="@(b => b.Slug)" Sortable="true" />
+    <PropertyColumn Property="@(b => b.Created)" Sortable="true" Format="MM/dd/yyyy" />
+    <TemplateColumn Title="User">
+        <a href="/admin/user/@context.UserId">@HttpUtility.UrlEncode(context.UserId.Split('-')[^1])</a>
+    </TemplateColumn>
+    <PropertyColumn Property="@(b => b.Status)" Sortable="true" />
+    <PropertyColumn Property="@(b => b.Members.Count)" Title="Discs" Sortable="true" />
+    <PropertyColumn Property="@(b => !string.IsNullOrEmpty(b.FrontImageUrl))" Title="Cover Image" Sortable="true" />
 </QuickGrid>

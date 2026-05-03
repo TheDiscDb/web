@@ -11,7 +11,7 @@
 <div class="contribute-layout">
     <div class="page-header">
         <h1>My Contributions</h1>
-        <div class="page-header__sub">Track and manage your disc contributions to TheDiscDb.</div>
+        <div class="page-header__sub">Track and manage your disc contributions and boxsets.</div>
     </div>
 
     <section class="info-card">
@@ -28,17 +28,17 @@
             </div>
         </div>
 
-        <QuickGrid Items="Contributions" Class="striped-grid" ItemKey="@(c => c.EncodedId)">
+        <QuickGrid Items="Items" Class="striped-grid" ItemKey="@(r => $"{(r.IsBoxset ? "b" : "c")}:{r.EncodedId}")">
             <TemplateColumn Title="Name">
-                <a href="/contribution/@context.EncodedId">@context.ReleaseTitle</a>
+                <a href="@context.DetailUrl">@context.Name</a>
             </TemplateColumn>
-            <PropertyColumn Property="@(c => c.Title)" />
-            <PropertyColumn Property="@(c => c.MediaType)" />
-            <PropertyColumn Property="@(c => c.Status)" />
+            <PropertyColumn Property="@(r => r.Title)" />
+            <PropertyColumn Property="@(r => r.Type)" Title="Type" />
+            <PropertyColumn Property="@(r => r.Status)" />
             <TemplateColumn Title="">
                 @if (CanDelete(context))
                 {
-                    <SfButton IconCss="e-icons e-circle-remove" OnClick="() => ConfirmDelete(context)" title="Delete contribution" />
+                    <SfButton IconCss="e-icons e-circle-remove" OnClick="() => ConfirmDelete(context)" title="@($"Delete {(context.IsBoxset ? "boxset" : "contribution")}")" />
                 }
             </TemplateColumn>
         </QuickGrid>
@@ -58,26 +58,34 @@
     </section>
 </div>
 
-<SfDialog @bind-Visible="@showDeleteDialog" Width="400px" IsModal="true" ShowCloseIcon="true" Header="Delete Contribution">
-    <ChildContent>
-        <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
-        <p>Are you sure you want to delete the contribution <strong>@deletingContribution?.ReleaseTitle</strong>?</p>
-        <p class="text-muted">This action cannot be undone.</p>
-        @if (!string.IsNullOrEmpty(deleteErrorMessage))
-        {
-            <div class="alert alert-danger mt-2">@deleteErrorMessage</div>
-        }
-        <div class="d-flex justify-content-end gap-2 mt-3">
-            <button class="btn btn-secondary" @onclick="CancelDelete" disabled="@isDeleting">Cancel</button>
-            <button class="btn btn-danger" @onclick="ExecuteDelete" disabled="@isDeleting">
-                @if (isDeleting)
-                {
-                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                }
-                Delete
-            </button>
-        </div>
-    </ChildContent>
-</SfDialog>
+@if (showDeleteDialog)
+{
+    <SfDialog Target="body" Width="400px" @bind-Visible="@showDeleteDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="@($"Delete {(deletingItem?.IsBoxset == true ? "Boxset" : "Contribution")}")">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <p>
+                Are you sure you want to delete the @(deletingItem?.IsBoxset == true ? "boxset" : "contribution")
+                <strong>@deletingItem?.Name</strong>?
+            </p>
+            <p class="text-muted">This action cannot be undone.</p>
+            @if (!string.IsNullOrEmpty(deleteErrorMessage))
+            {
+                <div class="alert alert-danger mt-2">@deleteErrorMessage</div>
+            }
+            <div class="e-footer-content">
+                <div class="button-container">
+                    <button type="button" class="e-btn e-normal" @onclick="CancelDelete" disabled="@isDeleting">Cancel</button>
+                    <button type="button" class="e-btn e-normal e-danger" @onclick="ExecuteDelete" disabled="@isDeleting">
+                        @if (isDeleting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        }
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </ChildContent>
+    </SfDialog>
+}
 
 <Syncfusion.Blazor.Popups.SfDialogProvider />

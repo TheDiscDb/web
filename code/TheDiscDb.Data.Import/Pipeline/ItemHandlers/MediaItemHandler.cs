@@ -22,7 +22,31 @@ public class MediaItemHandler : ItemHandler<MediaItem>
         fromDatabase.Title = newValue.Title;
         fromDatabase.SortTitle = newValue.SortTitle;
         fromDatabase.FullTitle = newValue.FullTitle;
-        fromDatabase.Externalids = newValue.Externalids;
+        if (newValue.Externalids != null)
+        {
+            // Merge in place to avoid creating a new ExternalIds row (and orphaning
+            // the existing one) on every re-import. Only overwrite a non-empty
+            // incoming value so a partial metadata refresh doesn't blank out an id.
+            if (fromDatabase.Externalids == null)
+            {
+                fromDatabase.Externalids = newValue.Externalids;
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(newValue.Externalids.Tmdb))
+                {
+                    fromDatabase.Externalids.Tmdb = newValue.Externalids.Tmdb;
+                }
+                if (!string.IsNullOrEmpty(newValue.Externalids.Imdb))
+                {
+                    fromDatabase.Externalids.Imdb = newValue.Externalids.Imdb;
+                }
+                if (!string.IsNullOrEmpty(newValue.Externalids.Tvdb))
+                {
+                    fromDatabase.Externalids.Tvdb = newValue.Externalids.Tvdb;
+                }
+            }
+        }
         fromDatabase.Slug = newValue.Slug;
         fromDatabase.Year = newValue.Year;
         fromDatabase.ImageUrl = newValue.ImageUrl;

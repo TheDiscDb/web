@@ -56,7 +56,13 @@ public partial class Review : ComponentBase, IAsyncDisposable
             this.database = await DbFactory.CreateDbContextAsync();
             this.Contribution = await database.UserContributions
                 .Include(uc => uc.Discs)
+                .Include(uc => uc.Boxset)
                 .FirstOrDefaultAsync(uc => uc.Id == decodedId);
+
+            if (this.Contribution?.Boxset != null)
+            {
+                this.Contribution.Boxset.EncodedId = this.IdEncoder.Encode(this.Contribution.Boxset.Id);
+            }
 
             if (this.Contribution != null)
             {

@@ -18,6 +18,9 @@ public partial class ReleaseDetailInput : ComponentBase
     [Parameter]
     public string? ExternalId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "boxsetId")]
+    public string? BoxsetId { get; set; }
+
     [Inject]
     public IContributionClient ContributionClient { get; set; } = default!;
 
@@ -34,6 +37,11 @@ public partial class ReleaseDetailInput : ComponentBase
         Status = UserContributionStatus.Pending
     };
 
+    // EditForm binds to this wrapper for client-side DataAnnotations validation.
+    // All properties pass through to `request`, so existing read/write sites are
+    // unaffected.
+    private ReleaseDetailFormBindings? form;
+
     private string releaseDate = string.Empty;
     private string releaseDateValidationMessage = string.Empty;
     private IGetExternalData_ExternalData_ExternalMetadata? externalData;
@@ -44,6 +52,7 @@ public partial class ReleaseDetailInput : ComponentBase
     private string backImageRemoveUrl => $"/api/contribute/images/back/remove/{id}";
     string frontImagePreviewUrl = "";
     string backImagePreviewUrl = "";
+    private string? boxsetTitle;
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
     private static readonly System.Text.RegularExpressions.Regex AsinRegex = new(@"^\w{10}$", System.Text.RegularExpressions.RegexOptions.Compiled);
     private bool ImportFromAmazonDisabled => !AsinRegex.IsMatch(this.request.Asin ?? string.Empty) || IsAmazonImportInProgress;
@@ -56,8 +65,15 @@ public partial class ReleaseDetailInput : ComponentBase
     string? toastContent = "Test";
 #pragma warning restore IDE0044 // Add readonly modifier
 
+    // Tracks the BoxsetId we last applied to the form so OnParametersSetAsync can detect
+    // when the user navigates between linked/standalone (same route, different query string)
+    // and re-sync the form model. Without this, Blazor reuses the component instance and
+    // submits the stale BoxsetId.
+    private string? lastAppliedBoxsetId;
+
     protected override async Task OnInitializedAsync()
     {
+        this.form = new ReleaseDetailFormBindings(this.request);
         this.request.MediaType = this.MediaType ?? "Movie";
         this.request.ExternalProvider = "TMDB";
         this.request.ExternalId = this.ExternalId ?? string.Empty;
@@ -84,8 +100,104 @@ public partial class ReleaseDetailInput : ComponentBase
         // TODO: Check for other releases in the database for this ExternalId - then prompt or redirect?
     }
 
+    protected override async Task OnParametersSetAsync()
+    {
+        // Re-sync boxset linkage whenever the route's query string changes. Blazor reuses the
+        // component instance across same-route navigations, so OnInitializedAsync only fires
+        // once. Without this, the "create as standalone" link wouldn't actually clear the
+        // BoxsetId from the form model and submit would still link to the boxset.
+        if (this.BoxsetId != this.lastAppliedBoxsetId)
+        {
+            this.lastAppliedBoxsetId = this.BoxsetId;
+            this.request.BoxsetId = this.BoxsetId;
+
+            if (string.IsNullOrEmpty(this.BoxsetId))
+            {
+                this.boxsetTitle = null;
+            }
+            else
+            {
+                // Reset banner state before lookup so a failed/empty result doesn't leave stale
+                // title text from a previously linked boxset visible in the UI.
+                this.boxsetTitle = null;
+
+                var boxsetFilter = new UserContributionBoxsetFilterInput
+                {
+                    EncodedId = new EncodedIdOperationFilterInput { Eq = this.BoxsetId }
+                };
+                var boxsetResult = await this.ContributionClient.GetBoxsetDetail.ExecuteAsync(boxsetFilter);
+                var boxset = boxsetResult?.Data?.MyBoxsets?.Nodes?.FirstOrDefault();
+                if (boxset != null)
+                {
+                    this.boxsetTitle = boxset.Title;
+                    // Prefill release-level fields from the boxset so the user doesn't re-enter
+                    // shared metadata. The user can edit anything before submit.
+                    this.request.ReleaseSlug = boxset.Slug ?? string.Empty;
+                    this.request.ReleaseTitle = boxset.Title ?? string.Empty;
+                    if (boxset.ReleaseDate.HasValue)
+                    {
+                        this.request.ReleaseDate = boxset.ReleaseDate.Value;
+                        this.releaseDate = boxset.ReleaseDate.Value.ToString("MM-dd-yyyy");
+                    }
+                    if (!string.IsNullOrEmpty(boxset.Locale)) this.request.Locale = boxset.Locale;
+                    if (!string.IsNullOrEmpty(boxset.RegionCode)) this.request.RegionCode = boxset.RegionCode;
+                    if (!string.IsNullOrEmpty(boxset.Asin)) this.request.Asin = boxset.Asin;
+                    if (!string.IsNullOrEmpty(boxset.Upc)) this.request.Upc = boxset.Upc;
+
+                    // Copy the boxset's cover images into the new contribution's temp upload
+                    // location so the user doesn't have to re-upload them. The existing
+                    // CreateContribution → MoveImages flow then promotes the temp files to
+                    // the contribution's permanent location on submit. Reuses the same
+                    // UploadImage helper used by the Amazon-import path.
+                    //
+                    // Reset image state first so switching from a boxset with images to one
+                    // without (or after a copy failure) doesn't leave stale URLs in the form.
+                    this.request.FrontImageUrl = string.Empty;
+                    this.request.BackImageUrl = string.Empty;
+                    this.frontImagePreviewUrl = string.Empty;
+                    this.backImagePreviewUrl = string.Empty;
+
+                    if (!string.IsNullOrEmpty(boxset.FrontImageUrl))
+                    {
+                        try
+                        {
+                            this.request.FrontImageUrl = await UploadImage(this.id.ToString(), boxset.FrontImageUrl, this.frontImageUploadUrl, "front", this.frontImageUploader) ?? string.Empty;
+                            if (!string.IsNullOrEmpty(this.request.FrontImageUrl))
+                            {
+                                this.frontImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/front.jpg";
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Failed to copy boxset front image: {ex.Message}");
+                        }
+                    }
+                    if (!string.IsNullOrEmpty(boxset.BackImageUrl))
+                    {
+                        try
+                        {
+                            this.request.BackImageUrl = await UploadImage(this.id.ToString(), boxset.BackImageUrl, this.backImageUploadUrl, "back", this.backImageUploader);
+                            if (!string.IsNullOrEmpty(this.request.BackImageUrl))
+                            {
+                                this.backImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/back.jpg";
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Failed to copy boxset back image: {ex.Message}");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private string? submitErrorMessage;
+
     async Task HandleValidSubmit()
     {
+        this.submitErrorMessage = null;
+
         if (string.IsNullOrEmpty(this.releaseDate))
         {
             // The release date is required. TODO: Show an error message.
@@ -109,25 +221,54 @@ public partial class ReleaseDetailInput : ComponentBase
             Input = this.request
         });
 
-        if (result != null && result.IsSuccessResult())
+        if (result == null || !result.IsSuccessResult())
         {
-            if (this.request.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
-            {
-                // Create the episode names for later use
-                var episodeResponse = await this.ContributionClient.GetEpisodeNames.ExecuteAsync(new EpisodeNamesInput
-                {
-                    ContributionId = result.Data!.CreateContribution.UserContribution!.EncodedId!
-                });
-
-                if (episodeResponse == null || !episodeResponse.IsSuccessResult())
-                {
-                    // TODO: Show an error message
-                    var error = episodeResponse?.Errors.FirstOrDefault();
-                    Console.WriteLine("Failed to create episode names. " + error?.Message);
-                }
-            }
-            this.NavigationManager!.NavigateTo($"/contribution/{result.Data!.CreateContribution.UserContribution!.EncodedId!}");
+            this.submitErrorMessage = result?.Errors.FirstOrDefault()?.Message
+                ?? "Failed to create the contribution. Please try again.";
+            return;
         }
+
+        // Domain errors come back via the payload `errors` union, not the transport-level errors.
+        // When boxset linkage validation fails (BoxsetNotFound, InvalidOwnership,
+        // InvalidBoxsetStatus, InvalidId), `userContribution` is null.
+        var payload = result.Data?.CreateContribution;
+        if (payload?.Errors is { Count: > 0 } domainErrors)
+        {
+            this.submitErrorMessage = domainErrors[0] switch
+            {
+                ICreateContribution_CreateContribution_Errors_AuthenticationError e => e.Message,
+                ICreateContribution_CreateContribution_Errors_BoxsetNotFoundError e => e.Message,
+                ICreateContribution_CreateContribution_Errors_InvalidIdError e => e.Message,
+                ICreateContribution_CreateContribution_Errors_InvalidOwnershipError e => e.Message,
+                ICreateContribution_CreateContribution_Errors_InvalidBoxsetStatusError e => e.Message,
+                _ => "An unexpected error occurred while creating the contribution."
+            };
+            return;
+        }
+
+        var newContribution = payload?.UserContribution;
+        if (newContribution == null)
+        {
+            this.submitErrorMessage = "The contribution was not created. Please try again.";
+            return;
+        }
+
+        if (this.request.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
+        {
+            // Create the episode names for later use
+            var episodeResponse = await this.ContributionClient.GetEpisodeNames.ExecuteAsync(new EpisodeNamesInput
+            {
+                ContributionId = newContribution.EncodedId!
+            });
+
+            if (episodeResponse == null || !episodeResponse.IsSuccessResult())
+            {
+                // TODO: Show an error message
+                var error = episodeResponse?.Errors.FirstOrDefault();
+                Console.WriteLine("Failed to create episode names. " + error?.Message);
+            }
+        }
+        this.NavigationManager!.NavigateTo($"/contribution/{newContribution.EncodedId!}");
     }
 
     private void OnAsinInput(ChangeEventArgs args)

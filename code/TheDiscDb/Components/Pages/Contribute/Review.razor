@@ -35,16 +35,25 @@
         }
 
 
+        @if (Contribution.Boxset is not null)
+        {
+            <section class="callout">
+                <p class="mb-0">
+                    This contribution is part of the boxset
+                    <a href="/contribution/boxset/@Contribution.Boxset.EncodedId"><strong>@Contribution.Boxset.Title</strong></a>.
+                    Submitting it for review here will queue this disc on its own; you can return to the boxset to review and submit the full set together.
+                </p>
+            </section>
+        }
+
         <div class="cta-row split">
             <a class="btn btn-secondary" href="/contribution/@Contribution.EncodedId">Back to Contribution</a>
+            @if (Contribution.Boxset is not null)
+            {
+                <a class="btn btn-secondary" href="/contribution/boxset/@Contribution.Boxset.EncodedId">Back to Boxset</a>
+            }
             <button class="btn btn-primary" @onclick="SubmitContribution" disabled="@IsSubmitForReviewButtonDisabled">Submit For Review</button>
         </div>
 
-        <section class="callout">
-            <h3>What Is Next?</h3>
-            <p>
-                Email us at <a href="mailto:web@thediscdb.com">web@thediscdb.com</a> or create a discussion on <a href="https://github.com/orgs/TheDiscDb/discussions" target="_blank" rel="noopener noreferrer">Github</a>.
-            </p>
-        </section>
     </div>
 }

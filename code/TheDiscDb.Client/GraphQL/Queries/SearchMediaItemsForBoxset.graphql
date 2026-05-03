@@ -1,0 +1,33 @@
+query SearchMediaItemsForBoxset($searchTerm: String!, $releaseSlug: String!) {
+  mediaItems(
+    where: {
+      title: { contains: $searchTerm }
+      releases: { some: { slug: { eq: $releaseSlug } } }
+    }
+    first: 50
+  ) {
+    nodes {
+      title
+      slug
+      type
+      year
+      imageUrl
+      externalids {
+        tmdb
+      }
+      releases(where: { slug: { eq: $releaseSlug } }, order: { year: ASC }) {
+        slug
+        title
+        year
+        locale
+        regionCode
+        discs(order: { index: ASC }) {
+          index
+          name
+          format
+          slug
+        }
+      }
+    }
+  }
+}

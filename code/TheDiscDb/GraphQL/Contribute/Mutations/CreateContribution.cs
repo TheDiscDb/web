@@ -1,4 +1,4 @@
-﻿using Fantastic.TheMovieDb;
+using Fantastic.TheMovieDb;
 using HotChocolate.Authorization;
 using Microsoft.AspNetCore.Identity;
 using TheDiscDb.Data.Import;
@@ -12,6 +12,10 @@ namespace TheDiscDb.GraphQL.Contribute.Mutations;
 public partial class ContributionMutations
 {
     [Error(typeof(AuthenticationException))]
+    [Error(typeof(BoxsetNotFoundException))]
+    [Error(typeof(InvalidIdException))]
+    [Error(typeof(InvalidOwnershipException))]
+    [Error(typeof(InvalidBoxsetStatusException))]
     [Authorize]
     public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, TheMovieDbClient tmdb, IContributionHistoryService historyService, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
     {
@@ -21,6 +25,19 @@ public partial class ContributionMutations
         if (string.IsNullOrEmpty(userId))
         {
             throw new AuthenticationException("UserId not found");
+        }
+
+        // If a boxset id was provided, verify ownership + that it can still be edited before
+        // we persist any FK on the new contribution.
+        int? boxsetId = null;
+        if (!string.IsNullOrEmpty(input.BoxsetId))
+        {
+            var boxset = await LoadAndVerifyBoxset(database, userManager, input.BoxsetId, cancellationToken);
+            if (!boxset.Status.IsEditableByOwner())
+            {
+                throw new InvalidBoxsetStatusException(boxset.Status.ToString(), "modified");
+            }
+            boxsetId = boxset.Id;
         }
 
         var contribution = new UserContribution
@@ -42,7 +59,8 @@ public partial class ContributionMutations
             RegionCode = input.RegionCode,
             Title = input.Title,
             Year = input.Year,
-            TitleSlug = CreateSlug(input.Title, input.Year)
+            TitleSlug = CreateSlug(input.Title, input.Year),
+            BoxsetId = boxsetId,
         };
 
         database.UserContributions.Add(contribution);

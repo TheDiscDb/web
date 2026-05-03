@@ -5,6 +5,14 @@
 {
     <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@GetContributionLinkText(Contribution)" Items="[GetRootContributionLink()]" />
 
+    @if (Contribution.Boxset is not null)
+    {
+        <div class="alert alert-info" role="status">
+            <strong>Part of boxset:</strong> @Contribution.Boxset.Title.
+            <a href="@($"/contribution/boxset/{Contribution.Boxset.EncodedId}")" class="ms-2">Back to boxset</a>
+        </div>
+    }
+
     <div class="contribute-layout contribution-discs-page">
         <section class="contribute-hero compact">
             <h1>@Contribution.Title (@Contribution.Year)</h1>

@@ -8,5 +8,6 @@ query GetMessageThreads {
     lastMessageAt
     unreadCount
     totalCount
+    isBoxset
   }
 }

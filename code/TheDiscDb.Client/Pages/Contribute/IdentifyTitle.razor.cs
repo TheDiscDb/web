@@ -16,6 +16,9 @@ public partial class IdentifyTitle : ComponentBase
     [Parameter]
     public string? MediaType { get; set; }
 
+    [SupplyParameterFromQuery(Name = "boxsetId")]
+    public string? BoxsetId { get; set; }
+
     string BreadcrumbText => $"Find {MediaType}";
 
     public string? SearchText { get; set; }
@@ -86,7 +89,12 @@ public partial class IdentifyTitle : ComponentBase
 
         if (!string.IsNullOrEmpty(selectedId))
         {
-            NavigationManager.NavigateTo($"/contribute/{MediaType}/{selectedId}");
+            var url = $"/contribute/{MediaType}/{selectedId}";
+            if (!string.IsNullOrEmpty(BoxsetId))
+            {
+                url += $"?boxsetId={Uri.EscapeDataString(BoxsetId)}";
+            }
+            NavigationManager.NavigateTo(url);
         }
     }
     private void SwitchMediaType(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
@@ -97,6 +105,11 @@ public partial class IdentifyTitle : ComponentBase
             otherMediaType = "Movie";
         }
 
-        NavigationManager.NavigateTo($"/contribute/{otherMediaType}");
+        var url = $"/contribute/{otherMediaType}";
+        if (!string.IsNullOrEmpty(BoxsetId))
+        {
+            url += $"?boxsetId={Uri.EscapeDataString(BoxsetId)}";
+        }
+        NavigationManager.NavigateTo(url);
     }
 }

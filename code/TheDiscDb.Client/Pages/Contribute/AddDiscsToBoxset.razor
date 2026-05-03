@@ -1,0 +1,126 @@
+@page "/contribution/boxset/{BoxsetId}/add"
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Add Discs" Items='[("Home", "/"), ("Contribute", "/contribute"), ("My Contributions", "/contribute/my")]' />
+
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <h1>Add Discs to Boxset</h1>
+        <p>Select individual discs from your contributions to add to this boxset.</p>
+    </section>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    @if (isLoading)
+    {
+        <section class="info-card">
+            <p>Loading contributions...</p>
+        </section>
+    }
+    else if (Contributions == null || !Contributions.Any())
+    {
+        <section class="info-card">
+            <h2>No matching contributions</h2>
+            <p>
+                You don't have any contributions whose release slug matches this boxset's slug
+                @if (!string.IsNullOrEmpty(boxsetSlug))
+                {
+                    <text>(<code>@boxsetSlug</code>)</text>
+                }
+                yet. Boxset members must share the boxset's slug as their release slug, so start a
+                new contribution for this boxset &mdash; the disc will be added automatically once
+                you upload it.
+            </p>
+            <div class="cta-row">
+                <a class="btn btn-primary" href="@($"/contribute/Movie?boxsetId={BoxsetId}")">Contribute a Movie</a>
+                <a class="btn btn-primary" href="@($"/contribute/Series?boxsetId={BoxsetId}")">Contribute a Series</a>
+            </div>
+            <a class="text-muted small d-inline-block mt-3" href="/contribution/boxset/@BoxsetId">&larr; Back to Boxset</a>
+        </section>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(boxsetSlug))
+        {
+            <section class="info-card mb-3">
+                <p class="mb-0 small text-muted">
+                    <strong>Heads up:</strong> only your contributions whose release slug matches
+                    this boxset's slug <code>@boxsetSlug</code> are shown. The boxset import
+                    requires every member's release directory to share the boxset's slug.
+                </p>
+            </section>
+        }
+
+        @foreach (var contribution in Contributions)
+        {
+            <section class="info-card mb-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h3 class="mb-1">@contribution.Title (@contribution.Year)</h3>
+                        <p class="text-muted mb-2">@contribution.ReleaseTitle &middot; @contribution.MediaType</p>
+                    </div>
+                </div>
+
+                @if (contribution.Discs != null && contribution.Discs.Any())
+                {
+                    <div class="list-group">
+                        @foreach (var disc in contribution.Discs)
+                        {
+                            var isAlreadyAdded = addedDiscIds.Contains(disc.EncodedId);
+                            var isAdding = addingDiscIds.Contains(disc.EncodedId);
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>@disc.Name</strong>
+                                    <span class="badge bg-info ms-1">@disc.Format</span>
+                                    <small class="text-muted ms-2">@disc.Slug</small>
+                                </div>
+                                @if (isAlreadyAdded)
+                                {
+                                    <span class="badge bg-success">Added</span>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-sm btn-outline-primary"
+                                            disabled="@isAdding"
+                                            @onclick="() => AddDisc(disc.EncodedId)">
+                                        @if (isAdding)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                        }
+                                        Add to Boxset
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted fst-italic">No discs in this contribution.</p>
+                }
+            </section>
+        }
+
+        <section class="info-card mb-3">
+            <h3>Or start a new contribution for this boxset</h3>
+            <p class="text-muted">Don't see the disc you want? Create a new contribution &mdash; it will be linked to this boxset and any discs you upload will be added automatically.</p>
+            <div class="cta-row">
+                <a class="btn btn-outline-primary" href="@($"/contribute/Movie?boxsetId={BoxsetId}")">Contribute a Movie</a>
+                <a class="btn btn-outline-primary" href="@($"/contribute/Series?boxsetId={BoxsetId}")">Contribute a Series</a>
+            </div>
+        </section>
+
+        <div class="d-flex gap-2 mt-3">
+            <a class="btn btn-primary" href="/contribution/boxset/@BoxsetId">Done — Back to Boxset</a>
+        </div>
+    }
+</div>

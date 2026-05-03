@@ -271,7 +271,15 @@ public class DataImportItemFactory
                             {
                                 json = await this.fileSystem.File.ReadAllText(discJsonPath, cancellationToken);
                                 var discFile = JsonSerializer.Deserialize<Disc>(json, DataImporter.JsonOptions);
+                                // Boxset members reference discs by Slug when present, otherwise by Index
+                                // (the SlugOrIndex convention used elsewhere on the site). Match either.
                                 if (!string.IsNullOrEmpty(discFile.Slug) && discFile.Slug.Equals(disc.Slug, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    return discFile;
+                                }
+                                if (string.IsNullOrEmpty(discFile.Slug) &&
+                                    int.TryParse(disc.Slug, out var refIndex) &&
+                                    discFile.Index == refIndex)
                                 {
                                     return discFile;
                                 }

@@ -23,6 +23,10 @@ query ContributionDiscs($contribtionId: EncodedIdFilter) {
       backImageUrl
       created
       locale
+      boxset {
+        encodedId
+        title
+      }
       discs {
         encodedId
         index

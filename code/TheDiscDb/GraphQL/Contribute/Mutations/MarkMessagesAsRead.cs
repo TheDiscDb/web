@@ -41,4 +41,37 @@ public partial class ContributionMutations
         await database.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    [Error(typeof(AuthenticationException))]
+    [Authorize]
+    public async Task<bool> MarkBoxsetMessagesAsRead(
+        string boxsetId,
+        SqlServerDataContext database,
+        UserManager<TheDiscDbUser> userManager,
+        CancellationToken cancellationToken)
+    {
+        var user = principal.Principal ?? throw new AuthenticationException("No user principal available.");
+        var userId = userManager.GetUserId(user);
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new AuthenticationException("UserId not found");
+        }
+
+        var decodedBoxsetId = this.idEncoder.Decode(boxsetId);
+
+        var unreadMessages = await database.UserMessages
+            .Where(m => m.BoxsetId == decodedBoxsetId &&
+                        m.ToUserId == userId &&
+                        !m.IsRead)
+            .ToListAsync(cancellationToken);
+
+        foreach (var message in unreadMessages)
+        {
+            message.IsRead = true;
+        }
+
+        await database.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }

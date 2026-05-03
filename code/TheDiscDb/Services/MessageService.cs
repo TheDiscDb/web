@@ -8,6 +8,8 @@ public interface IMessageService
 {
     Task<UserMessage> SendAdminMessageAsync(int contributionId, string fromUserId, string toUserId, string message, CancellationToken cancellationToken = default);
     Task<UserMessage> SendUserMessageAsync(int contributionId, string fromUserId, string message, CancellationToken cancellationToken = default);
+    Task<UserMessage> SendAdminBoxsetMessageAsync(int boxsetId, string fromUserId, string toUserId, string message, CancellationToken cancellationToken = default);
+    Task<UserMessage> SendUserBoxsetMessageAsync(int boxsetId, string fromUserId, string message, CancellationToken cancellationToken = default);
 }
 
 public class MessageService(
@@ -89,6 +91,61 @@ public class MessageService(
         {
             logger.LogWarning(ex, "Failed to send user message notification for contribution {Id}", contributionId);
         }
+
+        return userMessage;
+    }
+
+    public async Task<UserMessage> SendAdminBoxsetMessageAsync(int boxsetId, string fromUserId, string toUserId, string message, CancellationToken cancellationToken = default)
+    {
+        await using var database = await dbFactory.CreateDbContextAsync(cancellationToken);
+
+        var userMessage = new UserMessage
+        {
+            BoxsetId = boxsetId,
+            FromUserId = fromUserId,
+            ToUserId = toUserId,
+            Message = message,
+            IsRead = false,
+            CreatedAt = DateTimeOffset.UtcNow,
+            Type = UserMessageType.AdminMessage
+        };
+
+        database.UserMessages.Add(userMessage);
+        await database.SaveChangesAsync(cancellationToken);
+
+        // Notification service is contribution-shaped today; skip with a log so the message is
+        // still persisted (which is what surfaces in the user's UI). A future enhancement could
+        // teach the notification service about boxsets.
+        logger.LogInformation("Persisted admin message for boxset {BoxsetId}; notifications for boxsets are not implemented.", boxsetId);
+
+        return userMessage;
+    }
+
+    public async Task<UserMessage> SendUserBoxsetMessageAsync(int boxsetId, string fromUserId, string message, CancellationToken cancellationToken = default)
+    {
+        await using var database = await dbFactory.CreateDbContextAsync(cancellationToken);
+
+        var lastAdminId = await database.UserMessages
+            .Where(m => m.BoxsetId == boxsetId && m.Type == UserMessageType.AdminMessage)
+            .OrderByDescending(m => m.CreatedAt)
+            .Select(m => m.FromUserId)
+            .FirstOrDefaultAsync(cancellationToken) ?? string.Empty;
+
+        var userMessage = new UserMessage
+        {
+            BoxsetId = boxsetId,
+            FromUserId = fromUserId,
+            ToUserId = lastAdminId,
+            Message = message,
+            IsRead = false,
+            CreatedAt = DateTimeOffset.UtcNow,
+            Type = UserMessageType.UserMessage
+        };
+
+        database.UserMessages.Add(userMessage);
+        await database.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Persisted user message for boxset {BoxsetId}; notifications for boxsets are not implemented.", boxsetId);
 
         return userMessage;
     }

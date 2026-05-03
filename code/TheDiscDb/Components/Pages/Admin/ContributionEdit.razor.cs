@@ -8,6 +8,7 @@ using TheDiscDb.Client;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
+using TheDiscDb.Validation;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages.Admin;
@@ -17,10 +18,10 @@ public class EditContributionRequest
     [Required]
     public DateTimeOffset ReleaseDate { get; set; }
     [Required]
-    [RegularExpression(@"\w{10}", ErrorMessage = "ASIN must be a combination 10 characters or numbers")]
+    [Asin]
     public string Asin { get; set; } = string.Empty;
     [Required]
-    [RegularExpression(@"\d{12,13}", ErrorMessage = "UPC must be exactly 12 digits")]
+    [Upc]
     public string Upc { get; set; } = string.Empty;
     public string ReleaseTitle { get; set; } = string.Empty;
     [Required]

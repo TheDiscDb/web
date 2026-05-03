@@ -1,0 +1,147 @@
+@page "/contribution/boxset/{BoxsetId}/add-existing"
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Add Database Discs" Items='[("Home", "/"), ("Contribute", "/contribute"), ("My Contributions", "/contribute/my")]' />
+
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <h1>Add Discs from Database</h1>
+        <p>Search for existing media items and add their discs to this boxset.</p>
+    </section>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(boxsetSlug))
+    {
+        <section class="info-card mb-3">
+            <p class="mb-0 small text-muted">
+                <strong>Heads up:</strong> only releases whose slug matches this boxset's slug
+                <code>@boxsetSlug</code> are shown. The boxset import requires every member's
+                release directory to share the boxset's slug.
+            </p>
+        </section>
+    }
+
+    <section class="info-card mb-3">
+        <div class="input-group">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Filter by title..."
+                   @bind="searchTerm"
+                   @bind:event="oninput"
+                   @bind:after="OnSearchChanged" />
+            @if (isSearching)
+            {
+                <span class="input-group-text">
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                </span>
+            }
+        </div>
+    </section>
+
+    @if (searchResults != null && searchResults.Count > 0)
+    {
+        @foreach (var item in searchResults)
+        {
+            <section class="info-card mb-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h3 class="mb-1">@item.Title (@item.Year)</h3>
+                        <p class="text-muted mb-2">
+                            <span class="badge bg-secondary">@item.Type</span>
+                            @if (!string.IsNullOrEmpty(item.Externalids?.Tmdb))
+                            {
+                                <span class="ms-2">TMDB: @item.Externalids.Tmdb</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+
+                @if (item.Releases != null && item.Releases.Count > 0)
+                {
+                    @foreach (var release in item.Releases)
+                    {
+                        <div class="mb-2">
+                            <h5 class="mb-1">
+                                @release.Title (@release.Year)
+                                <small class="text-muted">@release.Locale · Region @release.RegionCode</small>
+                            </h5>
+
+                            @if (release.Discs != null && release.Discs.Count > 0)
+                            {
+                                <div class="list-group">
+                                    @foreach (var disc in release.Discs)
+                                    {
+                                        // Discs in the source data often have no slug; the rest of the
+                                        // site falls back to the disc's index as the URL key (see
+                                        // DiscExtensions.SlugOrIndex). Mirror that convention here so
+                                        // the button is enabled for slug-less discs too.
+                                        var discKey = !string.IsNullOrEmpty(disc.Slug) ? disc.Slug : disc.Index.ToString();
+                                        var discPath = BuildDiscPath(item.Type, item.Externalids?.Tmdb, release.Slug, discKey);
+                                        var isAlreadyAdded = addedDiscPaths.Contains(discPath);
+                                        var isAdding = addingDiscPaths.Contains(discPath);
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>@disc.Name</strong>
+                                                <span class="badge bg-info ms-1">@disc.Format</span>
+                                                <small class="text-muted ms-2">Disc @(disc.Index + 1)</small>
+                                            </div>
+                                            @if (isAlreadyAdded)
+                                            {
+                                                <span class="badge bg-success">Added</span>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-outline-primary"
+                                                        disabled="@(isAdding || string.IsNullOrEmpty(discPath))"
+                                                        @onclick="() => AddExistingDisc(discPath, disc.Name ?? string.Empty, disc.Format ?? string.Empty)">
+                                                    @if (isAdding)
+                                                    {
+                                                        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                                    }
+                                                    Add to Boxset
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted fst-italic">No discs in this release.</p>
+                            }
+                        </div>
+                    }
+                }
+            </section>
+        }
+    }
+    else if (searchResults != null && searchResults.Count == 0 && !isSearching)
+    {
+        <section class="info-card">
+            <div class="alert alert-info">
+                @if (string.IsNullOrEmpty(searchTerm))
+                {
+                    <text>No releases in the database have a slug matching <code>@boxsetSlug</code>. Contribute a new release with this slug to add discs from it.</text>
+                }
+                else
+                {
+                    <text>No matches for "<strong>@searchTerm</strong>" with slug <code>@boxsetSlug</code>. Try a different filter.</text>
+                }
+            </div>
+        </section>
+    }
+
+    <div class="d-flex gap-2 mt-3">
+        <a class="btn btn-primary" href="/contribution/boxset/@BoxsetId">Done — Back to Boxset</a>
+    </div>
+</div>

@@ -1,0 +1,13 @@
+mutation SendBoxsetUserMessage($input: SendBoxsetUserMessageInput!) {
+  sendBoxsetUserMessage(input: $input) {
+    userMessage {
+      id
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

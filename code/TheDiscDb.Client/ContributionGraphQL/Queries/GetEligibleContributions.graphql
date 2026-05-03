@@ -1,0 +1,25 @@
+query GetEligibleContributions($first: Int, $after: String, $where: UserContributionFilterInput) {
+  myContributions(first: $first, after: $after, where: $where) {
+    nodes {
+      encodedId
+      title
+      year
+      releaseTitle
+      releaseSlug
+      mediaType
+      status
+      frontImageUrl
+      discs {
+        encodedId
+        name
+        format
+        slug
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}

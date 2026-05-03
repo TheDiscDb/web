@@ -1,0 +1,18 @@
+query GetBoxsetChat($boxsetId: String!, $first: Int, $after: String) {
+  boxsetChat(boxsetId: $boxsetId, first: $first, after: $after) {
+    nodes {
+      id
+      message
+      isRead
+      createdAt
+      type
+      fromUserId
+      toUserId
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}

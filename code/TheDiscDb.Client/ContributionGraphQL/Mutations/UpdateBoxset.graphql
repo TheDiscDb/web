@@ -1,0 +1,13 @@
+mutation UpdateBoxset($input: UpdateBoxsetInput!) {
+  updateBoxset(input: $input) {
+    userContributionBoxset {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

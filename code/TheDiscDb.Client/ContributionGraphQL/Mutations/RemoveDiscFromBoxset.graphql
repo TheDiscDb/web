@@ -1,0 +1,13 @@
+mutation RemoveDiscFromBoxset($input: RemoveDiscFromBoxsetInput!) {
+  removeDiscFromBoxset(input: $input) {
+    userContributionBoxset {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}
