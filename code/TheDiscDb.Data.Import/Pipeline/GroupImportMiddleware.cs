@@ -40,6 +40,36 @@ namespace TheDiscDb.Data.Import.Pipeline
 
         public async Task Process(ImportItem item, CancellationToken cancellationToken)
         {
+            // The middleware (and therefore this DbContext) is a singleton reused across
+            // every pipeline Run/ProcessItem call. Reset the change tracker so entities
+            // tracked for a prior item don't collide with entities materialized (or
+            // re-attached from groupCache/mediaItemGroupCache) for this one.
+            this.dbContext.ChangeTracker.Clear();
+
+            // groupCache and mediaItemGroupCache are also singleton-scoped. EF fixup
+            // populated each cached entity's navigation collections during the prior
+            // Process calls in which they were tracked. Those collections still reference
+            // detached MIGs / MediaItems / Contributors from prior items. If we let
+            // AttachGraph cascade through them on the current call, EF tries to track the
+            // stale graph and conflicts with the current item's freshly-loaded entities
+            // (e.g. throws "Contributor with key Id 1 is already being tracked"). Resetting
+            // the in-memory navigation collections here breaks the cascade. The DB rows
+            // are unaffected because we never SaveChanges on these isolated entities.
+            foreach (var cachedGroup in groupCache.Values)
+            {
+                cachedGroup.MediaItemGroups?.Clear();
+                cachedGroup.ReleaseGroups?.Clear();
+            }
+            foreach (var cachedMig in mediaItemGroupCache.Values)
+            {
+                // The cached MIG is only used as an existence check in TryGetMediaItemGroup;
+                // returning it short-circuits creation of a new one and the value isn't
+                // attached to the new context. Drop its navigations so any incidental
+                // cascade is harmless.
+                cachedMig.Group = null;
+                cachedMig.MediaItem = null;
+            }
+
             if (item.MediaItem != null)
             {
                 bool shouldSave = false;
@@ -655,7 +685,7 @@ namespace TheDiscDb.Data.Import.Pipeline
 
             if (groupCache.TryGetValue(cacheKey, out Group? cachedGroup))
             {
-                return cachedGroup;
+                return ResolveTracked(cachedGroup);
             }
 
             Group? group = null;
@@ -701,7 +731,7 @@ namespace TheDiscDb.Data.Import.Pipeline
 
             if (mediaItemGroupCache.TryGetValue(cacheKey, out MediaItemGroup? cachedGroup))
             {
-                return cachedGroup;
+                return ResolveTracked(cachedGroup);
             }
 
             MediaItemGroup? result = null;
@@ -747,6 +777,31 @@ namespace TheDiscDb.Data.Import.Pipeline
             {
                 return false;
             }
+        }
+
+        // After ChangeTracker.Clear() in Process, cached entities are detached. If the
+        // current Process call has loaded a different .NET instance with the same primary
+        // key (e.g. via item.MediaItem's Includes -> MediaItemGroups -> Group), reusing
+        // the cached reference would trigger an identity conflict on Add. Prefer the
+        // tracked instance if one exists.
+        private Group ResolveTracked(Group cached)
+        {
+            if (cached.Id == 0)
+            {
+                return cached;
+            }
+
+            return this.dbContext.Groups.Local.FirstOrDefault(g => g.Id == cached.Id) ?? cached;
+        }
+
+        private MediaItemGroup ResolveTracked(MediaItemGroup cached)
+        {
+            if (cached.Id == 0)
+            {
+                return cached;
+            }
+
+            return this.dbContext.MediaItemGroup.Local.FirstOrDefault(g => g.Id == cached.Id) ?? cached;
         }
     }
 }

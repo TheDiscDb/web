@@ -34,6 +34,13 @@ namespace TheDiscDb.Data.Import.Pipeline
 
         public async Task Process(ImportItem item, CancellationToken cancellationToken)
         {
+            // The middleware (and therefore this DbContext) is a singleton reused across
+            // every pipeline Run/ProcessItem call. Without resetting the change tracker,
+            // entities loaded for a previous item stay tracked and collide with entities
+            // materialized for the next item (e.g. a shared MediaItemGroup throws an
+            // identity conflict during DetectChanges).
+            this.dbContext.ChangeTracker.Clear();
+
             if (item.MediaItem != null)
             {
                 var fromDatabase = await this.dbContext.MediaItems

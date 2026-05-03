@@ -14,6 +14,15 @@ public class DataImportPipelineBuilder
 
     public DataImportPipeline Build()
     {
-        return new DataImportPipeline(this.middlewares);
+        var pipeline = new DataImportPipeline(this.middlewares);
+
+        // The builder may be a singleton (see ImportPipelineExtensions.AddImportPipeline)
+        // and reused across multiple Build calls. The pipeline takes its own copy of the
+        // middleware list, so we reset ours here to avoid appending duplicates on the
+        // next Build, which would otherwise process every item through each middleware
+        // twice.
+        this.middlewares = new List<IMiddleware>();
+
+        return pipeline;
     }
 }
