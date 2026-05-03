@@ -271,18 +271,19 @@ public class LowercaseUrlMiddlewareTests
     }
 
     // ====================================================================
-    // Regression: Static file extensions embedded in page URLs
+    // Static file extensions embedded in page URLs
     //
-    // When a cached page still has relative asset references (before the
-    // absolute-path fix is deployed), the browser resolves them against
-    // the current page URL. This produces requests like:
-    //   /series/.../discs/s01d01/00000/thediscdb.xyz.styles.css
-    // which match the TitleDetail Blazor route and return a full HTML 404
-    // page instead of a clean 404 status.
+    // The middleware does NOT short-circuit these requests. They pass
+    // through to MapStaticAssets / Blazor routing, which produce their
+    // own 404 (App.razor uses absolute /-prefixed asset hrefs so these
+    // misrouted requests are no longer generated for the deployed site).
+    // The middleware's job is lowercase canonicalisation, not content
+    // negotiation; gating static file paths here previously caused a
+    // regression where /js/search-autocomplete.js was 404'd.
     // ====================================================================
 
     [Test]
-    public async Task Regression_EmbeddedCssRequest_Returns404()
+    public async Task EmbeddedCssRequest_PassesThrough()
     {
         var wasCalled = false;
         RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
@@ -292,12 +293,11 @@ public class LowercaseUrlMiddlewareTests
 
         await middleware.InvokeAsync(context);
 
-        await Assert.That(wasCalled).IsFalse();
-        await Assert.That(context.Response.StatusCode).IsEqualTo(404);
+        await Assert.That(wasCalled).IsTrue();
     }
 
     [Test]
-    public async Task Regression_EmbeddedJsRequest_Returns404()
+    public async Task EmbeddedJsRequest_PassesThrough()
     {
         var wasCalled = false;
         RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
@@ -307,14 +307,13 @@ public class LowercaseUrlMiddlewareTests
 
         await middleware.InvokeAsync(context);
 
-        await Assert.That(wasCalled).IsFalse();
-        await Assert.That(context.Response.StatusCode).IsEqualTo(404);
+        await Assert.That(wasCalled).IsTrue();
     }
 
     [Test]
     public async Task Regression_RootLevelStaticFile_PassesThrough()
     {
-        // Root-level static files like /favicon.ico should NOT be blocked
+        // Root-level static files like /favicon.ico should pass through
         var wasCalled = false;
         RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
         var middleware = new LowercaseUrlMiddleware(next);
@@ -326,7 +325,7 @@ public class LowercaseUrlMiddlewareTests
     }
 
     [Test]
-    public async Task Regression_EmbeddedFontRequest_Returns404()
+    public async Task EmbeddedFontRequest_PassesThrough()
     {
         var wasCalled = false;
         RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
@@ -336,12 +335,11 @@ public class LowercaseUrlMiddlewareTests
 
         await middleware.InvokeAsync(context);
 
-        await Assert.That(wasCalled).IsFalse();
-        await Assert.That(context.Response.StatusCode).IsEqualTo(404);
+        await Assert.That(wasCalled).IsTrue();
     }
 
     [Test]
-    public async Task Regression_StaleWasmRequest_Returns404()
+    public async Task FrameworkWasm_PassesThrough()
     {
         var wasCalled = false;
         RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
@@ -351,13 +349,11 @@ public class LowercaseUrlMiddlewareTests
 
         await middleware.InvokeAsync(context);
 
-        // /_framework is a case-sensitive prefix, so the static file guard skips it
-        // and the request passes through to be handled by MapStaticAssets
         await Assert.That(wasCalled).IsTrue();
     }
 
     [Test]
-    public async Task Regression_WasmInPageUrl_Returns404()
+    public async Task EmbeddedWasmInPageUrl_PassesThrough()
     {
         var wasCalled = false;
         RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
@@ -367,8 +363,23 @@ public class LowercaseUrlMiddlewareTests
 
         await middleware.InvokeAsync(context);
 
-        await Assert.That(wasCalled).IsFalse();
-        await Assert.That(context.Response.StatusCode).IsEqualTo(404);
+        await Assert.That(wasCalled).IsTrue();
+    }
+
+    // Regression for the original bug this change fixes: a wwwroot file in
+    // a subdirectory must not be 404'd by the middleware. This is the path
+    // requested by the search-autocomplete <script> tag in App.razor.
+    [Test]
+    public async Task Regression_SubdirectoryStaticFile_PassesThrough()
+    {
+        var wasCalled = false;
+        RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
+        var middleware = new LowercaseUrlMiddleware(next);
+        var context = CreateHttpContext("GET", "/js/search-autocomplete.js");
+
+        await middleware.InvokeAsync(context);
+
+        await Assert.That(wasCalled).IsTrue();
     }
 
     [Test]
