@@ -51,6 +51,8 @@ public static partial class SearchEntryExtensions
             Title = item.Title,
             ImageUrl = item.ImageUrl,
             RelativeUrl = $"/boxset/{item.Slug}",
+            Identifiers = CollectBoxsetIdentifiers(item.Release),
+            Groups = CollectBoxsetGroupNames(item.Release?.ReleaseGroups),
             MediaItem = new ItemInfo
             {
                 Slug = item.Slug,
@@ -69,7 +71,9 @@ public static partial class SearchEntryExtensions
         {
             searchItem = new SearchEntry
             {
-                id = SanitizeKey(string.Join('-', disc.Id, "BoxsetDisc")),
+                // Match the canonical key schema produced by SearchIndexService.BuildBoxsetIndex
+                // so incremental updates merge into the same documents a full rebuild creates.
+                id = SanitizeKey(string.Join('-', "BoxsetDisc", disc.SlugOrIndex())),
                 Type = "BoxsetDisc",
                 Title = disc.Name,
                 ImageUrl = item.ImageUrl,
@@ -98,7 +102,7 @@ public static partial class SearchEntryExtensions
                 {
                     searchItem = new SearchEntry
                     {
-                        id = SanitizeKey(string.Join('-', title.Id, "BoxsetTitle")),
+                        id = SanitizeKey(string.Join('-', "BoxsetTitle", item.Slug, disc.SlugOrIndex(), title.SegmentMap, title.SourceFile)),
                         Type = title.Item.Type,
                         Title = title.Item.Title,
                         ImageUrl = item.ImageUrl,
@@ -123,6 +127,38 @@ public static partial class SearchEntryExtensions
                 }
             }
         }
+    }
+
+    private static IList<string> CollectBoxsetIdentifiers(Release? release)
+    {
+        var ids = new List<string>();
+        if (release == null)
+        {
+            return ids;
+        }
+
+        if (!string.IsNullOrWhiteSpace(release.Upc)) ids.Add(release.Upc);
+        if (!string.IsNullOrWhiteSpace(release.Asin)) ids.Add(release.Asin);
+        return ids;
+    }
+
+    private static IList<string> CollectBoxsetGroupNames(IEnumerable<ReleaseGroup>? releaseGroups)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (releaseGroups == null)
+        {
+            return names.ToList();
+        }
+
+        foreach (var rg in releaseGroups)
+        {
+            if (!string.IsNullOrWhiteSpace(rg.Group?.Name))
+            {
+                names.Add(rg.Group.Name);
+            }
+        }
+
+        return names.ToList();
     }
 
     private static SearchEntry ToSearchEntry(MediaItem item)

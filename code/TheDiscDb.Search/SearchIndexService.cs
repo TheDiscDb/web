@@ -3,6 +3,8 @@ using Azure.Search.Documents.Indexes;
 using Azure.Search.Documents.Indexes.Models;
 using Azure.Search.Documents.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
 
@@ -12,12 +14,19 @@ public class SearchIndexService : ISearchIndexService
 {
     private readonly SearchIndexClient client;
     private readonly IDbContextFactory<SqlServerDataContext> dbFactory;
+    private readonly ILogger<SearchIndexService> logger;
     private static readonly string IndexName = "all-items";
 
     public SearchIndexService(SearchIndexClient client, IDbContextFactory<SqlServerDataContext> dbFactory)
+        : this(client, dbFactory, NullLogger<SearchIndexService>.Instance)
+    {
+    }
+
+    public SearchIndexService(SearchIndexClient client, IDbContextFactory<SqlServerDataContext> dbFactory, ILogger<SearchIndexService> logger)
     {
         this.client = client ?? throw new ArgumentNullException(nameof(client));
         this.dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = 10)
@@ -30,7 +39,7 @@ public class SearchIndexService : ISearchIndexService
             Success = true
         };
 
-        foreach (var batch in entries.Batch(BatchSize))
+        foreach (var batch in entries.Batch(batchSize))
         {
             try
             {
@@ -42,7 +51,16 @@ public class SearchIndexService : ISearchIndexService
                 {
                     result.Success = false;
 
-                    // Try returning the first error message you find
+                    foreach (var failure in itemResult.Value.Results.Where(r => !r.Succeeded))
+                    {
+                        this.logger.LogWarning(
+                            "Search index document failed: key={Key} status={Status} error={Error}",
+                            failure.Key,
+                            failure.Status,
+                            failure.ErrorMessage);
+                    }
+
+                    // Surface the first error message in the summary for callers/UI.
                     if (string.IsNullOrEmpty(result.ErrorMessage))
                     {
                         var errorItem = itemResult.Value.Results.FirstOrDefault(r => !string.IsNullOrEmpty(r.ErrorMessage));
@@ -59,6 +77,7 @@ public class SearchIndexService : ISearchIndexService
             {
                 result.Success = false;
                 result.ErrorMessage = e.Message;
+                this.logger.LogError(e, "Failed to push a batch of {BatchSize} documents to the search index '{IndexName}'.", batchSize, IndexName);
             }
         }
 
@@ -231,7 +250,8 @@ public class SearchIndexService : ISearchIndexService
 
             if (item?.Release == null)
             {
-                yield break;
+                // Skip just this boxset; never abort the whole rebuild for one bad record.
+                continue;
             }
 
             foreach (var disc in item.Release.Discs)
