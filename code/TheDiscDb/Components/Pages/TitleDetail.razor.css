@@ -55,7 +55,5 @@
 ::deep .chapter-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.75rem;
 }
