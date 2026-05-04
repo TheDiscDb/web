@@ -42,7 +42,7 @@ public class ReleaseDetailFormBindings
     public string? FrontImageUrl
     {
         get => target.FrontImageUrl;
-        set => target.FrontImageUrl = value;
+        set => target.FrontImageUrl = value ?? string.Empty;
     }
 
     public string? BackImageUrl
