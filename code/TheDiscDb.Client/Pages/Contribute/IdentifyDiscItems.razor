@@ -235,6 +235,14 @@
                         </DropDownMenuItems>
                     </SfDropDownButton>
                 }
+                @if (this.clipboardHasChapters)
+                {
+                    <button type="button" class="e-btn e-normal" @onclick="PasteChaptersFromClipboard">Paste from Clipboard</button>
+                }
+                @if (!string.IsNullOrEmpty(this.clipboardWarning))
+                {
+                    <div class="alert alert-warning" role="alert">@this.clipboardWarning</div>
+                }
                 <ol>
                     @foreach (var item in this.currentItem!.Chapters)
                     {

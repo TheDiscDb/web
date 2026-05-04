@@ -1,0 +1,13 @@
+<SfSplitButton Content="@state.Text"
+                IconCss="@state.IconCss"
+                CssClass="e-small"
+                Disabled="@state.IsDisabled"
+                OnClick="OnPrimaryClick">
+    <SplitButtonEvents ItemSelected="OnItemSelected" />
+    <DropDownMenuItems>
+        @foreach (var formatName in ChapterFormatter.GetFormatNames())
+        {
+            <DropDownMenuItem Text="@($"Copy as {formatName}")" Id="@formatName" />
+        }
+    </DropDownMenuItems>
+</SfSplitButton>

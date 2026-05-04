@@ -54,7 +54,12 @@ else
         @if (Title.Item != null && Title.Item.Chapters != null && Title.Item.Chapters.Count > 0)
         {
             <div class="info-card mt-4">
-                <h3 class="mt-0 mb-3">Chapters</h3>
+                <div class="chapter-header">
+                    <h3 class="mt-0 mb-3">Chapters</h3>
+                    <TheDiscDb.Client.Controls.CopyChaptersButton
+                        Chapters="@Title.Item.Chapters"
+                        @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+                </div>
                 <ol class="chapter-list mb-0">
                     @foreach (var chapter in Title.Item.Chapters)
                     {

@@ -7,6 +7,7 @@ using Syncfusion.Blazor.Notifications;
 using Syncfusion.Blazor.Popups;
 using Syncfusion.Blazor.SplitButtons;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.Chapters;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -146,6 +147,9 @@ public partial class IdentifyDiscItems : ComponentBase
     [Inject]
     public IContributionClient ContributionClient { get; set; } = default!;
 
+    [Inject]
+    private IClipboardService ClipboardService { get; set; } = null!;
+
     private string? mediaType = null;
     private IQueryable<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>? filteredTitles = null;
     private IQueryable<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>? allTitles = null;
@@ -172,6 +176,10 @@ public partial class IdentifyDiscItems : ComponentBase
 
     bool showChapterDialog = false;
     SfDialog? chapterDialog;
+    bool clipboardHasChapters = false;
+    List<string>? clipboardChapterNames;
+    string? clipboardWarning;
+    List<string?>? chapterTitlesSnapshot;
 
     bool showAudioTrackDialog = false;
     SfDialog? audioTrackDialog;
@@ -488,7 +496,7 @@ public partial class IdentifyDiscItems : ComponentBase
         return "Label Audio Tracks";
     }
 
-    void InputChapters(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
+    async Task InputChapters(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
         {
@@ -521,6 +529,9 @@ public partial class IdentifyDiscItems : ComponentBase
                 }
             }
 
+            await CheckClipboardForChapters();
+
+            this.chapterTitlesSnapshot = item.Chapters.Select(c => c.Title).ToList();
             this.showChapterDialog = true;
         }
     }
@@ -784,7 +795,15 @@ public partial class IdentifyDiscItems : ComponentBase
         {
             this.currentItem!.Chapters.Clear();
         }
+        else if (this.chapterTitlesSnapshot != null)
+        {
+            for (int i = 0; i < this.currentItem.Chapters.Count && i < this.chapterTitlesSnapshot.Count; i++)
+            {
+                this.currentItem.Chapters[i].Title = this.chapterTitlesSnapshot[i];
+            }
+        }
 
+        this.clipboardWarning = null;
         await this.chapterDialog!.HideAsync();
     }
 
@@ -931,6 +950,50 @@ public partial class IdentifyDiscItems : ComponentBase
                     this.currentItem.Chapters[i].Title = item.Chapters.ElementAt(i).Title;
                 }
             }
+        }
+    }
+
+    private async Task CheckClipboardForChapters()
+    {
+        this.clipboardHasChapters = false;
+        this.clipboardChapterNames = null;
+        this.clipboardWarning = null;
+
+        try
+        {
+            var clipboardText = await this.ClipboardService.ReadTextAsync();
+            if (ChapterParser.TryParseChapters(clipboardText, out var names))
+            {
+                this.clipboardHasChapters = true;
+                this.clipboardChapterNames = names;
+            }
+        }
+        catch
+        {
+            // Clipboard access may fail due to permissions — silently ignore
+        }
+    }
+
+    private void PasteChaptersFromClipboard()
+    {
+        if (this.currentItem == null || this.clipboardChapterNames == null)
+        {
+            return;
+        }
+
+        this.clipboardWarning = null;
+        int targetCount = this.currentItem.Chapters.Count;
+        int sourceCount = this.clipboardChapterNames.Count;
+
+        if (sourceCount != targetCount)
+        {
+            this.clipboardWarning = $"Clipboard has {sourceCount} chapters, but this title has {targetCount}. Pasted the first {Math.Min(sourceCount, targetCount)}.";
+        }
+
+        int count = Math.Min(sourceCount, targetCount);
+        for (int i = 0; i < count; i++)
+        {
+            this.currentItem.Chapters[i].Title = this.clipboardChapterNames[i];
         }
     }
 
