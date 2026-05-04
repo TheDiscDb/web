@@ -1,0 +1,34 @@
+.copy-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid #c4ccd8;
+    background-color: transparent;
+    color: #52657f;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color .15s ease-in-out, color .15s ease-in-out, border-color .15s ease-in-out;
+}
+
+.copy-button:hover:not(:disabled) {
+    background-color: #eef2f7;
+    color: #00213f;
+    border-color: #8b98ac;
+}
+
+.copy-button:focus-visible {
+    outline: none;
+    border-color: #00213f;
+    box-shadow: 0 0 0 2px rgba(0, 33, 63, 0.15);
+}
+
+.copy-button:disabled {
+    cursor: default;
+    color: #2f9e44;
+    border-color: #b2d8b9;
+    background-color: #eef9f0;
+}

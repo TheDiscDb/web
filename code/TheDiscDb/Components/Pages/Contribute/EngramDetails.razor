@@ -49,7 +49,7 @@ else
                 {
                     <img class="cover" src="@TmdbPosterUrl" alt="Cover for @ResolvedTitle()" width="160" height="240" />
                 }
-                else if (!string.IsNullOrEmpty(Submissions.First().FrontImageUrl))
+                else if (!string.IsNullOrEmpty(EngramRelease?.FrontImageUrl))
                 {
                     <div class="cover cover-placeholder">Cover from disc upload will be used</div>
                 }
@@ -89,7 +89,6 @@ else
                         <th>Format</th>
                         <th>Titles</th>
                         <th>Scan Log</th>
-                        <th>Cover</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -102,12 +101,16 @@ else
                             <td>@MapContentTypeToFormat(submission.ContentType)</td>
                             <td>@submission.Titles.Count</td>
                             <td>@(string.IsNullOrEmpty(submission.ScanLogPath) ? "—" : "✓")</td>
-                            <td>@(string.IsNullOrEmpty(submission.FrontImageUrl) ? "—" : "✓")</td>
                         </tr>
                         discNum++;
                     }
                 </tbody>
             </table>
+            <p class="form-hint">
+                Front cover: @(string.IsNullOrEmpty(EngramRelease?.FrontImageUrl) ? "—" : "✓")
+                &nbsp;·&nbsp;
+                Back cover: @(string.IsNullOrEmpty(EngramRelease?.BackImageUrl) ? "—" : "✓")
+            </p>
         </section>
 
         <section class="info-card engram-form-card">
@@ -166,7 +169,7 @@ else
 
                 <div class="cta-row split">
                     <a class="btn btn-secondary" href="/contribute">Cancel</a>
-                    <button type="submit" class="btn btn-primary" disabled="@IsCreating">
+                    <button type="submit" class="btn btn-primary" disabled="@(IsCreating || Submissions.Count == 0)">
                         @if (IsCreating)
                         {
                             <span>Creating contribution…</span>

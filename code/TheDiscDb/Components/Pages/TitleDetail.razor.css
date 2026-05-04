@@ -57,3 +57,10 @@
     align-items: center;
     gap: 0.75rem;
 }
+
+::deep .description-with-copy {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}

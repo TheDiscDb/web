@@ -50,7 +50,8 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
     private IStaticAssetStore AssetStore => ServiceProvider.GetRequiredService<IStaticAssetStore>();
     private IStaticAssetStore ImageStore => ServiceProvider.GetRequiredKeyedService<IStaticAssetStore>(KeyedServiceNames.ImagesAssetStore);
 
-    private List<EngramSubmission> Submissions { get; set; } = new();
+    private List<EngramDisc> Submissions { get; set; } = new();
+    private EngramRelease? EngramRelease { get; set; }
     private int? ExistingContributionId { get; set; }
     private string? ExistingContributionEncodedId { get; set; }
     private bool IsCreating { get; set; }
@@ -74,12 +75,15 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
         }
 
         database = await DbFactory.CreateDbContextAsync();
-        Submissions = await database.EngramSubmissions
+        Submissions = await database.EngramDiscs
             .Include(s => s.Titles)
-            .Where(s => s.ReleaseId == ReleaseId)
+            .Where(s => s.EngramRelease!.ReleaseId == ReleaseId)
             .OrderBy(s => s.DiscNumber ?? int.MaxValue)
             .ThenByDescending(s => s.ReceivedAt)
             .ToListAsync();
+
+        EngramRelease = await database.EngramReleases
+            .FirstOrDefaultAsync(r => r.ReleaseId == ReleaseId);
 
         // Deduplicate by ContentHash — keep the most recent submission per hash.
         Submissions = Submissions
@@ -88,11 +92,10 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
             .OrderBy(s => s.DiscNumber ?? int.MaxValue)
             .ToList();
 
-        var linked = Submissions.FirstOrDefault(s => s.UserContributionId != null);
-        if (linked != null)
+        if (EngramRelease?.UserContributionId != null)
         {
-            ExistingContributionId = linked.UserContributionId;
-            ExistingContributionEncodedId = IdEncoder.Encode(linked.UserContributionId!.Value);
+            ExistingContributionId = EngramRelease.UserContributionId;
+            ExistingContributionEncodedId = IdEncoder.Encode(EngramRelease.UserContributionId.Value);
             return;
         }
 
@@ -160,7 +163,7 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
         }
     }
 
-    internal static string InferMediaType(EngramSubmission submission)
+    internal static string InferMediaType(EngramDisc submission)
     {
         if (submission.DetectedSeason.HasValue)
         {
@@ -219,6 +222,12 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
                 return;
             }
 
+            if (Submissions.Count == 0)
+            {
+                ErrorMessage = "No engram submissions exist for this release yet. Upload a disc first.";
+                return;
+            }
+
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var userId = UserManager.GetUserId(authState.User);
 
@@ -230,15 +239,13 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
 
             await using var db = await DbFactory.CreateDbContextAsync();
 
-            var alreadyLinked = await db.EngramSubmissions
-                .Where(s => s.ReleaseId == ReleaseId && s.UserContributionId != null)
-                .Select(s => s.UserContributionId)
-                .FirstOrDefaultAsync();
+            var releaseRow = await db.EngramReleases
+                .FirstOrDefaultAsync(r => r.ReleaseId == ReleaseId);
 
-            if (alreadyLinked != null)
+            if (releaseRow?.UserContributionId != null)
             {
-                ExistingContributionId = alreadyLinked;
-                ExistingContributionEncodedId = IdEncoder.Encode(alreadyLinked.Value);
+                ExistingContributionId = releaseRow.UserContributionId;
+                ExistingContributionEncodedId = IdEncoder.Encode(releaseRow.UserContributionId.Value);
                 NavigationManager.NavigateTo($"/contribution/engram/{ExistingContributionEncodedId}");
                 return;
             }
@@ -250,6 +257,11 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
             var releaseSlug = resolvedTitle.Slugify();
             var externalId = firstSubmission.TmdbId?.ToString() ?? string.Empty;
             var externalProvider = string.IsNullOrEmpty(externalId) ? string.Empty : "TMDB";
+
+            // Wrap the whole creation in a transaction so any failure (including a
+            // EngramRelease.ReleaseId unique-index race with a concurrent submitter)
+            // rolls back the contribution and discs we created — no orphaned rows.
+            await using var transaction = await db.Database.BeginTransactionAsync();
 
             var contribution = new UserContribution
             {
@@ -317,18 +329,106 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
                 discIndex++;
             }
 
-            var submissionIds = Submissions.Select(s => s.Id).ToList();
-            await db.EngramSubmissions
-                .Where(s => submissionIds.Contains(s.Id))
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.UserContributionId, contribution.Id));
+            // Link the contribution at the release level. The release row should
+            // already exist (it is upserted at disc-submit time), but defensively
+            // create it here if missing. Two concurrent submitters can race two
+            // ways:
+            //   (a) both insert a brand-new EngramRelease row → caught by the
+            //       unique-index DbUpdateException, retry against the winner;
+            //   (b) both update an existing unlinked row → caught by the
+            //       conditional UPDATE ... WHERE UserContributionId IS NULL,
+            //       which is atomic at the DB level. The loser sees affected
+            //       rows == 0 and rolls back.
+            try
+            {
+                if (releaseRow == null)
+                {
+                    releaseRow = new EngramRelease
+                    {
+                        ReleaseId = ReleaseId!,
+                        ReceivedAt = DateTimeOffset.UtcNow,
+                        UserContributionId = contribution.Id,
+                    };
+                    db.EngramReleases.Add(releaseRow);
+                    await db.SaveChangesAsync();
+                }
+                else
+                {
+                    // Atomic claim — only succeeds if no one else has linked yet.
+                    var releaseId = releaseRow.Id;
+                    var contributionId = contribution.Id;
+                    var rowsClaimed = await db.EngramReleases
+                        .Where(r => r.Id == releaseId && r.UserContributionId == null)
+                        .ExecuteUpdateAsync(s => s.SetProperty(r => r.UserContributionId, contributionId));
+
+                    if (rowsClaimed == 0)
+                    {
+                        // Another contribution claimed this release while we were
+                        // building ours. Roll back our work and redirect.
+                        await transaction.RollbackAsync();
+
+                        var winner = await db.EngramReleases
+                            .AsNoTracking()
+                            .FirstAsync(r => r.Id == releaseId);
+
+                        ExistingContributionId = winner.UserContributionId;
+                        ExistingContributionEncodedId = IdEncoder.Encode(winner.UserContributionId!.Value);
+                        NavigationManager.NavigateTo($"/contribution/engram/{ExistingContributionEncodedId}");
+                        return;
+                    }
+                }
+            }
+            catch (DbUpdateException) when (releaseRow != null && releaseRow.Id == 0)
+            {
+                // Concurrent submitter inserted the EngramRelease row first.
+                // Detach our orphaned in-memory entity and retry the link.
+                db.Entry(releaseRow).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+
+                var concurrent = await db.EngramReleases
+                    .FirstAsync(r => r.ReleaseId == ReleaseId);
+
+                if (concurrent.UserContributionId != null)
+                {
+                    await transaction.RollbackAsync();
+
+                    ExistingContributionId = concurrent.UserContributionId;
+                    ExistingContributionEncodedId = IdEncoder.Encode(concurrent.UserContributionId.Value);
+                    NavigationManager.NavigateTo($"/contribution/engram/{ExistingContributionEncodedId}");
+                    return;
+                }
+
+                var concurrentId = concurrent.Id;
+                var contributionId = contribution.Id;
+                var rowsClaimed = await db.EngramReleases
+                    .Where(r => r.Id == concurrentId && r.UserContributionId == null)
+                    .ExecuteUpdateAsync(s => s.SetProperty(r => r.UserContributionId, contributionId));
+
+                if (rowsClaimed == 0)
+                {
+                    await transaction.RollbackAsync();
+
+                    var winner = await db.EngramReleases
+                        .AsNoTracking()
+                        .FirstAsync(r => r.Id == concurrentId);
+
+                    ExistingContributionId = winner.UserContributionId;
+                    ExistingContributionEncodedId = IdEncoder.Encode(winner.UserContributionId!.Value);
+                    NavigationManager.NavigateTo($"/contribution/engram/{ExistingContributionEncodedId}");
+                    return;
+                }
+
+                releaseRow = concurrent;
+            }
+
+            await transaction.CommitAsync();
 
             await HistoryService.RecordCreatedAsync(contribution.Id, userId);
 
             // Copy front/back covers from Engram blobs (best-effort). Engram-uploaded
             // images are preferred because they reflect the actual physical disc; the
             // user can re-upload via the standard contribution edit flow if missing.
-            await CopyEngramImageToContribution(firstSubmission.FrontImageUrl, contribution.EncodedId, "front", db, contribution);
-            await CopyEngramImageToContribution(firstSubmission.BackImageUrl, contribution.EncodedId, "back", db, contribution);
+            await CopyEngramImageToContribution(releaseRow.FrontImageUrl, contribution.EncodedId, "front", db, contribution);
+            await CopyEngramImageToContribution(releaseRow.BackImageUrl, contribution.EncodedId, "back", db, contribution);
 
             NavigationManager.NavigateTo($"/contribution/engram/{contribution.EncodedId}");
         }

@@ -12,33 +12,51 @@
                             <MediaImage Url="@release?.ImageUrl" Width="230" Height="328" Title="@release?.Title" CssClass="img-fluid" />
                         </a>
                         <div class="release-title">
-                            <a href="@release?.ReleaseDetailUrl(Item)">@release?.Title</a>
-                            <AmazonAssociatesButton Asin="@release?.Asin" />
-                            <ul>
-                                @if (release?.Discs != null)
-                                {
-                                    foreach (var disc in release.Discs)
+                            <div class="release-title-header">
+                                <a href="@release?.ReleaseDetailUrl(Item)">@release?.Title</a>
+                                <AmazonAssociatesButton Asin="@release?.Asin" />
+                            </div>
+                            @if (release?.Discs != null && release.Discs.Count > 0)
+                            {
+                                <ul class="disc-list disc-list-compact">
+                                    @foreach (var disc in release.Discs)
                                     {
-                                        <li>
-                                            <a href="@disc.DiscDetailUrl(release, this.Item)">@disc.GetFullName()</a>
-                                            <ul class="facts">
-                                                @foreach (var feature in NavigationExtensions.GetDiscFeatures(disc))
+                                        var features = NavigationExtensions.GetDiscFeatures(disc).ToList();
+                                        <li class="disc-list-item">
+                                            <a class="disc-list-header" href="@disc.DiscDetailUrl(release, this.Item)">
+                                                <span class="disc-list-name">
+                                                    <svg class="disc-list-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                                        <circle cx="12" cy="12" r="10" />
+                                                        <circle cx="12" cy="12" r="3" />
+                                                    </svg>
+                                                    <span>@disc.GetFullName()</span>
+                                                </span>
+                                                @if (features.Count > 0)
                                                 {
-                                                    <li>
-                                                        <span class="feature">@feature.Description</span>
-                                                        @if (feature.HasChapters)
-                                                        {
-                                                            <span title="Has chapter names">
-                                                                <SfIcon Name="IconName.ListOrdered" />
-                                                            </span>
-                                                        }
-                                                    </li>
+                                                    <span class="disc-list-count">@features.Count</span>
                                                 }
-                                            </ul>
+                                            </a>
+                                            @if (features.Count > 0)
+                                            {
+                                                <ul class="disc-feature-list">
+                                                    @foreach (var feature in features)
+                                                    {
+                                                        <li class="disc-feature-item">
+                                                            <span class="feature">@feature.Description</span>
+                                                            @if (feature.HasChapters)
+                                                            {
+                                                                <span class="chapter-badge" title="Has chapter names" aria-label="Has chapter names">
+                                                                    <SfIcon Name="IconName.ListOrdered" />
+                                                                </span>
+                                                            }
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            }
                                         </li>
                                     }
-                                }
-                            </ul>
+                                </ul>
+                            }
                         </div>
                     </div>
                 </div>

@@ -9,6 +9,13 @@ namespace TheDiscDb.Client.Pages;
 
 public partial class DiscDetail : ComponentBase
 {
+    private sealed record CopyButtonState(string IconClassName, bool IsDisabled = false);
+
+    private static readonly CopyButtonState DefaultCopyState = new("e-icons e-copy");
+    private static readonly CopyButtonState CopiedCopyState = new("e-icons e-circle-check", IsDisabled: true);
+
+    private readonly Dictionary<IDiscItem, CopyButtonState> descriptionCopyStates = new();
+
     [Inject]
     public GetDiscDetailQuery? MediaItemQuery { get; set; }
 
@@ -17,6 +24,9 @@ public partial class DiscDetail : ComponentBase
 
     [Inject]
     public GetDiscDetailByContentHashQuery? ContentHashQuery { get; set; }
+
+    [Inject]
+    private IClipboardService Clipboard { get; set; } = null!;
 
     [Parameter]
     public string? Type { get; set; }
@@ -44,6 +54,38 @@ public partial class DiscDetail : ComponentBase
     private IEnumerable<IDiscItem> AllTitles { get; set; } = new List<IDiscItem>();
     private IQueryable<IDiscItem> FilteredTitles { get; set; } = new List<IDiscItem>().AsQueryable();
     private readonly GridSort<IDiscItem> SortSourceFile = GridSort<IDiscItem>.ByAscending(u => u.SourceFile);
+    private readonly GridSort<IDiscItem> SortDescription = GridSort<IDiscItem>.ByAscending(u => u.Description);
+
+    private CopyButtonState GetDescriptionCopyState(IDiscItem item)
+    {
+        return descriptionCopyStates.TryGetValue(item, out var state) ? state : DefaultCopyState;
+    }
+
+    private async Task CopyDescriptionToClipboard(IDiscItem item)
+    {
+        if (string.IsNullOrEmpty(item.Description))
+        {
+            return;
+        }
+
+        descriptionCopyStates[item] = CopiedCopyState;
+        StateHasChanged();
+
+        try
+        {
+            await Clipboard.WriteTextAsync(item.Description);
+        }
+        catch
+        {
+            descriptionCopyStates.Remove(item);
+            StateHasChanged();
+            return;
+        }
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        descriptionCopyStates.Remove(item);
+        StateHasChanged();
+    }
 
     protected override async Task OnInitializedAsync()
     {

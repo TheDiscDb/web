@@ -1,0 +1,52 @@
+.description-cell {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-height: 1.5rem;
+}
+
+.description-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.description-copy-button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #52657f;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .15s ease-in-out, background-color .15s ease-in-out, color .15s ease-in-out, border-color .15s ease-in-out;
+}
+
+.description-copy-button:focus-visible {
+    opacity: 1;
+    outline: none;
+    border-color: #c4ccd8;
+}
+
+.description-copy-button:hover:not(:disabled) {
+    background-color: #eef2f7;
+    color: #00213f;
+    border-color: #c4ccd8;
+}
+
+.description-copy-button:disabled {
+    cursor: default;
+    color: #2f9e44;
+    opacity: 1;
+}
+
+::deep tr:hover .description-copy-button,
+.description-cell:hover .description-copy-button,
+.description-cell:focus-within .description-copy-button {
+    opacity: 1;
+}

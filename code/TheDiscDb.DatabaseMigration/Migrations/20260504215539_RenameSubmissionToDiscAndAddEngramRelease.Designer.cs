@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TheDiscDb.Web.Data;
 
@@ -11,9 +12,11 @@ using TheDiscDb.Web.Data;
 namespace TheDiscDb.Web.Migrations
 {
     [DbContext(typeof(SqlServerDataContext))]
-    partial class SqlServerDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260504215539_RenameSubmissionToDiscAndAddEngramRelease")]
+    partial class RenameSubmissionToDiscAndAddEngramRelease
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -826,6 +829,9 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<int?>("UserContributionId")
+                        .HasColumnType("int");
+
                     b.Property<string>("VolumeLabel")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -836,6 +842,8 @@ namespace TheDiscDb.Web.Migrations
                         .IsUnique();
 
                     b.HasIndex("EngramReleaseId");
+
+                    b.HasIndex("UserContributionId");
 
                     b.ToTable("EngramDiscs");
                 });
@@ -865,15 +873,10 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<int?>("UserContributionId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ReleaseId")
                         .IsUnique();
-
-                    b.HasIndex("UserContributionId");
 
                     b.ToTable("EngramReleases");
                 });
@@ -1606,15 +1609,12 @@ namespace TheDiscDb.Web.Migrations
                         .HasForeignKey("EngramReleaseId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.Navigation("EngramRelease");
-                });
-
-            modelBuilder.Entity("TheDiscDb.Web.Data.EngramRelease", b =>
-                {
                     b.HasOne("TheDiscDb.Web.Data.UserContribution", "UserContribution")
                         .WithMany()
                         .HasForeignKey("UserContributionId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("EngramRelease");
 
                     b.Navigation("UserContribution");
                 });

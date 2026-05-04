@@ -1,8 +1,6 @@
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client;
 using TheDiscDb.Data.Import;
@@ -28,6 +26,9 @@ public partial class EngramEndpoints
     [GeneratedRegex(@"^[a-fA-F0-9]{8,128}$")]
     private static partial Regex ContentHashPattern();
 
+    [GeneratedRegex(@"^[a-zA-Z0-9_-]{1,128}$")]
+    private static partial Regex ReleaseIdPattern();
+
     public void MapEndpoints(WebApplication app)
     {
         // TODO: Add API key authentication
@@ -36,9 +37,9 @@ public partial class EngramEndpoints
         engram.MapPost("disc", SubmitDisc);
         engram.MapPost("disc/{contentHash}/logs/scan", UploadScanLog)
             .Accepts<string>("text/plain");
-        engram.MapPost("disc/{contentHash}/images/front", UploadFrontImage)
+        engram.MapPost("release/{releaseId}/images/front", UploadFrontImage)
             .DisableAntiforgery();
-        engram.MapPost("disc/{contentHash}/images/back", UploadBackImage)
+        engram.MapPost("release/{releaseId}/images/back", UploadBackImage)
             .DisableAntiforgery();
     }
 
@@ -47,6 +48,15 @@ public partial class EngramEndpoints
         if (!ContentHashPattern().IsMatch(contentHash))
         {
             return TypedResults.BadRequest("Invalid content_hash format — must be 8-128 hex characters");
+        }
+        return null;
+    }
+
+    private static IResult? ValidateReleaseId(string releaseId)
+    {
+        if (string.IsNullOrWhiteSpace(releaseId) || !ReleaseIdPattern().IsMatch(releaseId))
+        {
+            return TypedResults.BadRequest("Invalid release_id format — must be 1-128 characters of letters, digits, underscore, or hyphen");
         }
         return null;
     }
@@ -81,15 +91,23 @@ public partial class EngramEndpoints
         var hashError = ValidateContentHash(payload.Disc.ContentHash);
         if (hashError != null) return hashError;
 
+        if (!string.IsNullOrWhiteSpace(payload.Disc.ReleaseId))
+        {
+            var releaseError = ValidateReleaseId(payload.Disc.ReleaseId);
+            if (releaseError != null) return releaseError;
+        }
+
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        var existing = await dbContext.EngramSubmissions
+        var existing = await dbContext.EngramDiscs
             .Include(s => s.Titles)
             .FirstOrDefaultAsync(s => s.ContentHash == payload.Disc.ContentHash, cancellationToken);
 
+        var release = await EnsureReleaseAsync(dbContext, payload.Disc.ReleaseId, cancellationToken);
+
         if (existing != null)
         {
-            MapPayloadToSubmission(payload, existing);
+            MapPayloadToDisc(payload, existing, release);
             existing.UpdatedAt = DateTimeOffset.UtcNow;
 
             existing.Titles.Clear();
@@ -100,15 +118,15 @@ public partial class EngramEndpoints
         }
         else
         {
-            var submission = new EngramSubmission
+            var disc = new EngramDisc
             {
                 ReceivedAt = DateTimeOffset.UtcNow
             };
 
-            MapPayloadToSubmission(payload, submission);
-            MapTitles(payload, submission);
+            MapPayloadToDisc(payload, disc, release);
+            MapTitles(payload, disc);
 
-            dbContext.EngramSubmissions.Add(submission);
+            dbContext.EngramDiscs.Add(disc);
 
             try
             {
@@ -116,22 +134,41 @@ public partial class EngramEndpoints
             }
             catch (DbUpdateException)
             {
-                // Concurrent insert won the race — retry as update
+                // Concurrent insert lost the race. Could be either:
+                // (a) another request inserted the same ContentHash → upsert the existing disc, OR
+                // (b) another request inserted the same EngramRelease.ReleaseId → re-use it and insert the disc.
+                // We resolve by re-querying both in a fresh context.
                 await using var retryContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-                var concurrent = await retryContext.EngramSubmissions
+                var concurrent = await retryContext.EngramDiscs
                     .Include(s => s.Titles)
-                    .FirstAsync(s => s.ContentHash == payload.Disc.ContentHash, cancellationToken);
+                    .FirstOrDefaultAsync(s => s.ContentHash == payload.Disc.ContentHash, cancellationToken);
 
-                MapPayloadToSubmission(payload, concurrent);
-                concurrent.UpdatedAt = DateTimeOffset.UtcNow;
-                concurrent.Titles.Clear();
-                MapTitles(payload, concurrent);
+                var retryRelease = await EnsureReleaseAsync(retryContext, payload.Disc.ReleaseId, cancellationToken);
+
+                if (concurrent != null)
+                {
+                    MapPayloadToDisc(payload, concurrent, retryRelease);
+                    concurrent.UpdatedAt = DateTimeOffset.UtcNow;
+                    concurrent.Titles.Clear();
+                    MapTitles(payload, concurrent);
+
+                    await retryContext.SaveChangesAsync(cancellationToken);
+                    return Results.Ok(new { id = concurrent.Id, contentHash = concurrent.ContentHash, updated = true });
+                }
+
+                var retryDisc = new EngramDisc
+                {
+                    ReceivedAt = DateTimeOffset.UtcNow
+                };
+                MapPayloadToDisc(payload, retryDisc, retryRelease);
+                MapTitles(payload, retryDisc);
+                retryContext.EngramDiscs.Add(retryDisc);
 
                 await retryContext.SaveChangesAsync(cancellationToken);
-                return Results.Ok(new { id = concurrent.Id, contentHash = concurrent.ContentHash, updated = true });
+                return Results.Ok(new { id = retryDisc.Id, contentHash = retryDisc.ContentHash, updated = false });
             }
 
-            return Results.Ok(new { id = submission.Id, contentHash = submission.ContentHash, updated = false });
+            return Results.Ok(new { id = disc.Id, contentHash = disc.ContentHash, updated = false });
         }
     }
 
@@ -146,19 +183,19 @@ public partial class EngramEndpoints
         if (hashError != null) return hashError;
 
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        var submission = await dbContext.EngramSubmissions
+        var disc = await dbContext.EngramDiscs
             .FirstOrDefaultAsync(s => s.ContentHash == contentHash, cancellationToken);
 
-        if (submission == null)
+        if (disc == null)
         {
-            return TypedResults.NotFound($"No submission found for content hash '{contentHash}'");
+            return TypedResults.NotFound($"No disc found for content hash '{contentHash}'");
         }
 
         var blobPath = $"engram/{contentHash}/scan.log";
         await assetStore.Delete(blobPath, cancellationToken);
         await assetStore.Save(request.Body, blobPath, "text/plain", cancellationToken);
 
-        submission.ScanLogPath = blobPath;
+        disc.ScanLogPath = blobPath;
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Results.Ok(new { path = blobPath });
@@ -168,32 +205,32 @@ public partial class EngramEndpoints
         IDbContextFactory<SqlServerDataContext> dbContextFactory,
         [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore assetStore,
         IFormFileCollection files,
-        string contentHash,
+        string releaseId,
         CancellationToken cancellationToken)
     {
-        return await UploadImage(dbContextFactory, assetStore, files, contentHash, "front", cancellationToken);
+        return await UploadImage(dbContextFactory, assetStore, files, releaseId, "front", cancellationToken);
     }
 
     public async Task<IResult> UploadBackImage(
         IDbContextFactory<SqlServerDataContext> dbContextFactory,
         [FromKeyedServices(KeyedServiceNames.ImagesAssetStore)] IStaticAssetStore assetStore,
         IFormFileCollection files,
-        string contentHash,
+        string releaseId,
         CancellationToken cancellationToken)
     {
-        return await UploadImage(dbContextFactory, assetStore, files, contentHash, "back", cancellationToken);
+        return await UploadImage(dbContextFactory, assetStore, files, releaseId, "back", cancellationToken);
     }
 
     private static async Task<IResult> UploadImage(
         IDbContextFactory<SqlServerDataContext> dbContextFactory,
         IStaticAssetStore assetStore,
         IFormFileCollection files,
-        string contentHash,
+        string releaseId,
         string side,
         CancellationToken cancellationToken)
     {
-        var hashError = ValidateContentHash(contentHash);
-        if (hashError != null) return hashError;
+        var releaseError = ValidateReleaseId(releaseId);
+        if (releaseError != null) return releaseError;
 
         var file = files.FirstOrDefault();
         if (file == null || file.Length == 0)
@@ -212,68 +249,108 @@ public partial class EngramEndpoints
         }
 
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        var submission = await dbContext.EngramSubmissions
-            .FirstOrDefaultAsync(s => s.ContentHash == contentHash, cancellationToken);
+        var hasDisc = await dbContext.EngramDiscs
+            .AnyAsync(s => s.EngramRelease!.ReleaseId == releaseId, cancellationToken);
 
-        if (submission == null)
+        if (!hasDisc)
         {
-            return TypedResults.NotFound($"No submission found for content hash '{contentHash}'");
+            return TypedResults.NotFound($"No disc found for release_id '{releaseId}'");
         }
 
-        var blobPath = $"engram/{contentHash}/{side}.jpg";
+        var blobPath = $"engram/release/{releaseId}/{side}.jpg";
         await assetStore.Delete(blobPath, cancellationToken);
         using var stream = new MemoryStream();
         await file.CopyToAsync(stream, cancellationToken);
         stream.Position = 0;
         await assetStore.Save(stream, blobPath, file.ContentType, cancellationToken);
 
-        if (side == "front")
-            submission.FrontImageUrl = blobPath;
+        var release = await dbContext.EngramReleases
+            .FirstOrDefaultAsync(r => r.ReleaseId == releaseId, cancellationToken);
+
+        if (release == null)
+        {
+            release = new EngramRelease
+            {
+                ReleaseId = releaseId,
+                ReceivedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.EngramReleases.Add(release);
+        }
         else
-            submission.BackImageUrl = blobPath;
+        {
+            release.UpdatedAt = DateTimeOffset.UtcNow;
+        }
+
+        if (side == "front")
+            release.FrontImageUrl = blobPath;
+        else
+            release.BackImageUrl = blobPath;
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Results.Ok(new { path = blobPath });
     }
 
-    private static void MapPayloadToSubmission(EngramExportPayload payload, EngramSubmission submission)
+    private static async Task<EngramRelease?> EnsureReleaseAsync(SqlServerDataContext dbContext, string? releaseId, CancellationToken cancellationToken)
     {
-        submission.ContentHash = payload.Disc!.ContentHash!;
-        submission.VolumeLabel = payload.Disc.VolumeLabel ?? string.Empty;
-        submission.ContentType = payload.Disc.ContentType ?? string.Empty;
-        submission.DiscNumber = payload.Disc.DiscNumber;
-        submission.ReleaseId = payload.Disc?.ReleaseId;
-        submission.EngramVersion = payload.EngramVersion ?? string.Empty;
-        submission.ExportVersion = payload.ExportVersion ?? string.Empty;
-        submission.ContributionTier = payload.ContributionTier;
-        submission.Upc = payload.Upc;
+        if (string.IsNullOrWhiteSpace(releaseId))
+        {
+            return null;
+        }
+
+        var release = await dbContext.EngramReleases
+            .FirstOrDefaultAsync(r => r.ReleaseId == releaseId, cancellationToken);
+
+        if (release == null)
+        {
+            release = new EngramRelease
+            {
+                ReleaseId = releaseId,
+                ReceivedAt = DateTimeOffset.UtcNow
+            };
+            dbContext.EngramReleases.Add(release);
+        }
+
+        return release;
+    }
+
+    private static void MapPayloadToDisc(EngramExportPayload payload, EngramDisc disc, EngramRelease? release)
+    {
+        disc.ContentHash = payload.Disc!.ContentHash!;
+        disc.VolumeLabel = payload.Disc.VolumeLabel ?? string.Empty;
+        disc.ContentType = payload.Disc.ContentType ?? string.Empty;
+        disc.DiscNumber = payload.Disc.DiscNumber;
+        disc.EngramRelease = release;
+        disc.EngramVersion = payload.EngramVersion ?? string.Empty;
+        disc.ExportVersion = payload.ExportVersion ?? string.Empty;
+        disc.ContributionTier = payload.ContributionTier;
+        disc.Upc = payload.Upc;
 
         if (payload.Identification != null)
         {
-            submission.TmdbId = payload.Identification.TmdbId;
-            submission.DetectedTitle = payload.Identification.DetectedTitle;
-            submission.DetectedSeason = payload.Identification.DetectedSeason;
-            submission.ClassificationSource = payload.Identification.ClassificationSource;
-            submission.ClassificationConfidence = payload.Identification.ClassificationConfidence;
+            disc.TmdbId = payload.Identification.TmdbId;
+            disc.DetectedTitle = payload.Identification.DetectedTitle;
+            disc.DetectedSeason = payload.Identification.DetectedSeason;
+            disc.ClassificationSource = payload.Identification.ClassificationSource;
+            disc.ClassificationConfidence = payload.Identification.ClassificationConfidence;
         }
         else
         {
-            submission.TmdbId = null;
-            submission.DetectedTitle = null;
-            submission.DetectedSeason = null;
-            submission.ClassificationSource = null;
-            submission.ClassificationConfidence = null;
+            disc.TmdbId = null;
+            disc.DetectedTitle = null;
+            disc.DetectedSeason = null;
+            disc.ClassificationSource = null;
+            disc.ClassificationConfidence = null;
         }
     }
 
-    private static void MapTitles(EngramExportPayload payload, EngramSubmission submission)
+    private static void MapTitles(EngramExportPayload payload, EngramDisc disc)
     {
         if (payload.Titles == null) return;
 
         foreach (var t in payload.Titles)
         {
-            submission.Titles.Add(new EngramTitle
+            disc.Titles.Add(new EngramTitle
             {
                 TitleIndex = t.Index,
                 SourceFilename = t.SourceFilename,

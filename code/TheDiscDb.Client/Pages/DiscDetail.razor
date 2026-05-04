@@ -14,7 +14,24 @@ else
         <TemplateColumn Title="Source File" Sortable="true" SortBy="SortSourceFile">
             <a href="@TitleDetailUrl(context)">@context.SourceFile</a>
         </TemplateColumn>
-        <PropertyColumn Property="@(t => t.Description)" Sortable="true" />
+        <TemplateColumn Title="Description" Sortable="true" SortBy="SortDescription">
+            <div class="description-cell">
+                <span class="description-text">@context.Description</span>
+                @if (!string.IsNullOrEmpty(context.Description))
+                {
+                    var copyState = GetDescriptionCopyState(context);
+                    <button type="button"
+                            class="description-copy-button"
+                            title="Copy description"
+                            aria-label="Copy description"
+                            disabled="@copyState.IsDisabled"
+                            @onclick="() => CopyDescriptionToClipboard(context)"
+                            @onclick:stopPropagation="true">
+                        <i class="@copyState.IconClassName"></i>
+                    </button>
+                }
+            </div>
+        </TemplateColumn>
         <PropertyColumn Property="@(t => t.ItemType)" Title="Type" Sortable="true" />
         @if (this.Item!.Type!.Equals("series", StringComparison.OrdinalIgnoreCase))
         {

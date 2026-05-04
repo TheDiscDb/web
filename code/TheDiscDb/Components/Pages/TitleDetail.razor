@@ -30,7 +30,14 @@ else
                 </div>
                 <div class="metadata-item metadata-item-wide">
                     <dt>Description</dt>
-                    <dd>@Title.TitleDescription()</dd>
+                    <dd>
+                        <div class="description-with-copy">
+                            <span>@Title.TitleDescription()</span>
+                            <CopyButton Text="@Title.TitleDescription()"
+                                        Title="Copy description"
+                                        @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+                        </div>
+                    </dd>
                 </div>
                 <div class="metadata-item">
                     <dt>Length</dt>

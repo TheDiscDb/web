@@ -1,0 +1,16 @@
+@if (!string.IsNullOrEmpty(Text))
+{
+    <button type="button"
+            class="@CssClass"
+            title="@Title"
+            aria-label="@Title"
+            disabled="@state.IsDisabled"
+            @onclick="CopyToClipboard"
+            @onclick:stopPropagation="true">
+        <i class="@state.IconClassName"></i>
+        @if (ShowLabel)
+        {
+            <span>@state.Text</span>
+        }
+    </button>
+}

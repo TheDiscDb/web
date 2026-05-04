@@ -163,20 +163,31 @@ public class SqlServerDataContext : DbContext
             .HasForeignKey(x => x.ApiKeyId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        var engramSubmission = modelBuilder.Entity<EngramSubmission>();
-        engramSubmission.HasKey(x => x.Id);
-        engramSubmission.HasIndex(x => x.ContentHash).IsUnique();
-        engramSubmission.HasMany(x => x.Titles)
-            .WithOne(x => x.Submission)
+        var engramDisc = modelBuilder.Entity<EngramDisc>();
+        engramDisc.HasKey(x => x.Id);
+        engramDisc.HasIndex(x => x.ContentHash).IsUnique();
+        engramDisc.HasMany(x => x.Titles)
+            .WithOne(x => x.Disc)
             .OnDelete(DeleteBehavior.Cascade);
-        engramSubmission.HasOne(x => x.UserContribution)
-            .WithMany()
-            .HasForeignKey(x => x.UserContributionId)
+        engramDisc.HasOne(x => x.EngramRelease)
+            .WithMany(x => x.Discs)
+            .HasForeignKey(x => x.EngramReleaseId)
             .OnDelete(DeleteBehavior.SetNull);
+        engramDisc.HasIndex(x => x.EngramReleaseId);
 
         var engramTitle = modelBuilder.Entity<EngramTitle>();
         engramTitle.HasKey(x => x.Id);
-        engramTitle.HasIndex(x => new { x.EngramSubmissionId, x.TitleIndex }).IsUnique();
+        engramTitle.HasIndex(x => new { x.EngramDiscId, x.TitleIndex }).IsUnique();
+
+        var engramRelease = modelBuilder.Entity<EngramRelease>();
+        engramRelease.HasKey(x => x.Id);
+        engramRelease.HasIndex(x => x.ReleaseId).IsUnique();
+        engramRelease.Property(x => x.ReleaseId).HasMaxLength(128);
+        engramRelease.HasOne(x => x.UserContribution)
+            .WithMany()
+            .HasForeignKey(x => x.UserContributionId)
+            .OnDelete(DeleteBehavior.SetNull);
+        engramRelease.HasIndex(x => x.UserContributionId);
 
         IdentityModelConfiguration.ConfigureIdentityModel(modelBuilder);
     }
@@ -208,14 +219,16 @@ public class SqlServerDataContext : DbContext
     public DbSet<ApiKeyUsageLog> ApiKeyUsageLogs { get; set; } = null!;
     public DbSet<UserContributionBoxset> UserContributionBoxsets { get; set; } = null!;
     public DbSet<UserContributionBoxsetMember> UserContributionBoxsetMembers { get; set; } = null!;
-    public DbSet<EngramSubmission> EngramSubmissions { get; set; } = null!;
+    public DbSet<EngramDisc> EngramDiscs { get; set; } = null!;
     public DbSet<EngramTitle> EngramTitles { get; set; } = null!;
+    public DbSet<EngramRelease> EngramReleases { get; set; } = null!;
 }
 
-public class EngramSubmission
+public class EngramDisc
 {
     public int Id { get; set; }
-    public string? ReleaseId { get; set; }
+    public int? EngramReleaseId { get; set; }
+    public EngramRelease? EngramRelease { get; set; }
     public string ContentHash { get; set; } = string.Empty;
     public string VolumeLabel { get; set; } = string.Empty;
     public string ContentType { get; set; } = string.Empty;
@@ -226,8 +239,6 @@ public class EngramSubmission
     public string? ClassificationSource { get; set; }
     public double? ClassificationConfidence { get; set; }
     public string? Upc { get; set; }
-    public string? FrontImageUrl { get; set; }
-    public string? BackImageUrl { get; set; }
     public string? ScanLogPath { get; set; }
     public string EngramVersion { get; set; } = string.Empty;
     public string ExportVersion { get; set; } = string.Empty;
@@ -235,14 +246,25 @@ public class EngramSubmission
     public DateTimeOffset ReceivedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
     public ICollection<EngramTitle> Titles { get; set; } = new List<EngramTitle>();
+}
+
+public class EngramRelease
+{
+    public int Id { get; set; }
+    public string ReleaseId { get; set; } = string.Empty;
+    public string? FrontImageUrl { get; set; }
+    public string? BackImageUrl { get; set; }
+    public DateTimeOffset ReceivedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
     public int? UserContributionId { get; set; }
     public UserContribution? UserContribution { get; set; }
+    public ICollection<EngramDisc> Discs { get; set; } = new List<EngramDisc>();
 }
 
 public class EngramTitle
 {
     public int Id { get; set; }
-    public int EngramSubmissionId { get; set; }
+    public int EngramDiscId { get; set; }
     public int TitleIndex { get; set; }
     public string? SourceFilename { get; set; }
     public int? DurationSeconds { get; set; }
@@ -256,7 +278,7 @@ public class EngramTitle
     public double? MatchConfidence { get; set; }
     public string? MatchSource { get; set; }
     public string? Edition { get; set; }
-    public EngramSubmission Submission { get; set; } = null!;
+    public EngramDisc Disc { get; set; } = null!;
 }
 
 public class UserContributionBoxset : IHasId

@@ -49,29 +49,48 @@ else
                         </dialog>
                     }
                     <AmazonAssociatesButton Asin="@Release?.Asin" Width="25" />
-                    <ul>
-                        @if (Release?.Discs != null)
-                        {
-                            foreach (var disc in Release.Discs)
+                    @if (Release?.Discs != null && Release.Discs.Count > 0)
+                    {
+                        <h3 class="disc-list-heading">Discs</h3>
+                        <ul class="disc-list">
+                            @foreach (var disc in Release.Discs)
                             {
-                                <li><a href="@disc.DiscDetailUrl(this.Release, this.Item)">@disc.FullDiscName()</a></li>
-                                <ul class="facts">
-                                    @foreach (var feature in NavigationExtensions.GetDiscFeatures(disc))
+                                var features = NavigationExtensions.GetDiscFeatures(disc).ToList();
+                                <li class="disc-list-item">
+                                    <a class="disc-list-header" href="@disc.DiscDetailUrl(this.Release, this.Item)">
+                                        <span class="disc-list-name">
+                                            <svg class="disc-list-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                            <span>@disc.FullDiscName()</span>
+                                        </span>
+                                        @if (features.Count > 0)
+                                        {
+                                            <span class="disc-list-count">@features.Count @(features.Count == 1 ? "title" : "titles")</span>
+                                        }
+                                    </a>
+                                    @if (features.Count > 0)
                                     {
-                                        <li>
-                                            <span class="feature">@feature.Description</span>
-                                            @if (feature.HasChapters)
+                                        <ul class="disc-feature-list">
+                                            @foreach (var feature in features)
                                             {
-                                                <span title="Has chapter names">
-                                                    <SfIcon Name="IconName.ListOrdered" />
-                                                </span>
+                                                <li class="disc-feature-item">
+                                                    <span class="feature">@feature.Description</span>
+                                                    @if (feature.HasChapters)
+                                                    {
+                                                        <span class="chapter-badge" title="Has chapter names" aria-label="Has chapter names">
+                                                            <SfIcon Name="IconName.ListOrdered" />
+                                                        </span>
+                                                    }
+                                                </li>
                                             }
-                                        </li>
+                                        </ul>
                                     }
-                                </ul>
+                                </li>
                             }
-                        }
-                    </ul>
+                        </ul>
+                    }
                 </div>
 
                 @if (Release?.Contributors != null && Release.Contributors.Any())

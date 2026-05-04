@@ -160,6 +160,72 @@ h1:focus {
 /* Release tile responsive layout */
 .releaseTile {
     max-width: 100%;
+    width: 230px;
+    background: #ffffff;
+    border: 1px solid #e3e8ef;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 33, 63, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+.releaseTile > .vstack {
+    gap: 0;
+}
+
+.releaseTile a > img.img-fluid,
+.releaseTile > .vstack > a > img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-bottom: 1px solid #eef1f5;
+}
+
+.releaseTile .release-title {
+    padding: 0.55rem 0.65rem 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.releaseTile .release-title > a:first-child {
+    font-weight: 600;
+    color: #00213F;
+    font-size: 0.95rem;
+    line-height: 1.25;
+    text-decoration: none;
+}
+
+.releaseTile .release-title > a:first-child:hover {
+    text-decoration: underline;
+}
+
+.releaseTile .release-title-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.releaseTile .release-title-header > a:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 600;
+    color: #00213F;
+    font-size: 0.95rem;
+    line-height: 1.25;
+    text-decoration: none;
+}
+
+.releaseTile .release-title-header > a:first-child:hover {
+    text-decoration: underline;
+}
+
+.releaseTile .release-title-header .amazon-associates-button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
 }
 
 @media (max-width: 575.98px) {
@@ -206,6 +272,199 @@ pre code {
     word-break: break-word;
     overflow-wrap: anywhere;
     box-sizing: border-box;
+}
+
+.chapter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 0.4rem;
+    padding: 0.1rem 0.4rem;
+    background: #eef2f7;
+    color: #00213F;
+    border-radius: 999px;
+    line-height: 1;
+    font-size: 0.85rem;
+    vertical-align: middle;
+}
+
+.chapter-badge .e-icons {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.disc-list-heading {
+    font-size: 1rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin: 1.25rem 0 0.5rem 0;
+}
+
+.disc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 32rem;
+}
+
+.disc-list-item {
+    background: #ffffff;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 33, 63, 0.04);
+}
+
+.disc-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    font-weight: 600;
+    color: #00213F;
+    background: #eef2f7;
+    text-decoration: none;
+    border-bottom: 1px solid #e3e8ef;
+    transition: background 0.15s;
+}
+
+.disc-list-header:hover,
+.disc-list-header:focus-visible {
+    background: #dce4ed;
+    text-decoration: none;
+    color: #00213F;
+    outline: none;
+}
+
+.disc-list-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.disc-list-icon {
+    flex: 0 0 auto;
+    color: #52657f;
+}
+
+.disc-list-count {
+    flex: 0 0 auto;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #52657f;
+    background: #ffffff;
+    border: 1px solid #cdd5df;
+    border-radius: 999px;
+    padding: 0.05rem 0.55rem;
+    line-height: 1.5;
+}
+
+.disc-feature-list {
+    list-style: none;
+    padding: 0.25rem 0.85rem;
+    margin: 0;
+}
+
+.disc-feature-item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.45rem 0;
+    font-size: 0.92rem;
+    color: #1f2a3b;
+    word-break: break-word;
+}
+
+.disc-feature-item + .disc-feature-item {
+    border-top: 1px solid #eef1f5;
+}
+
+.disc-feature-item .feature {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.disc-list-compact {
+    max-width: 100%;
+    gap: 0;
+    margin: 0.25rem -0.65rem -0.65rem;
+    border-top: 1px solid #eef1f5;
+}
+
+.disc-list-compact .disc-list-item {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+}
+
+.disc-list-compact .disc-list-item + .disc-list-item {
+    border-top: 1px solid #eef1f5;
+}
+
+.disc-list-compact .disc-list-header {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.85rem;
+    gap: 0.4rem;
+    background: transparent;
+    border-bottom: none;
+    color: #1f2a3b;
+}
+
+.disc-list-compact .disc-list-header:hover,
+.disc-list-compact .disc-list-header:focus-visible {
+    background: #f4f7fb;
+    color: #00213F;
+    text-decoration: none;
+}
+
+.disc-list-compact .disc-list-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.disc-list-compact .disc-list-count {
+    padding: 0 0.45rem;
+    font-size: 0.7rem;
+    min-width: 1.4rem;
+    text-align: center;
+    background: #eef2f7;
+}
+
+.disc-list-compact .disc-feature-list {
+    padding: 0 0.65rem 0.4rem 1.85rem;
+}
+
+.disc-list-compact .disc-feature-item {
+    font-size: 0.78rem;
+    color: #52657f;
+    padding: 0.15rem 0;
+    line-height: 1.3;
+    gap: 0.35rem;
+}
+
+.disc-list-compact .disc-feature-item + .disc-feature-item {
+    border-top: none;
+}
+
+.disc-list-compact .chapter-badge {
+    margin-left: 0.25rem;
+    padding: 0 0.3rem;
+    font-size: 0.75rem;
+}
+
+.disc-list-compact .chapter-badge .e-icons {
+    font-size: 0.8rem;
 }
 
 .lds-ripple {

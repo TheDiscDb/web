@@ -17,6 +17,8 @@ public class EngramEndpointTests(AspireAppFixture fixture)
 
     private static string UniqueHash() => Guid.NewGuid().ToString("N")[..32].ToUpperInvariant();
 
+    private static string UniqueReleaseId() => $"test-release-{Guid.NewGuid():N}"[..32];
+
     #region POST /api/engram/disc — Submit
 
     [Test]
@@ -158,15 +160,16 @@ public class EngramEndpointTests(AspireAppFixture fixture)
 
     #endregion
 
-    #region POST /api/engram/disc/{hash}/images/front — Upload image
+    #region POST /api/engram/release/{releaseId}/images/front — Upload image
 
     [Test]
-    public async Task UploadFrontImage_ValidHash_ReturnsOkWithPath()
+    public async Task UploadFrontImage_ValidReleaseId_ReturnsOkWithPath()
     {
         var hash = UniqueHash();
-        await SubmitDiscAsync(hash);
+        var releaseId = UniqueReleaseId();
+        await SubmitDiscAsync(hash, releaseId);
 
-        var response = await UploadTestImage($"/api/engram/disc/{hash}/images/front");
+        var response = await UploadTestImage($"/api/engram/release/{releaseId}/images/front");
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
@@ -175,33 +178,46 @@ public class EngramEndpointTests(AspireAppFixture fixture)
     }
 
     [Test]
-    public async Task UploadBackImage_ValidHash_ReturnsOkWithPath()
+    public async Task UploadBackImage_ValidReleaseId_ReturnsOkWithPath()
     {
         var hash = UniqueHash();
-        await SubmitDiscAsync(hash);
+        var releaseId = UniqueReleaseId();
+        await SubmitDiscAsync(hash, releaseId);
 
-        var response = await UploadTestImage($"/api/engram/disc/{hash}/images/back");
+        var response = await UploadTestImage($"/api/engram/release/{releaseId}/images/back");
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
     }
 
     [Test]
-    public async Task UploadImage_UnknownHash_ReturnsNotFound()
+    public async Task UploadImage_UnknownReleaseId_ReturnsNotFound()
     {
-        var hash = UniqueHash();
+        var releaseId = UniqueReleaseId();
 
-        var response = await UploadTestImage($"/api/engram/disc/{hash}/images/front");
+        var response = await UploadTestImage($"/api/engram/release/{releaseId}/images/front");
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
+    }
+
+    [Test]
+    public async Task UploadImage_InvalidReleaseIdFormat_ReturnsBadRequest()
+    {
+        var response = await UploadTestImage("/api/engram/release/bad release id!/images/front");
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
     }
 
     #endregion
 
     #region Helpers
 
-    private async Task SubmitDiscAsync(string hash)
+    private async Task SubmitDiscAsync(string hash, string? releaseId = null)
     {
         var payload = CreatePayload(hash);
+        if (releaseId != null)
+        {
+            payload.Disc!.ReleaseId = releaseId;
+        }
         var response = await Client.PostAsJsonAsync("/api/engram/disc", payload, JsonOptions);
         response.EnsureSuccessStatusCode();
     }
@@ -299,6 +315,9 @@ public class EngramEndpointTests(AspireAppFixture fixture)
 
         [JsonPropertyName("disc_number")]
         public int? DiscNumber { get; set; }
+
+        [JsonPropertyName("release_id")]
+        public string? ReleaseId { get; set; }
     }
 
     private class TitleDto

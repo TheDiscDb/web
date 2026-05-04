@@ -9,15 +9,15 @@ public class EngramDetailsTests
     [Test]
     public async Task InferMediaType_NoDetectedSeason_ReturnsMovie()
     {
-        var submission = new EngramSubmission { ContentHash = "ABC", DetectedSeason = null };
-        await Assert.That(EngramDetails.InferMediaType(submission)).IsEqualTo("movie");
+        var disc = new EngramDisc { ContentHash = "ABC", DetectedSeason = null };
+        await Assert.That(EngramDetails.InferMediaType(disc)).IsEqualTo("movie");
     }
 
     [Test]
     public async Task InferMediaType_HasDetectedSeason_ReturnsSeries()
     {
-        var submission = new EngramSubmission { ContentHash = "ABC", DetectedSeason = 1 };
-        await Assert.That(EngramDetails.InferMediaType(submission)).IsEqualTo("series");
+        var disc = new EngramDisc { ContentHash = "ABC", DetectedSeason = 1 };
+        await Assert.That(EngramDetails.InferMediaType(disc)).IsEqualTo("series");
     }
 
     [Test]
