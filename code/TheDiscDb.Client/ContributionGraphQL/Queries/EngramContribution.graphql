@@ -1,0 +1,44 @@
+query EngramContribution($contribtionId: EncodedIdFilter) {
+  myContributions(where:  {
+     encodedId:  {
+        eq: $contribtionId
+     }
+  })
+  {
+    nodes {
+      encodedId
+      year
+      releaseTitle
+      releaseSlug
+      status
+      mediaType
+      releaseDate
+      regionCode
+      title
+      asin
+      upc
+      externalProvider
+      externalId
+      frontImageUrl
+      backImageUrl
+      created
+      locale
+      boxset {
+        encodedId
+        title
+      }
+      discs {
+        encodedId
+        index
+        name
+        existingDiscPath
+        logsUploaded
+        format
+        slug
+        items {
+          encodedId
+        }
+      }
+    }
+  }
+}

@@ -1,143 +1,183 @@
 @page "/contribute/engram/{releaseId}"
 @rendermode InteractiveServer
 
-<PageTitle>Engram Submission - TheDiscDb</PageTitle>
+<PageTitle>Continue Engram Submission - TheDiscDb</PageTitle>
 
-@if (Submissions == null || !Submissions.Any())
+@if (string.IsNullOrEmpty(ReleaseId) || Submissions == null || !Submissions.Any())
 {
-    <div class="page-header">
-        <h1>Engram Submissions</h1>
+    <div class="contribute-layout engram-bridge">
+        <div class="page-header">
+            <h1>No Engram submission found</h1>
+            <p class="page-header__sub">We couldn't find any Engram disc data for that release id.</p>
+        </div>
+        <a href="/contribute" class="btn btn-primary">Back to Contribute</a>
     </div>
-    <p>No submissions found for this release.</p>
 }
-else if (ExistingContributionId != null)
+else if (ExistingContributionEncodedId != null)
 {
-    <div class="page-header">
-        <h1>Engram Submissions</h1>
-        <div class="page-header__sub">This release has already been converted to a contribution.</div>
+    <div class="contribute-layout engram-bridge">
+        <div class="page-header">
+            <h1>You already started this contribution</h1>
+            <p class="page-header__sub">Pick up where you left off.</p>
+        </div>
+        <a href="/contribution/engram/@ExistingContributionEncodedId" class="btn btn-primary">Continue Editing Contribution</a>
     </div>
-    <a href="/contribution/@ExistingContributionEncodedId" class="btn btn-primary">Continue Editing Contribution</a>
 }
 else
 {
-    <div class="page-header">
-        <h1>Create Contribution from Engram</h1>
-        <div class="page-header__sub">@Submissions.Count disc(s) for release <code>@ReleaseId</code></div>
-    </div>
+    <div class="contribute-layout engram-bridge">
+        <section class="contribute-hero compact">
+            <h1>Finish your Engram submission</h1>
+            <p>
+                Engram captured @Submissions.Count disc(s) for this release. Confirm a few release details
+                and we'll create a contribution you can keep working on — disc identification, review, and
+                final submission all happen in the standard contribution flow.
+            </p>
+        </section>
 
-    @if (!string.IsNullOrEmpty(ErrorMessage))
-    {
-        <div class="alert alert-danger">@ErrorMessage</div>
-    }
-
-    <EditForm Model="request" OnValidSubmit="CreateContributionFromEngram" FormName="createContribution">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-
-        <h2>Release Information</h2>
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="title">Title</label>
-                <InputText id="title" @bind-Value="request.Title" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label for="year">Year</label>
-                <InputText id="year" @bind-Value="request.Year" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label for="mediaType">Media Type</label>
-                <InputSelect id="mediaType" @bind-Value="request.MediaType" class="form-control">
-                    <option value="movie">Movie</option>
-                    <option value="series">Series</option>
-                </InputSelect>
-            </div>
-            <div class="form-group">
-                <label for="externalId">External ID (TMDB)</label>
-                <InputText id="externalId" @bind-Value="request.ExternalId" class="form-control" />
-            </div>
-        </div>
-
-        <h2>Release Details</h2>
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="releaseTitle">Release Title *</label>
-                <InputText id="releaseTitle" @bind-Value="request.ReleaseTitle" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label for="releaseSlug">Release Slug *</label>
-                <InputText id="releaseSlug" @bind-Value="request.ReleaseSlug" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label for="releaseDate">Release Date *</label>
-                <InputDate id="releaseDate" @bind-Value="request.ReleaseDate" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label for="asin">ASIN *</label>
-                <InputText id="asin" @bind-Value="request.Asin" class="form-control" placeholder="10 characters" />
-            </div>
-            <div class="form-group">
-                <label for="upc">UPC *</label>
-                <InputText id="upc" @bind-Value="request.Upc" class="form-control" placeholder="12-13 digits" />
-            </div>
-            <div class="form-group">
-                <label for="regionCode">Region Code *</label>
-                <InputText id="regionCode" @bind-Value="request.RegionCode" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label for="locale">Locale *</label>
-                <InputText id="locale" @bind-Value="request.Locale" class="form-control" />
-            </div>
-        </div>
-
-        @if (!string.IsNullOrEmpty(request.FrontImageUrl))
+        @if (TmdbLookupFailed)
         {
-            <p><strong>Front image:</strong> Will be copied from engram submission</p>
-        }
-        else
-        {
-            <p class="text-warning">No front image available from engram — you can upload one after the contribution is created.</p>
+            <div class="alert alert-warning">
+                We couldn't reach TMDB to look up this title automatically. You'll be able to fix the
+                title and cover from the contribution page after you continue.
+            </div>
         }
 
-        <h2>Discs (@Submissions.Count)</h2>
-        <table class="engram-titles-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Volume Label</th>
-                    <th>Format</th>
-                    <th>Content Hash</th>
-                    <th>Titles</th>
-                    <th>Scan Log</th>
-                </tr>
-            </thead>
-            <tbody>
-                @{ int discNum = 1; }
-                @foreach (var submission in Submissions)
+        <section class="info-card engram-summary-card">
+            <div class="engram-summary">
+                @if (!string.IsNullOrEmpty(TmdbPosterUrl))
                 {
-                    <tr>
-                        <td>@(submission.DiscNumber ?? discNum)</td>
-                        <td>@submission.VolumeLabel</td>
-                        <td>@MapContentTypeToFormat(submission.ContentType)</td>
-                        <td><code>@submission.ContentHash[..Math.Min(12, submission.ContentHash.Length)]…</code></td>
-                        <td>@submission.Titles.Count</td>
-                        <td>@(string.IsNullOrEmpty(submission.ScanLogPath) ? "No" : "Yes")</td>
-                    </tr>
-                    discNum++;
+                    <img class="cover" src="@TmdbPosterUrl" alt="Cover for @ResolvedTitle()" width="160" height="240" />
                 }
-            </tbody>
-        </table>
-
-        <div class="form-actions" style="margin-top: 1rem;">
-            <button type="submit" class="btn btn-primary" disabled="@IsCreating">
-                @if (IsCreating)
+                else if (!string.IsNullOrEmpty(Submissions.First().FrontImageUrl))
                 {
-                    <span>Creating…</span>
+                    <div class="cover cover-placeholder">Cover from disc upload will be used</div>
                 }
                 else
                 {
-                    <span>Create Contribution</span>
+                    <div class="cover cover-placeholder">No cover available</div>
                 }
-            </button>
-        </div>
-    </EditForm>
+                <dl>
+                    <dt>Title</dt>
+                    <dd>@ResolvedTitle() @(string.IsNullOrEmpty(ResolvedYear()) ? null : $"({ResolvedYear()})")</dd>
+
+                    @if (Submissions.First().TmdbId.HasValue)
+                    {
+                        <dt>TMDB id</dt>
+                        <dd>@Submissions.First().TmdbId</dd>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Submissions.First().Upc))
+                    {
+                        <dt>UPC</dt>
+                        <dd>@Submissions.First().Upc</dd>
+                    }
+
+                    <dt>Engram release id</dt>
+                    <dd><code>@ReleaseId</code></dd>
+                </dl>
+            </div>
+        </section>
+
+        <section class="info-card engram-discs-card">
+            <h2>Discs Engram captured</h2>
+            <table class="engram-titles-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Volume Label</th>
+                        <th>Format</th>
+                        <th>Titles</th>
+                        <th>Scan Log</th>
+                        <th>Cover</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int discNum = 1; }
+                    @foreach (var submission in Submissions)
+                    {
+                        <tr>
+                            <td>@(submission.DiscNumber ?? discNum)</td>
+                            <td>@submission.VolumeLabel</td>
+                            <td>@MapContentTypeToFormat(submission.ContentType)</td>
+                            <td>@submission.Titles.Count</td>
+                            <td>@(string.IsNullOrEmpty(submission.ScanLogPath) ? "—" : "✓")</td>
+                            <td>@(string.IsNullOrEmpty(submission.FrontImageUrl) ? "—" : "✓")</td>
+                        </tr>
+                        discNum++;
+                    }
+                </tbody>
+            </table>
+        </section>
+
+        <section class="info-card engram-form-card">
+            <h2>A few details Engram doesn't have</h2>
+            <p class="form-hint">
+                These fields are required for every contribution. You can edit anything here later
+                from the contribution's release details page.
+            </p>
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="alert alert-danger">@ErrorMessage</div>
+            }
+
+            <EditForm Model="request" OnValidSubmit="CreateContributionFromEngram" FormName="createContribution">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Media type</label>
+                        <InputRadioGroup @bind-Value="request.MediaType">
+                            <label class="radio-option">
+                                <InputRadio Value="@("movie")" /> Movie
+                            </label>
+                            <label class="radio-option">
+                                <InputRadio Value="@("series")" /> Series
+                            </label>
+                        </InputRadioGroup>
+                    </div>
+
+                    <div class="form-group">
+                        <TheDiscDb.Client.Controls.ReleaseDateInput @ref="releaseDateInput" @bind-Value="request.ReleaseDate" Required="true" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="asin">ASIN *</label>
+                        <InputText id="asin" @bind-Value="request.Asin" class="form-control" placeholder="10 characters" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="upc">UPC *</label>
+                        <InputText id="upc" @bind-Value="request.Upc" class="form-control" placeholder="12-13 digits" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locale">Locale *</label>
+                        <InputText id="locale" @bind-Value="request.Locale" class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="regionCode">Region Code *</label>
+                        <InputText id="regionCode" @bind-Value="request.RegionCode" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="cta-row split">
+                    <a class="btn btn-secondary" href="/contribute">Cancel</a>
+                    <button type="submit" class="btn btn-primary" disabled="@IsCreating">
+                        @if (IsCreating)
+                        {
+                            <span>Creating contribution…</span>
+                        }
+                        else
+                        {
+                            <span>Start Contribution</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </section>
+    </div>
 }

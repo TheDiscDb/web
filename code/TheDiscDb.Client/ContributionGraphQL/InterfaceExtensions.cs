@@ -6,6 +6,10 @@ public partial interface IContributionDiscs_MyContributions_Nodes : IContributio
 {
 }
 
+public partial interface IEngramContribution_MyContributions_Nodes : IContributionDisplay
+{
+}
+
 public partial interface IDiscUploadPageData_MyContributions_Nodes : IContributionDisplay
 {
 }

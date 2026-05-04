@@ -1,0 +1,145 @@
+@page "/contribution/engram/{ContributionId}"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@if (Contribution is not null)
+{
+    <TheDiscDb.Client.Controls.Breadcrumb PrimaryText="@GetContributionLinkText(Contribution)" Items="[GetRootContributionLink()]" />
+
+    <div class="contribute-layout engram-contribution-page">
+        <section class="contribute-hero compact">
+            <h1>@Contribution.Title (@Contribution.Year)</h1>
+            <p>This contribution was pre-filled from your Engram submission. The discs and titles below are already identified — review them if you'd like, or submit when you're ready.</p>
+        </section>
+
+        <section class="info-grid single-column">
+            <article class="info-card release-summary-card">
+                <div class="release-summary">
+                    <div class="cover-stack">
+                        @if (!string.IsNullOrEmpty(Contribution.FrontImageUrl))
+                        {
+                            <img src="@GetDirectImageUrl(Contribution.FrontImageUrl)" width="180" height="260" alt="Front cover" class="cover" />
+                        }
+                        @if (!string.IsNullOrEmpty(Contribution.BackImageUrl))
+                        {
+                            <img src="@GetDirectImageUrl(Contribution.BackImageUrl)" width="120" height="170" alt="Back cover" class="cover secondary" />
+                        }
+                    </div>
+                    <dl>
+                        <dt>Release title</dt>
+                        <dd>@Contribution.ReleaseTitle</dd>
+
+                        <dt>Release date</dt>
+                        <dd>@string.Format("{0:yyyy-MM-dd}", Contribution.ReleaseDate)</dd>
+
+                        <dt>Locale / Region</dt>
+                        <dd>@Contribution.Locale · @(string.IsNullOrEmpty(Contribution.RegionCode) ? "N/A" : Contribution.RegionCode)</dd>
+
+                        @if (!string.IsNullOrEmpty(Contribution.Asin))
+                        {
+                            <dt>ASIN</dt>
+                            <dd>@Contribution.Asin</dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Contribution.Upc))
+                        {
+                            <dt>UPC</dt>
+                            <dd>@Contribution.Upc</dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Contribution.ExternalProvider))
+                        {
+                            <dt>External provider</dt>
+                            <dd>@Contribution.ExternalProvider (@Contribution.ExternalId)</dd>
+                        }
+
+                        <dt>Status</dt>
+                        <dd><span class="badge bg-@GetStatusBadgeClass()">@Contribution.Status</span></dd>
+                    </dl>
+                </div>
+                @if (IsEditable)
+                {
+                    <div class="header-actions">
+                        <a href="/contribution/@ContributionId/edit" class="btn btn-outline-secondary"><i class="e-icons e-edit"></i> Edit release details</a>
+                    </div>
+                }
+            </article>
+        </section>
+
+        <section class="info-card discs-card">
+            <div class="section-header">
+                <h2>Discs in this release</h2>
+            </div>
+
+            @if (discList is { Count: > 0 })
+            {
+                <table class="striped-grid contribute-grid engram-disc-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>Format</th>
+                            <th>Items</th>
+                            <th>Logs</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var disc in discList)
+                        {
+                            var itemCount = disc.Items?.Count ?? 0;
+                            <tr>
+                                <td>@disc.Index</td>
+                                <td>
+                                    <div class="disc-name">
+                                        <a href="/contribution/@ContributionId/discs/@disc.EncodedId/identify" title="Verify identified items">@disc.Name</a>
+                                    </div>
+                                </td>
+                                <td>@disc.Format</td>
+                                <td>
+                                    @if (itemCount > 0)
+                                    {
+                                        <span class="badge bg-success">@itemCount identified</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">Needs review</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(disc.ExistingDiscPath))
+                                    {
+                                        <span class="badge bg-light text-dark">Copied from another disc</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@(disc.LogsUploaded ? "Uploaded" : "Pending")</span>
+                                    }
+                                </td>
+                                <td>
+                                    <a href="@($"/contribution/{ContributionId}/disc/{disc.EncodedId}/edit?returnUrl=/contribution/engram/{ContributionId}")" title="Edit disc details"><i class="e-icons e-edit"></i> Edit</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <p>No discs were created from your Engram submission.</p>
+            }
+        </section>
+
+        <div class="cta-row split">
+            <a class="btn btn-outline-primary" href="/contribution/@ContributionId/messages">Messages</a>
+            <button class="btn btn-primary" @onclick="NavigateToReview" disabled="@IsCompleteButtonDisabled">Complete Contribution</button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="contribute-layout">
+        <section class="contribute-hero compact">
+            <h1>Loading Contribution...</h1>
+        </section>
+    </div>
+}

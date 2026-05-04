@@ -28,6 +28,9 @@
         <PackageReference Include="ScrapySharp" Version="3.0.0" />
     </ItemGroup>
     <ItemGroup>
+        <InternalsVisibleTo Include="TheDiscDb.UnitTests" />
+    </ItemGroup>
+    <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Client\TheDiscDb.Client.csproj" />
         <ProjectReference Include="..\TheDiscDb.Data.Import\TheDiscDb.Data.Import.csproj" />
         <ProjectReference Include="..\TheDiscDb.Mailgun\TheDiscDb.Mailgun.csproj" />

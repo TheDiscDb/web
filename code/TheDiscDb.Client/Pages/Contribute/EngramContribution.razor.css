@@ -1,0 +1,70 @@
+.engram-contribution-page .release-summary {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.engram-contribution-page .release-summary dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.4rem 1rem;
+    margin: 0;
+    flex: 1;
+}
+
+.engram-contribution-page .release-summary dt {
+    font-weight: 600;
+    color: #555;
+}
+
+.engram-contribution-page .release-summary dd {
+    margin: 0;
+}
+
+.engram-contribution-page .cover-stack {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.engram-contribution-page .cover {
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.engram-contribution-page .header-actions {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.engram-contribution-page .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.engram-contribution-page .engram-disc-table {
+    width: 100%;
+}
+
+.engram-contribution-page .engram-disc-table th,
+.engram-contribution-page .engram-disc-table td {
+    padding: 0.5rem 0.75rem;
+}
+
+.engram-contribution-page .disc-name a {
+    font-weight: 500;
+}
+
+.engram-contribution-page .cta-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+.engram-contribution-page .cta-row.split {
+    justify-content: space-between;
+}

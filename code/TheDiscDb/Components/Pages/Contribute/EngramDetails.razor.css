@@ -1,23 +1,48 @@
-.engram-submission {
-    margin-bottom: 2rem;
-    padding: 1rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
+.engram-bridge {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
-.engram-details dl {
+.engram-summary-card .engram-summary {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
+.engram-summary .cover {
+    width: 160px;
+    height: 240px;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
+}
+
+.engram-summary .cover-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1rem;
+    background: #f0f0f0;
+    color: #666;
+    font-size: 0.85rem;
+}
+
+.engram-summary dl {
     display: grid;
     grid-template-columns: auto 1fr;
-    gap: 0.25rem 1rem;
+    gap: 0.4rem 1rem;
     margin: 0;
 }
 
-.engram-details dt {
+.engram-summary dt {
     font-weight: 600;
     color: #555;
 }
 
-.engram-details dd {
+.engram-summary dd {
     margin: 0;
 }
 
@@ -43,4 +68,37 @@
 
 .engram-titles-table tr:hover {
     background: #f8f8f8;
+}
+
+.engram-form-card .form-hint {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.engram-form-card .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.engram-form-card .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.engram-form-card .form-group label {
+    font-weight: 600;
+    color: #444;
+    font-size: 0.9rem;
+}
+
+.engram-form-card .radio-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-right: 1rem;
+    font-weight: 400;
 }
