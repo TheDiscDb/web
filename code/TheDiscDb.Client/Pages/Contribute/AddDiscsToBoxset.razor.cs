@@ -6,7 +6,7 @@ using TheDiscDb.Client.Contributions;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class AddDiscsToBoxset : ComponentBase
+public partial class AddDiscsToBoxset : CancellableComponentBase
 {
     [Parameter]
     public string BoxsetId { get; set; } = string.Empty;

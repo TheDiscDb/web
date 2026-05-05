@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using KristofferStrube.Blazor.FileAPI;
 using KristofferStrube.Blazor.FileSystem;
@@ -30,7 +30,7 @@ public class SaveDiscRequest
 }
 
 [Authorize]
-public partial class AddDisc : ComponentBase
+public partial class AddDisc : CancellableComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }
@@ -64,7 +64,7 @@ public partial class AddDisc : ComponentBase
     bool manualHashMode;
     string manualHash = string.Empty;
 
-    bool IsDevelopmentMode => HostEnvironment.Environment == "Development";
+    bool IsDevelopmentMode=> HostEnvironment.Environment == "Development";
 
     private readonly SaveDiscRequest request = new SaveDiscRequest
     {
@@ -85,7 +85,7 @@ public partial class AddDisc : ComponentBase
 
     private async Task LoadContributionAsync()
     {
-        var response = await ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!);
+        var response = await ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!, this.CancellationToken);
         if (response.IsSuccessResult())
         {
             contribution = response.Data?.MyContributions?.Nodes?.FirstOrDefault();
@@ -142,7 +142,6 @@ public partial class AddDisc : ComponentBase
 
         if (hashItems != null)
         {
-            // TODO: Get a cancellation token
             var hashInput = new HashDiscInput
             {
                 ContributionId = this.ContributionId!,
@@ -154,7 +153,7 @@ public partial class AddDisc : ComponentBase
                     CreationTime = i.CreationTime
                 }).ToList()
             };
-            var response = await this.ContributionClient.HashDisc.ExecuteAsync(hashInput);
+            var response = await this.ContributionClient.HashDisc.ExecuteAsync(hashInput, this.CancellationToken);
 
             if (response != null && response.IsSuccessResult() && response.Data != null)
             {
@@ -163,7 +162,7 @@ public partial class AddDisc : ComponentBase
 
                 // TODO: Check for this disc in the current user's submissions
 
-                var result = await Query!.ExecuteAsync(hash, templates: null);
+                var result = await Query!.ExecuteAsync(hash, templates: null, cancellationToken: this.CancellationToken);
                 if (result.Data?.MediaItems?.Nodes != null)
                 {
                     if (result.Data?.MediaItems?.Nodes.Count > 0)
@@ -190,7 +189,7 @@ public partial class AddDisc : ComponentBase
                                     Format = this.request.Format!,
                                     ExistingDiscPath = this.request.ExistingDiscPath
                                 };
-                                var createDiscResponse = await this.ContributionClient.CreateDisc.ExecuteAsync(createInput);
+                                var createDiscResponse = await this.ContributionClient.CreateDisc.ExecuteAsync(createInput, this.CancellationToken);
                                 if (createDiscResponse.IsSuccessResult())
                                 {
                                     this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
@@ -243,7 +242,7 @@ public partial class AddDisc : ComponentBase
             Format = this.request.Format!,
             ContentHash = this.request.ContentHash
         };
-        var response = await this.ContributionClient.CreateDisc.ExecuteAsync(input);
+        var response = await this.ContributionClient.CreateDisc.ExecuteAsync(input, this.CancellationToken);
         if (response.IsSuccessResult())
         {
             this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{response.Data!.CreateDisc.UserContributionDisc!.EncodedId}");

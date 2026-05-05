@@ -6,7 +6,7 @@ using TheDiscDb.Client.Contributions;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class ContributionDiscs : ComponentBase
+public partial class ContributionDiscs : CancellableComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }
@@ -40,7 +40,7 @@ public partial class ContributionDiscs : ComponentBase
             throw new Exception("Contribution Service was not injected");
         }
 
-        var result = await this.ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!);
+        var result = await this.ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!, this.CancellationToken);
         if (result != null && result.IsSuccessResult())
         {
             this.Contribution = result.Data!.MyContributions!.Nodes!.FirstOrDefault();
@@ -120,7 +120,7 @@ public partial class ContributionDiscs : ComponentBase
                 DiscIds = discList.Select(d => d.EncodedId).ToList()
             };
 
-            await this.ContributionClient.ReorderDiscs.ExecuteAsync(input);
+            await this.ContributionClient.ReorderDiscs.ExecuteAsync(input, this.CancellationToken);
         }
         finally
         {

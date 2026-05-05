@@ -7,7 +7,7 @@ using TheDiscDb.Services;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class EditDisc : ComponentBase
+public partial class EditDisc : CancellableComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }
@@ -33,7 +33,7 @@ public partial class EditDisc : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await this.ContributionClient.GetDisc.ExecuteAsync(this.ContributionId!, this.DiscId!);
+        var result = await this.ContributionClient.GetDisc.ExecuteAsync(this.ContributionId!, this.DiscId!, this.CancellationToken);
         if (result?.Data?.MyContributions?.Nodes != null && result.IsSuccessResult())
         {
             var contribution = result.Data.MyContributions.Nodes.FirstOrDefault();

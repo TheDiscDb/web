@@ -6,7 +6,7 @@ using TheDiscDb.Client.Contributions;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class Messages : ComponentBase
+public partial class Messages : CancellableComponentBase
 {
     [Inject]
     private IContributionClient ContributionClient { get; set; } = null!;
@@ -24,7 +24,7 @@ public partial class Messages : ComponentBase
 
         try
         {
-            var result = await ContributionClient.GetMessageThreads.ExecuteAsync();
+            var result = await ContributionClient.GetMessageThreads.ExecuteAsync(this.CancellationToken);
             if (result.IsSuccessResult() && result.Data != null)
             {
                 threads = result.Data.MessageThreads.ToList();

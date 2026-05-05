@@ -9,7 +9,7 @@ using TheDiscDb.Validation;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class EditContribution : ComponentBase
+public partial class EditContribution : CancellableComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }
@@ -50,7 +50,7 @@ public partial class EditContribution : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!);
+        var result = await ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!, this.CancellationToken);
         if (result != null && result.IsSuccessResult())
         {
             Contribution = result.Data!.MyContributions!.Nodes!.FirstOrDefault();

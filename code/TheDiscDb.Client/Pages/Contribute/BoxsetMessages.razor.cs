@@ -7,7 +7,7 @@ using TheDiscDb.Client.Contributions;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class BoxsetMessages : ComponentBase
+public partial class BoxsetMessages : CancellableComponentBase
 {
     [Parameter]
     public string? BoxsetId { get; set; }

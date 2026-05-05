@@ -7,7 +7,7 @@ using TheDiscDb.Client.Contributions;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class BoxsetContribution : ComponentBase
+public partial class BoxsetContribution : CancellableComponentBase
 {
     [Parameter]
     public string BoxsetId { get; set; } = string.Empty;
@@ -75,8 +75,7 @@ public partial class BoxsetContribution : ComponentBase
                 EncodedId = new EncodedIdOperationFilterInput { Eq = BoxsetId }
             };
 
-            var result = await ContributionClient.GetBoxsetDetail.ExecuteAsync(filter);
-            if (result != null && result.IsSuccessResult())
+            var result = await ContributionClient.GetBoxsetDetail.ExecuteAsync(filter, this.CancellationToken);            if (result != null && result.IsSuccessResult())
             {
                 Boxset = result.Data?.MyBoxsets?.Nodes?.FirstOrDefault();
                 Members = Boxset?.Members?.OrderBy(m => m.SortOrder).ToList() ?? new();

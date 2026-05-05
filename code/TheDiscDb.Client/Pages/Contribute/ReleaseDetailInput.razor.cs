@@ -10,7 +10,7 @@ using TheDiscDb.Client.Contributions;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class ReleaseDetailInput : ComponentBase
+public partial class ReleaseDetailInput : CancellableComponentBase
 {
     [Parameter]
     public string? MediaType { get; set; }

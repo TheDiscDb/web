@@ -11,7 +11,7 @@ namespace TheDiscDb.Client.Pages.Contribute;
 record State(string Text, string IconClassName, bool IsDisabled = false);
 
 [Authorize]
-public partial class DiscUpload : ComponentBase
+public partial class DiscUpload : CancellableComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }
@@ -65,7 +65,7 @@ public partial class DiscUpload : ComponentBase
         //this.pollUploadedTimer = new Timer(PollTimerTick!, null, 0, 2000);
         this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
         
-        var response = await this.ContributionClient.DiscUploadPageData.ExecuteAsync(this.ContributionId ?? string.Empty);
+        var response = await this.ContributionClient.DiscUploadPageData.ExecuteAsync(this.ContributionId ?? string.Empty, this.CancellationToken);
         if (response != null && response.IsSuccessResult())
         {
             this.contribution = response.Data!.MyContributions!.Nodes!.FirstOrDefault();

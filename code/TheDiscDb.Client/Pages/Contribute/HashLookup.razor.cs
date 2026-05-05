@@ -5,7 +5,7 @@ using TheDiscDb.InputModels;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class HashLookup : ComponentBase
+public partial class HashLookup : CancellableComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }
@@ -22,8 +22,7 @@ public partial class HashLookup : ComponentBase
     {
         if (!string.IsNullOrEmpty(this.Hash))
         {
-            // TODO: Get a cancellation token
-            var result = await Query!.ExecuteAsync(this.Hash, templates: null);
+            var result = await Query!.ExecuteAsync(this.Hash, templates: null, cancellationToken: this.CancellationToken);
             if (result.Data?.MediaItems?.Nodes != null)
             {
                 foreach (var mediaItem in result.Data.MediaItems.Nodes)

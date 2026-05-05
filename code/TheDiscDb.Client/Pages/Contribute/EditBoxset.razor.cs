@@ -7,7 +7,7 @@ using TheDiscDb.Client.Controls;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class EditBoxset : ComponentBase
+public partial class EditBoxset : CancellableComponentBase
 {
     [Parameter]
     public string BoxsetId { get; set; } = string.Empty;
@@ -35,7 +35,7 @@ public partial class EditBoxset : ComponentBase
                 EncodedId = new EncodedIdOperationFilterInput { Eq = BoxsetId }
             };
 
-            var result = await ContributionClient.GetBoxsetDetail.ExecuteAsync(filter);
+            var result = await ContributionClient.GetBoxsetDetail.ExecuteAsync(filter, this.CancellationToken);
             if (result != null && result.IsSuccessResult())
             {
                 var boxset = result.Data?.MyBoxsets?.Nodes?.FirstOrDefault();

@@ -1,4 +1,5 @@
-﻿@page "/contribution/{contributionId}/discs/{discId}"
+﻿@inherits CancellableComponentBase
+@page "/contribution/{contributionId}/discs/{discId}"
 @using HighlightBlazor
 
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))

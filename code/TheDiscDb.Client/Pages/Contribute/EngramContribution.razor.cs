@@ -6,7 +6,7 @@ using TheDiscDb.Client.Contributions;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class EngramContribution : ComponentBase
+public partial class EngramContribution : CancellableComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }
@@ -35,7 +35,7 @@ public partial class EngramContribution : ComponentBase
             throw new Exception("Contribution Service was not injected");
         }
 
-        var result = await this.ContributionClient.EngramContribution.ExecuteAsync(ContributionId!);
+        var result = await this.ContributionClient.EngramContribution.ExecuteAsync(ContributionId!, this.CancellationToken);
         if (result != null && result.IsSuccessResult())
         {
             this.Contribution = result.Data!.MyContributions!.Nodes!.FirstOrDefault();

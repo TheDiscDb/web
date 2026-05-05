@@ -6,7 +6,7 @@ using TheDiscDb.Client.Contributions;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class AddExistingDiscs : ComponentBase, IDisposable
+public partial class AddExistingDiscs : CancellableComponentBase
 {
     [Parameter]
     public string BoxsetId { get; set; } = string.Empty;
@@ -203,9 +203,10 @@ public partial class AddExistingDiscs : ComponentBase, IDisposable
         }
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
         debounceTimer?.Stop();
         debounceTimer?.Dispose();
+        base.Dispose();
     }
 }

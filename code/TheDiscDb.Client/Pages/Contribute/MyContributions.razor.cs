@@ -6,7 +6,7 @@ using TheDiscDb.Client.Contributions;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class MyContributions : ComponentBase
+public partial class MyContributions : CancellableComponentBase
 {
     private const int DefaultPageSize = 50;
     // Server caps individual requests at 100 (UsePaging MaxPageSize). We follow cursors

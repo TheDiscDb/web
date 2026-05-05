@@ -133,7 +133,7 @@ public class ItemIdentification
 }
 
 [Authorize]
-public partial class IdentifyDiscItems : ComponentBase
+public partial class IdentifyDiscItems : CancellableComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }

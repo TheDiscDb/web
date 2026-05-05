@@ -7,7 +7,7 @@ using TheDiscDb.Client.Contributions;
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class ContributionMessages : ComponentBase
+public partial class ContributionMessages : CancellableComponentBase
 {
     [Parameter]
     public string? ContributionId { get; set; }
