@@ -70,6 +70,7 @@ public partial class DiscDetail : ComponentBase
     private IQueryable<IDiscItem> FilteredTitles { get; set; } = new List<IDiscItem>().AsQueryable();
     private readonly GridSort<IDiscItem> SortSourceFile = GridSort<IDiscItem>.ByAscending(u => u.SourceFile);
     private readonly GridSort<IDiscItem> SortDescription = GridSort<IDiscItem>.ByAscending(u => u.Description);
+    private readonly GridSort<IDiscItem> SortSegmentMap = GridSort<IDiscItem>.ByAscending(u => u.SegmentMap);
     private GridSort<IDiscItem> SortFilename => GridSort<IDiscItem>.ByAscending(t => GetFileName(t));
 
     private CopyButtonState GetDescriptionCopyState(IDiscItem item)
