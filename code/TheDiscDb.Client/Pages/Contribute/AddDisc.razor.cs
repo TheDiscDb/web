@@ -266,7 +266,7 @@ public partial class AddDisc : ComponentBase
                 this.request.Slug = title.Slugify();
                 if (this.slugInput != null)
                 {
-                    await this.slugInput.RecheckAvailability();
+                    await this.slugInput.RecheckAvailability(this.request.Slug);
                 }
             }
         }

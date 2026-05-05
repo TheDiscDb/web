@@ -198,7 +198,7 @@ public partial class ReleaseDetailInput : ComponentBase
 
             if (this.slugInput != null)
             {
-                await this.slugInput.RecheckAvailability();
+                await this.slugInput.RecheckAvailability(this.request.ReleaseSlug);
             }
         }
     }
@@ -301,7 +301,7 @@ public partial class ReleaseDetailInput : ComponentBase
             this.request.ReleaseSlug = HttpUtility.UrlEncode(CreateSlug(title, year));
             if (this.slugInput != null)
             {
-                await this.slugInput.RecheckAvailability();
+                await this.slugInput.RecheckAvailability(this.request.ReleaseSlug);
             }
         }
     }
@@ -352,7 +352,7 @@ public partial class ReleaseDetailInput : ComponentBase
 
         if (this.slugInput != null)
         {
-            await this.slugInput.RecheckAvailability();
+            await this.slugInput.RecheckAvailability(this.request.ReleaseSlug);
         }
     }
 
@@ -437,7 +437,7 @@ public partial class ReleaseDetailInput : ComponentBase
                     this.request.ReleaseSlug = this.request.ReleaseTitle.Slugify();
                     if (this.slugInput != null)
                     {
-                        await this.slugInput.RecheckAvailability();
+                        await this.slugInput.RecheckAvailability(this.request.ReleaseSlug);
                     }
                 }
             }

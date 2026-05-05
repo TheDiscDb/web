@@ -70,11 +70,17 @@ public partial class SlugInput : InputBase<string>, IDisposable
     }
 
     /// <summary>
-    /// Triggers an availability check for the current value. Call this when the slug
-    /// is changed programmatically (e.g. auto-generated from a title change).
+    /// Triggers an availability check. Pass the new slug value when calling after a
+    /// programmatic change, because Blazor may not have re-rendered the component yet
+    /// and <see cref="InputBase{TValue}.CurrentValueAsString"/> would still be stale.
     /// </summary>
-    public async Task RecheckAvailability()
+    public async Task RecheckAvailability(string? newValue = null)
     {
+        if (newValue != null)
+        {
+            this.CurrentValueAsString = newValue;
+        }
+
         if (string.IsNullOrWhiteSpace(this.CurrentValueAsString))
         {
             this.Status = SlugAvailability.Unknown;
