@@ -12,6 +12,7 @@ namespace TheDiscDb.Naming;
 public sealed record NamingContext
 {
     public string? Title { get; init; }
+    public string? Description { get; init; }
     public string? Year { get; init; }
     public string? FullTitle { get; init; }
     public string? Resolution { get; init; }
@@ -47,7 +48,7 @@ public sealed record NamingContext
             FullTitle = fullTitle,
             TmdbId = mediaItem.Externalids?.Tmdb,
             ImdbId = mediaItem.Externalids?.Imdb,
-            TvdbId = mediaItem.Externalids?.Tvdb,
+            TvdbId = mediaItem.Externalids?.Tvdb
         };
     }
 
@@ -77,6 +78,7 @@ public sealed record NamingContext
         return Create(mediaItem, release) with
         {
             Format = disc.Format,
+            Description = disc.Name
         };
     }
 
@@ -112,6 +114,7 @@ public sealed record NamingContext
             EpisodeNumber = episodeNumber,
             EpisodeName = episodeName,
             ExtraType = extraType,
+            Description = title.Description ?? disc.Name
         };
     }
 

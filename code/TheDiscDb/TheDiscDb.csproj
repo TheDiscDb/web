@@ -34,6 +34,7 @@
         <ProjectReference Include="..\TheDiscDb.Client\TheDiscDb.Client.csproj" />
         <ProjectReference Include="..\TheDiscDb.Data.Import\TheDiscDb.Data.Import.csproj" />
         <ProjectReference Include="..\TheDiscDb.Mailgun\TheDiscDb.Mailgun.csproj" />
+        <ProjectReference Include="..\TheDiscDb.Naming\TheDiscDb.Naming.csproj" />
         <ProjectReference Include="..\TheDiscDb.ServiceDefaults\TheDiscDb.ServiceDefaults.csproj" />
     </ItemGroup>
 </Project>

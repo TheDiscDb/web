@@ -23,7 +23,7 @@ public partial class HashLookup : ComponentBase
         if (!string.IsNullOrEmpty(this.Hash))
         {
             // TODO: Get a cancellation token
-            var result = await Query!.ExecuteAsync(this.Hash);
+            var result = await Query!.ExecuteAsync(this.Hash, templates: null);
             if (result.Data?.MediaItems?.Nodes != null)
             {
                 foreach (var mediaItem in result.Data.MediaItems.Nodes)

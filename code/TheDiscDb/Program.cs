@@ -17,6 +17,7 @@ using TheDiscDb;
 using TheDiscDb.Client;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
+using TheDiscDb.GraphQL;
 using TheDiscDb.GraphQL.Contribute;
 using TheDiscDb.GraphQL.Contribute.Mutations;
 using TheDiscDb.Search;
@@ -142,6 +143,7 @@ builder.Services
     .RegisterDbContextFactory<SqlServerDataContext>()
     .DisableIntrospection(false)
     .TryAddTypeInterceptor<TitleItemProjectionTypeInterceptor>()
+    .AddTypeExtension<TitleFileNameExtension>()
     .AddQueryType<Query>();
 
 builder.Services
@@ -167,7 +169,8 @@ builder.Services
     .AddQueryType<ContributionQuery>()
     .AddMutationConventions(applyToAllMutations: true)
     .AddMutationType<ContributionMutations>()
-    .AddTypeExtension<ApiKeyQueryExtension>();
+    .AddTypeExtension<ApiKeyQueryExtension>()
+    .AddTypeExtension<FileNameTemplateQueryExtension>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();

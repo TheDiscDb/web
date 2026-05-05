@@ -189,6 +189,13 @@ public class SqlServerDataContext : DbContext
             .OnDelete(DeleteBehavior.SetNull);
         engramRelease.HasIndex(x => x.UserContributionId);
 
+        var userFileNameTemplate = modelBuilder.Entity<UserFileNameTemplate>();
+        userFileNameTemplate.HasKey(x => x.Id);
+        userFileNameTemplate.Property(x => x.UserId).IsRequired().HasMaxLength(450);
+        userFileNameTemplate.Property(x => x.ItemType).IsRequired().HasMaxLength(64);
+        userFileNameTemplate.Property(x => x.Template).IsRequired().HasMaxLength(512);
+        userFileNameTemplate.HasIndex(x => new { x.UserId, x.ItemType }).IsUnique();
+
         IdentityModelConfiguration.ConfigureIdentityModel(modelBuilder);
     }
 
@@ -222,6 +229,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<EngramDisc> EngramDiscs { get; set; } = null!;
     public DbSet<EngramTitle> EngramTitles { get; set; } = null!;
     public DbSet<EngramRelease> EngramReleases { get; set; } = null!;
+    public DbSet<UserFileNameTemplate> UserFileNameTemplates { get; set; } = null!;
 }
 
 public class EngramDisc

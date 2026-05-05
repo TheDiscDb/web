@@ -1,4 +1,4 @@
-query GetBoxsetDiscs($slug: String, $discNumber: Int, $discSlug: String) {
+query GetBoxsetDiscs($slug: String, $discNumber: Int, $discSlug: String, $templates: [FileNameTemplateInput!]) {
   boxsets(where: { slug: { eq: $slug } }) {
     nodes {
       id
@@ -25,6 +25,7 @@ query GetBoxsetDiscs($slug: String, $discNumber: Int, $discSlug: String) {
             sourceFile
             size
             segmentMap
+            filename(templates: $templates)
             item {
               title
               season

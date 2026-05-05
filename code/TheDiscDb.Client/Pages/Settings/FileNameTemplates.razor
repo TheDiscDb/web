@@ -1,0 +1,90 @@
+﻿@page "/settings/file-name-templates"
+@using Microsoft.AspNetCore.Components.Authorization
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<PageTitle>Customize file name templates - TheDiscDb</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="File name templates" Items='[("Home", "/"), ("Settings", "/settings/file-name-templates")]' />
+
+<h1 class="fs-3 fs-md-1">File name templates</h1>
+<p class="text-muted">
+    Customize the file names rendered for disc items on disc detail pages. Each item type has a
+    sensible default — override only the types you want. Tokens use <code>{token}</code> syntax.
+</p>
+
+<AuthorizeView>
+    <NotAuthorized>
+        <div class="alert alert-info">
+            Please <a href="Account/Login">sign in</a> to customize your file name templates.
+        </div>
+    </NotAuthorized>
+    <Authorized>
+        @if (this.IsLoading)
+        {
+            <div>Loading...</div>
+        }
+        else
+        {
+            <div class="template-tokens">
+                <details>
+                    <summary>Available tokens</summary>
+                    <div class="token-list">
+                        @foreach (var token in KnownTokens)
+                        {
+                            <code>{@token}</code>
+                        }
+                    </div>
+                </details>
+            </div>
+
+            <div class="template-list">
+                @foreach (var editor in this.Editors)
+                {
+                    <section class="template-card">
+                        <header>
+                            <h2>@editor.ItemType</h2>
+                            <small class="text-muted">Default: <code>@editor.DefaultTemplate</code></small>
+                        </header>
+
+                        <div class="template-input">
+                            <input type="text"
+                                   class="form-control"
+                                   value="@editor.CurrentValue"
+                                   @oninput="e => OnTemplateInput(editor, e)" />
+
+                            @if (!string.IsNullOrEmpty(editor.ParseError))
+                            {
+                                <div class="template-error">@editor.ParseError</div>
+                            }
+                            else if (!string.IsNullOrEmpty(editor.Preview))
+                            {
+                                <div class="template-preview">
+                                    Preview: <code>@editor.Preview</code>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="template-actions">
+                            <button type="button"
+                                    class="btn btn-primary btn-sm"
+                                    disabled="@(!editor.CanSave)"
+                                    @onclick="() => SaveAsync(editor)">
+                                Save
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    disabled="@(!editor.HasOverride)"
+                                    @onclick="() => ResetAsync(editor)">
+                                Reset to default
+                            </button>
+                            @if (!string.IsNullOrEmpty(editor.StatusMessage))
+                            {
+                                <span class="template-status">@editor.StatusMessage</span>
+                            }
+                        </div>
+                    </section>
+                }
+            </div>
+        }
+    </Authorized>
+</AuthorizeView>

@@ -1,0 +1,11 @@
+mutation DeleteFileNameTemplate($input: DeleteFileNameTemplateInput!) {
+  deleteFileNameTemplate(input: $input) {
+    boolean
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+query GetMyFileNameTemplates {
+  myFileNameTemplates {
+    itemType
+    template
+    updatedAt
+  }
+}

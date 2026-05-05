@@ -662,6 +662,12 @@ type Title {
   season: String!
   episode: String!
   hasItem: Boolean!
+  filename(templates: [FileNameTemplateInput!]): String!
+}
+
+input FileNameTemplateInput {
+  itemType: String!
+  template: String!
 }
 
 input TrackSortInput {

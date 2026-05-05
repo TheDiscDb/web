@@ -1,4 +1,4 @@
-query GetDiscDetailByContentHash($hash: String) {
+query GetDiscDetailByContentHash($hash: String, $templates: [FileNameTemplateInput!]) {
   mediaItems(
     where: {
       releases: { some: { discs: { some: { contentHash: { eq: $hash } } } } }
@@ -37,6 +37,7 @@ query GetDiscDetailByContentHash($hash: String) {
             sourceFile
             size
             segmentMap
+            filename(templates: $templates)
             item {
               title
               season

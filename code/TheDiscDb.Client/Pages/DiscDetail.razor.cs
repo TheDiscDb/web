@@ -1,8 +1,13 @@
-﻿using System.Linq.Expressions;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.QuickGrid;
 using StrawberryShake;
+using TheDiscDb.Client.Contributions;
 using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Client.Pages;
@@ -15,6 +20,10 @@ public partial class DiscDetail : ComponentBase
     private static readonly CopyButtonState CopiedCopyState = new("e-icons e-circle-check", IsDisabled: true);
 
     private readonly Dictionary<IDiscItem, CopyButtonState> descriptionCopyStates = new();
+    private readonly Dictionary<IDiscItem, CopyButtonState> filenameCopyStates = new();
+    private readonly Dictionary<IDiscItem, string> filenamesByItem = new();
+
+    private IReadOnlyList<FileNameTemplateInput>? userTemplates;
 
     [Inject]
     public GetDiscDetailQuery? MediaItemQuery { get; set; }
@@ -27,6 +36,12 @@ public partial class DiscDetail : ComponentBase
 
     [Inject]
     private IClipboardService Clipboard { get; set; } = null!;
+
+    [Inject]
+    public GetMyFileNameTemplatesQuery? MyTemplatesQuery { get; set; }
+
+    [Inject]
+    private AuthenticationStateProvider? AuthProvider { get; set; }
 
     [Parameter]
     public string? Type { get; set; }
@@ -55,10 +70,21 @@ public partial class DiscDetail : ComponentBase
     private IQueryable<IDiscItem> FilteredTitles { get; set; } = new List<IDiscItem>().AsQueryable();
     private readonly GridSort<IDiscItem> SortSourceFile = GridSort<IDiscItem>.ByAscending(u => u.SourceFile);
     private readonly GridSort<IDiscItem> SortDescription = GridSort<IDiscItem>.ByAscending(u => u.Description);
+    private GridSort<IDiscItem> SortFilename => GridSort<IDiscItem>.ByAscending(t => GetFileName(t));
 
     private CopyButtonState GetDescriptionCopyState(IDiscItem item)
     {
         return descriptionCopyStates.TryGetValue(item, out var state) ? state : DefaultCopyState;
+    }
+
+    private CopyButtonState GetFileNameCopyState(IDiscItem item)
+    {
+        return filenameCopyStates.TryGetValue(item, out var state) ? state : DefaultCopyState;
+    }
+
+    private string GetFileName(IDiscItem item)
+    {
+        return filenamesByItem.TryGetValue(item, out var name) ? name : string.Empty;
     }
 
     private async Task CopyDescriptionToClipboard(IDiscItem item)
@@ -87,8 +113,41 @@ public partial class DiscDetail : ComponentBase
         StateHasChanged();
     }
 
+    private async Task CopyFileNameToClipboard(IDiscItem item)
+    {
+        var filename = GetFileName(item);
+        if (string.IsNullOrEmpty(filename))
+        {
+            return;
+        }
+
+        filenameCopyStates[item] = CopiedCopyState;
+        StateHasChanged();
+
+        try
+        {
+            await Clipboard.WriteTextAsync(filename);
+        }
+        catch
+        {
+            filenameCopyStates.Remove(item);
+            StateHasChanged();
+            return;
+        }
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        filenameCopyStates.Remove(item);
+        StateHasChanged();
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        // Load the user's persisted overrides (if any) so the disc-detail
+        // queries below send them as the templates variable. Anonymous users
+        // and request failures simply send no templates and the server uses
+        // its built-in defaults.
+        await LoadUserTemplatesAsync();
+
         if (!string.IsNullOrEmpty(this.ContentHash))
         {
             await HandleContentHashLookup();
@@ -103,84 +162,178 @@ public partial class DiscDetail : ComponentBase
         }
     }
 
-    private async Task HandleContentHashLookup()
+    private async Task LoadUserTemplatesAsync()
     {
-        var result = await this.ContentHashQuery!.ExecuteAsync(this.ContentHash);
-        if (result.IsSuccessResult())
+        if (this.AuthProvider is null || this.MyTemplatesQuery is null)
         {
-            var item = result!.Data!.MediaItems!.Nodes!.FirstOrDefault();
-            this.Item = item;
-            if (Item != null)
-            {
-                var release = item!.Releases!.First();
-                this.Release = release;
-
-                if (Release != null)
-                {
-                    var disc = release!.Discs!.First();
-                    this.Disc = disc;
-
-                    if (Disc != null)
-                    {
-                        AllTitles = disc!.Titles!;
-                        FilteredTitles = AllTitles.Where(t => t.HasItem).AsQueryable();
-                    }
-                }
-            }
+            return;
         }
 
+        try
+        {
+            var state = await this.AuthProvider.GetAuthenticationStateAsync();
+            if (state.User?.Identity?.IsAuthenticated != true)
+            {
+                return;
+            }
+
+            var result = await this.MyTemplatesQuery.ExecuteAsync();
+            if (!result.IsSuccessResult() || result.Data?.MyFileNameTemplates is null)
+            {
+                return;
+            }
+
+            var list = new List<FileNameTemplateInput>();
+            foreach (var t in result.Data.MyFileNameTemplates)
+            {
+                if (string.IsNullOrWhiteSpace(t.ItemType) || string.IsNullOrWhiteSpace(t.Template))
+                {
+                    continue;
+                }
+
+                list.Add(new FileNameTemplateInput
+                {
+                    ItemType = t.ItemType,
+                    Template = t.Template,
+                });
+            }
+
+            if (list.Count > 0)
+            {
+                this.userTemplates = list;
+            }
+        }
+        catch
+        {
+            // Anonymous calls or transient failures fall through with no overrides.
+        }
+    }
+
+    private async Task HandleContentHashLookup()
+    {
+        var result = await this.ContentHashQuery!.ExecuteAsync(this.ContentHash, this.userTemplates);
+        if (!result.IsSuccessResult())
+        {
+            return;
+        }
+
+        var item = result.Data!.MediaItems!.Nodes!.FirstOrDefault();
+        this.Item = item;
+        if (Item == null)
+        {
+            return;
+        }
+
+        var release = item!.Releases!.First();
+        this.Release = release;
+
+        if (Release == null)
+        {
+            return;
+        }
+
+        var disc = release!.Discs!.First();
+        this.Disc = disc;
+
+        if (Disc == null)
+        {
+            return;
+        }
+
+        AllTitles = disc!.Titles!;
+        FilteredTitles = AllTitles.Where(t => t.HasItem).AsQueryable();
+
+        foreach (var t in disc.Titles!)
+        {
+            if (!string.IsNullOrEmpty(t.Filename))
+            {
+                this.filenamesByItem[t] = t.Filename;
+            }
+        }
     }
 
     private async Task HandleMovieOrSeries()
     {
-        var result = await this.MediaItemQuery!.ExecuteAsync(this.Slug, this.ReleaseSlug, this.Index, SlugOrIndex.Slug, this.Type);
-        if (result.IsSuccessResult())
+        var result = await this.MediaItemQuery!.ExecuteAsync(this.Slug, this.ReleaseSlug, this.Index, SlugOrIndex.Slug, this.Type, this.userTemplates);
+        if (!result.IsSuccessResult())
         {
-            var item = result!.Data!.MediaItems!.Nodes!.FirstOrDefault();
-            this.Item = item;
-            if (Item != null)
+            return;
+        }
+
+        var item = result.Data!.MediaItems!.Nodes!.FirstOrDefault();
+        this.Item = item;
+        if (Item == null)
+        {
+            return;
+        }
+
+        var release = item!.Releases!.First();
+        this.Release = release;
+
+        if (Release == null)
+        {
+            return;
+        }
+
+        var disc = release!.Discs!.FirstOrDefault(d => SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
+        this.Disc = disc;
+
+        if (Disc == null)
+        {
+            return;
+        }
+
+        AllTitles = disc!.Titles!;
+        FilteredTitles = AllTitles.Where(t => t.HasItem).AsQueryable();
+
+        foreach (var t in disc.Titles!)
+        {
+            if (!string.IsNullOrEmpty(t.Filename))
             {
-                var release = item!.Releases!.First();
-                this.Release = release;
-
-                if (Release != null)
-                {
-                    var disc = release!.Discs!.FirstOrDefault(d => SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
-                    this.Disc = disc;
-
-                    if (Disc != null)
-                    {
-                        AllTitles = disc!.Titles!;
-                        FilteredTitles = AllTitles.Where(t => t.HasItem).AsQueryable();
-                    }
-                }
+                this.filenamesByItem[t] = t.Filename;
             }
         }
     }
 
     private async Task HandleBoxset()
     {
-        var result = await this.BoxsetQuery!.ExecuteAsync(this.Slug, this.Index, SlugOrIndex.Slug);
-        if (result.IsSuccessResult())
+        var result = await this.BoxsetQuery!.ExecuteAsync(this.Slug, this.Index, SlugOrIndex.Slug, this.userTemplates);
+        if (!result.IsSuccessResult())
         {
-            var item = result!.Data!.Boxsets!.Nodes!.FirstOrDefault();
-            this.Item = item;
-            if (Item != null)
+            return;
+        }
+
+        var item = result.Data!.Boxsets!.Nodes!.FirstOrDefault();
+        this.Item = item;
+        if (Item == null)
+        {
+            return;
+        }
+
+        var release = item!.Release;
+        this.Release = release;
+
+        if (Release == null)
+        {
+            return;
+        }
+
+        var disc = release!.Discs!.FirstOrDefault(d => SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
+        this.Disc = disc;
+
+        if (Disc == null)
+        {
+            return;
+        }
+
+        AllTitles = disc!.Titles!;
+        FilteredTitles = AllTitles.Where(t => t.HasItem).AsQueryable();
+
+        foreach (var t in disc.Titles!)
+        {
+            if (!string.IsNullOrEmpty(t.Filename))
             {
-                var release = item!.Release;
-                this.Release = release;
-
-                if (Release != null)
-                {
-                    var disc = release!.Discs!.FirstOrDefault(d => SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
-                    this.Disc = disc;
-
-                    if (Disc != null)
-                    {
-                        AllTitles = disc!.Titles!;
-                        FilteredTitles = AllTitles.Where(t => t.HasItem).AsQueryable();
-                    }
-                }
+                this.filenamesByItem[t] = t.Filename;
             }
         }
     }

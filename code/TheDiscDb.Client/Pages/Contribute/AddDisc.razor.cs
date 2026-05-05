@@ -163,7 +163,7 @@ public partial class AddDisc : ComponentBase
 
                 // TODO: Check for this disc in the current user's submissions
 
-                var result = await Query!.ExecuteAsync(hash);
+                var result = await Query!.ExecuteAsync(hash, templates: null);
                 if (result.Data?.MediaItems?.Nodes != null)
                 {
                     if (result.Data?.MediaItems?.Nodes.Count > 0)

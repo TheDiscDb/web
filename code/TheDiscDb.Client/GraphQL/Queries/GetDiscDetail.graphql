@@ -1,4 +1,4 @@
-query GetDiscDetail($slug: String, $releaseSlug: String, $discNumber: Int, $discSlug: String, $mediaType: String) {
+query GetDiscDetail($slug: String, $releaseSlug: String, $discNumber: Int, $discSlug: String, $mediaType: String, $templates: [FileNameTemplateInput!]) {
     mediaItems (where: 
     { 
       and: [
@@ -34,6 +34,7 @@ query GetDiscDetail($slug: String, $releaseSlug: String, $discNumber: Int, $disc
               sourceFile
               size
               segmentMap
+              filename(templates: $templates)
               item {
                 title
                 season

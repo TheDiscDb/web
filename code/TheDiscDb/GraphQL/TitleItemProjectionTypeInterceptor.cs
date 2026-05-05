@@ -44,6 +44,17 @@ public class TitleItemProjectionTypeInterceptor : TypeInterceptor
         {
             fkField.ContextData["IsProjectedKey"] = true;
         }
+
+        // Ensure the primary key is always projected so type extensions
+        // (e.g. the filename resolver) can re-load the title by Id even when
+        // the caller did not select `id` in the GraphQL query.
+        var idField = typeDef.Fields.FirstOrDefault(
+            f => f.Member?.Name == "Id");
+
+        if (idField != null)
+        {
+            idField.ContextData["IsProjectedKey"] = true;
+        }
     }
 
     // --- Stage 2: replace the default resolvers for the computed fields ---

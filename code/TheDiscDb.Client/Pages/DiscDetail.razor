@@ -15,13 +15,13 @@ else
             <a href="@TitleDetailUrl(context)">@context.SourceFile</a>
         </TemplateColumn>
         <TemplateColumn Title="Description" Sortable="true" SortBy="SortDescription">
-            <div class="description-cell">
-                <span class="description-text">@context.Description</span>
+            <div class="cell-with-copy">
+                <span class="cell-with-copy-text">@context.Description</span>
                 @if (!string.IsNullOrEmpty(context.Description))
                 {
                     var copyState = GetDescriptionCopyState(context);
                     <button type="button"
-                            class="description-copy-button"
+                            class="cell-copy-button"
                             title="Copy description"
                             aria-label="Copy description"
                             disabled="@copyState.IsDisabled"
@@ -41,6 +41,43 @@ else
         <PropertyColumn Property="@(t => t.SegmentMap)" Sortable="true" />
         <PropertyColumn Property="@(t => t.Duration)" Sortable="true" />
         <PropertyColumn Property="@(t => t.DisplaySize)" Sortable="true" />
+        <TemplateColumn Title="Filename" Sortable="true" SortBy="SortFilename">
+            <HeaderTemplate Context="col">
+                <div class="filename-header">
+                    <button type="button"
+                            class="col-title"
+                            @onclick="() => col.Grid.SortByColumnAsync(col)">
+                        Filename
+                    </button>
+                    <a class="filename-customize-button"
+                       href="/settings/file-name-templates"
+                       title="Customize file name templates"
+                       aria-label="Customize file name templates"
+                       @onclick:stopPropagation="true">
+                        <i class="e-icons e-edit"></i>
+                    </a>
+                </div>
+            </HeaderTemplate>
+            <ChildContent>
+                @{ var filename = GetFileName(context); }
+                <div class="cell-with-copy">
+                    <span class="cell-with-copy-text">@filename</span>
+                    @if (!string.IsNullOrEmpty(filename))
+                    {
+                        var copyState = GetFileNameCopyState(context);
+                        <button type="button"
+                                class="cell-copy-button"
+                                title="Copy filename"
+                                aria-label="Copy filename"
+                                disabled="@copyState.IsDisabled"
+                                @onclick="() => CopyFileNameToClipboard(context)"
+                                @onclick:stopPropagation="true">
+                            <i class="@copyState.IconClassName"></i>
+                        </button>
+                    }
+                </div>
+            </ChildContent>
+        </TemplateColumn>
     </QuickGrid>
     </div>
 }

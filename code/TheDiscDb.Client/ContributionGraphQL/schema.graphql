@@ -151,7 +151,38 @@ type ContributionMutations {
   generateApiKey(input: GenerateApiKeyInput!): GenerateApiKeyPayload! @authorize(policy: "Admin") @cost(weight: "10")
   revokeApiKey(input: RevokeApiKeyInput!): RevokeApiKeyPayload! @authorize(policy: "Admin") @cost(weight: "10")
   updateContribution(input: UpdateContributionInput!): UpdateContributionPayload! @authorize(policy: "Admin") @cost(weight: "10")
+  setFileNameTemplate(input: SetFileNameTemplateInput!): SetFileNameTemplatePayload! @authorize @cost(weight: "10")
+  deleteFileNameTemplate(input: DeleteFileNameTemplateInput!): DeleteFileNameTemplatePayload! @authorize @cost(weight: "10")
 }
+
+type UserFileNameTemplate {
+  itemType: String!
+  template: String!
+  updatedAt: DateTime!
+}
+
+input SetFileNameTemplateInput {
+  itemType: String!
+  template: String!
+}
+
+input DeleteFileNameTemplateInput {
+  itemType: String!
+}
+
+type SetFileNameTemplatePayload {
+  userFileNameTemplate: UserFileNameTemplate
+  errors: [SetFileNameTemplateError!]
+}
+
+type DeleteFileNameTemplatePayload {
+  boolean: Boolean
+  errors: [DeleteFileNameTemplateError!]
+}
+
+union SetFileNameTemplateError = AuthenticationError
+
+union DeleteFileNameTemplateError = AuthenticationError
 
 type ContributionNotFoundError implements Error {
   message: String!
@@ -183,6 +214,7 @@ type ContributionQuery {
   myBoxsets("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionBoxsetFilterInput @cost(weight: "10") order: [UserContributionBoxsetSortInput!] @cost(weight: "10")): MyBoxsetsConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
   apiKeys("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: ApiKeyInfoFilterInput @cost(weight: "10") order: [ApiKeyInfoSortInput!] @cost(weight: "10")): ApiKeysConnection @authorize(policy: "Admin") @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
   apiKeyUsageLogs("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: ApiKeyUsageLogInfoFilterInput @cost(weight: "10") order: [ApiKeyUsageLogInfoSortInput!] @cost(weight: "10")): ApiKeyUsageLogsConnection @authorize(policy: "Admin") @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
+  myFileNameTemplates: [UserFileNameTemplate!]! @authorize @cost(weight: "10")
 }
 
 "A connection to a list of items."

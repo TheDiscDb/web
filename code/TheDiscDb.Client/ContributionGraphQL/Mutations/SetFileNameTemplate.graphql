@@ -1,0 +1,15 @@
+mutation SetFileNameTemplate($input: SetFileNameTemplateInput!) {
+  setFileNameTemplate(input: $input) {
+    userFileNameTemplate {
+      itemType
+      template
+      updatedAt
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

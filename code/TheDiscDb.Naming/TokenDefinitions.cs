@@ -6,12 +6,13 @@ namespace TheDiscDb.Naming;
 /// <summary>
 /// Defines the set of known template tokens and maps them to NamingContext properties.
 /// </summary>
-internal static class TokenDefinitions
+public static class TokenDefinitions
 {
-    private static readonly Dictionary<string, Func<NamingContext, string?>> Accessors =
+    public static readonly Dictionary<string, Func<NamingContext, string?>> Accessors =
         new(StringComparer.OrdinalIgnoreCase)
         {
             ["title"] = c => c.Title,
+            ["description"] = c => c.Description,
             ["year"] = c => c.Year,
             ["fulltitle"] = c => c.FullTitle,
             ["resolution"] = c => c.Resolution,

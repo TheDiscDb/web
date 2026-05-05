@@ -1,16 +1,17 @@
-.description-cell {
+/* Generic cell layout used by Description and Filename columns. */
+.cell-with-copy {
     display: flex;
     align-items: center;
     gap: .5rem;
     min-height: 1.5rem;
 }
 
-.description-text {
+.cell-with-copy-text {
     flex: 1 1 auto;
     min-width: 0;
 }
 
-.description-copy-button {
+.cell-copy-button {
     flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
@@ -27,26 +28,73 @@
     transition: opacity .15s ease-in-out, background-color .15s ease-in-out, color .15s ease-in-out, border-color .15s ease-in-out;
 }
 
-.description-copy-button:focus-visible {
+.cell-copy-button:focus-visible {
     opacity: 1;
     outline: none;
     border-color: #c4ccd8;
 }
 
-.description-copy-button:hover:not(:disabled) {
+.cell-copy-button:hover:not(:disabled) {
     background-color: #eef2f7;
     color: #00213f;
     border-color: #c4ccd8;
 }
 
-.description-copy-button:disabled {
+.cell-copy-button:disabled {
     cursor: default;
     color: #2f9e44;
     opacity: 1;
 }
 
-::deep tr:hover .description-copy-button,
-.description-cell:hover .description-copy-button,
-.description-cell:focus-within .description-copy-button {
+::deep tr:hover .cell-copy-button,
+.cell-with-copy:hover .cell-copy-button,
+.cell-with-copy:focus-within .cell-copy-button {
     opacity: 1;
+}
+
+/* Filename column header: native sort button + rounded customize button. */
+.filename-header {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* Strip user-agent button styling so the title looks like the other column titles. */
+.filename-header .col-title {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-align: inherit;
+}
+
+.filename-header .col-title:focus-visible {
+    outline: 1px dotted currentColor;
+    outline-offset: 2px;
+}
+
+.filename-customize-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid #c4ccd8;
+    border-radius: 999px;
+    background-color: #fff;
+    color: #52657f;
+    text-decoration: none;
+    transition: background-color .15s ease-in-out, color .15s ease-in-out, border-color .15s ease-in-out;
+}
+
+.filename-customize-button:hover,
+.filename-customize-button:focus-visible {
+    background-color: #eef2f7;
+    color: #00213f;
+    border-color: #52657f;
+    text-decoration: none;
+    outline: none;
 }

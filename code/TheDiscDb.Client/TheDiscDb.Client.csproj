@@ -62,5 +62,6 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />
+        <ProjectReference Include="..\TheDiscDb.Naming\TheDiscDb.Naming.csproj" />
     </ItemGroup>
 </Project>
