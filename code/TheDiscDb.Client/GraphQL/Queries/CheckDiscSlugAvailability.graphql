@@ -1,4 +1,4 @@
-query CheckDiscSlugAvailability($tmdbId: String, $releaseSlug: String, $discSlug: String) {
+query CheckDiscSlugAvailability($tmdbId: String, $discSlug: String) {
   mediaItems(
     first: 1
     where: {
@@ -7,10 +7,7 @@ query CheckDiscSlugAvailability($tmdbId: String, $releaseSlug: String, $discSlug
         {
           releases: {
             some: {
-              and: [
-                { slug: { eq: $releaseSlug } }
-                { discs: { some: { slug: { eq: $discSlug } } } }
-              ]
+              discs: { some: { slug: { eq: $discSlug } } }
             }
           }
         }

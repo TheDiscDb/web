@@ -296,18 +296,16 @@ public partial class AddDisc : ComponentBase
             return false;
         }
 
-        // Check against published releases
+        // Check against discs in any published release for this media item
         var externalId = this.contribution.ExternalId;
-        var releaseSlug = this.contribution.ReleaseSlug;
 
-        if (string.IsNullOrWhiteSpace(externalId) || string.IsNullOrWhiteSpace(releaseSlug))
+        if (string.IsNullOrWhiteSpace(externalId))
         {
             return true;
         }
 
         var result = await this.TheDiscDbClient.CheckDiscSlugAvailability.ExecuteAsync(
             externalId,
-            releaseSlug,
             slug,
             cancellationToken);
 
