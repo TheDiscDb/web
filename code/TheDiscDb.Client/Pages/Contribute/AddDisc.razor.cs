@@ -288,6 +288,15 @@ public partial class AddDisc : ComponentBase
             return true;
         }
 
+        // Check against discs already in this contribution
+        if (this.contribution.Discs.Any(d =>
+            !string.IsNullOrEmpty(d.Slug) &&
+            d.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        // Check against published releases
         var externalId = this.contribution.ExternalId;
         var releaseSlug = this.contribution.ReleaseSlug;
 
