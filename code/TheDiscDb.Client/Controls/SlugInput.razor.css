@@ -1,0 +1,36 @@
+.slug-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.slug-input-wrapper input {
+    padding-right: 2.5rem;
+}
+
+.slug-indicator {
+    position: absolute;
+    right: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    pointer-events: none;
+    line-height: 1;
+}
+
+.slug-indicator.checking {
+    color: var(--bs-secondary, #6c757d);
+    animation: slug-spin 1s linear infinite;
+}
+
+.slug-indicator.available {
+    color: var(--bs-success, #198754);
+}
+
+.slug-indicator.taken {
+    color: var(--bs-danger, #dc3545);
+}
+
+@keyframes slug-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

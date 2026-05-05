@@ -88,7 +88,7 @@
     </div>
     <div class="mb-3">
         <label>Release Slug<span class="required">*</span></label>
-        <InputText class="form-control" @bind-Value="form!.ReleaseSlug" />
+        <SlugInput @ref="slugInput" class="form-control" @bind-Value="form!.ReleaseSlug" CheckAvailability="CheckReleaseSlugAvailability" />
         <ValidationMessage For="@(() => form!.ReleaseSlug)" />
     </div>
     <div class="mb-3">

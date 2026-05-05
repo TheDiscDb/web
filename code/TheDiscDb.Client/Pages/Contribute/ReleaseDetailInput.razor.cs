@@ -6,6 +6,7 @@ using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
 using Syncfusion.Blazor.Notifications;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.Client.Controls;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -25,10 +26,15 @@ public partial class ReleaseDetailInput : ComponentBase
     public IContributionClient ContributionClient { get; set; } = default!;
 
     [Inject]
+    public ITheDiscDbClient TheDiscDbClient { get; set; } = default!;
+
+    [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
 
     [Inject]
     public HttpClient HttpClient { get; set; } = default!;
+
+    private SlugInput? slugInput;
 
     private readonly ContributionMutationRequestInput request = new ContributionMutationRequestInput
     {
@@ -189,6 +195,11 @@ public partial class ReleaseDetailInput : ComponentBase
                     }
                 }
             }
+
+            if (this.slugInput != null)
+            {
+                await this.slugInput.RecheckAvailability();
+            }
         }
     }
 
@@ -276,7 +287,7 @@ public partial class ReleaseDetailInput : ComponentBase
         this.request.Asin = args.Value?.ToString() ?? string.Empty;
     }
 
-    private void ReleaseTitleChanged(ChangeEventArgs args)
+    private async Task ReleaseTitleChanged(ChangeEventArgs args)
     {
         if (args?.Value != null)
         {
@@ -288,10 +299,14 @@ public partial class ReleaseDetailInput : ComponentBase
             }
 
             this.request.ReleaseSlug = HttpUtility.UrlEncode(CreateSlug(title, year));
+            if (this.slugInput != null)
+            {
+                await this.slugInput.RecheckAvailability();
+            }
         }
     }
 
-    private void ReleaseDateChanged(ChangeEventArgs args)
+    private async Task ReleaseDateChanged(ChangeEventArgs args)
     {
         if (args?.Value != null)
         {
@@ -333,6 +348,11 @@ public partial class ReleaseDetailInput : ComponentBase
             {
                 this.request.ReleaseSlug = "";
             }
+        }
+
+        if (this.slugInput != null)
+        {
+            await this.slugInput.RecheckAvailability();
         }
     }
 
@@ -415,6 +435,10 @@ public partial class ReleaseDetailInput : ComponentBase
                 {
                     this.request.ReleaseTitle = $"{details.ReleaseDate.Value.Year} {details.MediaFormat}";
                     this.request.ReleaseSlug = this.request.ReleaseTitle.Slugify();
+                    if (this.slugInput != null)
+                    {
+                        await this.slugInput.RecheckAvailability();
+                    }
                 }
             }
 
@@ -514,6 +538,26 @@ public partial class ReleaseDetailInput : ComponentBase
             this.request.BackImageUrl = null;
             this.backImagePreviewUrl = "";
         }
+    }
+
+    private async Task<bool> CheckReleaseSlugAvailability(string slug, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(this.ExternalId))
+        {
+            return true;
+        }
+
+        var result = await this.TheDiscDbClient.CheckReleaseSlugAvailability.ExecuteAsync(
+            this.ExternalId,
+            slug,
+            cancellationToken);
+
+        if (result?.Data?.MediaItems?.Nodes is { Count: > 0 })
+        {
+            return false;
+        }
+
+        return true;
     }
 
 }
