@@ -1,0 +1,24 @@
+query CheckDiscSlugAvailability($tmdbId: String, $releaseSlug: String, $discSlug: String) {
+  mediaItems(
+    first: 1
+    where: {
+      and: [
+        { externalids: { tmdb: { eq: $tmdbId } } }
+        {
+          releases: {
+            some: {
+              and: [
+                { slug: { eq: $releaseSlug } }
+                { discs: { some: { slug: { eq: $discSlug } } } }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ) {
+    nodes {
+      slug
+    }
+  }
+}
