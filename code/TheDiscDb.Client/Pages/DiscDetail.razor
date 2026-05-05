@@ -38,7 +38,9 @@ else
             <PropertyColumn Property="@(t => t.Season)" Sortable="true" />
             <PropertyColumn Property="@(t => t.Episode)" Sortable="true" />
         }
-        <PropertyColumn Property="@(t => t.SegmentMap)" Sortable="true" />
+        <TemplateColumn Title="Segment Map" Sortable="true" SortBy="SortSegmentMap">
+            <span class="segment-map-cell">@context.SegmentMap?.Replace(",", ", ")</span>
+        </TemplateColumn>
         <PropertyColumn Property="@(t => t.Duration)" Sortable="true" />
         <PropertyColumn Property="@(t => t.DisplaySize)" Sortable="true" />
         <TemplateColumn Title="Filename" Sortable="true" SortBy="SortFilename">
