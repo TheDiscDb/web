@@ -1,11 +1,3 @@
-/* Allow the SegmentMap column to wrap on commas instead of forcing
-   a single very wide line (overrides the global quickgrid nowrap). */
-.segment-map-cell {
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-}
-
 /* Generic cell layout used by Description and Filename columns. */
 .cell-with-copy {
     display: flex;
