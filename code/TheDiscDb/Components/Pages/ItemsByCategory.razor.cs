@@ -5,7 +5,7 @@ using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages;
 
-public partial class ItemsByCategory : ComponentBase
+public partial class ItemsByCategory : ComponentBase, IDisposable
 {
     [Parameter]
     public string? Slug { get; set; }
@@ -16,6 +16,9 @@ public partial class ItemsByCategory : ComponentBase
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
+    private readonly CancellationTokenSource cts = new();
+    private CancellationToken ComponentCt => this.cts.Token;
+
     private bool groupExists;
     private string? groupName;
 
@@ -23,9 +26,9 @@ public partial class ItemsByCategory : ComponentBase
     {
         if (Context != null && !string.IsNullOrEmpty(Slug))
         {
-            var context = await Context.CreateDbContextAsync();
+            var context = await Context.CreateDbContextAsync(this.ComponentCt);
             var group = await context.Groups
-                .FirstOrDefaultAsync(g => g.Slug == Slug);
+                .FirstOrDefaultAsync(g => g.Slug == Slug, this.ComponentCt);
             groupExists = group != null;
             groupName = group?.Name;
         }
@@ -34,5 +37,11 @@ public partial class ItemsByCategory : ComponentBase
         {
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
         }
+    }
+
+    public void Dispose()
+    {
+        this.cts.Cancel();
+        this.cts.Dispose();
     }
 }

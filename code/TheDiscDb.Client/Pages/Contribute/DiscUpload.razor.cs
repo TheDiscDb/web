@@ -88,7 +88,7 @@ public partial class DiscUpload : CancellableComponentBase
             DiscId = this.DiscId ?? string.Empty
         };
 
-        this.ContributionClient.GetDiscUploadStatus.ExecuteAsync(input).ContinueWith(t =>
+        this.ContributionClient.GetDiscUploadStatus.ExecuteAsync(input, this.CancellationToken).ContinueWith(t =>
         {
             if (t == null || t.IsFaulted)
             {
@@ -135,7 +135,7 @@ public partial class DiscUpload : CancellableComponentBase
             var temp = state;
             state = new("Copied", "e-icons e-circle-check", IsDisabled: true);
             await Clipboard.WriteTextAsync(currentCommand);
-            await Task.Delay(TimeSpan.FromSeconds(2));
+            await Task.Delay(TimeSpan.FromSeconds(2), this.CancellationToken);
             state = temp;
         }
     }
@@ -150,12 +150,12 @@ public partial class DiscUpload : CancellableComponentBase
                 using (var stream = file.File.OpenReadStream(long.MaxValue))
                 {
                     using var reader = new StreamReader(stream);
-                    string contents = await reader.ReadToEndAsync();
-                    var response = await HttpClient.PostAsync(GetUri(), new StringContent(contents));
+                    string contents = await reader.ReadToEndAsync(this.CancellationToken);
+                    var response = await HttpClient.PostAsync(GetUri(), new StringContent(contents), this.CancellationToken);
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        var body = await response.Content.ReadAsStringAsync();
+                        var body = await response.Content.ReadAsStringAsync(this.CancellationToken);
                         uploadError = ExtractErrorDetail(body);
                         StateHasChanged();
                         return;
@@ -179,7 +179,7 @@ public partial class DiscUpload : CancellableComponentBase
         this.pollUploadedTimer = null;
         this.startSpinnerTimer?.Dispose();
 
-        await HttpClient.DeleteAsync(GetClearErrorUri());
+        await HttpClient.DeleteAsync(GetClearErrorUri(), this.CancellationToken);
 
         this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
     }

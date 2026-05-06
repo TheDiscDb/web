@@ -6,7 +6,7 @@ using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages;
 
-public partial class BoxsetDetail : ComponentBase
+public partial class BoxsetDetail : ComponentBase, IDisposable
 {
     [Parameter]
     public string? Slug { get; set; }
@@ -16,6 +16,9 @@ public partial class BoxsetDetail : ComponentBase
 
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
+
+    private readonly CancellationTokenSource cts = new();
+    private CancellationToken ComponentCt => this.cts.Token;
 
     private Boxset? Item { get; set; }
     private Release? Release { get; set; }
@@ -27,13 +30,13 @@ public partial class BoxsetDetail : ComponentBase
             throw new Exception("Context was not injected");
         }
 
-        var context = await this.Context.CreateDbContextAsync();
+        var context = await this.Context.CreateDbContextAsync(this.ComponentCt);
         Item = await context.BoxSets
             .Include("Release")
             .Include("Release.Discs")
             .Include("Release.Discs.Titles")
             .Include("Release.Discs.Titles.Item")
-            .FirstOrDefaultAsync(i => i.Slug == Slug);
+            .FirstOrDefaultAsync(i => i.Slug == Slug, this.ComponentCt);
         if (Item != null)
         {
             Release = Item.Release;
@@ -46,5 +49,11 @@ public partial class BoxsetDetail : ComponentBase
                 HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
             }
         }
+    }
+
+    public void Dispose()
+    {
+        this.cts.Cancel();
+        this.cts.Dispose();
     }
 }
