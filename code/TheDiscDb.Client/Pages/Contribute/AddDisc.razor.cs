@@ -10,6 +10,7 @@ using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.Client.Controls;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
@@ -56,6 +57,9 @@ public partial class AddDisc : CancellableComponentBase
     [Inject]
     public IWebAssemblyHostEnvironment HostEnvironment { get; set; } = default!;
 
+    [Inject]
+    public ITheDiscDbClient TheDiscDbClient { get; set; } = default!;
+
     FileSystemDirectoryHandleInProcess? handler;
     IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
     string hash = string.Empty;
@@ -63,6 +67,7 @@ public partial class AddDisc : CancellableComponentBase
     IContributionDiscs_MyContributions_Nodes? contribution = null;
     bool manualHashMode;
     string manualHash = string.Empty;
+    SlugInput? slugInput;
 
     bool IsDevelopmentMode=> HostEnvironment.Environment == "Development";
 
@@ -249,7 +254,7 @@ public partial class AddDisc : CancellableComponentBase
         }
     }
 
-    private void DiscTitleChanged(ChangeEventArgs args)
+    private async Task DiscTitleChanged(ChangeEventArgs args)
     {
         if (args?.Value != null)
         {
@@ -258,6 +263,10 @@ public partial class AddDisc : CancellableComponentBase
             if (!string.IsNullOrEmpty(title))
             {
                 this.request.Slug = title.Slugify();
+                if (this.slugInput != null)
+                {
+                    await this.slugInput.RecheckAvailability(this.request.Slug);
+                }
             }
         }
     }
@@ -269,5 +278,41 @@ public partial class AddDisc : CancellableComponentBase
             request.ContentHash = manualHash.Trim();
             manualHashMode = true;
         }
+    }
+
+    private async Task<bool> CheckDiscSlugAvailability(string slug, CancellationToken cancellationToken)
+    {
+        if (this.contribution == null)
+        {
+            return true;
+        }
+
+        // Check against discs already in this contribution
+        if (this.contribution.Discs.Any(d =>
+            !string.IsNullOrEmpty(d.Slug) &&
+            d.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        // Check against discs in any published release for this media item
+        var externalId = this.contribution.ExternalId;
+
+        if (string.IsNullOrWhiteSpace(externalId))
+        {
+            return true;
+        }
+
+        var result = await this.TheDiscDbClient.CheckDiscSlugAvailability.ExecuteAsync(
+            externalId,
+            slug,
+            cancellationToken);
+
+        if (result?.Data?.MediaItems?.Nodes is { Count: > 0 })
+        {
+            return false;
+        }
+
+        return true;
     }
 }

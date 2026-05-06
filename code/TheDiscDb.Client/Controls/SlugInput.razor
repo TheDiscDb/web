@@ -1,0 +1,21 @@
+@inherits Microsoft.AspNetCore.Components.Forms.InputBase<string>
+
+<div class="slug-input-wrapper">
+    <input value="@CurrentValueAsString"
+           @oninput="HandleInput"
+           @onblur="HandleBlur"
+           class="@CssClass"
+           @attributes="AdditionalAttributes" />
+    @switch (Status)
+    {
+        case SlugAvailability.Checking:
+            <span class="slug-indicator checking" title="Checking availability..." aria-label="Checking slug availability">⟳</span>
+            break;
+        case SlugAvailability.Available:
+            <span class="slug-indicator available" title="Slug is available" aria-label="Slug is available">✓</span>
+            break;
+        case SlugAvailability.Taken:
+            <span class="slug-indicator taken" title="Slug is already in use" aria-label="Slug is already in use">✗</span>
+            break;
+    }
+</div>

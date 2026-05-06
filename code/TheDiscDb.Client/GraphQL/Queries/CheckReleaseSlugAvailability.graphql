@@ -1,0 +1,15 @@
+query CheckReleaseSlugAvailability($tmdbId: String, $releaseSlug: String) {
+  mediaItems(
+    first: 1
+    where: {
+      and: [
+        { externalids: { tmdb: { eq: $tmdbId } } }
+        { releases: { some: { slug: { eq: $releaseSlug } } } }
+      ]
+    }
+  ) {
+    nodes {
+      slug
+    }
+  }
+}

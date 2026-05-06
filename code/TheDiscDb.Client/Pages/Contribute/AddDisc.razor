@@ -60,7 +60,7 @@
 
                         <div class="mb-3">
                             <label>Disc Slug</label>
-                            <InputText class="form-control" @bind-Value="request.Slug" />
+                            <SlugInput @ref="slugInput" class="form-control" @bind-Value="request.Slug" CheckAvailability="CheckDiscSlugAvailability" />
                             <ValidationMessage For="@(() => request.Slug)" />
                         </div>
                     </div>

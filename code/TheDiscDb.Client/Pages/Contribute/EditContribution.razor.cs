@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components;
 using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.Client.Controls;
 using TheDiscDb.Validation;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -16,6 +17,9 @@ public partial class EditContribution : CancellableComponentBase
 
     [Inject]
     public IContributionClient ContributionClient { get; set; } = default!;
+
+    [Inject]
+    public ITheDiscDbClient TheDiscDbClient { get; set; } = default!;
 
     [Inject]
     public NavigationManager Navigation { get; set; } = default!;
@@ -40,6 +44,9 @@ public partial class EditContribution : CancellableComponentBase
     private SfUploader? frontImageUploader;
     private SfUploader? backImageUploader;
 
+    private SlugInput? slugInput;
+    private string? externalId;
+
     private string frontImageUploadUrl => $"/api/contribute/{ContributionId}/images/front/upload";
     private string backImageUploadUrl => $"/api/contribute/{ContributionId}/images/back/upload";
 
@@ -63,6 +70,8 @@ public partial class EditContribution : CancellableComponentBase
                 request.ReleaseSlug = Contribution.ReleaseSlug ?? string.Empty;
                 request.Locale = Contribution.Locale ?? string.Empty;
                 request.RegionCode = Contribution.RegionCode ?? string.Empty;
+
+                externalId = Contribution.ExternalId;
 
                 currentFrontImageUrl = Contribution.FrontImageUrl;
                 currentBackImageUrl = Contribution.BackImageUrl;
@@ -172,6 +181,26 @@ public partial class EditContribution : CancellableComponentBase
         {
             errorMessage = $"Failed to delete back image: {ex.Message}";
         }
+    }
+
+    private async Task<bool> CheckReleaseSlugAvailability(string slug, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(this.externalId))
+        {
+            return true;
+        }
+
+        var result = await this.TheDiscDbClient.CheckReleaseSlugAvailability.ExecuteAsync(
+            this.externalId,
+            slug,
+            cancellationToken);
+
+        if (result?.Data?.MediaItems?.Nodes is { Count: > 0 })
+        {
+            return false;
+        }
+
+        return true;
     }
 }
 
