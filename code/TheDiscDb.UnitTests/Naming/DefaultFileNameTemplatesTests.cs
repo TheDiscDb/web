@@ -15,6 +15,20 @@ public class DefaultFileNameTemplatesTests
     }
 
     [Test]
+    [Arguments(ItemTypeNames.Other)]
+    [Arguments(ItemTypeNames.Interview)]
+    [Arguments(ItemTypeNames.Featurette)]
+    [Arguments(ItemTypeNames.Scene)]
+    [Arguments(ItemTypeNames.Music)]
+    [Arguments(ItemTypeNames.Short)]
+    public async Task KnownItemTypes_ContainsExtraSubTypes(string itemType)
+    {
+        await Assert.That(DefaultFileNameTemplates.KnownItemTypes).Contains(itemType);
+        await Assert.That(DefaultFileNameTemplates.IsKnownItemType(itemType)).IsTrue();
+        await Assert.That(DefaultFileNameTemplates.GetDefault(itemType)).IsEqualTo(DefaultFileNameTemplates.Extra);
+    }
+
+    [Test]
     public async Task IsKnownItemType_ReturnsTrueForKnown()
     {
         await Assert.That(DefaultFileNameTemplates.IsKnownItemType("MainMovie")).IsTrue();

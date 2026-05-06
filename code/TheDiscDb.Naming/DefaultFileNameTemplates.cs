@@ -16,6 +16,12 @@ public static class DefaultFileNameTemplates
     public const string Extra = "{description}.mkv";
     public const string Trailer = "{description}.mkv";
     public const string DeletedScene = "{description}.mkv";
+    public const string Other = "{description}.mkv";
+    public const string Interview = "{description}.mkv";
+    public const string Featurette = "{description}.mkv";
+    public const string Scene = "{description}.mkv";
+    public const string Music = "{description}.mkv";
+    public const string Short = "{description}.mkv";
 
     private static readonly Dictionary<string, string> Map =
         new(StringComparer.OrdinalIgnoreCase)
@@ -23,6 +29,12 @@ public static class DefaultFileNameTemplates
             [ItemTypeNames.MainMovie] = MainMovie,
             [ItemTypeNames.Episode] = Episode,
             [ItemTypeNames.Extra] = Extra,
+            [ItemTypeNames.Other] = Other,
+            [ItemTypeNames.Interview] = Interview,
+            [ItemTypeNames.Featurette] = Featurette,
+            [ItemTypeNames.Scene] = Scene,
+            [ItemTypeNames.Music] = Music,
+            [ItemTypeNames.Short] = Short,
             [ItemTypeNames.Trailer] = Trailer,
             [ItemTypeNames.DeletedScene] = DeletedScene,
         };
@@ -39,6 +51,12 @@ public static class DefaultFileNameTemplates
         ItemTypeNames.MainMovie,
         ItemTypeNames.Episode,
         ItemTypeNames.Extra,
+        ItemTypeNames.Other,
+        ItemTypeNames.Interview,
+        ItemTypeNames.Featurette,
+        ItemTypeNames.Scene,
+        ItemTypeNames.Music,
+        ItemTypeNames.Short,
         ItemTypeNames.Trailer,
         ItemTypeNames.DeletedScene,
     };

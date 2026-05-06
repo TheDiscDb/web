@@ -30,7 +30,7 @@ public partial class DiscItemDetails : ComponentBase, IAsyncDisposable
     private UserContributionDiscItem? Item { get; set; }
     private TheDiscDbUser? User { get; set; }
 
-    readonly string[] itemTypes = ["MainMovie", "Extra", "Episode", "DeletedScene", "Trailer"];
+    readonly string[] itemTypes = ["MainMovie", "Extra", "Episode", "DeletedScene", "Trailer", "Other", "Interview", "Featurette", "Scene", "Music", "Short"];
 
     protected override async Task OnInitializedAsync()
     {
