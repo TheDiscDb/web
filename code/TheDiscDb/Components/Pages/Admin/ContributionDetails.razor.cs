@@ -43,6 +43,8 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
     public string? ContributionId { get; set; }
 
     private SqlServerDataContext database = default!;
+    private readonly CancellationTokenSource cts = new();
+    private CancellationToken ComponentCt => this.cts.Token;
     private UserContribution? Contribution { get; set; }
     private List<UserContributionDisc>? discList;
     private TheDiscDbUser? User { get; set; }
@@ -97,7 +99,12 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
 
     string PowershellCommand => $".\\ContributionBuddy.exe generate {this.Contribution?.EncodedId} import pr";
 
-    public async ValueTask DisposeAsync() => await database.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        this.cts.Cancel();
+        this.cts.Dispose();
+        await database.DisposeAsync();
+    }
 
     private async Task ApproveClicked(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
@@ -128,7 +135,7 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
 
             try
             {
-                await NotificationService.NotifyContributionImportedAsync(this.Contribution, this.User?.Email);
+                await NotificationService.NotifyContributionImportedAsync(this.Contribution, this.User?.Email, this.ComponentCt);
             }
             catch (Exception ex)
             {

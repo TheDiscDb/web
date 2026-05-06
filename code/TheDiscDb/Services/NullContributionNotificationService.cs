@@ -14,25 +14,25 @@ public class NullContributionNotificationService : IContributionNotificationServ
         this.logger = logger;
     }
 
-    public Task NotifyContributionCreatedAsync(UserContribution contribution, string? userEmail, string? userName)
+    public Task NotifyContributionCreatedAsync(UserContribution contribution, string? userEmail, string? userName, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Email notifications disabled (Mailgun not configured). Skipping notification for contribution {Id}", contribution.Id);
         return Task.CompletedTask;
     }
 
-    public Task NotifyContributionImportedAsync(UserContribution contribution, string? userEmail)
+    public Task NotifyContributionImportedAsync(UserContribution contribution, string? userEmail, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Email notifications disabled (Mailgun not configured). Skipping imported notification for contribution {Id}", contribution.Id);
         return Task.CompletedTask;
     }
 
-    public Task NotifyMessageFromUserAsync(UserContribution contribution, string message, string? userName, string? userEmail)
+    public Task NotifyMessageFromUserAsync(UserContribution contribution, string message, string? userName, string? userEmail, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Email notifications disabled (Mailgun not configured). Skipping message notification for contribution {Id}", contribution.Id);
         return Task.CompletedTask;
     }
 
-    public Task NotifyMessageFromAdminAsync(UserContribution contribution, string message, string? userEmail)
+    public Task NotifyMessageFromAdminAsync(UserContribution contribution, string message, string? userEmail, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Email notifications disabled (Mailgun not configured). Skipping admin message notification for contribution {Id}", contribution.Id);
         return Task.CompletedTask;

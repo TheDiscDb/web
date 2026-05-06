@@ -144,7 +144,7 @@ public partial class Review : ComponentBase, IAsyncDisposable
             var dbUser = await UserManager.FindByIdAsync(this.Contribution.UserId);
             try
             {
-                await NotificationService.NotifyContributionCreatedAsync(this.Contribution, dbUser?.Email, dbUser?.UserName);
+                await NotificationService.NotifyContributionCreatedAsync(this.Contribution, dbUser?.Email, dbUser?.UserName, this.ComponentCt);
             }
             catch (Exception ex)
             {
