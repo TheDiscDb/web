@@ -29,16 +29,31 @@ public static class ItemTypeNames
     /// All type strings that should be treated as members of the "Extra" family.
     /// Includes <see cref="Extra"/> itself plus the sub-categories.
     /// </summary>
-    public static IReadOnlyList<string> ExtraTypes { get; } = new[]
-    {
+    public static IReadOnlyList<string> ExtraTypes =>
+    [
         Extra,
         Other,
         Interview,
         Featurette,
         Scene,
         Music,
+        Short
+    ];
+
+    public static IReadOnlyList<string> AllTypes => 
+    [
+        MainMovie,
+        Episode,
+        Trailer,
+        DeletedScene,
+        Extra,
+        Interview,
+        Featurette,
+        Scene,
+        Music,
         Short,
-    };
+        Other
+    ];
 
     private static readonly HashSet<string> ExtraTypeSet =
         new(ExtraTypes, StringComparer.OrdinalIgnoreCase);

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Naming;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages.Admin;
@@ -29,8 +30,6 @@ public partial class DiscItemDetails : ComponentBase, IAsyncDisposable
     private UserContributionDisc? Disc { get; set; }
     private UserContributionDiscItem? Item { get; set; }
     private TheDiscDbUser? User { get; set; }
-
-    readonly string[] itemTypes = ["MainMovie", "Extra", "Episode", "DeletedScene", "Trailer", "Other", "Interview", "Featurette", "Scene", "Music", "Short"];
 
     protected override async Task OnInitializedAsync()
     {
