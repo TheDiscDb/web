@@ -39,6 +39,9 @@ public partial class BoxsetEdit : ComponentBase, IAsyncDisposable
     [Parameter]
     public string BoxsetId { get; set; } = string.Empty;
 
+    private readonly CancellationTokenSource cts = new();
+    private CancellationToken ComponentCt => this.cts.Token;
+
     private SqlServerDataContext database = default!;
     private UserContributionBoxset? Boxset;
     private DateTime? releaseDate;
@@ -70,7 +73,7 @@ public partial class BoxsetEdit : ComponentBase, IAsyncDisposable
 
     protected override async Task OnInitializedAsync()
     {
-        this.database = await DbFactory.CreateDbContextAsync();
+        this.database = await DbFactory.CreateDbContextAsync(this.ComponentCt);
         await LoadBoxset();
     }
 
@@ -81,7 +84,7 @@ public partial class BoxsetEdit : ComponentBase, IAsyncDisposable
             .Include(b => b.Members)
                 .ThenInclude(m => m.Disc!)
                     .ThenInclude(d => d.UserContribution)
-            .FirstOrDefaultAsync(b => b.Id == decodedId);
+            .FirstOrDefaultAsync(b => b.Id == decodedId, this.ComponentCt);
 
         if (Boxset != null)
         {
@@ -100,6 +103,9 @@ public partial class BoxsetEdit : ComponentBase, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        this.cts.Cancel();
+        this.cts.Dispose();
+
         if (database != null)
         {
             await database.DisposeAsync();
@@ -143,7 +149,7 @@ public partial class BoxsetEdit : ComponentBase, IAsyncDisposable
                 }
             }
 
-            await database.SaveChangesAsync();
+            await database.SaveChangesAsync(this.ComponentCt);
             saveMessage = oldStatus != newStatus
                 ? $"Boxset saved. Status of {Boxset.Members.Count(m => m.Disc?.UserContribution != null)} member contribution(s) also set to {newStatus}."
                 : "Boxset metadata saved.";
@@ -182,18 +188,18 @@ public partial class BoxsetEdit : ComponentBase, IAsyncDisposable
             string assetStorePath = $"Boxsets/{encodedId}/{name}.jpg";
 
             // Delete existing blobs first — Save() skips upload if blob already exists
-            await ImageStore.Delete(imageStorePath, default);
-            await AssetStore.Delete(assetStorePath, default);
+            await ImageStore.Delete(imageStorePath, this.ComponentCt);
+            await AssetStore.Delete(assetStorePath, this.ComponentCt);
 
             using var memoryStream = new MemoryStream();
             await using var fileStream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-            await fileStream.CopyToAsync(memoryStream);
+            await fileStream.CopyToAsync(memoryStream, this.ComponentCt);
 
             memoryStream.Position = 0;
-            await ImageStore.Save(memoryStream, imageStorePath, ContentTypes.ImageContentType, default);
+            await ImageStore.Save(memoryStream, imageStorePath, ContentTypes.ImageContentType, this.ComponentCt);
 
             memoryStream.Position = 0;
-            await AssetStore.Save(memoryStream, assetStorePath, ContentTypes.ImageContentType, default);
+            await AssetStore.Save(memoryStream, assetStorePath, ContentTypes.ImageContentType, this.ComponentCt);
 
             string imageUrl = $"/api/contribute/images/Contributions/Boxsets/{encodedId}/{name}.jpg";
             if (name == "front")
@@ -201,7 +207,7 @@ public partial class BoxsetEdit : ComponentBase, IAsyncDisposable
             else
                 Boxset.BackImageUrl = imageUrl;
 
-            await database.SaveChangesAsync();
+            await database.SaveChangesAsync(this.ComponentCt);
             imageVersion = DateTimeOffset.UtcNow.Ticks;
             imageMessage = $"{(name == "front" ? "Front" : "Back")} image updated.";
         }
@@ -224,15 +230,15 @@ public partial class BoxsetEdit : ComponentBase, IAsyncDisposable
         try
         {
             string encodedId = IdEncoder.Encode(Boxset.Id);
-            await ImageStore.Delete($"Contributions/Boxsets/{encodedId}/{name}.jpg", default);
-            await AssetStore.Delete($"Boxsets/{encodedId}/{name}.jpg", default);
+            await ImageStore.Delete($"Contributions/Boxsets/{encodedId}/{name}.jpg", this.ComponentCt);
+            await AssetStore.Delete($"Boxsets/{encodedId}/{name}.jpg", this.ComponentCt);
 
             if (name == "front")
                 Boxset.FrontImageUrl = null;
             else
                 Boxset.BackImageUrl = null;
 
-            await database.SaveChangesAsync();
+            await database.SaveChangesAsync(this.ComponentCt);
             imageMessage = $"{(name == "front" ? "Front" : "Back")} image deleted.";
         }
         catch (Exception ex)

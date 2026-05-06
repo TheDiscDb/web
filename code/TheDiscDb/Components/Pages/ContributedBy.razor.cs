@@ -4,13 +4,16 @@ using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages;
 
-public partial class ContributedBy : ComponentBase
+public partial class ContributedBy : ComponentBase, IDisposable
 {
     [Parameter]
     public string? Username { get; set; }
 
     [Inject]
     private IDbContextFactory<SqlServerDataContext> DbFactory { get; set; } = null!;
+
+    private readonly CancellationTokenSource cts = new();
+    private CancellationToken ComponentCt => this.cts.Token;
 
     private List<ContributedRelease>? releases;
     private string? errorMessage;
@@ -26,7 +29,7 @@ public partial class ContributedBy : ComponentBase
 
         try
         {
-            await using var db = await DbFactory.CreateDbContextAsync();
+            await using var db = await DbFactory.CreateDbContextAsync(this.ComponentCt);
 
             releases = await db.Releases
                 .Where(r => r.Contributors.Any(c => c.Name == Username))
@@ -42,13 +45,19 @@ public partial class ContributedBy : ComponentBase
                     DateAdded = r.DateAdded
                 })
                 .OrderByDescending(r => r.DateAdded)
-                .ToListAsync();
+                .ToListAsync(this.ComponentCt);
         }
         catch
         {
             errorMessage = "Unable to load releases. Please try again later.";
             releases = [];
         }
+    }
+
+    public void Dispose()
+    {
+        this.cts.Cancel();
+        this.cts.Dispose();
     }
 
     private record ContributedRelease

@@ -36,25 +36,25 @@ public class MessageServiceTests
     {
         public List<(string Method, int ContributionId)> Calls { get; } = [];
 
-        public Task NotifyContributionCreatedAsync(UserContribution contribution, string? userEmail, string? userName)
+        public Task NotifyContributionCreatedAsync(UserContribution contribution, string? userEmail, string? userName, CancellationToken cancellationToken = default)
         {
             Calls.Add(("ContributionCreated", contribution.Id));
             return Task.CompletedTask;
         }
 
-        public Task NotifyContributionImportedAsync(UserContribution contribution, string? userEmail)
+        public Task NotifyContributionImportedAsync(UserContribution contribution, string? userEmail, CancellationToken cancellationToken = default)
         {
             Calls.Add(("ContributionImported", contribution.Id));
             return Task.CompletedTask;
         }
 
-        public Task NotifyMessageFromUserAsync(UserContribution contribution, string message, string? userName, string? userEmail)
+        public Task NotifyMessageFromUserAsync(UserContribution contribution, string message, string? userName, string? userEmail, CancellationToken cancellationToken = default)
         {
             Calls.Add(("MessageFromUser", contribution.Id));
             return Task.CompletedTask;
         }
 
-        public Task NotifyMessageFromAdminAsync(UserContribution contribution, string message, string? userEmail)
+        public Task NotifyMessageFromAdminAsync(UserContribution contribution, string message, string? userEmail, CancellationToken cancellationToken = default)
         {
             Calls.Add(("MessageFromAdmin", contribution.Id));
             return Task.CompletedTask;

@@ -57,6 +57,8 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
     private bool IsCreating { get; set; }
     private string? ErrorMessage { get; set; }
     private SqlServerDataContext? database;
+    private readonly CancellationTokenSource cts = new();
+    private CancellationToken ComponentCt => this.cts.Token;
 
     // TMDB-resolved metadata for the page header (preview only — not persisted as-is).
     private string? TmdbTitle { get; set; }
@@ -74,16 +76,16 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
             return;
         }
 
-        database = await DbFactory.CreateDbContextAsync();
+        database = await DbFactory.CreateDbContextAsync(this.ComponentCt);
         Submissions = await database.EngramDiscs
             .Include(s => s.Titles)
             .Where(s => s.EngramRelease!.ReleaseId == ReleaseId)
             .OrderBy(s => s.DiscNumber ?? int.MaxValue)
             .ThenByDescending(s => s.ReceivedAt)
-            .ToListAsync();
+            .ToListAsync(this.ComponentCt);
 
         EngramRelease = await database.EngramReleases
-            .FirstOrDefaultAsync(r => r.ReleaseId == ReleaseId);
+            .FirstOrDefaultAsync(r => r.ReleaseId == ReleaseId, this.ComponentCt);
 
         // Deduplicate by ContentHash — keep the most recent submission per hash.
         Submissions = Submissions
@@ -131,7 +133,7 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
         {
             if (request.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
             {
-                var series = await TmdbClient.GetSeries(first.TmdbId.Value.ToString());
+                var series = await TmdbClient.GetSeries(first.TmdbId.Value.ToString(), cancellationToken: this.ComponentCt);
                 if (series != null)
                 {
                     TmdbTitle = series.Name;
@@ -144,7 +146,7 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
             }
             else
             {
-                var movie = await TmdbClient.GetMovie(first.TmdbId.Value.ToString());
+                var movie = await TmdbClient.GetMovie(first.TmdbId.Value.ToString(), cancellationToken: this.ComponentCt);
                 if (movie != null)
                 {
                     TmdbTitle = movie.Title;
@@ -237,10 +239,10 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
                 return;
             }
 
-            await using var db = await DbFactory.CreateDbContextAsync();
+            await using var db = await DbFactory.CreateDbContextAsync(this.ComponentCt);
 
             var releaseRow = await db.EngramReleases
-                .FirstOrDefaultAsync(r => r.ReleaseId == ReleaseId);
+                .FirstOrDefaultAsync(r => r.ReleaseId == ReleaseId, this.ComponentCt);
 
             if (releaseRow?.UserContributionId != null)
             {
@@ -689,6 +691,9 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        this.cts.Cancel();
+        this.cts.Dispose();
+
         if (database != null)
         {
             await database.DisposeAsync();

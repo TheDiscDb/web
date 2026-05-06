@@ -26,14 +26,14 @@ public class ContributionNotificationService : IContributionNotificationService
         this.logger = logger;
     }
 
-    public async Task NotifyContributionCreatedAsync(UserContribution contribution, string? userEmail, string? userName)
+    public async Task NotifyContributionCreatedAsync(UserContribution contribution, string? userEmail, string? userName, CancellationToken cancellationToken = default)
     {
         var opts = options.CurrentValue;
         var displayName = userName ?? "A user";
         var title = $"{contribution.Title} ({contribution.Year})";
 
-        await SendAdminNotificationAsync(contribution, opts, displayName, userEmail, title);
-        await SendUserConfirmationAsync(contribution, opts, userEmail, title);
+        await SendAdminNotificationAsync(contribution, opts, displayName, userEmail, title, cancellationToken);
+        await SendUserConfirmationAsync(contribution, opts, userEmail, title, cancellationToken);
     }
 
     private async Task SendAdminNotificationAsync(
@@ -41,7 +41,8 @@ public class ContributionNotificationService : IContributionNotificationService
         MailgunOptions opts,
         string displayName,
         string? userEmail,
-        string title)
+        string title,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(opts.AdminEmail))
         {
@@ -85,7 +86,7 @@ public class ContributionNotificationService : IContributionNotificationService
 
         try
         {
-            await mailgun.SendAsync(message);
+            await mailgun.SendAsync(message, cancellationToken);
             logger.LogInformation("Sent admin notification for contribution {Id} to {Email}", contribution.Id, opts.AdminEmail);
         }
         catch (Exception ex)
@@ -98,7 +99,8 @@ public class ContributionNotificationService : IContributionNotificationService
         UserContribution contribution,
         MailgunOptions opts,
         string? userEmail,
-        string title)
+        string title,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(userEmail))
         {
@@ -135,7 +137,7 @@ public class ContributionNotificationService : IContributionNotificationService
 
         try
         {
-            await mailgun.SendAsync(message);
+            await mailgun.SendAsync(message, cancellationToken);
             logger.LogInformation("Sent user confirmation for contribution {Id} to {Email}", contribution.Id, userEmail);
         }
         catch (Exception ex)
@@ -144,7 +146,7 @@ public class ContributionNotificationService : IContributionNotificationService
         }
     }
 
-    public async Task NotifyContributionImportedAsync(UserContribution contribution, string? userEmail)
+    public async Task NotifyContributionImportedAsync(UserContribution contribution, string? userEmail, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(userEmail))
         {
@@ -192,7 +194,7 @@ public class ContributionNotificationService : IContributionNotificationService
 
         try
         {
-            await mailgun.SendAsync(message);
+            await mailgun.SendAsync(message, cancellationToken);
             logger.LogInformation("Sent imported notification for contribution {Id} to {Email}", contribution.Id, userEmail);
         }
         catch (Exception ex)
@@ -201,7 +203,7 @@ public class ContributionNotificationService : IContributionNotificationService
         }
     }
 
-    public async Task NotifyMessageFromUserAsync(UserContribution contribution, string message, string? userName, string? userEmail)
+    public async Task NotifyMessageFromUserAsync(UserContribution contribution, string message, string? userName, string? userEmail, CancellationToken cancellationToken = default)
     {
         var opts = options.CurrentValue;
         if (string.IsNullOrEmpty(opts.AdminEmail))
@@ -236,7 +238,7 @@ public class ContributionNotificationService : IContributionNotificationService
 
         try
         {
-            await mailgun.SendAsync(email);
+            await mailgun.SendAsync(email, cancellationToken);
             logger.LogInformation("Sent message notification to admin for contribution {Id}", contribution.Id);
         }
         catch (Exception ex)
@@ -245,7 +247,7 @@ public class ContributionNotificationService : IContributionNotificationService
         }
     }
 
-    public async Task NotifyMessageFromAdminAsync(UserContribution contribution, string message, string? userEmail)
+    public async Task NotifyMessageFromAdminAsync(UserContribution contribution, string message, string? userEmail, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(userEmail))
         {
@@ -280,7 +282,7 @@ public class ContributionNotificationService : IContributionNotificationService
 
         try
         {
-            await mailgun.SendAsync(email);
+            await mailgun.SendAsync(email, cancellationToken);
             logger.LogInformation("Sent admin message notification for contribution {Id} to {Email}", contribution.Id, userEmail);
         }
         catch (Exception ex)

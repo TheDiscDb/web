@@ -4,13 +4,16 @@ using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages;
 
-public partial class Leaderboard : ComponentBase
+public partial class Leaderboard : ComponentBase, IDisposable
 {
     [Inject]
     private IDbContextFactory<SqlServerDataContext> DbFactory { get; set; } = null!;
 
     [SupplyParameterFromQuery(Name = "showAll")]
     public bool ShowAll { get; set; }
+
+    private readonly CancellationTokenSource cts = new();
+    private CancellationToken ComponentCt => this.cts.Token;
 
     private List<LeaderboardEntry>? leaders;
     private bool showAll;
@@ -29,7 +32,7 @@ public partial class Leaderboard : ComponentBase
         try
         {
             errorMessage = null;
-            await using var db = await DbFactory.CreateDbContextAsync();
+            await using var db = await DbFactory.CreateDbContextAsync(this.ComponentCt);
 
             var query = db.Contributors.AsQueryable();
 
@@ -48,13 +51,19 @@ public partial class Leaderboard : ComponentBase
                 })
                 .OrderByDescending(e => e.ReleaseCount)
                 .ThenByDescending(e => e.LatestRelease)
-                .ToListAsync();
+                .ToListAsync(this.ComponentCt);
         }
         catch
         {
             errorMessage = "Unable to load leaderboard data. Please try again later.";
             leaders = [];
         }
+    }
+
+    public void Dispose()
+    {
+        this.cts.Cancel();
+        this.cts.Dispose();
     }
 
     private record LeaderboardEntry

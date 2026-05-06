@@ -44,6 +44,8 @@ public partial class Review : ComponentBase, IAsyncDisposable
     UserContribution? Contribution { get; set; }
     Dictionary<IContributionValidation, Result> Results { get; set; } = new Dictionary<IContributionValidation, Result>();
     private SqlServerDataContext database = default!;
+    private readonly CancellationTokenSource cts = new();
+    private CancellationToken ComponentCt => this.cts.Token;
 
     private bool PassedValidation => this.Results.Values.All(r => r.IsSuccess);
     private bool IsSubmitForReviewButtonDisabled => !PassedValidation;
@@ -53,11 +55,11 @@ public partial class Review : ComponentBase, IAsyncDisposable
         if (DbFactory != null && IdEncoder != null)
         {
             var decodedId = this.IdEncoder.Decode(ContributionId!);
-            this.database = await DbFactory.CreateDbContextAsync();
+            this.database = await DbFactory.CreateDbContextAsync(this.ComponentCt);
             this.Contribution = await database.UserContributions
                 .Include(uc => uc.Discs)
                 .Include(uc => uc.Boxset)
-                .FirstOrDefaultAsync(uc => uc.Id == decodedId);
+                .FirstOrDefaultAsync(uc => uc.Id == decodedId, this.ComponentCt);
 
             if (this.Contribution?.Boxset != null)
             {
@@ -68,7 +70,7 @@ public partial class Review : ComponentBase, IAsyncDisposable
             {
                 foreach (var validator in Validators!)
                 {
-                    var validationResult = await validator.Validate(this.Contribution, CancellationToken.None);
+                    var validationResult = await validator.Validate(this.Contribution, this.ComponentCt);
                     this.Results[validator] = validationResult;
                 }
             }
@@ -136,13 +138,13 @@ public partial class Review : ComponentBase, IAsyncDisposable
             }
 
             this.Contribution.Status = UserContributionStatus.ReadyForReview;
-            await database.SaveChangesAsync();
-            await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.ReadyForReview);
+            await database.SaveChangesAsync(this.ComponentCt);
+            await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.ReadyForReview, this.ComponentCt);
 
             var dbUser = await UserManager.FindByIdAsync(this.Contribution.UserId);
             try
             {
-                await NotificationService.NotifyContributionCreatedAsync(this.Contribution, dbUser?.Email, dbUser?.UserName);
+                await NotificationService.NotifyContributionCreatedAsync(this.Contribution, dbUser?.Email, dbUser?.UserName, this.ComponentCt);
             }
             catch (Exception ex)
             {
@@ -153,5 +155,10 @@ public partial class Review : ComponentBase, IAsyncDisposable
         }
     }
 
-    public async ValueTask DisposeAsync() => await database.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        this.cts.Cancel();
+        this.cts.Dispose();
+        await database.DisposeAsync();
+    }
 }

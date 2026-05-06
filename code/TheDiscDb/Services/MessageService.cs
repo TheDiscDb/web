@@ -42,7 +42,7 @@ public class MessageService(
             if (contribution != null)
             {
                 var recipient = await userManager.FindByIdAsync(toUserId);
-                await notificationService.NotifyMessageFromAdminAsync(contribution, message, recipient?.Email);
+                await notificationService.NotifyMessageFromAdminAsync(contribution, message, recipient?.Email, cancellationToken);
             }
         }
         catch (Exception ex)
@@ -84,7 +84,7 @@ public class MessageService(
             if (contribution != null)
             {
                 var sender = await userManager.FindByIdAsync(fromUserId);
-                await notificationService.NotifyMessageFromUserAsync(contribution, message, sender?.UserName, sender?.Email);
+                await notificationService.NotifyMessageFromUserAsync(contribution, message, sender?.UserName, sender?.Email, cancellationToken);
             }
         }
         catch (Exception ex)
