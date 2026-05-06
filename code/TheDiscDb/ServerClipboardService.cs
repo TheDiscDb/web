@@ -12,13 +12,13 @@ public class ServerClipboardService : IClipboardService
         this.jsRuntime = jsRuntime;
     }
 
-    public ValueTask<string> ReadTextAsync()
+    public ValueTask<string> ReadTextAsync(CancellationToken cancellationToken = default)
     {
-        return jsRuntime.InvokeAsync<string>("navigator.clipboard.readText");
+        return jsRuntime.InvokeAsync<string>("navigator.clipboard.readText", cancellationToken);
     }
 
-    public ValueTask WriteTextAsync(string text)
+    public ValueTask WriteTextAsync(string text, CancellationToken cancellationToken = default)
     {
-        return jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        return jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text, cancellationToken);
     }
 }

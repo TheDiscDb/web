@@ -199,7 +199,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
             ContributionId = this.ContributionId!,
             DiscId = this.DiscId!
         };
-        var response = await this.ContributionClient.GetDiscLogs.ExecuteAsync(input);
+        var response = await this.ContributionClient.GetDiscLogs.ExecuteAsync(input, this.CancellationToken);
         if (response?.Data != null && response.IsSuccessResult())
         {
             this.allTitles = response.Data.DiscLogs.DiscLogs!.Info!.Titles.AsQueryable();
@@ -258,7 +258,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
             var episodeResults = await ContributionClient.GetEpisodeNames.ExecuteAsync(new EpisodeNamesInput
             {
                 ContributionId = this.ContributionId!
-            });
+            }, this.CancellationToken);
             if (episodeResults?.Data != null && episodeResults.IsSuccessResult())
             {
                 this.episodeNames = episodeResults.Data.EpisodeNames;
@@ -268,7 +268,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         var externalMetadataResponse = await ContributionClient.GetExternalDataForContribution.ExecuteAsync(new ExternalDataForContributionInput
         {
             ContributionId = this.ContributionId!
-        });
+        }, this.CancellationToken);
 
         if (externalMetadataResponse?.Data != null && externalMetadataResponse.IsSuccessResult())
         {
@@ -961,7 +961,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
 
         try
         {
-            var clipboardText = await this.ClipboardService.ReadTextAsync();
+            var clipboardText = await this.ClipboardService.ReadTextAsync(this.CancellationToken);
             if (ChapterParser.TryParseChapters(clipboardText, out var names))
             {
                 this.clipboardHasChapters = true;
