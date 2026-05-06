@@ -4,8 +4,8 @@ namespace TheDiscDb.Client;
 
 public interface IClipboardService
 {
-    ValueTask<string> ReadTextAsync();
-    ValueTask WriteTextAsync(string text);
+    ValueTask<string> ReadTextAsync(CancellationToken cancellationToken = default);
+    ValueTask WriteTextAsync(string text, CancellationToken cancellationToken = default);
 }
 
 public sealed class ClipboardService : IClipboardService
@@ -17,13 +17,13 @@ public sealed class ClipboardService : IClipboardService
         this.jsRuntime = jsRuntime;
     }
 
-    public ValueTask<string> ReadTextAsync()
+    public ValueTask<string> ReadTextAsync(CancellationToken cancellationToken = default)
     {
-        return jsRuntime.InvokeAsync<string>("navigator.clipboard.readText");
+        return jsRuntime.InvokeAsync<string>("navigator.clipboard.readText", cancellationToken: cancellationToken);
     }
 
-    public ValueTask WriteTextAsync(string text)
+    public ValueTask WriteTextAsync(string text, CancellationToken cancellationToken = default)
     {
-        return jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        return jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", cancellationToken, text);
     }
 }

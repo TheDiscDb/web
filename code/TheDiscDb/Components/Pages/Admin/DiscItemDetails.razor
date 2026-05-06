@@ -25,7 +25,7 @@
 
             <div class="mb-3">
                 <label>Type</label>
-                <SfDropDownList TValue="string" TItem="string" DataSource="itemTypes" class="form-control" @bind-Value="Item.Type" Placeholder="Select type"></SfDropDownList>
+                <SfDropDownList TValue="string" TItem="string" DataSource="TheDiscDb.Naming.ItemTypeNames.AllTypes" class="form-control" @bind-Value="Item.Type" Placeholder="Select type"></SfDropDownList>
                 <ValidationMessage For="@(() => Item.Type)" />
             </div>
             <div class="mb-3">

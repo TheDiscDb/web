@@ -22,7 +22,9 @@ public class UserFileNameTemplate
 
     /// <summary>
     /// The disc-item type this template applies to (e.g. "MainMovie",
-    /// "Episode", "Extra", "Trailer", "DeletedScene").
+    /// "Episode", "Extra", "Trailer", "DeletedScene", or one of the Extra
+    /// sub-categories: "Other", "Interview", "Featurette", "Scene", "Music",
+    /// "Short").
     /// </summary>
     [Required]
     [MaxLength(64)]

@@ -247,6 +247,22 @@ public class NavigationExtensionsTests
     }
 
     [Test]
+    [Arguments("Other")]
+    [Arguments("Interview")]
+    [Arguments("Featurette")]
+    [Arguments("Scene")]
+    [Arguments("Music")]
+    [Arguments("Short")]
+    public async Task DiscFeatureDescription_ExtraSubType_RendersAsExtra(string type)
+    {
+        var singular = new DiscFeature { Type = type, Count = 1 };
+        var plural = new DiscFeature { Type = type, Count = 4 };
+
+        await Assert.That(singular.Description).IsEqualTo("1 extra");
+        await Assert.That(plural.Description).IsEqualTo("4 extras");
+    }
+
+    [Test]
     public async Task DiscFeatureDescription_NullType_ReturnsEmpty()
     {
         var feature = new DiscFeature { Type = null, Count = 1 };

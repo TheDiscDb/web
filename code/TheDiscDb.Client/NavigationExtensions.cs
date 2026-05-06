@@ -1,4 +1,5 @@
 ﻿using TheDiscDb.InputModels;
+using TheDiscDb.Naming;
 
 namespace TheDiscDb;
 
@@ -209,18 +210,26 @@ public static class NavigationExtensions
                 continue;
             }
 
-            if (features.TryGetValue(title.Item.Type, out DiscFeature? f))
+            // Collapse all extra-family types under a single "Extra" feature
+            // so the disc summary shows a unified count instead of one line
+            // per sub-category (Interview, Featurette, etc.). The granular
+            // type is still preserved on the underlying DiscItemReference.
+            string featureKey = ItemTypeNames.IsExtra(title.Item.Type)
+                ? ItemTypeNames.Extra
+                : title.Item.Type;
+
+            if (features.TryGetValue(featureKey, out DiscFeature? f))
             {
                 f.Count++;
             }
             else
             {
                 bool hasChapters = title.Item.Chapters.Any();
-                features[title.Item.Type] = new DiscFeature
+                features[featureKey] = new DiscFeature
                 {
                     HasChapters = hasChapters,
                     Count = 1,
-                    Type = title.Item.Type
+                    Type = featureKey
                 };
             }
         }
@@ -254,7 +263,7 @@ public class DiscFeature
                     return Count + " movies";
                 }
             }
-            else if (Type == "Extra")
+            else if (ItemTypeNames.IsExtra(Type))
             {
                 if (Count == 1)
                 {
