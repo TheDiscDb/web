@@ -13,4 +13,27 @@
     <h1>All Movies</h1>
     <div class="page-header__sub">Blu-ray, 4K UHD &amp; DVD releases</div>
 </div>
-<TheDiscDb.Client.Pages.Movies @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+
+@if (isCrawler)
+{
+    @if (ssrItems.Count == 0)
+    {
+        <p>No movies have been added yet.</p>
+    }
+    else
+    {
+        <div class="media-item-list">
+            @foreach (var item in ssrItems)
+            {
+                <a href="@item.ItemDetailUrl()" class="media-item-card" title="@item.Title">
+                    <MediaImage Url="@item.ImageUrl" Width="156" Height="231" Title="@item.Title" />
+                    <span class="media-item-label">@item.Title (@item.Year)</span>
+                </a>
+            }
+        </div>
+    }
+}
+else
+{
+    <TheDiscDb.Client.Pages.Movies @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+}

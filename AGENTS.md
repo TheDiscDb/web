@@ -71,5 +71,8 @@ IMPORTANT! Always use the code-behind pattern for Razor components. Markup goes 
 ### CSS
 IMPORTANT! Avoid inline CSS (`style="..."` attributes) in Razor files. Use scoped CSS (`.razor.css` files) or the global stylesheet (`app.css`) instead.
 
+### User-facing copy
+IMPORTANT! Refer to the site's content as a **database**, not a catalogue. Do not use the words `catalogue` or `catalogued` in any user-facing text (page copy, meta descriptions, alt text, error pages, etc.). Use `database` for the noun and phrases like `added to the database` for the past tense.
+
 ### Git merge strategy
 When merging feature branches into `main`, always use squash merge (`git merge --squash`). Do not use regular merge or rebase merge.

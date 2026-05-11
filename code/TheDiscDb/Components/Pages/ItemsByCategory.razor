@@ -16,5 +16,37 @@ else
     <div class="page-header">
         <h1>Items related to <span class="page-header__accent">'@(groupName ?? Slug)'</span></h1>
     </div>
-    <TheDiscDb.Client.Pages.ItemsByCategory Slug="@Slug" @rendermode="new InteractiveWebAssemblyRenderMode(prerender: true)" />
+
+    @if (isCrawler)
+    {
+        @if (initialItems.Count == 0)
+        {
+            <p>No items have been added for this category yet.</p>
+        }
+        else
+        {
+            <div class="media-item-list">
+                @foreach (var item in initialItems)
+                {
+                    <a href="@item.ItemDetailUrl()" class="media-item-card" title="@item.Title">
+                        <MediaImage Url="@item.ImageUrl" Width="156" Height="231" Title="@item.Title" />
+                        <span class="media-item-label">@item.Title (@item.Year)</span>
+                    </a>
+                }
+            </div>
+
+            @if (hasMoreItems)
+            {
+                <p class="text-muted mt-3">
+                    Showing the first @initialItems.Count items. Use
+                    <a href="/search?query=@Uri.EscapeDataString(groupName ?? Slug ?? "")">search</a>
+                    to find additional matches.
+                </p>
+            }
+        }
+    }
+    else
+    {
+        <TheDiscDb.Client.Pages.ItemsByCategory Slug="@Slug" @rendermode="new InteractiveWebAssemblyRenderMode(prerender: true)" />
+    }
 }

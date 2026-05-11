@@ -342,6 +342,8 @@ else
     app.UseHsts();
 }
 
+app.UseMiddleware<NotFoundFallbackMiddleware>();
+
 app.UseHttpsRedirection();
 app.UseSitemap();
 
