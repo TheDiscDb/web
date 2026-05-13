@@ -44,17 +44,80 @@ public class TitleFileNameExtension
                 .ThenInclude(d => d.Release!)
                 .ThenInclude(r => r.MediaItem!)
                 .ThenInclude(m => m.Externalids)
+            .Include(t => t.Disc!)
+                .ThenInclude(d => d.Release!)
+                .ThenInclude(r => r.Boxset!)
             .FirstOrDefaultAsync(t => t.Id == parent.Id, cancellationToken);
 
-        if (loaded?.Disc?.Release?.MediaItem is null)
+        if (loaded?.Disc?.Release is null)
         {
             return string.Empty;
         }
 
-        var ctx = NamingContext.Create(loaded.Disc.Release.MediaItem, loaded.Disc.Release, loaded.Disc, loaded);
-        var itemType = loaded.Item?.Type;
+        NamingContext ctx;
+        string? itemType;
+
+        if (loaded.Disc.Release.MediaItem is not null)
+        {
+            ctx = NamingContext.Create(loaded.Disc.Release.MediaItem, loaded.Disc.Release, loaded.Disc, loaded);
+            itemType = loaded.Item?.Type;
+        }
+        else if (loaded.Disc.Release.Boxset is not null)
+        {
+            // Boxset releases have no MediaItem in the DB. Look up the source movie /
+            // series release that contributed this disc: the data importer creates a
+            // parallel release on each member MediaItem with the same release slug
+            // and the same disc slug as the boxset's copy.
+            var sourceRelease = await FindSourceReleaseForBoxsetDiscAsync(
+                db, loaded.Disc.Release.Slug, loaded.Disc.Slug, cancellationToken);
+
+            if (sourceRelease?.MediaItem is not null)
+            {
+                ctx = NamingContext.Create(sourceRelease.MediaItem, sourceRelease, loaded.Disc, loaded);
+            }
+            else
+            {
+                // Custom or orphaned boxset disc with no matching source release.
+                // Fall back to boxset-only metadata so the filename still resolves.
+                ctx = NamingContext.Create(loaded.Disc.Release.Boxset, loaded.Disc.Release, loaded.Disc, loaded);
+            }
+
+            itemType = loaded.Item?.Type;
+        }
+        else
+        {
+            return string.Empty;
+        }
 
         return resolver.Format(itemType, ctx);
+    }
+
+    /// <summary>
+    /// Locates the source <see cref="Release"/> (with its <see cref="MediaItem"/> and
+    /// external IDs eagerly loaded) for a disc that belongs to a boxset release.
+    /// Boxset member discs are imported as parallel rows: the source movie or series
+    /// has a release with the same slug as the boxset's release, containing a disc
+    /// with the same slug. Returns <c>null</c> if no such source release exists.
+    /// </summary>
+    private static async Task<Release?> FindSourceReleaseForBoxsetDiscAsync(
+        SqlServerDataContext db,
+        string? releaseSlug,
+        string? discSlug,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(releaseSlug) || string.IsNullOrEmpty(discSlug))
+        {
+            return null;
+        }
+
+        return await db.Releases
+            .AsNoTracking()
+            .Include(r => r.MediaItem!)
+                .ThenInclude(m => m.Externalids)
+            .Where(r => r.Slug == releaseSlug
+                && r.MediaItem != null
+                && r.Discs.Any(d => d.Slug == discSlug))
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     private static FileNameTemplateResolver BuildResolver(FileNameTemplateInput[]? templates)

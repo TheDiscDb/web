@@ -19,6 +19,6 @@ public class ServerClipboardService : IClipboardService
 
     public ValueTask WriteTextAsync(string text, CancellationToken cancellationToken = default)
     {
-        return jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", text, cancellationToken);
+        return jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", cancellationToken, text);
     }
 }
