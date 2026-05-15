@@ -177,6 +177,130 @@ public class TitleFileNameExtensionTests
         await Assert.That(actual).IsEqualTo(string.Empty);
     }
 
+    [Test]
+    public async Task GetFilename_BoxsetDisc_ResolvesSourceMovieMetadata()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        var factory = new TestDbContextFactory(dbName);
+
+        // Mirror real boxset import: the source movie has a release with the same
+        // slug as the boxset's release, containing a disc with the same slug as the
+        // boxset's copy of that disc.
+        const string releaseSlug = "the-wes-anderson-archive-criterion-4k";
+        const string discSlug = "bottle-rocket-blu-ray";
+
+        using (var seed = factory.CreateDbContext())
+        {
+            var movie = new MediaItem
+            {
+                Title = "Bottle Rocket",
+                Year = 1996,
+                Type = "movie",
+                Slug = "bottle-rocket-1996",
+                Externalids = new ExternalIds { Tmdb = "9428", Imdb = "tt0115734" },
+            };
+            var movieRelease = new Release
+            {
+                Slug = releaseSlug,
+                Title = "The Wes Anderson Archive",
+                MediaItem = movie,
+            };
+            var movieDisc = new Disc
+            {
+                Slug = discSlug,
+                Index = 1,
+                Name = "Bottle Rocket Blu-ray",
+                Format = "Blu-ray",
+                Release = movieRelease,
+            };
+            seed.MediaItems.Add(movie);
+            seed.Discs.Add(movieDisc);
+
+            var boxset = new Boxset
+            {
+                Title = "The Wes Anderson Archive",
+                Slug = "the-wes-anderson-archive-criterion-4k",
+            };
+            var boxsetRelease = new Release
+            {
+                Slug = releaseSlug,
+                Title = "The Wes Anderson Archive",
+                Year = 2025,
+                Boxset = boxset,
+            };
+            var boxsetDisc = new Disc
+            {
+                Slug = discSlug,
+                Index = 1,
+                Name = "Bottle Rocket Blu-ray",
+                Format = "Blu-ray",
+                Release = boxsetRelease,
+            };
+            var item = new DiscItemReference { Title = "Bottle Rocket", Type = "MainMovie" };
+            var track = new Track { Index = 0, Type = "Video", Resolution = "1920x1080" };
+            var title = new Title
+            {
+                Index = 1,
+                SourceFile = "title_t01.mkv",
+                Disc = boxsetDisc,
+                Item = item,
+                Tracks = new List<Track> { track },
+            };
+
+            seed.BoxSets.Add(boxset);
+            seed.Titles.Add(title);
+            seed.SaveChanges();
+        }
+
+        using var read = factory.CreateDbContext();
+        // Pick the title attached to the boxset disc (the one with an Item).
+        var loaded = read.Titles.AsNoTracking()
+            .Include(t => t.Item)
+            .First(t => t.Item != null);
+        var resolver = new TitleFileNameExtension();
+
+        var actual = await resolver.GetFilename(loaded, templates: null, factory, CancellationToken.None);
+
+        await Assert.That(actual).IsEqualTo("Bottle Rocket (1996) [1080p].mkv");
+    }
+
+    [Test]
+    public async Task GetFilename_BoxsetDisc_NoSourceRelease_FallsBackToBoxsetMetadata()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        var factory = new TestDbContextFactory(dbName);
+
+        using (var seed = factory.CreateDbContext())
+        {
+            var boxset = new Boxset { Title = "Custom Set", Slug = "custom-set" };
+            var release = new Release { Slug = "custom-set-r1", Title = "Custom Set", Year = 2024, Boxset = boxset };
+            var disc = new Disc { Slug = "orphan-disc", Index = 1, Name = "Orphan", Format = "Blu-ray", Release = release };
+            var item = new DiscItemReference { Title = "Some Feature", Type = "MainMovie" };
+            var track = new Track { Index = 0, Type = "Video", Resolution = "1920x1080" };
+            var title = new Title
+            {
+                Index = 1,
+                SourceFile = "title_t01.mkv",
+                Disc = disc,
+                Item = item,
+                Tracks = new List<Track> { track },
+            };
+
+            seed.BoxSets.Add(boxset);
+            seed.Titles.Add(title);
+            seed.SaveChanges();
+        }
+
+        using var read = factory.CreateDbContext();
+        var loaded = read.Titles.AsNoTracking().Include(t => t.Item).First();
+        var resolver = new TitleFileNameExtension();
+
+        var actual = await resolver.GetFilename(loaded, templates: null, factory, CancellationToken.None);
+
+        // Falls back to boxset metadata when no source release matches.
+        await Assert.That(actual).IsEqualTo("Custom Set (2024) [1080p].mkv");
+    }
+
     private class TestDbContextFactory(string dbName) : IDbContextFactory<SqlServerDataContext>
     {
         public SqlServerDataContext CreateDbContext()

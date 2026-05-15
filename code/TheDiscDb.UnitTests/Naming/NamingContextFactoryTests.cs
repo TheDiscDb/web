@@ -48,11 +48,46 @@ public class NamingContextFactoryTests
     [Test]
     public async Task Create_MediaItem_UsesExistingFullTitle_WhenSet()
     {
-        var movie = new Movie { Title = "The Matrix", Year = 1999, FullTitle = "The Matrix: Special" };
+        // When the stored FullTitle already contains the year it is preserved.
+        var movie = new Movie { Title = "The Matrix", Year = 1999, FullTitle = "The Matrix: Special (1999)" };
 
         var ctx = NamingContext.Create(movie);
 
-        await Assert.That(ctx.FullTitle).IsEqualTo("The Matrix: Special");
+        await Assert.That(ctx.FullTitle).IsEqualTo("The Matrix: Special (1999)");
+    }
+
+    [Test]
+    public async Task Create_MediaItem_OverridesStoredFullTitle_WhenItOmitsYear()
+    {
+        // Curator-stored FullTitle without the year is augmented so the
+        // {fullTitle} token always carries the year when one is available.
+        var movie = new Movie { Title = "The Matrix", Year = 1999, FullTitle = "The Matrix" };
+
+        var ctx = NamingContext.Create(movie);
+
+        await Assert.That(ctx.FullTitle).IsEqualTo("The Matrix (1999)");
+    }
+
+    [Test]
+    public async Task Create_MediaItem_PreservesStoredFullTitle_WhenItContainsYear()
+    {
+        // Customized FullTitle that already includes the year is honored verbatim.
+        var movie = new Movie { Title = "The Matrix", Year = 2003, FullTitle = "The Matrix Reloaded (2003)" };
+
+        var ctx = NamingContext.Create(movie);
+
+        await Assert.That(ctx.FullTitle).IsEqualTo("The Matrix Reloaded (2003)");
+    }
+
+    [Test]
+    public async Task Create_MediaItem_UsesStoredFullTitle_WhenNoYearAvailable()
+    {
+        // Without a year, the curator-stored value is the only source.
+        var movie = new Movie { Title = "Untitled", Year = 0, FullTitle = "Untitled Project" };
+
+        var ctx = NamingContext.Create(movie);
+
+        await Assert.That(ctx.FullTitle).IsEqualTo("Untitled Project");
     }
 
     [Test]
@@ -292,6 +327,39 @@ public class NamingContextFactoryTests
         await Assert.That(ctx.Part).IsEqualTo("pt1");
         await Assert.That(ctx.TmdbId).IsEqualTo("603");
         await Assert.That(ctx.ImdbId).IsEqualTo("tt0133093");
+    }
+
+    [Test]
+    public async Task Create_Boxset_UsesBoxsetTitleAndReleaseYear()
+    {
+        var boxset = new Boxset { Title = "The Wes Anderson Archive" };
+        var release = new Release { Title = "Wes Anderson", Year = 2025 };
+        var disc = new Disc { Name = "Bottle Rocket Blu-ray", Format = "Blu-ray" };
+        var title = new InputModels.Title { Index = 1, Item = new DiscItemReference { Title = "Feature" } };
+
+        var ctx = NamingContext.Create(boxset, release, disc, title);
+
+        await Assert.That(ctx.Title).IsEqualTo("The Wes Anderson Archive");
+        await Assert.That(ctx.Year).IsEqualTo("2025");
+        await Assert.That(ctx.FullTitle).IsEqualTo("The Wes Anderson Archive (2025)");
+        await Assert.That(ctx.Format).IsEqualTo("Blu-ray");
+        await Assert.That(ctx.Part).IsEqualTo("pt1");
+        await Assert.That(ctx.Description).IsEqualTo("Feature");
+        await Assert.That(ctx.TmdbId).IsNull();
+        await Assert.That(ctx.ImdbId).IsNull();
+    }
+
+    [Test]
+    public async Task Create_Boxset_FallsBackToReleaseTitle_WhenBoxsetTitleEmpty()
+    {
+        var boxset = new Boxset { Title = null };
+        var release = new Release { Title = "Fallback Title", Year = 2024 };
+        var disc = new Disc();
+        var title = new InputModels.Title();
+
+        var ctx = NamingContext.Create(boxset, release, disc, title);
+
+        await Assert.That(ctx.Title).IsEqualTo("Fallback Title");
     }
 
     [Test]

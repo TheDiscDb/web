@@ -36,10 +36,8 @@ public sealed record NamingContext
     {
         ArgumentNullException.ThrowIfNull(mediaItem);
 
-        string yearStr = mediaItem.Year > 0 ? mediaItem.Year.ToString() : null!;
-        string? fullTitle = !string.IsNullOrWhiteSpace(mediaItem.FullTitle)
-            ? mediaItem.FullTitle
-            : BuildFullTitle(mediaItem.Title, yearStr);
+        string? yearStr = mediaItem.Year > 0 ? mediaItem.Year.ToString() : null;
+        string? fullTitle = ResolveFullTitle(mediaItem.FullTitle, mediaItem.Title, yearStr);
 
         return new NamingContext
         {
@@ -50,6 +48,32 @@ public sealed record NamingContext
             ImdbId = mediaItem.Externalids?.Imdb,
             TvdbId = mediaItem.Externalids?.Tvdb
         };
+    }
+
+    /// <summary>
+    /// Resolves the <c>{fullTitle}</c> token. When a year is available, ensures it
+    /// appears in the result: if the curator-stored <paramref name="storedFullTitle"/>
+    /// already contains the year, it is preserved verbatim (so customized values like
+    /// <c>"The Matrix Reloaded (2003)"</c> survive); otherwise a fresh
+    /// <c>"Title (Year)"</c> is built. Falls back to the stored full title or the
+    /// plain title when no year is available.
+    /// </summary>
+    internal static string? ResolveFullTitle(string? storedFullTitle, string? title, string? yearStr)
+    {
+        if (string.IsNullOrWhiteSpace(yearStr))
+        {
+            return !string.IsNullOrWhiteSpace(storedFullTitle)
+                ? storedFullTitle
+                : BuildFullTitle(title, yearStr);
+        }
+
+        if (!string.IsNullOrWhiteSpace(storedFullTitle)
+            && storedFullTitle.Contains(yearStr, StringComparison.Ordinal))
+        {
+            return storedFullTitle;
+        }
+
+        return BuildFullTitle(title, yearStr);
     }
 
     /// <summary>
@@ -115,6 +139,53 @@ public sealed record NamingContext
             EpisodeName = episodeName,
             ExtraType = extraType,
             Description = title.Description ?? disc.Name
+        };
+    }
+
+    /// <summary>
+    /// Creates a <see cref="NamingContext"/> for a disc that belongs to a
+    /// <see cref="Boxset"/> rather than a <see cref="MediaItem"/>. Boxset releases
+    /// have no <c>MediaItem</c> link in the database, so per-movie metadata
+    /// (TMDB/IMDb IDs, the source movie's title and year) is unavailable. The
+    /// boxset's title and release year are used in their place so templates that
+    /// reference <c>{title}</c>, <c>{year}</c>, or <c>{fullTitle}</c> still
+    /// produce a non-empty filename.
+    /// </summary>
+    public static NamingContext Create(Boxset boxset, Release release, Disc disc, InputModels.Title title)
+    {
+        ArgumentNullException.ThrowIfNull(boxset);
+        ArgumentNullException.ThrowIfNull(release);
+        ArgumentNullException.ThrowIfNull(disc);
+        ArgumentNullException.ThrowIfNull(title);
+
+        string? boxsetTitle = !string.IsNullOrWhiteSpace(boxset.Title) ? boxset.Title : release.Title;
+        string? yearStr = release.Year > 0 ? release.Year.ToString() : null;
+        string? fullTitle = BuildFullTitle(boxsetTitle, yearStr);
+
+        string? resolution = ResolveResolution(title.Tracks);
+        string? part = title.Index > 0 ? $"pt{title.Index}" : null;
+
+        string? rawSeason = !string.IsNullOrWhiteSpace(title.Item?.Season)
+            ? title.Item!.Season
+            : title.Season;
+        string? rawEpisode = !string.IsNullOrWhiteSpace(title.Item?.Episode)
+            ? title.Item!.Episode
+            : title.Episode;
+
+        return new NamingContext
+        {
+            Title = boxsetTitle,
+            Year = yearStr,
+            FullTitle = fullTitle,
+            Edition = release.Type,
+            Format = disc.Format,
+            Description = title.Description ?? disc.Name,
+            Resolution = resolution,
+            Part = part,
+            SeasonNumber = PadNumber(rawSeason),
+            EpisodeNumber = PadNumber(rawEpisode),
+            EpisodeName = title.Item?.Title,
+            ExtraType = title.Item?.Type,
         };
     }
 
