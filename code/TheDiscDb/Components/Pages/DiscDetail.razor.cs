@@ -72,7 +72,8 @@ public partial class DiscDetail : ComponentBase
 
             if (Item != null && !string.IsNullOrEmpty(ReleaseSlug))
             {
-                DiscRelease = Item.Releases.FirstOrDefault(r => r.Slug == ReleaseSlug);
+                DiscRelease = Item.Releases.FirstOrDefault(r =>
+                    !string.IsNullOrEmpty(r.Slug) && r.Slug.Equals(ReleaseSlug, StringComparison.OrdinalIgnoreCase));
 
                 if (DiscRelease != null && !string.IsNullOrEmpty(SlugOrIndexString))
                 {
