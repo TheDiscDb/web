@@ -296,6 +296,14 @@ builder.Services.AddSingleton<IAmazonImporter, AmazonImporter>();
 builder.Services.AddScoped<IContributionHistoryService, ContributionHistoryService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 
+// Gruv affiliate links — IGruvLinkLookup is scoped (per-request batched cache) so list pages
+// rendering many releases issue a single DB query for all of them. AffiliateLinkService is
+// stateless and singleton-safe (just reads IOptions). When Gruv:Pid / Gruv:AdvertiserId are not
+// configured, the service degrades to plain UTM-tagged URLs (no CJ redirect, no commission).
+builder.Services.Configure<TheDiscDb.Affiliate.AffiliateLinkOptions>(builder.Configuration.GetSection("Gruv"));
+builder.Services.AddSingleton<TheDiscDb.Affiliate.AffiliateLinkService>();
+builder.Services.AddScoped<TheDiscDb.Affiliate.IGruvLinkLookup, TheDiscDb.Affiliate.GruvLinkLookup>();
+
 // Mailgun email — optional, no-ops if ApiKey is not configured
 builder.Services.Configure<MailgunOptions>(builder.Configuration.GetSection("Mailgun"));
 var mailgunApiKey = builder.Configuration.GetValue<string>("Mailgun:ApiKey");

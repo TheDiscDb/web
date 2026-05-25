@@ -5,6 +5,19 @@ var builder = DistributedApplication.CreateBuilder(args);
 var adminApiKey = ResolveApiKey(builder, "AdminApiKey", ".admin-apikey");
 var publicApiKey = ResolveApiKey(builder, "PublicApiKey", ".public-apikey");
 
+// CJ (Commission Junction) Affiliate IDs for the GRUV program. Both are required to construct
+// a CJ deep link of the form `https://www.anrdoezrs.net/click-{Pid}-{AdvertiserId}?url=...`.
+// NOT secrets — the IDs are embedded in every outbound affiliate URL the site renders, like a
+// `utm_source` value. They're the two integers in the `click-PID-AID` path of any CJ deep link
+// for GRUV. The Pid here is the per-website "Promotional Property" identifier CJ assigns —
+// NOT your CJ account login number. When either is missing, AffiliateLinkService degrades to
+// emitting UTM-only URLs (no commission attribution); see AffiliateLinkService.Decorate.
+//   Dev:  dotnet user-secrets --project TheDiscDb.AppHost set Gruv:Pid "<pid>"
+//         dotnet user-secrets --project TheDiscDb.AppHost set Gruv:AdvertiserId "<aid>"
+//   Prod: set environment variables Gruv__Pid and Gruv__AdvertiserId on the AppHost process.
+var gruvPid = builder.Configuration["Gruv:Pid"] ?? "";
+var gruvAdvertiserId = builder.Configuration["Gruv:AdvertiserId"] ?? "";
+
 var useExternalSql = string.Equals(builder.Configuration["UseExternalSql"], "true", StringComparison.OrdinalIgnoreCase);
 
 var blobs = builder.AddAzureStorage("storage").RunAsEmulator(
@@ -32,6 +45,18 @@ var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
     .WithChildRelationship(migrations)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__ApiKey", adminApiKey)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__PublicApiKey", publicApiKey);
+
+// Forward Gruv affiliate IDs only when both are set on the AppHost. Aspire's
+// .WithEnvironment overrides lower-precedence providers, so unconditionally forwarding empty
+// strings would shadow any Gruv:* values the web project might have in its own user-secrets
+// or appsettings (e.g., a dev who chose to configure them at the web tier). Atomic per pair:
+// if either is missing here, forward neither and let the web project's own config win.
+if (!string.IsNullOrWhiteSpace(gruvPid) && !string.IsNullOrWhiteSpace(gruvAdvertiserId))
+{
+    backend = backend
+        .WithEnvironment("Gruv__Pid", gruvPid)
+        .WithEnvironment("Gruv__AdvertiserId", gruvAdvertiserId);
+}
 
 if (useExternalSql)
 {

@@ -15,6 +15,7 @@
                             <div class="release-title-header">
                                 <a href="@release?.ReleaseDetailUrl(Item)">@release?.Title</a>
                                 <AmazonAssociatesButton Asin="@release?.Asin" />
+                                <GruvBuyButton MediaItemSlug="@this.ParentMediaItemSlug" BoxsetSlug="@this.ParentBoxsetSlug" ReleaseSlug="@release?.Slug" Sid="release-list" />
                             </div>
                             @if (release?.Discs != null && release.Discs.Count > 0)
                             {

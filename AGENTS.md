@@ -76,3 +76,37 @@ IMPORTANT! Refer to the site's content as a **database**, not a catalogue. Do no
 
 ### Git merge strategy
 When merging feature branches into `main`, always use squash merge (`git merge --squash`). Do not use regular merge or rebase merge.
+
+## Gruv affiliate links
+
+The web app surfaces `Buy at gruv.com` buttons on Release / Boxset pages, decorated with
+Commission Junction (CJ) deep-link tracking. The mapping between a Release and a gruv.com
+product is stored in the `ReleaseAffiliateLinks` table and populated out-of-band by the
+`gruv-match` task in ContributionBuddy (separate `tools` repo).
+
+### Configuration
+
+Set the CJ attribution IDs via user-secrets (or environment variables in production):
+
+```
+dotnet user-secrets set "Gruv:Pid" "<CJ publisher ID>" --project code/TheDiscDb
+dotnet user-secrets set "Gruv:AdvertiserId" "<CJ advertiser ID>" --project code/TheDiscDb
+```
+
+Optional keys (all under the `Gruv:` section): `CjTrackingDomain` (default
+`www.anrdoezrs.net`), `UtmSource` (default `thediscdb`), `UtmMedium` (default
+`referral`), `UtmCampaign` (default `release`).
+
+If `Pid` and `AdvertiserId` are not configured, `AffiliateLinkService` degrades to
+UTM-tagged URLs only (no CJ redirect, no commission). This keeps dev environments without
+affiliate IDs functional.
+
+### Rebuild discipline
+
+The `ReleaseAffiliateLinks` table is treated as DISPOSABLE — its rows do not need to
+survive a database rebuild from `data/` JSON. After every full rebuild of the TheDiscDb
+database, re-run the `gruv-match` task to repopulate Gruv affiliate rows, otherwise the
+`Buy at gruv.com` buttons will silently disappear. The table is joined to Release at
+query time via slug pair `(MediaItemSlug | BoxsetSlug, ReleaseSlug)` rather than by
+`Release.Id`, so slugs renamed in `data/` will leave orphaned rows that simply don't
+resolve at query time — harmless.

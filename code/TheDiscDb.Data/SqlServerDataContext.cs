@@ -59,6 +59,42 @@ public class SqlServerDataContext : DbContext
 
         var externalIds = modelBuilder.Entity<ExternalIds>();
 
+        var releaseAffiliateLink = modelBuilder.Entity<ReleaseAffiliateLink>();
+        releaseAffiliateLink.HasKey(x => x.Id);
+        releaseAffiliateLink.Property(x => x.MediaItemSlug).HasMaxLength(200);
+        releaseAffiliateLink.Property(x => x.BoxsetSlug).HasMaxLength(200);
+        releaseAffiliateLink.Property(x => x.ReleaseSlug).HasMaxLength(200).IsRequired();
+        releaseAffiliateLink.Property(x => x.Provider).HasMaxLength(50).IsRequired();
+        releaseAffiliateLink.Property(x => x.ProviderHandle).HasMaxLength(300).IsRequired();
+        releaseAffiliateLink.Property(x => x.ProviderUrl).HasMaxLength(1000).IsRequired();
+        releaseAffiliateLink.Property(x => x.MatchedUpc).HasMaxLength(20);
+        releaseAffiliateLink.Property(x => x.MatchSource).HasMaxLength(50).IsRequired();
+        releaseAffiliateLink.Property(x => x.Notes).HasMaxLength(500);
+        // Two filtered unique indexes — one per parent-slug variant — because the CHECK
+        // constraint enforces that exactly one of MediaItemSlug/BoxsetSlug is non-null per row.
+        // EF Core's default unique-index filter for nullable columns requires ALL nullable
+        // columns to be non-null, which would never match our data. The explicit HasFilter
+        // here narrows uniqueness to rows where the chosen parent column is populated.
+        releaseAffiliateLink
+            .HasIndex(x => new { x.MediaItemSlug, x.ReleaseSlug, x.Provider })
+            .IsUnique()
+            .HasFilter("[MediaItemSlug] IS NOT NULL");
+        releaseAffiliateLink
+            .HasIndex(x => new { x.BoxsetSlug, x.ReleaseSlug, x.Provider })
+            .IsUnique()
+            .HasFilter("[BoxsetSlug] IS NOT NULL");
+        releaseAffiliateLink.ToTable("ReleaseAffiliateLinks", t =>
+        {
+            // Exactly one of MediaItemSlug / BoxsetSlug must be populated AND non-empty. Empty
+            // strings would pass an IS NOT NULL check but never resolve via the lookup service.
+            // Uses standard SQL (<> '') rather than SQL Server-specific LEN(...) so the
+            // constraint works in tests that spin up SQLite in-memory.
+            t.HasCheckConstraint(
+                "CK_ReleaseAffiliateLinks_OneParentSlug",
+                "([MediaItemSlug] IS NOT NULL AND [MediaItemSlug] <> '' AND [BoxsetSlug] IS NULL) " +
+                "OR ([MediaItemSlug] IS NULL AND [BoxsetSlug] IS NOT NULL AND [BoxsetSlug] <> '')");
+        });
+
         var mediaItemGroups = modelBuilder.Entity<MediaItemGroup>();
         mediaItemGroups.HasOne(x => x.MediaItem).WithMany(x => x.MediaItemGroups);
         mediaItemGroups.HasOne(x => x.Group).WithMany(x => x.MediaItemGroups);
@@ -230,6 +266,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<EngramTitle> EngramTitles { get; set; } = null!;
     public DbSet<EngramRelease> EngramReleases { get; set; } = null!;
     public DbSet<UserFileNameTemplate> UserFileNameTemplates { get; set; } = null!;
+    public DbSet<ReleaseAffiliateLink> ReleaseAffiliateLinks { get; set; } = null!;
 }
 
 public class EngramDisc
