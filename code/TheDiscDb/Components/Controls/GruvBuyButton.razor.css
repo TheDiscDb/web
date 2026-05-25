@@ -1,11 +1,12 @@
 .gruv-buy-button {
-    display: inline-block;
-    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
     margin-left: 0.25rem;
 }
 
 .gruv-buy-button a {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
 }
 
 .gruv-buy-button img {

@@ -46,8 +46,10 @@ else
                     <label>Release Date:</label>
                     @Release?.ReleaseDate.ToString("d")
                 </div>
-                <AmazonAssociatesButton Asin="@Release?.Asin" />
-                <GruvBuyButton BoxsetSlug="@this.Slug" ReleaseSlug="@Release?.Slug" Sid="boxset-detail" />
+                <div class="affiliate-buttons">
+                    <AmazonAssociatesButton Asin="@Release?.Asin" />
+                    <GruvBuyButton BoxsetSlug="@this.Slug" ReleaseSlug="@Release?.Slug" Sid="boxset-detail" />
+                </div>
                 @if (Release?.Discs != null && Release.Discs.Count > 0)
                 {
                     <h3 class="disc-list-heading">Discs</h3>

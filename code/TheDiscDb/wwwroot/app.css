@@ -222,10 +222,18 @@ h1:focus {
     text-decoration: underline;
 }
 
-.releaseTile .release-title-header .amazon-associates-button {
+.releaseTile .release-title-header .affiliate-buttons {
     flex: 0 0 auto;
+}
+
+/* Compact horizontal grouping for the per-release affiliate buttons
+   (Amazon + Gruv). Keeps the buttons together as a single visual unit so
+   they don't wrap to a second row inside a column-flex (vstack) parent and
+   so they stay vertically centered relative to each other. */
+.affiliate-buttons {
     display: inline-flex;
     align-items: center;
+    gap: 0.25rem;
 }
 
 @media (max-width: 575.98px) {

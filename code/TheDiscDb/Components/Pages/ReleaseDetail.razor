@@ -48,8 +48,10 @@ else
                             </div>
                         </dialog>
                     }
-                    <AmazonAssociatesButton Asin="@Release?.Asin" Width="25" />
-                    <GruvBuyButton MediaItemSlug="@this.Slug" ReleaseSlug="@this.ReleaseSlug" Sid="release-detail" Width="25" />
+                    <div class="affiliate-buttons">
+                        <AmazonAssociatesButton Asin="@Release?.Asin" Width="25" />
+                        <GruvBuyButton MediaItemSlug="@this.Slug" ReleaseSlug="@this.ReleaseSlug" Sid="release-detail" Width="25" />
+                    </div>
                     @if (Release?.Discs != null && Release.Discs.Count > 0)
                     {
                         <h3 class="disc-list-heading">Discs</h3>
