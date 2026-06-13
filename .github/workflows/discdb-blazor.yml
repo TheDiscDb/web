@@ -12,18 +12,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        path: src
+    - name: Checkout data repository
+      uses: actions/checkout@v4
+      with:
+        repository: TheDiscDb/data
+        path: data
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Restore
-      run: dotnet restore "code/TheDiscDb/TheDiscDb.csproj"
+      run: dotnet restore "src/code/TheDiscDb/TheDiscDb.csproj"
     - name: Build
-      run: dotnet build "code/TheDiscDb/TheDiscDb.csproj" --configuration Release --no-restore
+      run: dotnet build "src/code/TheDiscDb/TheDiscDb.csproj" --configuration Release --no-restore
     - name: Test
-      run: dotnet test --project "code/TheDiscDb.UnitTests/TheDiscDb.UnitTests.csproj" --configuration Release
+      run: dotnet test --project "src/code/TheDiscDb.UnitTests/TheDiscDb.UnitTests.csproj" --configuration Release
     - name: Publish
-      run: dotnet publish "code/TheDiscDb/TheDiscDb.csproj" --configuration Release --no-build --output publish
+      run: dotnet publish "src/code/TheDiscDb/TheDiscDb.csproj" --configuration Release --no-build --output publish
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:

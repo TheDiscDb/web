@@ -26,8 +26,8 @@
         <PackageReference Include="System.ServiceModel.Syndication" Version="10.0.5" />
         <PackageReference Include="FluentResults.Extensions.AspNetCore" Version="0.2.0" />
         <PackageReference Include="ScrapySharp" Version="3.0.0" />
-            <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
-            <PackageReference Include="Octokit" Version="14.0.0" />
+        <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
+        <PackageReference Include="Octokit" Version="14.0.0" />
         </ItemGroup>
         <ItemGroup>
             <InternalsVisibleTo Include="TheDiscDb.UnitTests" />
