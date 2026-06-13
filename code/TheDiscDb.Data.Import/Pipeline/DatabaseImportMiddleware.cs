@@ -7,25 +7,38 @@ namespace TheDiscDb.Data.Import.Pipeline
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Identity;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.DependencyInjection;
     using TheDiscDb.InputModels;
     using TheDiscDb.Web.Data;
 
     public class DatabaseImportMiddleware : IMiddleware, IAsyncDisposable
     {
-        private readonly SqlServerDataContext dbContext;
+        private readonly IDbContextFactory<SqlServerDataContext> dbFactory;
+        private SqlServerDataContext dbContext;
         private readonly IItemHandler<MediaItem> mediaItemHandler;
         private readonly IItemHandler<Boxset> boxsetItemHandler;
-        private readonly UserManager<TheDiscDbUser> userManager;
+        // UserManager<T> is scoped; this singleton resolves it per-use via a short-lived scope.
+        private readonly IServiceScopeFactory scopeFactory;
 
-        public DatabaseImportMiddleware(IDbContextFactory<SqlServerDataContext> dbFactory, IItemHandler<MediaItem> mediaItemHandler, IItemHandler<Boxset> boxsetItemHandler, UserManager<TheDiscDbUser> userManager)
+        public DatabaseImportMiddleware(IDbContextFactory<SqlServerDataContext> dbFactory, IItemHandler<MediaItem> mediaItemHandler, IItemHandler<Boxset> boxsetItemHandler, IServiceScopeFactory scopeFactory)
         {
-            this.dbContext = dbFactory.CreateDbContext();
+            this.dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             this.mediaItemHandler = mediaItemHandler ?? throw new ArgumentNullException(nameof(mediaItemHandler));
             this.boxsetItemHandler = boxsetItemHandler ?? throw new ArgumentNullException(nameof(boxsetItemHandler));
-            this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+            this.scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         }
 
         public Func<ImportItem, CancellationToken, Task> Next { get; set; } = (_, _) => Task.CompletedTask;
+
+        private SqlServerDataContext GetDbContext()
+        {
+            if (this.dbContext == null)
+            {
+                this.dbContext = this.dbFactory.CreateDbContext();
+            }
+
+            return this.dbContext;
+        }
 
         public async ValueTask DisposeAsync()
         {
@@ -39,11 +52,11 @@ namespace TheDiscDb.Data.Import.Pipeline
             // entities loaded for a previous item stay tracked and collide with entities
             // materialized for the next item (e.g. a shared MediaItemGroup throws an
             // identity conflict during DetectChanges).
-            this.dbContext.ChangeTracker.Clear();
+            this.GetDbContext().ChangeTracker.Clear();
 
             if (item.MediaItem != null)
             {
-                var fromDatabase = await this.dbContext.MediaItems
+                var fromDatabase = await this.GetDbContext().MediaItems
                             .Include(i => i.Externalids)
                             .Include(i => i.MediaItemGroups)
                             .ThenInclude(i => i.Group)
@@ -76,14 +89,14 @@ namespace TheDiscDb.Data.Import.Pipeline
                         item.MediaItem.DateAdded = DateTime.UtcNow;
                     }
                     await this.HandleContributorsOnAdd(item.MediaItem, cancellationToken);
-                    this.dbContext.MediaItems.Add(item.MediaItem);
+                    this.GetDbContext().MediaItems.Add(item.MediaItem);
                 }
 
                 await this.SaveChangesAsync();
             }
             else if (item.Boxset != null)
             {
-                var fromDatabase = await this.dbContext.BoxSets
+                var fromDatabase = await this.GetDbContext().BoxSets
                     .Include(i => i.Release)
                     .ThenInclude(r => r!.Discs)
                     .ThenInclude(d => d.Titles)
@@ -104,7 +117,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                             item.Boxset.Release.DateAdded = DateTime.UtcNow;
                         }
                     }
-                    this.dbContext.BoxSets.Add(item.Boxset);
+                    this.GetDbContext().BoxSets.Add(item.Boxset);
                 }
 
                 await this.SaveChangesAsync();
@@ -117,7 +130,7 @@ namespace TheDiscDb.Data.Import.Pipeline
         {
             try
             {
-                await this.dbContext.SaveChangesAsync();
+                await this.GetDbContext().SaveChangesAsync();
             }
             catch
             {
@@ -125,7 +138,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                 // After a failed SaveChanges, Added/Modified entities remain in the
                 // change tracker. If the next item shares an entity (e.g. same
                 // contributor), EF would try to insert duplicates.
-                foreach (var entry in this.dbContext.ChangeTracker.Entries()
+                foreach (var entry in this.GetDbContext().ChangeTracker.Entries()
                     .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified)
                     .ToList())
                 {
@@ -168,7 +181,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                         if (databaseContributor == null || databaseContributor.Id == 0)
                         {
                             // Not in this release or pending add — check globally
-                            var existingContributor = await this.dbContext.Contributors
+                            var existingContributor = await this.GetDbContext().Contributors
                                 .FirstOrDefaultAsync(c => c.Name == contributor.Name, cancellationToken);
                             if (existingContributor != null)
                             {
@@ -177,7 +190,9 @@ namespace TheDiscDb.Data.Import.Pipeline
                             }
                             else
                             {
-                                var user = await this.userManager.FindByNameAsync(contributor.Name);
+                                using var scope = this.scopeFactory.CreateScope();
+                                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TheDiscDbUser>>();
+                                var user = await userManager.FindByNameAsync(contributor.Name);
                                 if (user != null)
                                 {
                                     contributor.UserId = user.Id;
@@ -227,7 +242,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                         continue;
                     }
 
-                    var existingContributor = await this.dbContext.Contributors
+                    var existingContributor = await this.GetDbContext().Contributors
                         .FirstOrDefaultAsync(c => c.Name == contributor.Name, cancellationToken);
                     if (existingContributor != null)
                     {
@@ -236,7 +251,9 @@ namespace TheDiscDb.Data.Import.Pipeline
                     }
                     else
                     {
-                        var user = await this.userManager.FindByNameAsync(contributor.Name);
+                        using var scope = this.scopeFactory.CreateScope();
+                        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<TheDiscDbUser>>();
+                        var user = await userManager.FindByNameAsync(contributor.Name);
                         if (user != null)
                         {
                             contributor.UserId = user.Id;

@@ -24,7 +24,7 @@ namespace TheDiscDb.Data.Import.Pipeline
         private readonly IOptions<DataImporterOptions> dataImportOptions;
         private readonly IStaticAssetStore imageStore;
         private readonly IFileSystem fileSystem;
-        private readonly SqlServerDataContext dbContext;
+        private SqlServerDataContext dbContext;
 
         public GroupImportMiddleware(IDbContextFactory<SqlServerDataContext> dbFactory, HttpClient httpClient, IOptions<DataImporterOptions> dataImportOptions, IStaticAssetStore imageStore, IFileSystem fileSystem)
         {
@@ -33,10 +33,19 @@ namespace TheDiscDb.Data.Import.Pipeline
             this.dataImportOptions = dataImportOptions ?? throw new ArgumentNullException(nameof(dataImportOptions));
             this.imageStore = imageStore ?? throw new ArgumentNullException(nameof(imageStore));
             this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
-            this.dbContext = dbFactory.CreateDbContext();
         }
 
         public Func<ImportItem, CancellationToken, Task> Next { get; set; } = (_, _) => Task.CompletedTask;
+
+        private SqlServerDataContext GetDbContext()
+        {
+            if (this.dbContext == null)
+            {
+                this.dbContext = this.dbFactory.CreateDbContext();
+            }
+
+            return this.dbContext;
+        }
 
         public async Task Process(ImportItem item, CancellationToken cancellationToken)
         {
@@ -44,7 +53,7 @@ namespace TheDiscDb.Data.Import.Pipeline
             // every pipeline Run/ProcessItem call. Reset the change tracker so entities
             // tracked for a prior item don't collide with entities materialized (or
             // re-attached from groupCache/mediaItemGroupCache) for this one.
-            this.dbContext.ChangeTracker.Clear();
+            this.GetDbContext().ChangeTracker.Clear();
 
             // groupCache and mediaItemGroupCache are also singleton-scoped. EF fixup
             // populated each cached entity's navigation collections during the prior
@@ -73,7 +82,7 @@ namespace TheDiscDb.Data.Import.Pipeline
             if (item.MediaItem != null)
             {
                 bool shouldSave = false;
-                this.dbContext.Attach(item.MediaItem);
+                this.GetDbContext().Attach(item.MediaItem);
 
                 // Collect custom Groups from release.json files and merge them
                 // into metadata so they are processed alongside title-level groups.
@@ -108,12 +117,12 @@ namespace TheDiscDb.Data.Import.Pipeline
                 {
                     try
                     {
-                        await this.dbContext.SaveChangesAsync(cancellationToken);
+                        await this.GetDbContext().SaveChangesAsync(cancellationToken);
                     }
                     catch (Exception e)
                     {
                         // Detach pending entities so they don't pollute subsequent items.
-                        foreach (var entry in this.dbContext.ChangeTracker.Entries()
+                        foreach (var entry in this.GetDbContext().ChangeTracker.Entries()
                             .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified)
                             .ToList())
                         {
@@ -178,7 +187,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                         Role = Roles.Genre
                     };
 
-                    this.dbContext.MediaItemGroup.Add(mig);
+                    this.GetDbContext().MediaItemGroup.Add(mig);
                     item.MediaItemGroups.Add(mig);
                     mediaItemGroupCache.TryAdd($"{Roles.Genre}-{slug}-{item.Id}", mig);
                 }
@@ -247,7 +256,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                     IsFeatured = isFeatured
                 };
 
-                this.dbContext.MediaItemGroup.Add(mig);
+                this.GetDbContext().MediaItemGroup.Add(mig);
                 item.MediaItemGroups.Add(mig);
                 mediaItemGroupCache.TryAdd($"{role}-{slug}-{item.Id}", mig);
             }
@@ -369,7 +378,7 @@ namespace TheDiscDb.Data.Import.Pipeline
 
                     if (existingReleaseGroup == null && release.Id != 0)
                     {
-                        existingReleaseGroup = await this.dbContext.ReleaseGroups
+                        existingReleaseGroup = await this.GetDbContext().ReleaseGroups
                             .FirstOrDefaultAsync(rg => rg.ReleaseId == release.Id && rg.GroupId == group.Id, cancellationToken);
                     }
 
@@ -692,12 +701,12 @@ namespace TheDiscDb.Data.Import.Pipeline
 
             if (!string.IsNullOrEmpty(imdbId))
             {
-                group = await this.dbContext.Groups.FirstOrDefaultAsync(g => g.ImdbId == imdbId, cancellationToken);
+                group = await this.GetDbContext().Groups.FirstOrDefaultAsync(g => g.ImdbId == imdbId, cancellationToken);
 
                 if (group == null)
                 {
                     // Check for collisions based on name
-                    group = await this.dbContext.Groups.FirstOrDefaultAsync(g => g.Name == name, cancellationToken);
+                    group = await this.GetDbContext().Groups.FirstOrDefaultAsync(g => g.Name == name, cancellationToken);
 
                     if (group != null)
                     {
@@ -708,7 +717,7 @@ namespace TheDiscDb.Data.Import.Pipeline
             }
             else
             {
-                group = await this.dbContext.Groups.FirstOrDefaultAsync(g => g.Name == name, cancellationToken);
+                group = await this.GetDbContext().Groups.FirstOrDefaultAsync(g => g.Name == name, cancellationToken);
             }
 
             if (group != null)
@@ -737,11 +746,11 @@ namespace TheDiscDb.Data.Import.Pipeline
             MediaItemGroup? result = null;
             if (string.IsNullOrEmpty(group.ImdbId))
             {
-                result = await this.dbContext.MediaItemGroup.FirstOrDefaultAsync(g => g.Role == roleName && g.Group != null && g.Group.Name == group.Name && g.MediaItemId == mediaItemId, cancellationToken);
+                result = await this.GetDbContext().MediaItemGroup.FirstOrDefaultAsync(g => g.Role == roleName && g.Group != null && g.Group.Name == group.Name && g.MediaItemId == mediaItemId, cancellationToken);
             }
             else
             {
-                result = await this.dbContext.MediaItemGroup.FirstOrDefaultAsync(g => g.Role == roleName && g.Group != null && g.Group.ImdbId == group.ImdbId && g.MediaItemId == mediaItemId, cancellationToken);
+                result = await this.GetDbContext().MediaItemGroup.FirstOrDefaultAsync(g => g.Role == roleName && g.Group != null && g.Group.ImdbId == group.ImdbId && g.MediaItemId == mediaItemId, cancellationToken);
             }
 
             if (result != null)
@@ -791,7 +800,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                 return cached;
             }
 
-            return this.dbContext.Groups.Local.FirstOrDefault(g => g.Id == cached.Id) ?? cached;
+            return this.GetDbContext().Groups.Local.FirstOrDefault(g => g.Id == cached.Id) ?? cached;
         }
 
         private MediaItemGroup ResolveTracked(MediaItemGroup cached)
@@ -801,7 +810,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                 return cached;
             }
 
-            return this.dbContext.MediaItemGroup.Local.FirstOrDefault(g => g.Id == cached.Id) ?? cached;
+            return this.GetDbContext().MediaItemGroup.Local.FirstOrDefault(g => g.Id == cached.Id) ?? cached;
         }
     }
 }

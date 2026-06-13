@@ -16,6 +16,8 @@
     <h2>@this.Contribution.Title (@this.Contribution.Year) - @this.Contribution.ReleaseTitle</h2>
     <a href="/admin/contribution/@this.ContributionId/edit">Edit Contribution</a>
     <span class="mx-2">|</span>
+    <a href="/admin/contribution/@this.ContributionId/import">Open Import Workspace</a>
+    <span class="mx-2">|</span>
     <a href="/admin/contribution/@this.ContributionId/history">View History</a>
     if(!string.IsNullOrEmpty(this.Contribution.FrontImageUrl))
     {

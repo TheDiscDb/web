@@ -1,5 +1,6 @@
 using Azure;
 using Azure.Storage.Blobs.Models;
+using Fantastic.FileSystem;
 using Fantastic.TheMovieDb.Caching.FileSystem;
 using HighlightBlazor;
 using KristofferStrube.Blazor.FileSystemAccess;
@@ -17,11 +18,15 @@ using TheDiscDb;
 using TheDiscDb.Client;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
+using TheDiscDb.Data.Import.Pipeline;
 using TheDiscDb.GraphQL;
 using TheDiscDb.GraphQL.Contribute;
 using TheDiscDb.GraphQL.Contribute.Mutations;
 using TheDiscDb.Search;
 using TheDiscDb.Services;
+using TheDiscDb.Services.Admin;
+using TheDiscDb.Services.Admin.GitHub;
+using TheDiscDb.Services.Admin.Workspace;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Validation.Boxset;
@@ -327,6 +332,36 @@ builder.Services.AddSingleton<IBoxsetValidation, BoxsetHasImageValidation>();
 builder.Services.AddSingleton<IBoxsetValidation, BoxsetSlugValidation>();
 builder.Services.AddSingleton<IBoxsetValidation, BoxsetMemberDiscsValidation>();
 builder.Services.AddSingleton<IBoxsetValidation, BoxsetMemberReleaseSlugValidation>();
+
+builder.Services.AddSingleton<IFileSystem>(new PhysicalFileSystem());
+builder.Services.AddImportPipeline(includeSearchIndex: false);
+
+// Override the import pipeline middleware to upload images into the main images blob container
+// (not the default "contributions" container) so that ImageSharp can serve them correctly.
+builder.Services.AddSingleton<CoverImageUploadMiddleware>(provider =>
+{
+    var fileSystem = provider.GetRequiredService<IFileSystem>();
+    var imageStore = provider.GetRequiredKeyedService<IStaticAssetStore>(KeyedServiceNames.ImagesAssetStore);
+    return new CoverImageUploadMiddleware(fileSystem, imageStore);
+});
+
+builder.Services.AddSingleton<GroupImportMiddleware>(provider =>
+{
+    var dbFactory = provider.GetRequiredService<IDbContextFactory<SqlServerDataContext>>();
+    var httpClient = provider.GetRequiredService<IHttpClientFactory>().CreateClient();
+    var dataImportOptions = provider.GetRequiredService<IOptions<DataImporterOptions>>();
+    var imageStore = provider.GetRequiredKeyedService<IStaticAssetStore>(KeyedServiceNames.ImagesAssetStore);
+    var fileSystem = provider.GetRequiredService<IFileSystem>();
+    return new GroupImportMiddleware(dbFactory, httpClient, dataImportOptions, imageStore, fileSystem);
+});
+
+builder.Services.Configure<ContributionImportOptions>(builder.Configuration.GetSection("ContributionImport"));
+builder.Services.Configure<GitHubOptions>(builder.Configuration.GetSection("GitHub"));
+builder.Services.AddSingleton<IDataRepositoryWorkspaceFactory, LocalDataRepositoryWorkspaceFactory>();
+builder.Services.AddScoped<ContributionGeneratorService>();
+builder.Services.AddScoped<ContributionImportPipelineRunner>();
+builder.Services.AddScoped<GitHubPullRequestService>();
+builder.Services.AddScoped<IContributionImportOrchestrator, ContributionImportOrchestrator>();
 
 var app = builder.Build();
 

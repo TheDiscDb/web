@@ -19,6 +19,7 @@ var gruvPid = builder.Configuration["Gruv:Pid"] ?? "";
 var gruvAdvertiserId = builder.Configuration["Gruv:AdvertiserId"] ?? "";
 
 var useExternalSql = string.Equals(builder.Configuration["UseExternalSql"], "true", StringComparison.OrdinalIgnoreCase);
+var useAzureFileShare = string.Equals(builder.Configuration["UseAzureFileShare"], "true", StringComparison.OrdinalIgnoreCase);
 
 var blobs = builder.AddAzureStorage("storage").RunAsEmulator(
                      azurite =>
@@ -27,7 +28,15 @@ var blobs = builder.AddAzureStorage("storage").RunAsEmulator(
                      })
     .AddBlobs("blobs");
 
-var dataDirectoryRoot = Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "..", "..", "data", "data"));
+// For online import testing: use Azure file share (Y:\data on dev, mounted share in production)
+// The data repository lives at the repo root's data/ subdirectory.
+var dataDirectoryRoot = useAzureFileShare
+    ? Path.GetFullPath(@"Y:\data\data")
+    : Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "..", "..", "data", "data"));
+
+var workspacePath = useAzureFileShare
+    ? Path.GetFullPath("Y:\\workspace")
+    : Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "..", "..", "import-workspace"));
 
 var migrations = builder.AddProject<Projects.TheDiscDb_DatabaseMigration>("migrations")
     .WithReference(blobs)
@@ -44,7 +53,9 @@ var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
     .WaitFor(migrations)
     .WithChildRelationship(migrations)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__ApiKey", adminApiKey)
-    .WithEnvironment("GraphQL__ApiKeyAuthentication__PublicApiKey", publicApiKey);
+    .WithEnvironment("GraphQL__ApiKeyAuthentication__PublicApiKey", publicApiKey)
+    .WithEnvironment("ContributionImport__DataRepositoryPath", dataDirectoryRoot)
+    .WithEnvironment("ContributionImport__WorkspacePath", workspacePath);
 
 // Forward Gruv affiliate IDs only when both are set on the AppHost. Aspire's
 // .WithEnvironment overrides lower-precedence providers, so unconditionally forwarding empty

@@ -4,7 +4,9 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ContributionImport__DataRepositoryPath": "..\\..\\..\\data\\data",
+        "ContributionImport__WorkspacePath": "..\\..\\..\\import-workspace"
       },
       "applicationUrl": "https://localhost:51317"
     }

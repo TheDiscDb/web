@@ -1,0 +1,103 @@
+﻿@page "/admin/contribution/{ContributionId}/import"
+@using HighlightBlazor
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Contribution Import</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink(), GetContributionLink()]" PrimaryText="Import Workspace" />
+
+<h1>Contribution Import Workspace</h1>
+
+@if (Contribution == null)
+{
+    <div class="alert alert-danger">Contribution not found.</div>
+}
+else
+{
+    <p class="text-muted">
+        @Contribution.Title (@Contribution.Year) · @Contribution.ReleaseTitle · Status: <strong>@Contribution.Status</strong>
+    </p>
+
+    <section class="info-card mb-3">
+        <h2>Workflow</h2>
+        <ol class="mb-0">
+            <li>Generate contribution artifacts.</li>
+            <li>Import the generated files into the database.</li>
+            <li>Create the GitHub pull request from the materialized workspace.</li>
+        </ol>
+    </section>
+
+    <section class="info-card mb-3">
+        <h2>Run Import</h2>
+        <div class="d-flex gap-2 align-items-center flex-wrap mb-3">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="overwriteCheck" @bind="OverwriteFiles" disabled="@IsRunning" />
+                <label class="form-check-label" for="overwriteCheck">Overwrite existing files</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="importCheck" @bind="RunImportStep" disabled="@IsRunning" />
+                <label class="form-check-label" for="importCheck">Import into database</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="prCheck" @bind="CreatePullRequest" disabled="@IsRunning" />
+                <label class="form-check-label" for="prCheck">Create GitHub pull request</label>
+            </div>
+        </div>
+        <button class="btn btn-primary" @onclick="RunImportAsync" disabled="@IsRunning">
+            @if (IsRunning)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <span>Running...</span>
+            }
+            else
+            {
+                <span>Run Import</span>
+            }
+        </button>
+    </section>
+
+    @if (LogLines.Count > 0)
+    {
+        <section class="info-card mb-3">
+            <h2>Import Log</h2>
+            @if (!string.IsNullOrEmpty(PrUrl))
+            {
+                <div class="alert alert-success">
+                    Pull request created: <a href="@PrUrl" target="_blank">@PrUrl</a>
+                </div>
+            }
+            @if (HasError)
+            {
+                <div class="alert alert-danger">Import failed. See log below.</div>
+            }
+            <pre class="import-log">@string.Join("\n", LogLines)</pre>
+        </section>
+    }
+
+    <section class="info-card mb-3">
+        <h2>Command preview</h2>
+        <CodeHighlight CodeLanguage="PowerShell" Code="@WorkflowCommand" />
+        <button class="btn btn-outline-primary mt-2" @onclick="CopyWorkflowCommandAsync">Copy command</button>
+    </section>
+
+    <section class="info-card mb-3">
+        <h2>Current contribution details</h2>
+        <dl class="row mb-0">
+            <dt class="col-sm-3">User</dt>
+            <dd class="col-sm-9">@UserDisplayName</dd>
+
+            <dt class="col-sm-3">Release title</dt>
+            <dd class="col-sm-9">@Contribution.ReleaseTitle</dd>
+
+            <dt class="col-sm-3">Encoded ID</dt>
+            <dd class="col-sm-9"><code>@ContributionEncodedId</code></dd>
+
+            <dt class="col-sm-3">Front image</dt>
+            <dd class="col-sm-9">@(string.IsNullOrEmpty(Contribution.FrontImageUrl) ? "Not uploaded" : "Uploaded")</dd>
+
+            <dt class="col-sm-3">Back image</dt>
+            <dd class="col-sm-9">@(string.IsNullOrEmpty(Contribution.BackImageUrl) ? "Not uploaded" : "Uploaded")</dd>
+        </dl>
+    </section>
+}

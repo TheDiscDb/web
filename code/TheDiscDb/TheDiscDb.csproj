@@ -7,8 +7,8 @@
         <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.3.5" />
-        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.3.5" />
+        <PackageReference Include="Aspire.Azure.Storage.Blobs" Version="13.4.3" />
+        <PackageReference Include="Aspire.Microsoft.EntityFrameworkCore.SqlServer" Version="13.4.3" />
         <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
         <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="15.1.14" />
         <PackageReference Include="Markdig" Version="1.1.2" />
@@ -26,13 +26,16 @@
         <PackageReference Include="System.ServiceModel.Syndication" Version="10.0.5" />
         <PackageReference Include="FluentResults.Extensions.AspNetCore" Version="0.2.0" />
         <PackageReference Include="ScrapySharp" Version="3.0.0" />
-    </ItemGroup>
-    <ItemGroup>
-        <InternalsVisibleTo Include="TheDiscDb.UnitTests" />
-    </ItemGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\TheDiscDb.Client\TheDiscDb.Client.csproj" />
-        <ProjectReference Include="..\TheDiscDb.Data.Import\TheDiscDb.Data.Import.csproj" />
+            <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
+            <PackageReference Include="Octokit" Version="14.0.0" />
+        </ItemGroup>
+        <ItemGroup>
+            <InternalsVisibleTo Include="TheDiscDb.UnitTests" />
+        </ItemGroup>
+        <ItemGroup>
+            <ProjectReference Include="..\TheDiscDb.Client\TheDiscDb.Client.csproj" />
+            <ProjectReference Include="..\TheDiscDb.Data.Import\TheDiscDb.Data.Import.csproj" />
+            <ProjectReference Include="..\..\..\data\tools\TheDiscDb.Import\TheDiscDb.Import.csproj" />
         <ProjectReference Include="..\TheDiscDb.Mailgun\TheDiscDb.Mailgun.csproj" />
         <ProjectReference Include="..\TheDiscDb.Naming\TheDiscDb.Naming.csproj" />
         <ProjectReference Include="..\TheDiscDb.ServiceDefaults\TheDiscDb.ServiceDefaults.csproj" />

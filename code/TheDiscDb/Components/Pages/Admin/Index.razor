@@ -33,6 +33,9 @@
     <PropertyColumn Property="@(c => c.Status)" Sortable="true" />
     <PropertyColumn Property="@(c => c.Discs.Count)" Title="Discs" Sortable="true" />
     <PropertyColumn Property="@(c => !string.IsNullOrEmpty(c.FrontImageUrl))" Title="Cover Image" Sortable="true" />
+    <TemplateColumn Title="Actions">
+        <a href="/admin/contribution/@context.Id/import">Import</a>
+    </TemplateColumn>
 </QuickGrid>
 
 <h2 class="mt-4">Boxsets</h2>
