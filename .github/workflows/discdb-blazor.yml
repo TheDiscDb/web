@@ -34,7 +34,7 @@ jobs:
     - name: Build
       run: dotnet build "src/code/TheDiscDb/TheDiscDb.csproj" --configuration Release --no-restore
     - name: Test
-      run: dotnet test --project "src/code/TheDiscDb.UnitTests/TheDiscDb.UnitTests.csproj" --configuration Release
+      run: dotnet test "src/code/TheDiscDb.UnitTests/TheDiscDb.UnitTests.csproj" --configuration Release
     - name: Publish
       run: dotnet publish "src/code/TheDiscDb/TheDiscDb.csproj" --configuration Release --no-build --output publish
     - name: Upload artifact
