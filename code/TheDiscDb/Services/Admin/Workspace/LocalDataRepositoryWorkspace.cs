@@ -63,7 +63,7 @@ public class LocalDataRepositoryWorkspaceFactory : IDataRepositoryWorkspaceFacto
         var cachedRepoPath = this.configuration.GetValue<string>("ContributionImport:DataRepositoryPath")
             ?? throw new InvalidOperationException(
                 "ContributionImport:DataRepositoryPath is not configured. " +
-                "Set this to the cached data repository checkout that will be refreshed with git pull.");
+                "Set this to the data directory inside your checked-out data repository.");
 
         workspacePath = System.IO.Path.GetFullPath(workspacePath);
         cachedRepoPath = System.IO.Path.GetFullPath(cachedRepoPath);
@@ -73,9 +73,7 @@ public class LocalDataRepositoryWorkspaceFactory : IDataRepositoryWorkspaceFacto
             "Initializing workspace with cache at {CachePath}",
             cachedRepoPath);
 
-        string repoRootPath = System.IO.Path.GetDirectoryName(cachedRepoPath)
-            ?? throw new InvalidOperationException(
-                $"Could not determine the repository root from '{cachedRepoPath}'.");
+        string repoRootPath = ResolveRepoRootPath(cachedRepoPath);
 
         // Create a unique temporary directory for this import's work
         string workDirectoryPath = System.IO.Path.Combine(
@@ -90,5 +88,26 @@ public class LocalDataRepositoryWorkspaceFactory : IDataRepositoryWorkspaceFacto
 
         return Task.FromResult<IDataRepositoryWorkspace>(
             new LocalDataRepositoryWorkspace(cachedRepoPath, repoRootPath, workDirectoryPath));
+    }
+
+    private static string ResolveRepoRootPath(string dataRepositoryPath)
+    {
+        // Support both layouts:
+        // 1) <repo-root>/data  (data path points to repo data dir, parent is git root)
+        // 2) <repo-root>       (data path itself is the git root)
+        if (Directory.Exists(System.IO.Path.Combine(dataRepositoryPath, ".git")))
+        {
+            return dataRepositoryPath;
+        }
+
+        var parent = System.IO.Path.GetDirectoryName(dataRepositoryPath);
+        if (!string.IsNullOrEmpty(parent) && Directory.Exists(System.IO.Path.Combine(parent, ".git")))
+        {
+            return parent;
+        }
+
+        throw new InvalidOperationException(
+            $"Could not find a Git repository root for '{dataRepositoryPath}'. " +
+            $"Expected .git in '{dataRepositoryPath}' or its parent.");
     }
 }
