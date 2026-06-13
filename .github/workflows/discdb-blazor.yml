@@ -19,6 +19,12 @@ jobs:
       with:
         repository: TheDiscDb/data
         path: data
+        fetch-depth: 1
+        sparse-checkout: |
+          tools/TheDiscDb.Import
+          tools/ImportBuddy/source/ImportBuddy/TheDiscDb.Core
+          tools/ImportBuddy/source/ImportBuddy/TheDiscDb.MakeMkv
+        sparse-checkout-cone-mode: false
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v3
       with:
