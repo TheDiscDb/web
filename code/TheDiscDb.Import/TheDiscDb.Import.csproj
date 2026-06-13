@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Fantastic.TheMovieDb" Version="2.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\TheDiscDb.Core\TheDiscDb.Core.csproj" />
+        <ProjectReference Include="..\TheDiscDb.MakeMkv\TheDiscDb.MakeMkv.csproj" />
+    </ItemGroup>
+
+</Project>

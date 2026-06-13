@@ -18,5 +18,5 @@
   <Project Path="TheDiscDb.Naming/TheDiscDb.Naming.csproj" />
   <Project Path="TheDiscDb.UnitTests/TheDiscDb.UnitTests.csproj" />
   <Project Path="TheDiscDb.IntegrationTests/TheDiscDb.IntegrationTests.csproj" />
-  <Project Path="../../data/tools/TheDiscDb.Import/TheDiscDb.Import.csproj" />
+  <Project Path="TheDiscDb.Import/TheDiscDb.Import.csproj" />
 </Solution>
