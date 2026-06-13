@@ -122,7 +122,7 @@ public class ContributionGeneratorService
 
         string? posterUrl = importItem.GetPosterUrl();
         string posterPath = this.fileSystem.Path.Combine(basePath, "cover.jpg");
-        if (!await this.fileSystem.File.Exists(posterPath) || overwrite)
+        if (!await this.fileSystem.File.Exists(posterPath))
         {
             if (!string.IsNullOrEmpty(posterUrl))
             {
@@ -132,7 +132,7 @@ public class ContributionGeneratorService
         }
 
         string tmdbPath = this.fileSystem.Path.Combine(basePath, "tmdb.json");
-        if (!await this.fileSystem.File.Exists(tmdbPath) || overwrite)
+        if (!await this.fileSystem.File.Exists(tmdbPath))
         {
             if (importItem.GetTmdbItemToSerialize() != null)
             {
@@ -141,7 +141,7 @@ public class ContributionGeneratorService
         }
 
         string imdbPath = this.fileSystem.Path.Combine(basePath, "imdb.json");
-        if (!await this.fileSystem.File.Exists(imdbPath) || overwrite)
+        if (!await this.fileSystem.File.Exists(imdbPath))
         {
             if (importItem.ImdbTitle != null)
             {
@@ -150,7 +150,7 @@ public class ContributionGeneratorService
         }
 
         string metadataPath = this.fileSystem.Path.Combine(basePath, MetadataFile.Filename);
-        if (!await this.fileSystem.File.Exists(metadataPath) || overwrite)
+        if (!await this.fileSystem.File.Exists(metadataPath))
         {
             if (categories is { Length: > 0 })
             {

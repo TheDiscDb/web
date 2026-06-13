@@ -33,7 +33,7 @@ else
         <div class="d-flex gap-2 align-items-center flex-wrap mb-3">
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="overwriteCheck" @bind="OverwriteFiles" disabled="@IsRunning" />
-                <label class="form-check-label" for="overwriteCheck">Overwrite existing files</label>
+                <label class="form-check-label" for="overwriteCheck">Overwrite existing files in release folder only</label>
             </div>
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="importCheck" @bind="RunImportStep" disabled="@IsRunning" />
