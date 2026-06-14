@@ -1,6 +1,4 @@
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
+using System.Diagnostics;
 using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,41 +12,22 @@ public class GitHubPullRequestService
 {
     private readonly IOptions<GitHubOptions> gitHubOptions;
     private readonly ILogger<GitHubPullRequestService> logger;
-    private readonly HttpClient httpClient;
 
     public GitHubPullRequestService(
         IOptions<GitHubOptions> gitHubOptions,
-        ILogger<GitHubPullRequestService> logger,
-        HttpClient httpClient)
+        ILogger<GitHubPullRequestService> logger)
     {
         this.gitHubOptions = gitHubOptions;
         this.logger = logger;
-        this.httpClient = httpClient;
     }
 
-    public async Task<string> CreatePullRequestAsync(
-        string releasePath,
-        string titleSlug,
-        string releaseSlug,
-        string commitMessage,
-        string repoRoot,
-        CancellationToken cancellationToken = default)
-    {
-        string titleDirectory = System.IO.Path.GetDirectoryName(releasePath) ?? releasePath;
-        string branchName = $"contribution/{titleSlug}/{releaseSlug}";
-        return await CreatePullRequestForScopesAsync(branchName, [titleDirectory], commitMessage, repoRoot, cancellationToken);
-    }
-
-    public async Task<string> CreatePullRequestForScopesAsync(
+    public bool CommitGeneratedFiles(
         string branchName,
-        IReadOnlyCollection<string> scopeDirectories,
+        IReadOnlyCollection<string> stagedFiles,
         string commitMessage,
-        string repoRoot,
-        CancellationToken cancellationToken = default)
+        string repoRoot)
     {
         var options = this.gitHubOptions.Value;
-        var github = CreateGitHubClient(options);
-
         using var repo = new LibGit2Sharp.Repository(repoRoot);
 
         var defaultBranch = repo.Branches[options.DefaultBranch]
@@ -64,69 +43,74 @@ public class GitHubPullRequestService
 
         var newBranch = repo.CreateBranch(branchName, defaultBranch.Tip);
         Commands.Checkout(repo, newBranch);
+        var stopwatch = Stopwatch.StartNew();
 
         try
         {
-            var scopePrefixes = new List<(string RelDir, string PathPrefix)>();
-            foreach (var scope in scopeDirectories.Distinct(StringComparer.OrdinalIgnoreCase))
+            foreach (var stagedFile in stagedFiles.Distinct(StringComparer.Ordinal))
             {
-                string rel = System.IO.Path.GetRelativePath(repoRoot, scope).Replace('\\', '/');
-                string prefix = rel.TrimEnd('/') + "/";
-                scopePrefixes.Add((rel, prefix));
-                this.logger.LogInformation("Staging changes in: {Scope}", rel);
-            }
+                string relativePath = System.IO.Path.IsPathRooted(stagedFile)
+                    ? System.IO.Path.GetRelativePath(repoRoot, stagedFile)
+                    : stagedFile;
 
-            int stagedCount = 0;
-            var status = repo.RetrieveStatus();
-            foreach (var entry in status)
-            {
-                string normalizedPath = entry.FilePath.Replace('\\', '/');
-                bool inScope = false;
-                foreach (var (rel, prefix) in scopePrefixes)
+                if (relativePath.StartsWith("..", StringComparison.Ordinal))
                 {
-                    if (normalizedPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-                        || normalizedPath.Equals(rel, StringComparison.OrdinalIgnoreCase))
-                    {
-                        inScope = true;
-                        break;
-                    }
+                    throw new InvalidOperationException($"Staged file '{stagedFile}' is outside the repository root.");
                 }
 
-                if (inScope)
-                {
-                    Commands.Stage(repo, entry.FilePath);
-                    stagedCount++;
-                }
+                string normalizedPath = relativePath.Replace('\\', '/');
+                this.logger.LogInformation("Staging generated file: {File}", normalizedPath);
+                Commands.Stage(repo, normalizedPath);
             }
 
-            if (stagedCount == 0)
+            TreeChanges stagedChanges = repo.Diff.Compare<TreeChanges>(repo.Head.Tip.Tree, DiffTargets.Index);
+            if (stagedChanges.Count == 0)
             {
-                this.logger.LogWarning("No changes to commit.");
-                return string.Empty;
+                this.logger.LogWarning("No generated files to commit.");
+                return false;
             }
 
             this.logger.LogInformation("Committing: {Message}", commitMessage);
             var signature = new LibGit2Sharp.Signature(options.CommitAuthorName, options.CommitAuthorEmail, DateTimeOffset.Now);
             repo.Commit(commitMessage, signature, signature);
-
-            this.logger.LogInformation("Pushing branch to origin...");
-            var remote = repo.Network.Remotes["origin"];
-            var pushRefSpec = $"refs/heads/{branchName}:refs/heads/{branchName}";
-            var pushOptions = new PushOptions
-            {
-                CredentialsProvider = (url, usernameFromUrl, types) =>
-                    new UsernamePasswordCredentials
-                    {
-                        Username = "x-access-token",
-                        Password = options.Token
-                    }
-            };
-            repo.Network.Push(remote, pushRefSpec, pushOptions);
+            this.logger.LogInformation("Commit completed in {ElapsedMilliseconds} ms.", stopwatch.ElapsedMilliseconds);
+            return true;
         }
         finally
         {
             Commands.Checkout(repo, defaultBranch);
         }
+    }
+
+    public void PushBranch(string branchName, string repoRoot)
+    {
+        var options = this.gitHubOptions.Value;
+        using var repo = new LibGit2Sharp.Repository(repoRoot);
+
+        this.logger.LogInformation("Pushing branch to origin...");
+        var remote = repo.Network.Remotes["origin"];
+        var pushRefSpec = $"refs/heads/{branchName}:refs/heads/{branchName}";
+        var pushOptions = new PushOptions
+        {
+            CredentialsProvider = (url, usernameFromUrl, types) =>
+                new UsernamePasswordCredentials
+                {
+                    Username = "x-access-token",
+                    Password = options.Token
+                }
+        };
+
+        repo.Network.Push(remote, pushRefSpec, pushOptions);
+        this.logger.LogInformation("Branch {BranchName} pushed to origin.", branchName);
+    }
+
+    public async Task<string> CreatePullRequestAsync(
+        string branchName,
+        string commitMessage,
+        CancellationToken cancellationToken = default)
+    {
+        var options = this.gitHubOptions.Value;
+        var github = CreateGitHubClient(options);
 
         this.logger.LogInformation("Creating pull request...");
 
@@ -137,30 +121,6 @@ public class GitHubPullRequestService
 
         var pr = await github.PullRequest.Create(options.RepoOwner, options.RepoName, newPr);
         this.logger.LogInformation("Pull request created: {Url}", pr.HtmlUrl);
-
-        try
-        {
-            var mergePr = new MergePullRequest { MergeMethod = PullRequestMergeMethod.Squash };
-            await github.PullRequest.Merge(options.RepoOwner, options.RepoName, pr.Number, mergePr);
-            this.logger.LogInformation("Pull request merged (squash).");
-        }
-        catch
-        {
-            bool autoMergeEnabled = await TryEnableAutoMerge(
-                pr.NodeId,
-                options.Token ?? throw new InvalidOperationException("GitHub token is not configured."),
-                cancellationToken);
-
-            if (autoMergeEnabled)
-            {
-                this.logger.LogInformation("Auto-merge enabled. PR will merge after checks pass.");
-            }
-            else
-            {
-                this.logger.LogWarning("Could not auto-merge. PR is open at: {Url}", pr.HtmlUrl);
-            }
-        }
-
         return pr.HtmlUrl;
     }
 
@@ -175,29 +135,5 @@ public class GitHubPullRequestService
         {
             Credentials = new Octokit.Credentials(options.Token)
         };
-    }
-
-    private async Task<bool> TryEnableAutoMerge(string pullRequestNodeId, string token, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var query = new
-            {
-                query = "mutation($prId: ID!) { enablePullRequestAutoMerge(input: { pullRequestId: $prId, mergeMethod: SQUASH }) { pullRequest { autoMergeRequest { enabledAt } } } }",
-                variables = new { prId = pullRequestNodeId }
-            };
-
-            var request = new HttpRequestMessage(HttpMethod.Post, "https://api.github.com/graphql");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            request.Headers.UserAgent.Add(new ProductInfoHeaderValue("TheDiscDb", "1.0"));
-            request.Content = new StringContent(JsonSerializer.Serialize(query), Encoding.UTF8, "application/json");
-
-            var response = await this.httpClient.SendAsync(request, cancellationToken);
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
-        }
     }
 }

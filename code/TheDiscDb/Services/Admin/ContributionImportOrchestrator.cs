@@ -1,7 +1,8 @@
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Sqids;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Admin.GitHub;
 using TheDiscDb.Services.Admin.Workspace;
@@ -20,7 +21,6 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
     private readonly IContributionNotificationService notificationService;
     private readonly ILogger<ContributionImportOrchestrator> logger;
     private readonly UserManager<TheDiscDbUser> userManager;
-    private readonly SqidsEncoder<int> idEncoder;
 
     public ContributionImportOrchestrator(
         ContributionGeneratorService generatorService,
@@ -31,8 +31,7 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
         IContributionHistoryService historyService,
         IContributionNotificationService notificationService,
         ILogger<ContributionImportOrchestrator> logger,
-        UserManager<TheDiscDbUser> userManager,
-        SqidsEncoder<int> idEncoder)
+        UserManager<TheDiscDbUser> userManager)
     {
         this.generatorService = generatorService;
         this.pipelineRunner = pipelineRunner;
@@ -43,7 +42,6 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
         this.notificationService = notificationService;
         this.logger = logger;
         this.userManager = userManager;
-        this.idEncoder = idEncoder;
     }
 
     public async Task<string> RunAsync(
@@ -68,12 +66,13 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
         }
 
         log("Step 1: Generating contribution artifacts...");
-        string releaseDirectory = await this.generatorService.GenerateAsync(
+        var generation = await this.generatorService.GenerateAsync(
             contributionId,
             overwrite,
             workspace,
             log,
             cancellationToken);
+        string releaseDirectory = generation.ReleaseDirectory;
         log($"Generation complete. Release directory: {releaseDirectory}");
 
         if (import)
@@ -88,31 +87,45 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
             }
         }
 
+        string contributorName = await GetContributorNameAsync(contribution, cancellationToken);
+        string branchName = BuildBranchName(contribution);
+        string prCommitMessage = $"{contribution.Title} {contribution.ReleaseTitle} contributed by {contributorName}";
+
+        log("Step 3: Committing generated files to git...");
+        bool committed = this.prService.CommitGeneratedFiles(
+            branchName,
+            generation.GeneratedFiles,
+            prCommitMessage,
+            workspace.RepoRootPath);
+
+        if (!committed)
+        {
+            log("No generated file changes to commit.");
+            return string.Empty;
+        }
+
+        log("Step 4: Pushing branch to origin...");
+        this.prService.PushBranch(branchName, workspace.RepoRootPath);
+
         if (createPr)
         {
-            log("Step 3: Creating GitHub pull request...");
+            log("Step 5: Creating GitHub pull request...");
 
-            string contributorName = "unknown";
-            var user = await this.userManager.FindByIdAsync(contribution.UserId);
-            if (user != null)
+            try
             {
-                await using var contributorContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
-                var contributor = await contributorContext.Contributors
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(c => c.UserId == user.Id || c.Name == user.UserName, cancellationToken);
-                contributorName = contributor?.Name ?? user.UserName ?? "unknown";
+                var prStopwatch = Stopwatch.StartNew();
+                prUrl = await this.prService.CreatePullRequestAsync(
+                    branchName,
+                    prCommitMessage,
+                    cancellationToken);
+
+                log($"Pull request created in {prStopwatch.ElapsedMilliseconds} ms: {prUrl}");
             }
-
-            string prCommitMessage = $"{contribution.Title} {contribution.ReleaseTitle} contributed by {contributorName}";
-            prUrl = await this.prService.CreatePullRequestAsync(
-                releaseDirectory,
-                contribution.TitleSlug ?? contribution.Title?.ToLowerInvariant().Replace(" ", "-") ?? "unknown",
-                contribution.ReleaseSlug ?? "release",
-                prCommitMessage,
-                workspace.RepoRootPath,
-                cancellationToken);
-
-            log($"Pull request created: {prUrl}");
+            catch (Exception ex)
+            {
+                this.logger.LogWarning(ex, "Pull request creation failed for contribution {ContributionId}", contributionId);
+                log($"Warning: pull request creation failed: {ex.Message}");
+            }
         }
 
         log("All steps complete.");
@@ -131,6 +144,49 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
         await dbContext.SaveChangesAsync(cancellationToken);
         await this.historyService.RecordStatusChangedAsync(contribution.Id, contribution.UserId, oldStatus, newStatus, cancellationToken);
         log($"Contribution status updated: {newStatus}");
+    }
+
+    private async Task<string> GetContributorNameAsync(UserContribution contribution, CancellationToken cancellationToken)
+    {
+        string contributorName = "unknown";
+        var user = await this.userManager.FindByIdAsync(contribution.UserId);
+        if (user != null)
+        {
+            await using var contributorContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var contributor = await contributorContext.Contributors
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.UserId == user.Id || c.Name == user.UserName, cancellationToken);
+            contributorName = contributor?.Name ?? user.UserName ?? "unknown";
+        }
+
+        return contributorName;
+    }
+
+    private static string BuildBranchName(UserContribution contribution)
+    {
+        string titleSlug = SanitizeBranchSegment(
+            string.IsNullOrWhiteSpace(contribution.TitleSlug) ? contribution.Title : contribution.TitleSlug,
+            $"unknown-{contribution.Id}");
+        string releaseSlug = SanitizeBranchSegment(
+            string.IsNullOrWhiteSpace(contribution.ReleaseSlug) ? "release" : contribution.ReleaseSlug,
+            "release");
+        string guidSuffix = Guid.NewGuid().ToString("N")[..8];
+        string runId = $"{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}-{guidSuffix}";
+        return $"contribution/{titleSlug}/{releaseSlug}-{runId}";
+    }
+
+    private static string SanitizeBranchSegment(string? input, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return fallback;
+        }
+
+        string normalized = input.ToLowerInvariant().Trim();
+        normalized = Regex.Replace(normalized, @"[^a-z0-9\-]+", "-");
+        normalized = Regex.Replace(normalized, @"-+", "-").Trim('-');
+
+        return string.IsNullOrWhiteSpace(normalized) ? fallback : normalized;
     }
 
     private async Task NotifyContributionImportedAsync(UserContribution contribution, CancellationToken cancellationToken)

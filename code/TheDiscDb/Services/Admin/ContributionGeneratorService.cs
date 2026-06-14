@@ -49,9 +49,10 @@ public class ContributionGeneratorService
     }
 
     /// <summary>
-    /// Generates all contribution files into the workspace. Returns the release folder path.
+    /// Generates all contribution files into the workspace. Returns the release folder path and
+    /// the files that were written so git can stage only the touched paths.
     /// </summary>
-    public async Task<string> GenerateAsync(
+    public async Task<ContributionGenerationResult> GenerateAsync(
         int contributionId,
         bool overwrite,
         IDataRepositoryWorkspace workspace,
@@ -72,7 +73,7 @@ public class ContributionGeneratorService
         return await GenerateContribution(contribution, overwrite, null, null, dbContext, workspace, log, cancellationToken);
     }
 
-    internal async Task<string> GenerateContribution(
+    internal async Task<ContributionGenerationResult> GenerateContribution(
         UserContribution contribution,
         bool overwrite,
         string[]? categories,
@@ -114,6 +115,7 @@ public class ContributionGeneratorService
 
         string basePath = this.fileSystem.Path.Combine(workspace.DataRepositoryPath, subFolderName, folderName);
         log($"Importing into {basePath}");
+        var generatedFiles = new HashSet<string>(StringComparer.Ordinal);
 
         if (!await this.fileSystem.Directory.Exists(basePath))
         {
@@ -128,6 +130,7 @@ public class ContributionGeneratorService
             {
                 log("Downloading poster...");
                 await this.httpClient.Download(this.fileSystem, posterUrl, posterPath);
+                generatedFiles.Add(posterPath);
             }
         }
 
@@ -137,6 +140,7 @@ public class ContributionGeneratorService
             if (importItem.GetTmdbItemToSerialize() != null)
             {
                 await this.fileSystem.File.WriteAllText(tmdbPath, JsonSerializer.Serialize(importItem.GetTmdbItemToSerialize(), JsonHelper.JsonOptions));
+                generatedFiles.Add(tmdbPath);
             }
         }
 
@@ -146,6 +150,7 @@ public class ContributionGeneratorService
             if (importItem.ImdbTitle != null)
             {
                 await this.fileSystem.File.WriteAllText(imdbPath, JsonSerializer.Serialize(importItem.ImdbTitle, JsonHelper.JsonOptions));
+                generatedFiles.Add(imdbPath);
             }
         }
 
@@ -167,6 +172,7 @@ public class ContributionGeneratorService
             }
 
             await this.fileSystem.File.WriteAllText(metadataPath, JsonSerializer.Serialize(metadata, JsonHelper.JsonOptions));
+            generatedFiles.Add(metadataPath);
         }
 
         string releaseFolder = this.fileSystem.Path.Combine(basePath, contribution.ReleaseSlug ?? string.Empty);
@@ -180,7 +186,7 @@ public class ContributionGeneratorService
 
         if (justCreatedReleaseFolder || overwrite)
         {
-            await DownloadReleaseImages(contribution, releaseFolder, overwrite, log, cancellationToken);
+            await DownloadReleaseImages(contribution, releaseFolder, overwrite, generatedFiles, log, cancellationToken);
 
             string releaseFile = this.fileSystem.Path.Combine(releaseFolder, ReleaseFile.Filename);
             if (!await this.fileSystem.File.Exists(releaseFile) || overwrite)
@@ -231,6 +237,7 @@ public class ContributionGeneratorService
                 }
 
                 await this.fileSystem.File.WriteAllText(releaseFile, JsonSerializer.Serialize(release, JsonHelper.JsonOptions));
+                generatedFiles.Add(releaseFile);
             }
         }
 
@@ -253,23 +260,25 @@ public class ContributionGeneratorService
 
             if (!string.IsNullOrEmpty(disc.ExistingDiscPath))
             {
-                await CopyExistingDisc(disc, discName, basePath, releaseFolder, subFolderName, workspace, contribution, overwrite, log, cancellationToken);
+                await CopyExistingDisc(disc, discName, basePath, releaseFolder, subFolderName, workspace, contribution, overwrite, generatedFiles, log, cancellationToken);
             }
             else
             {
-                await GenerateDiscFiles(contribution, disc, discName, releaseFolder, resolution, discFormat, year, overwrite, dbContext, log, cancellationToken);
+                await GenerateDiscFiles(contribution, disc, discName, releaseFolder, resolution, discFormat, year, overwrite, generatedFiles, dbContext, log, cancellationToken);
             }
 
             ++index;
         }
 
-        return releaseFolder;
+        log($"Generated {generatedFiles.Count} file(s) in workspace.");
+        return new ContributionGenerationResult(releaseFolder, generatedFiles.ToList());
     }
 
     private async Task DownloadReleaseImages(
         UserContribution contribution,
         string releaseFolder,
         bool overwrite,
+        ICollection<string> generatedFiles,
         Action<string> log,
         CancellationToken cancellationToken)
     {
@@ -278,7 +287,10 @@ public class ContributionGeneratorService
             string frontCoverPath = this.fileSystem.Path.Combine(releaseFolder, "front.jpg");
             if (!await this.fileSystem.File.Exists(frontCoverPath) || overwrite)
             {
-                await DownloadContributionImage(contribution.FrontImageUrl, frontCoverPath, "Front", log, cancellationToken);
+                if (await DownloadContributionImage(contribution.FrontImageUrl, frontCoverPath, "Front", log, cancellationToken))
+                {
+                    generatedFiles.Add(frontCoverPath);
+                }
             }
         }
 
@@ -287,12 +299,15 @@ public class ContributionGeneratorService
             string backCoverPath = this.fileSystem.Path.Combine(releaseFolder, "back.jpg");
             if (!await this.fileSystem.File.Exists(backCoverPath) || overwrite)
             {
-                await DownloadContributionImage(contribution.BackImageUrl, backCoverPath, "Back", log, cancellationToken);
+                if (await DownloadContributionImage(contribution.BackImageUrl, backCoverPath, "Back", log, cancellationToken))
+                {
+                    generatedFiles.Add(backCoverPath);
+                }
             }
         }
     }
 
-    private async Task DownloadContributionImage(
+    private async Task<bool> DownloadContributionImage(
         string imageUrl,
         string destPath,
         string label,
@@ -302,8 +317,10 @@ public class ContributionGeneratorService
         if (imageUrl.StartsWith("http"))
         {
             await this.httpClient.Download(this.fileSystem, imageUrl, destPath);
+            return true;
         }
-        else if (imageUrl.StartsWith("/images/Contributions/", StringComparison.OrdinalIgnoreCase))
+
+        if (imageUrl.StartsWith("/images/Contributions/", StringComparison.OrdinalIgnoreCase))
         {
             string remotePath = imageUrl.Substring("/images/".Length);
             if (await this.imageStore.Exists(remotePath, cancellationToken))
@@ -311,12 +328,13 @@ public class ContributionGeneratorService
                 var data = await this.imageStore.Download(remotePath, cancellationToken);
                 using var stream = await this.fileSystem.File.OpenWrite(destPath, cancellationToken);
                 stream.Write(data.ToArray());
+                return true;
             }
-            else
-            {
-                log($"Warning: {label} image '{imageUrl}' not found in asset store.");
-            }
+
+            log($"Warning: {label} image '{imageUrl}' not found in asset store.");
         }
+
+        return false;
     }
 
     private async Task CopyExistingDisc(
@@ -328,6 +346,7 @@ public class ContributionGeneratorService
         IDataRepositoryWorkspace workspace,
         UserContribution contribution,
         bool overwrite,
+        ICollection<string> generatedFiles,
         Action<string> log,
         CancellationToken cancellationToken)
     {
@@ -350,15 +369,18 @@ public class ContributionGeneratorService
             {
                 string newDiscFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.json");
                 await this.fileSystem.File.Copy(existingDiscFile, newDiscFilePath, overwrite, cancellationToken: cancellationToken);
+                generatedFiles.Add(newDiscFilePath);
 
                 string existingDir = this.fileSystem.Path.GetDirectoryName(existingDiscFile)!;
                 string newSummaryFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}-summary.txt");
                 string existingSummaryFilePath = this.fileSystem.Path.Combine(existingDir, $"{discName.Name}-summary.txt");
                 await this.fileSystem.File.Copy(existingSummaryFilePath, newSummaryFilePath, overwrite, cancellationToken: cancellationToken);
+                generatedFiles.Add(newSummaryFilePath);
 
                 string newLogFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.txt");
                 string existingLogFilePath = this.fileSystem.Path.Combine(existingDir, $"{discName.Name}.txt");
                 await this.fileSystem.File.Copy(existingLogFilePath, newLogFilePath, overwrite, cancellationToken: cancellationToken);
+                generatedFiles.Add(newLogFilePath);
                 break;
             }
         }
@@ -373,6 +395,7 @@ public class ContributionGeneratorService
         string discFormat,
         int year,
         bool overwrite,
+        ICollection<string> generatedFiles,
         SqlServerDataContext dbContext,
         Action<string> log,
         CancellationToken cancellationToken)
@@ -391,6 +414,7 @@ public class ContributionGeneratorService
                 string logs = Encoding.UTF8.GetString(data.ToArray());
                 await this.fileSystem.File.WriteAllText(makeMkvLogPath, logs);
                 await LogParser.CleanInPlace(makeMkvLogPath);
+                generatedFiles.Add(makeMkvLogPath);
                 discInfo = LogParser.Organize(makeMkvLogPath);
 
                 if (contribution.HashItems != null && contribution.HashItems.Count > 0)
@@ -407,7 +431,7 @@ public class ContributionGeneratorService
                         });
                     }
 
-                    await this.TryAppendHashInfo(makeMkvLogPath, hashInfo, cancellationToken);
+                    await this.TryAppendHashInfo(makeMkvLogPath, hashInfo, generatedFiles, cancellationToken);
                 }
             }
 
@@ -427,6 +451,7 @@ public class ContributionGeneratorService
                 summaryFileMemoryStream.Position = 0;
                 await summaryFileMemoryStream.CopyToAsync(stream, cancellationToken);
             }
+            generatedFiles.Add(summaryFilePath);
 
             string discJsonFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.json");
 
@@ -449,11 +474,12 @@ public class ContributionGeneratorService
             }
 
             await this.fileSystem.File.WriteAllText(discJsonFilePath, JsonSerializer.Serialize(discJsonFile, JsonHelper.JsonOptions));
+            generatedFiles.Add(discJsonFilePath);
             log($"Generated disc files: {discName.Name}");
         }
     }
 
-    private async Task TryAppendHashInfo(string logFile, DiscHashInfo hashInfo, CancellationToken cancellationToken)
+    private async Task TryAppendHashInfo(string logFile, DiscHashInfo hashInfo, ICollection<string> generatedFiles, CancellationToken cancellationToken)
     {
         if (!await this.fileSystem.File.Exists(logFile))
         {
@@ -483,6 +509,7 @@ public class ContributionGeneratorService
         }
 
         await this.fileSystem.File.WriteAllLines(logFile, result, cancellationToken);
+        generatedFiles.Add(logFile);
     }
 
     private async Task<(string Title, string Year, string Slug)> GetItemMetadata(string externalId, string mediaType)

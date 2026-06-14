@@ -24,7 +24,9 @@ else
         <ol class="mb-0">
             <li>Generate contribution artifacts.</li>
             <li>Import the generated files into the database.</li>
-            <li>Create the GitHub pull request from the materialized workspace.</li>
+            <li>Commit the generated files to git.</li>
+            <li>Push the generated commit to origin.</li>
+            <li>Create the GitHub pull request (optional).</li>
         </ol>
     </section>
 
@@ -41,7 +43,7 @@ else
             </div>
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="prCheck" @bind="CreatePullRequest" disabled="@IsRunning" />
-                <label class="form-check-label" for="prCheck">Create GitHub pull request</label>
+                <label class="form-check-label" for="prCheck">Create GitHub pull request (optional)</label>
             </div>
         </div>
         <button class="btn btn-primary" @onclick="RunImportAsync" disabled="@IsRunning">
