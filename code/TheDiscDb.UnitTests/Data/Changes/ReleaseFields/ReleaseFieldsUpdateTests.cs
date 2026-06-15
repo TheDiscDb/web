@@ -170,6 +170,86 @@ public class ReleaseFieldsUpdateTests
     }
 
     [Test]
+    public async Task ApplyAsync_OnlyWritesChangedFields_LeavingOthersUntouched()
+    {
+        // The footgun this guards against: a client form binds only the edited
+        // field, every other field arrives at its snapshot value. With wholesale
+        // overwrite that's harmless; with sparse forms that send null for
+        // unedited fields it would clobber data. Snapshot-diff semantics ensure
+        // we only write what the user actually changed.
+        using var db = CreateDbContext();
+        var release = SeedRelease(db);
+        var snapshotPayload = ReleaseFieldsUpdate.SnapshotFrom(release);
+        var snapshot = JsonSerializer.Serialize(snapshotPayload, JsonOptions);
+
+        // User only changed Title; every other field matches the snapshot value.
+        var proposed = snapshotPayload with { Title = "Only Title Changed" };
+        var change = new ReleaseFieldsUpdate(proposed);
+
+        await change.ApplyAsync(
+            db,
+            new TestApplyContext("admin", 1, 1, OriginalSnapshotJson: snapshot),
+            CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        var reloaded = await db.Releases.FirstAsync(r => r.Id == release.Id);
+        await Assert.That(reloaded.Title).IsEqualTo("Only Title Changed");
+        // All other fields preserved at their original values.
+        await Assert.That(reloaded.RegionCode).IsEqualTo("US");
+        await Assert.That(reloaded.Locale).IsEqualTo("en-US");
+        await Assert.That(reloaded.Year).IsEqualTo(2020);
+        await Assert.That(reloaded.Upc).IsEqualTo("123456789012");
+        await Assert.That(reloaded.Isbn).IsNull();
+        await Assert.That(reloaded.Asin).IsEqualTo("B0001234");
+    }
+
+    [Test]
+    public async Task ApplyAsync_ExplicitClear_IsApplied()
+    {
+        // Counterpart to the previous test: when snapshot.Field was non-null and
+        // proposed.Field is null, that IS a deliberate clear and must be written.
+        using var db = CreateDbContext();
+        var release = SeedRelease(db);
+        var snapshotPayload = ReleaseFieldsUpdate.SnapshotFrom(release);
+        var snapshot = JsonSerializer.Serialize(snapshotPayload, JsonOptions);
+
+        // User cleared Asin (snapshot had "B0001234"); everything else unchanged.
+        var proposed = snapshotPayload with { Asin = null };
+        var change = new ReleaseFieldsUpdate(proposed);
+
+        await change.ApplyAsync(
+            db,
+            new TestApplyContext("admin", 1, 1, OriginalSnapshotJson: snapshot),
+            CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        var reloaded = await db.Releases.FirstAsync(r => r.Id == release.Id);
+        await Assert.That(reloaded.Asin).IsNull();
+        // Other fields untouched.
+        await Assert.That(reloaded.Title).IsEqualTo("Original Title");
+        await Assert.That(reloaded.Upc).IsEqualTo("123456789012");
+    }
+
+    [Test]
+    public async Task ApplyAsync_NoOp_WhenProposedExactlyMatchesSnapshot()
+    {
+        // When the user submits the snapshot verbatim (zero edits), ApplyAsync
+        // short-circuits with NoOp and writes nothing.
+        using var db = CreateDbContext();
+        var release = SeedRelease(db);
+        var snapshotPayload = ReleaseFieldsUpdate.SnapshotFrom(release);
+        var snapshot = JsonSerializer.Serialize(snapshotPayload, JsonOptions);
+
+        var change = new ReleaseFieldsUpdate(snapshotPayload);
+        await change.ApplyAsync(
+            db,
+            new TestApplyContext("admin", 1, 1, OriginalSnapshotJson: snapshot),
+            CancellationToken.None);
+
+        await Assert.That(db.ChangeTracker.HasChanges()).IsFalse();
+    }
+
+    [Test]
     public async Task ApplyAsync_Throws_WhenReleaseRemovedBetweenValidateAndApply()
     {
         using var db = CreateDbContext();

@@ -121,7 +121,61 @@ public abstract class ChangeBase<TDetails> : IChange
             return;
         }
 
-        await this.ApplyCoreAsync(context, apply, cancellationToken);
+        // Deserialise the original snapshot once and pass it to ApplyCoreAsync so
+        // subclasses can compute a snapshot→proposed diff and only write the fields
+        // the user actually changed. This is what prevents "form submitted with
+        // unrelated fields left at default null" from clobbering existing data.
+        var original = DeserialiseSnapshotOrNull(apply.OriginalSnapshotJson);
+        await this.ApplyCoreAsync(context, apply, original, cancellationToken);
+    }
+
+    /// <summary>
+    /// Helper for snapshot-diff updates: assigns <paramref name="proposedValue"/> to the
+    /// target field via <paramref name="setter"/> ONLY when it differs from
+    /// <paramref name="originalValue"/>. When <paramref name="originalValue"/> is the
+    /// default (i.e. <paramref name="original"/> was null — no snapshot available),
+    /// always writes the proposed value.
+    /// </summary>
+    /// <remarks>
+    /// Diff semantics: a field is only mutated when the user's snapshot of it disagrees
+    /// with their proposed value. This means a payload where the user left fields at
+    /// their snapshot values (the common Blazor-form case) writes nothing for those
+    /// fields, while an explicit clear (snapshot non-null, proposed null) IS written.
+    /// </remarks>
+    protected static void SetIfChanged<T>(TDetails? original, T originalValue, T proposedValue, Action<T> setter)
+    {
+        if (original is null)
+        {
+            // No snapshot (e.g. "add"-type change): apply the proposed value unconditionally.
+            setter(proposedValue);
+            return;
+        }
+
+        if (!Equals(originalValue, proposedValue))
+        {
+            setter(proposedValue);
+        }
+    }
+
+    private TDetails? DeserialiseSnapshotOrNull(string? snapshotJson)
+    {
+        if (string.IsNullOrWhiteSpace(snapshotJson))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<TDetails>(snapshotJson, this.jsonOptions);
+        }
+        catch (JsonException)
+        {
+            // Validate path already returned Conflict for malformed snapshots; if we
+            // somehow get here with one, fall back to "no snapshot available" rather
+            // than throwing — subclasses' SetIfChanged calls will degrade to writing
+            // every field, matching pre-diff behaviour.
+            return null;
+        }
     }
 
     /// <summary>
@@ -144,12 +198,19 @@ public abstract class ChangeBase<TDetails> : IChange
     protected abstract string? DescribeDrift(TDetails original, TDetails current);
 
     /// <summary>
-    /// Loads the target entity as a tracked instance and writes the proposed values.
+    /// Loads the target entity as a tracked instance and writes the diff between
+    /// <paramref name="original"/> and <see cref="Proposed"/>. Use
+    /// <see cref="SetIfChanged"/> to write only those fields the user actually
+    /// changed; this avoids the "form left field at default null clobbers existing
+    /// data" footgun. <paramref name="original"/> is <c>null</c> only for "add"-type
+    /// changes (those that override <see cref="RequiresOriginalSnapshot"/> to
+    /// <c>false</c>) — in that case <see cref="SetIfChanged"/> writes everything.
     /// Do not call <c>SaveChangesAsync</c>; the caller is responsible for persistence.
     /// </summary>
     protected abstract Task ApplyCoreAsync(
         SqlServerDataContext context,
         IChangeApplyContext apply,
+        TDetails? original,
         CancellationToken cancellationToken);
 
     /// <summary>Conflict message returned when the target entity no longer exists.</summary>

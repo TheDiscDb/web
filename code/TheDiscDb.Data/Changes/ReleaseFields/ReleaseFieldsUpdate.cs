@@ -48,6 +48,7 @@ public sealed class ReleaseFieldsUpdate : ChangeBase<ReleaseFieldsDetails>
     protected override async Task ApplyCoreAsync(
         SqlServerDataContext context,
         IChangeApplyContext apply,
+        ReleaseFieldsDetails? original,
         CancellationToken cancellationToken)
     {
         var release = await context.Releases
@@ -55,14 +56,18 @@ public sealed class ReleaseFieldsUpdate : ChangeBase<ReleaseFieldsDetails>
             ?? throw new InvalidOperationException(
                 $"Release {this.Proposed.ReleaseId} not found at apply time. Validate should have caught this.");
 
-        release.Title = this.Proposed.Title;
-        release.RegionCode = this.Proposed.RegionCode;
-        release.Locale = this.Proposed.Locale;
-        release.Year = this.Proposed.Year;
-        release.Upc = this.Proposed.Upc;
-        release.Isbn = this.Proposed.Isbn;
-        release.Asin = this.Proposed.Asin;
-        release.ReleaseDate = this.Proposed.ReleaseDate;
+        // Snapshot-diff semantics: only write the fields the user actually changed
+        // (proposed != snapshot). A null Proposed.X is meaningful only when the
+        // snapshot.X was non-null (an explicit clear); otherwise it means
+        // "field left alone in the form" and we must NOT overwrite the current row.
+        SetIfChanged(original, original?.Title, this.Proposed.Title, v => release.Title = v);
+        SetIfChanged(original, original?.RegionCode, this.Proposed.RegionCode, v => release.RegionCode = v);
+        SetIfChanged(original, original?.Locale, this.Proposed.Locale, v => release.Locale = v);
+        SetIfChanged(original, original?.Year ?? 0, this.Proposed.Year, v => release.Year = v);
+        SetIfChanged(original, original?.Upc, this.Proposed.Upc, v => release.Upc = v);
+        SetIfChanged(original, original?.Isbn, this.Proposed.Isbn, v => release.Isbn = v);
+        SetIfChanged(original, original?.Asin, this.Proposed.Asin, v => release.Asin = v);
+        SetIfChanged(original, original?.ReleaseDate ?? default, this.Proposed.ReleaseDate, v => release.ReleaseDate = v);
         // Slug and image URLs are intentionally not touched here.
     }
 
