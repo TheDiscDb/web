@@ -2,7 +2,11 @@ namespace TheDiscDb.Services.EditSuggestions;
 
 using Microsoft.Extensions.DependencyInjection;
 using TheDiscDb.Data.Changes;
+using TheDiscDb.Data.Changes.Chapter;
+using TheDiscDb.Data.Changes.DiscFields;
+using TheDiscDb.Data.Changes.DiscItemFields;
 using TheDiscDb.Data.Changes.ReleaseFields;
+using TheDiscDb.Data.Changes.Track;
 
 /// <summary>
 /// DI registration for the edit-suggestions / review-queue feature. Wires up the
@@ -18,7 +22,19 @@ public static class EditSuggestionsServiceCollectionExtensions
         // Registered change types. Add a line per new IChange implementation.
         services.AddSingleton<IChangeBuilder>(new ChangeBuilder<ReleaseFieldsDetails>(
             ReleaseFieldsUpdate.Key,
-            d => new ReleaseFieldsUpdate(d)));
+            (d, opts) => new ReleaseFieldsUpdate(d, opts)));
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<DiscFieldsDetails>(
+            DiscFieldsUpdate.Key,
+            (d, opts) => new DiscFieldsUpdate(d, opts)));
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<DiscItemFieldsDetails>(
+            DiscItemFieldsUpdate.Key,
+            (d, opts) => new DiscItemFieldsUpdate(d, opts)));
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<ChapterDetails>(
+            ChapterUpdate.Key,
+            (d, opts) => new ChapterUpdate(d, opts)));
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<TrackFieldsDetails>(
+            TrackFieldsUpdate.Key,
+            (d, opts) => new TrackFieldsUpdate(d, opts)));
 
         return services;
     }
