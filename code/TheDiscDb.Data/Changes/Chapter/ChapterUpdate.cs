@@ -169,12 +169,4 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
         var chapter = title.Item?.Chapters.FirstOrDefault(c => c.Index == details.ChapterIndex);
         return chapter is null ? null : (chapter, disc, title);
     }
-
-    private static void AppendIfDifferent<T>(StringBuilder sb, string fieldName, T originalValue, T currentValue)
-    {
-        if (!Equals(originalValue, currentValue))
-        {
-            sb.Append(fieldName).Append(", ");
-        }
-    }
 }

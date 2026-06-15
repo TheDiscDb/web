@@ -216,12 +216,4 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
         var title = disc.Titles.FirstOrDefault(t => t.Index == details.TitleIndex);
         return title is null ? null : (title, disc);
     }
-
-    private static void AppendIfDifferent<T>(StringBuilder sb, string fieldName, T originalValue, T currentValue)
-    {
-        if (!Equals(originalValue, currentValue))
-        {
-            sb.Append(fieldName).Append(", ");
-        }
-    }
 }

@@ -199,12 +199,4 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
         var track = title.Tracks.FirstOrDefault(tr => tr.Index == details.TrackIndex);
         return track is null ? null : (track, disc, title);
     }
-
-    private static void AppendIfDifferent<T>(StringBuilder sb, string fieldName, T originalValue, T currentValue)
-    {
-        if (!Equals(originalValue, currentValue))
-        {
-            sb.Append(fieldName).Append(", ");
-        }
-    }
 }

@@ -147,12 +147,4 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
 
         return release.Discs.FirstOrDefault(d => d.Index == details.DiscIndex);
     }
-
-    private static void AppendIfDifferent<T>(StringBuilder sb, string fieldName, T originalValue, T currentValue)
-    {
-        if (!Equals(originalValue, currentValue))
-        {
-            sb.Append(fieldName).Append(", ");
-        }
-    }
 }

@@ -184,13 +184,5 @@ public sealed class ReleaseFieldsUpdate : ChangeBase<ReleaseFieldsDetails>
             ? null
             : "Release has been modified since the suggestion was submitted: " + drifted.ToString().TrimEnd(',', ' ');
     }
-
-    private static void AppendIfDifferent<T>(StringBuilder sb, string fieldName, T originalValue, T currentValue)
-    {
-        if (!Equals(originalValue, currentValue))
-        {
-            sb.Append(fieldName).Append(", ");
-        }
-    }
 }
 

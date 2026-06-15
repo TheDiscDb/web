@@ -1,6 +1,7 @@
 namespace TheDiscDb.Data.Changes;
 
 using System;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -154,6 +155,20 @@ public abstract class ChangeBase<TDetails> : IChange
         if (!Equals(originalValue, proposedValue))
         {
             setter(proposedValue);
+        }
+    }
+
+    /// <summary>
+    /// Helper for <see cref="DescribeDrift"/> implementations: appends
+    /// <paramref name="fieldName"/> to <paramref name="sb"/> when the snapshot
+    /// and current values differ. Skips fields that haven't drifted so the
+    /// resulting message lists only what actually changed.
+    /// </summary>
+    protected static void AppendIfDifferent<T>(StringBuilder sb, string fieldName, T originalValue, T currentValue)
+    {
+        if (!Equals(originalValue, currentValue))
+        {
+            sb.Append(fieldName).Append(", ");
         }
     }
 
