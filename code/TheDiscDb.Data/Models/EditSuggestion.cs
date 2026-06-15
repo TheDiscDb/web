@@ -28,10 +28,17 @@ public class EditSuggestion : IHasId
     public string TargetEntityType { get; set; } = string.Empty;
 
     /// <summary>
-    /// Denormalised primary entity id for display / grouping. Individual changes
-    /// inside the bundle may target child entities of this one.
+    /// Stable natural-key identifier of the primary target entity. Format depends
+    /// on <see cref="TargetEntityType"/>; for <c>Release</c> it is
+    /// <c>"&lt;parentSlug&gt;/&lt;releaseSlug&gt;"</c> where the parent slug
+    /// references either a MediaItem or a Boxset. Slugs are used (not the int
+    /// primary key) because the non-user data tables are designed to be
+    /// truncated and rebuilt from the file repo at any time, which shifts every
+    /// int id but preserves slugs (slugs are non-editable and appear in public
+    /// URLs). The exact mapping back to the typed parent + child slug lives in
+    /// the individual change's Details JSON.
     /// </summary>
-    public int TargetEntityId { get; set; }
+    public string? TargetEntityKey { get; set; }
 
     public string? ReviewedByUserId { get; set; }
 

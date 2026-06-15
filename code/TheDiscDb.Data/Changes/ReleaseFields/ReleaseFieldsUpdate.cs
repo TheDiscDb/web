@@ -37,12 +37,43 @@ public sealed class ReleaseFieldsUpdate : ChangeBase<ReleaseFieldsDetails>
         SqlServerDataContext context,
         CancellationToken cancellationToken)
     {
-        // No AsNoTracking: when ApplyCoreAsync re-queries the same context, the
-        // tracker satisfies the lookup, guaranteeing Apply operates on the same
-        // row instance Validate just inspected.
-        var release = await context.Releases
-            .FirstOrDefaultAsync(r => r.Id == this.Proposed.ReleaseId, cancellationToken);
-        return release is null ? null : SnapshotFrom(release);
+        // Identity is the natural-key slug composite. Exactly one of
+        // MediaItemSlug/BoxsetSlug is populated; we match the parent navigation
+        // accordingly. No AsNoTracking — keeping the entity in the change tracker
+        // means ApplyCoreAsync's subsequent lookup is a tracker hit, guaranteeing
+        // Apply operates on the same row instance Validate just inspected.
+        var releaseSlug = this.Proposed.ReleaseSlug;
+        Release? release;
+
+        if (!string.IsNullOrWhiteSpace(this.Proposed.MediaItemSlug))
+        {
+            var parentSlug = this.Proposed.MediaItemSlug;
+            release = await context.Releases
+                .FirstOrDefaultAsync(
+                    r => r.Slug == releaseSlug
+                        && r.MediaItem != null
+                        && r.MediaItem.Slug == parentSlug,
+                    cancellationToken);
+        }
+        else if (!string.IsNullOrWhiteSpace(this.Proposed.BoxsetSlug))
+        {
+            var parentSlug = this.Proposed.BoxsetSlug;
+            release = await context.Releases
+                .FirstOrDefaultAsync(
+                    r => r.Slug == releaseSlug
+                        && r.Boxset != null
+                        && r.Boxset.Slug == parentSlug,
+                    cancellationToken);
+        }
+        else
+        {
+            // Neither parent slug supplied — caller error. Validate returns Conflict
+            // (via MissingTargetMessage) rather than a hard exception so the admin
+            // queue surfaces it consistently with other resolution failures.
+            return null;
+        }
+
+        return release is null ? null : SnapshotFrom(release, this.Proposed.MediaItemSlug, this.Proposed.BoxsetSlug);
     }
 
     protected override async Task ApplyCoreAsync(
@@ -51,10 +82,39 @@ public sealed class ReleaseFieldsUpdate : ChangeBase<ReleaseFieldsDetails>
         ReleaseFieldsDetails? original,
         CancellationToken cancellationToken)
     {
-        var release = await context.Releases
-            .FirstOrDefaultAsync(r => r.Id == this.Proposed.ReleaseId, cancellationToken)
-            ?? throw new InvalidOperationException(
-                $"Release {this.Proposed.ReleaseId} not found at apply time. Validate should have caught this.");
+        var releaseSlug = this.Proposed.ReleaseSlug;
+        Release? release;
+
+        if (!string.IsNullOrWhiteSpace(this.Proposed.MediaItemSlug))
+        {
+            var parentSlug = this.Proposed.MediaItemSlug;
+            release = await context.Releases
+                .FirstOrDefaultAsync(
+                    r => r.Slug == releaseSlug
+                        && r.MediaItem != null
+                        && r.MediaItem.Slug == parentSlug,
+                    cancellationToken);
+        }
+        else if (!string.IsNullOrWhiteSpace(this.Proposed.BoxsetSlug))
+        {
+            var parentSlug = this.Proposed.BoxsetSlug;
+            release = await context.Releases
+                .FirstOrDefaultAsync(
+                    r => r.Slug == releaseSlug
+                        && r.Boxset != null
+                        && r.Boxset.Slug == parentSlug,
+                    cancellationToken);
+        }
+        else
+        {
+            release = null;
+        }
+
+        if (release is null)
+        {
+            throw new InvalidOperationException(
+                $"Release '{this.Proposed.TargetEntityKey}' not found at apply time. Validate should have caught this.");
+        }
 
         // Snapshot-diff semantics: only write the fields the user actually changed
         // (proposed != snapshot). A null Proposed.X is meaningful only when the
@@ -68,22 +128,26 @@ public sealed class ReleaseFieldsUpdate : ChangeBase<ReleaseFieldsDetails>
         SetIfChanged(original, original?.Isbn, this.Proposed.Isbn, v => release.Isbn = v);
         SetIfChanged(original, original?.Asin, this.Proposed.Asin, v => release.Asin = v);
         SetIfChanged(original, original?.ReleaseDate ?? default, this.Proposed.ReleaseDate, v => release.ReleaseDate = v);
-        // Slug and image URLs are intentionally not touched here.
+        // Slug, parent-slug navigation, and image URLs are intentionally not touched here.
     }
 
     protected override string MissingTargetMessage()
-        => $"Release {this.Proposed.ReleaseId} no longer exists.";
+        => $"Release '{this.Proposed.TargetEntityKey}' no longer exists.";
 
     /// <summary>
     /// Builds a <see cref="ReleaseFieldsDetails"/> snapshot from a loaded
     /// <see cref="Release"/>. Public so callers (e.g. the submit pipeline)
-    /// can use the same shape when capturing the original at edit time.
+    /// can use the same shape when capturing the original at edit time. The
+    /// parent slug pair is supplied by the caller — the release entity itself
+    /// only carries an int FK, and we don't want to trigger lazy-loads here.
     /// </summary>
-    public static ReleaseFieldsDetails SnapshotFrom(Release release)
+    public static ReleaseFieldsDetails SnapshotFrom(Release release, string? mediaItemSlug, string? boxsetSlug)
     {
         ArgumentNullException.ThrowIfNull(release);
         return new ReleaseFieldsDetails(
-            ReleaseId: release.Id,
+            MediaItemSlug: mediaItemSlug,
+            BoxsetSlug: boxsetSlug,
+            ReleaseSlug: release.Slug ?? string.Empty,
             Title: release.Title,
             RegionCode: release.RegionCode,
             Locale: release.Locale,
@@ -96,20 +160,25 @@ public sealed class ReleaseFieldsUpdate : ChangeBase<ReleaseFieldsDetails>
 
     protected override string? DescribeDrift(ReleaseFieldsDetails original, ReleaseFieldsDetails current)
     {
-        if (original.ReleaseId != current.ReleaseId)
+        // The natural-key slugs are stable by design (non-editable, appear in
+        // public URLs). If they ever differ between snapshot and current that
+        // indicates either a data corruption or a code bug — flag explicitly.
+        if (original.ReleaseSlug != current.ReleaseSlug
+            || original.MediaItemSlug != current.MediaItemSlug
+            || original.BoxsetSlug != current.BoxsetSlug)
         {
-            return $"ReleaseId changed ({original.ReleaseId} → {current.ReleaseId}).";
+            return $"Release identity changed: snapshot '{original.TargetEntityKey}' vs current '{current.TargetEntityKey}'.";
         }
 
         var drifted = new StringBuilder();
-        AppendIfDifferent(drifted, "Title", original.Title, current.Title);
-        AppendIfDifferent(drifted, "RegionCode", original.RegionCode, current.RegionCode);
-        AppendIfDifferent(drifted, "Locale", original.Locale, current.Locale);
-        AppendIfDifferent(drifted, "Year", original.Year, current.Year);
-        AppendIfDifferent(drifted, "Upc", original.Upc, current.Upc);
-        AppendIfDifferent(drifted, "Isbn", original.Isbn, current.Isbn);
-        AppendIfDifferent(drifted, "Asin", original.Asin, current.Asin);
-        AppendIfDifferent(drifted, "ReleaseDate", original.ReleaseDate, current.ReleaseDate);
+        AppendIfDifferent(drifted, nameof(original.Title), original.Title, current.Title);
+        AppendIfDifferent(drifted, nameof(original.RegionCode), original.RegionCode, current.RegionCode);
+        AppendIfDifferent(drifted, nameof(original.Locale), original.Locale, current.Locale);
+        AppendIfDifferent(drifted, nameof(original.Year), original.Year, current.Year);
+        AppendIfDifferent(drifted, nameof(original.Upc), original.Upc, current.Upc);
+        AppendIfDifferent(drifted, nameof(original.Isbn), original.Isbn, current.Isbn);
+        AppendIfDifferent(drifted, nameof(original.Asin), original.Asin, current.Asin);
+        AppendIfDifferent(drifted, nameof(original.ReleaseDate), original.ReleaseDate, current.ReleaseDate);
 
         return drifted.Length == 0
             ? null

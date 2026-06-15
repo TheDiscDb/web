@@ -22,7 +22,7 @@ namespace TheDiscDb.Web.Migrations
                     Status = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
                     Summary = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     TargetEntityType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    TargetEntityId = table.Column<int>(type: "int", nullable: false),
+                    TargetEntityKey = table.Column<string>(type: "nvarchar(410)", maxLength: 410, nullable: true),
                     ReviewedByUserId = table.Column<string>(type: "nvarchar(450)", maxLength: 450, nullable: true),
                     ReviewedAt = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     Source = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false)
@@ -151,9 +151,9 @@ namespace TheDiscDb.Web.Migrations
                 columns: new[] { "Status", "Created" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_EditSuggestions_TargetEntityType_TargetEntityId",
+                name: "IX_EditSuggestions_TargetEntityType_TargetEntityKey",
                 table: "EditSuggestions",
-                columns: new[] { "TargetEntityType", "TargetEntityId" });
+                columns: new[] { "TargetEntityType", "TargetEntityKey" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_EditSuggestions_UserId_Created",

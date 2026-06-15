@@ -246,6 +246,10 @@ public class SqlServerDataContext : DbContext
         suggestion.Property(x => x.Source).HasConversion<string>().HasMaxLength(32);
         suggestion.Property(x => x.Summary).HasMaxLength(500);
         suggestion.Property(x => x.TargetEntityType).IsRequired().HasMaxLength(50);
+        // 200 (parent slug max, matching ReleaseAffiliateLinks) + 1 separator +
+        // 200 (release slug) + 8 buffer for child segments in future change types
+        // (DiscSlug, etc.) is the reason for 410.
+        suggestion.Property(x => x.TargetEntityKey).HasMaxLength(410);
         suggestion.Property(x => x.ReviewedByUserId).HasMaxLength(450);
         suggestion.HasMany(x => x.Changes)
             .WithOne(x => x.Suggestion)
@@ -256,7 +260,7 @@ public class SqlServerDataContext : DbContext
         // "My suggestions" list per user.
         suggestion.HasIndex(x => new { x.UserId, x.Created });
         // "Show me suggestions affecting this entity" lookups from detail pages.
-        suggestion.HasIndex(x => new { x.TargetEntityType, x.TargetEntityId });
+        suggestion.HasIndex(x => new { x.TargetEntityType, x.TargetEntityKey });
 
         var change = modelBuilder.Entity<EditSuggestionChange>();
         change.HasKey(x => x.Id);

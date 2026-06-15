@@ -866,8 +866,9 @@ namespace TheDiscDb.Web.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int>("TargetEntityId")
-                        .HasColumnType("int");
+                    b.Property<string>("TargetEntityKey")
+                        .HasMaxLength(410)
+                        .HasColumnType("nvarchar(410)");
 
                     b.Property<string>("TargetEntityType")
                         .IsRequired()
@@ -883,7 +884,7 @@ namespace TheDiscDb.Web.Migrations
 
                     b.HasIndex("Status", "Created");
 
-                    b.HasIndex("TargetEntityType", "TargetEntityId");
+                    b.HasIndex("TargetEntityType", "TargetEntityKey");
 
                     b.HasIndex("UserId", "Created");
 

@@ -22,7 +22,9 @@ public class ChangeFactoryTests
     {
         var factory = CreateFactoryWithReleaseFieldsBuilder();
         var json = JsonSerializer.Serialize(new ReleaseFieldsDetails(
-            ReleaseId: 1,
+            MediaItemSlug: "the-movie",
+            BoxsetSlug: null,
+            ReleaseSlug: "the-release-slug",
             Title: "Test",
             RegionCode: "US",
             Locale: "en-US",
