@@ -27,6 +27,7 @@ using TheDiscDb.Services;
 using TheDiscDb.Services.Admin;
 using TheDiscDb.Services.Admin.GitHub;
 using TheDiscDb.Services.Admin.Workspace;
+using TheDiscDb.Services.EditSuggestions;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Validation.Boxset;
@@ -42,6 +43,7 @@ builder.AddServiceDefaults();
 
 builder.Services.AddTransient<ContributionEndpoints>();
 builder.Services.AddTransient<EngramEndpoints>();
+builder.Services.AddEditSuggestions();
 
 builder.Services.AddControllersWithViews( options =>
 {
