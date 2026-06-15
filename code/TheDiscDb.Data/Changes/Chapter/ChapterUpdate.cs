@@ -47,8 +47,7 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
             this.Proposed.MediaItemSlug,
             this.Proposed.BoxsetSlug,
             this.Proposed.ReleaseSlug,
-            disc.Slug,
-            disc.Index,
+            disc.Slug!,
             title.Index);
     }
 
@@ -74,7 +73,6 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
         if (original.ReleaseSlug != current.ReleaseSlug
             || original.MediaItemSlug != current.MediaItemSlug
             || original.BoxsetSlug != current.BoxsetSlug
-            || original.DiscIndex != current.DiscIndex
             || original.DiscSlug != current.DiscSlug
             || original.TitleIndex != current.TitleIndex
             || original.ChapterIndex != current.ChapterIndex)
@@ -95,17 +93,16 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
         string? mediaItemSlug,
         string? boxsetSlug,
         string releaseSlug,
-        string? discSlug,
-        int discIndex,
+        string discSlug,
         int titleIndex)
     {
         ArgumentNullException.ThrowIfNull(chapter);
+        ArgumentException.ThrowIfNullOrEmpty(discSlug);
         return new ChapterDetails(
             MediaItemSlug: mediaItemSlug,
             BoxsetSlug: boxsetSlug,
             ReleaseSlug: releaseSlug,
             DiscSlug: discSlug,
-            DiscIndex: discIndex,
             TitleIndex: titleIndex,
             ChapterIndex: chapter.Index,
             Title: chapter.Title);
@@ -116,10 +113,10 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
         ChapterDetails details,
         CancellationToken cancellationToken)
     {
-        // Contract: exactly one parent slug must be populated.
+        // Contract: exactly one parent slug must be populated and DiscSlug is required.
         var hasMedia = !string.IsNullOrWhiteSpace(details.MediaItemSlug);
         var hasBoxset = !string.IsNullOrWhiteSpace(details.BoxsetSlug);
-        if (hasMedia == hasBoxset)
+        if (hasMedia == hasBoxset || string.IsNullOrEmpty(details.DiscSlug))
         {
             return null;
         }
@@ -151,10 +148,7 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
             return null;
         }
 
-        var disc = !string.IsNullOrEmpty(details.DiscSlug)
-            ? release.Discs.FirstOrDefault(d => d.Slug == details.DiscSlug)
-            : release.Discs.FirstOrDefault(d => d.Index == details.DiscIndex);
-
+        var disc = release.Discs.FirstOrDefault(d => d.Slug == details.DiscSlug);
         if (disc is null)
         {
             return null;

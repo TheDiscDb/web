@@ -15,7 +15,6 @@ public class ChapterUpdateTests
             BoxsetSlug: null,
             ReleaseSlug: ChangeTestSeed.ReleaseSlug,
             DiscSlug: ChangeTestSeed.DiscSlug,
-            DiscIndex: ChangeTestSeed.DiscIndex,
             TitleIndex: ChangeTestSeed.TitleIndex,
             ChapterIndex: chapterIndex,
             Title: title);
@@ -49,7 +48,7 @@ public class ChapterUpdateTests
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
         var snapshot = JsonSerializer.Serialize(
-            ChapterUpdate.SnapshotFrom(seed.Chapter, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex, ChangeTestSeed.TitleIndex),
+            ChapterUpdate.SnapshotFrom(seed.Chapter, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.TitleIndex),
             JsonOptions);
 
         var change = new ChapterUpdate(MakeProposed(title: "New Chapter Title"));
@@ -67,7 +66,7 @@ public class ChapterUpdateTests
         using var dbBefore = ChangeTestSeed.CreateDbContext();
         var seedBefore = ChangeTestSeed.Seed(dbBefore);
         var snapshot = JsonSerializer.Serialize(
-            ChapterUpdate.SnapshotFrom(seedBefore.Chapter, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex, ChangeTestSeed.TitleIndex),
+            ChapterUpdate.SnapshotFrom(seedBefore.Chapter, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.TitleIndex),
             JsonOptions);
 
         using var dbAfter = ChangeTestSeed.CreateDbContext();
@@ -87,7 +86,7 @@ public class ChapterUpdateTests
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
         var stale = JsonSerializer.Serialize(
-            ChapterUpdate.SnapshotFrom(seed.Chapter, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex, ChangeTestSeed.TitleIndex) with { Title = "Title nobody currently sees" },
+            ChapterUpdate.SnapshotFrom(seed.Chapter, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.TitleIndex) with { Title = "Title nobody currently sees" },
             JsonOptions);
 
         var change = new ChapterUpdate(MakeProposed(title: "Proposed"));
@@ -98,30 +97,18 @@ public class ChapterUpdateTests
     }
 
     [Test]
-    public async Task ValidateAsync_DetectsParentDiscIndexDrift_EvenWhenResolvedBySlug()
+    public async Task ValidateAsync_ReturnsConflict_WhenDiscSlugIsMissing()
     {
-        // Bug from review: when a snapshot captures (DiscSlug=disc-one,DiscIndex=0)
-        // but the DB has been rebuilt with (DiscSlug=disc-one,DiscIndex=99),
-        // resolution still matches by slug — but drift detection must flag the
-        // index mismatch so the admin can decide what to do. Pre-fix, the
-        // resolver built the "current" snapshot from proposed values and the
-        // index drift was invisible.
+        // After the slug-only refactor, DiscSlug is the sole parent-disc
+        // identifier. A payload without it cannot be resolved.
         using var db = ChangeTestSeed.CreateDbContext();
-        var seed = ChangeTestSeed.Seed(db);
-        var snapshot = JsonSerializer.Serialize(
-            ChapterUpdate.SnapshotFrom(seed.Chapter, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex, ChangeTestSeed.TitleIndex),
-            JsonOptions);
+        ChangeTestSeed.Seed(db);
 
-        // Simulate someone renumbering the discs in source data.
-        seed.Disc.Index = 99;
-        await db.SaveChangesAsync();
+        var change = new ChapterUpdate(MakeProposed() with { DiscSlug = string.Empty });
 
-        var change = new ChapterUpdate(MakeProposed(title: "Proposed"));
-
-        var result = await change.ValidateAsync(db, snapshot, CancellationToken.None);
+        var result = await change.ValidateAsync(db, originalSnapshotJson: null, CancellationToken.None);
 
         await Assert.That(result.IsConflict).IsTrue();
-        await Assert.That(result.ConflictReason).Contains("identity");
     }
 
     [Test]

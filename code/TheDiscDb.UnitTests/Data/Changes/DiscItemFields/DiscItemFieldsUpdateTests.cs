@@ -25,7 +25,6 @@ public class DiscItemFieldsUpdateTests
             BoxsetSlug: null,
             ReleaseSlug: ChangeTestSeed.ReleaseSlug,
             DiscSlug: ChangeTestSeed.DiscSlug,
-            DiscIndex: ChangeTestSeed.DiscIndex,
             TitleIndex: ChangeTestSeed.TitleIndex,
             Comment: comment,
             SourceFile: sourceFile,
@@ -66,7 +65,7 @@ public class DiscItemFieldsUpdateTests
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
         var snapshotPayload = DiscItemFieldsUpdate.SnapshotFrom(
-            seed.Title, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex);
+            seed.Title, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug);
         var snapshot = JsonSerializer.Serialize(snapshotPayload, JsonOptions);
 
         var change = new DiscItemFieldsUpdate(snapshotPayload with { Comment = "Updated comment", ItemTitle = "Updated Item Title" });
@@ -92,7 +91,7 @@ public class DiscItemFieldsUpdateTests
         await db.SaveChangesAsync();
 
         var snapshotPayload = DiscItemFieldsUpdate.SnapshotFrom(
-            seed.Title, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex);
+            seed.Title, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug);
         var snapshot = JsonSerializer.Serialize(snapshotPayload, JsonOptions);
 
         var change = new DiscItemFieldsUpdate(snapshotPayload with
@@ -117,7 +116,7 @@ public class DiscItemFieldsUpdateTests
         using var dbBefore = ChangeTestSeed.CreateDbContext();
         var seedBefore = ChangeTestSeed.Seed(dbBefore);
         var snapshot = JsonSerializer.Serialize(
-            DiscItemFieldsUpdate.SnapshotFrom(seedBefore.Title, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex),
+            DiscItemFieldsUpdate.SnapshotFrom(seedBefore.Title, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug),
             JsonOptions);
 
         using var dbAfter = ChangeTestSeed.CreateDbContext();
@@ -132,23 +131,16 @@ public class DiscItemFieldsUpdateTests
     }
 
     [Test]
-    public async Task ValidateAsync_DetectsParentDiscIndexDrift_EvenWhenResolvedBySlug()
+    public async Task ValidateAsync_ReturnsConflict_WhenDiscSlugIsMissing()
     {
         using var db = ChangeTestSeed.CreateDbContext();
-        var seed = ChangeTestSeed.Seed(db);
-        var snapshot = JsonSerializer.Serialize(
-            DiscItemFieldsUpdate.SnapshotFrom(seed.Title, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex),
-            JsonOptions);
+        ChangeTestSeed.Seed(db);
 
-        seed.Disc.Index = 99;
-        await db.SaveChangesAsync();
+        var change = new DiscItemFieldsUpdate(MakeProposed() with { DiscSlug = string.Empty });
 
-        var change = new DiscItemFieldsUpdate(MakeProposed(comment: "Proposed"));
-
-        var result = await change.ValidateAsync(db, snapshot, CancellationToken.None);
+        var result = await change.ValidateAsync(db, originalSnapshotJson: null, CancellationToken.None);
 
         await Assert.That(result.IsConflict).IsTrue();
-        await Assert.That(result.ConflictReason).Contains("identity");
     }
 
     [Test]

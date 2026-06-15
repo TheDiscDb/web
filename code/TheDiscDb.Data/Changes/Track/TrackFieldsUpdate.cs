@@ -47,8 +47,7 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
             this.Proposed.MediaItemSlug,
             this.Proposed.BoxsetSlug,
             this.Proposed.ReleaseSlug,
-            disc.Slug,
-            disc.Index,
+            disc.Slug!,
             title.Index);
     }
 
@@ -90,7 +89,6 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
         if (original.ReleaseSlug != current.ReleaseSlug
             || original.MediaItemSlug != current.MediaItemSlug
             || original.BoxsetSlug != current.BoxsetSlug
-            || original.DiscIndex != current.DiscIndex
             || original.DiscSlug != current.DiscSlug
             || original.TitleIndex != current.TitleIndex
             || original.TrackIndex != current.TrackIndex)
@@ -118,17 +116,16 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
         string? mediaItemSlug,
         string? boxsetSlug,
         string releaseSlug,
-        string? discSlug,
-        int discIndex,
+        string discSlug,
         int titleIndex)
     {
         ArgumentNullException.ThrowIfNull(track);
+        ArgumentException.ThrowIfNullOrEmpty(discSlug);
         return new TrackFieldsDetails(
             MediaItemSlug: mediaItemSlug,
             BoxsetSlug: boxsetSlug,
             ReleaseSlug: releaseSlug,
             DiscSlug: discSlug,
-            DiscIndex: discIndex,
             TitleIndex: titleIndex,
             TrackIndex: track.Index,
             Name: track.Name,
@@ -146,10 +143,10 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
         TrackFieldsDetails details,
         CancellationToken cancellationToken)
     {
-        // Contract: exactly one parent slug must be populated.
+        // Contract: exactly one parent slug must be populated and DiscSlug is required.
         var hasMedia = !string.IsNullOrWhiteSpace(details.MediaItemSlug);
         var hasBoxset = !string.IsNullOrWhiteSpace(details.BoxsetSlug);
-        if (hasMedia == hasBoxset)
+        if (hasMedia == hasBoxset || string.IsNullOrEmpty(details.DiscSlug))
         {
             return null;
         }
@@ -181,10 +178,7 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
             return null;
         }
 
-        var disc = !string.IsNullOrEmpty(details.DiscSlug)
-            ? release.Discs.FirstOrDefault(d => d.Slug == details.DiscSlug)
-            : release.Discs.FirstOrDefault(d => d.Index == details.DiscIndex);
-
+        var disc = release.Discs.FirstOrDefault(d => d.Slug == details.DiscSlug);
         if (disc is null)
         {
             return null;

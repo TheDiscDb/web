@@ -1,7 +1,5 @@
 namespace TheDiscDb.Data.Changes.DiscItemFields;
 
-using TheDiscDb.Data.Changes.DiscFields;
-
 /// <summary>
 /// Payload for the <c>disc-item.fields.update</c> change type. Carries the
 /// editable fields of a <see cref="TheDiscDb.InputModels.Title"/> (the entity
@@ -13,15 +11,16 @@ using TheDiscDb.Data.Changes.DiscFields;
 /// Title and DiscItemReference are 1:1 in the schema
 /// (<c>HasOne(x =&gt; x.Item).WithOne(x =&gt; x.DiscItem)</c>) so editing
 /// "the disc item" can safely touch both without affecting other disc items.
-/// Identity composite: release-parent + disc + <see cref="TitleIndex"/>.
+/// Identity composite: release-parent + disc-slug + <see cref="TitleIndex"/>.
 /// Title has no slug, so the index is the only stable identifier within a disc.
+/// Parent disc is identified by <see cref="DiscSlug"/>; slug-less discs are
+/// not addressable through this change type by design.
 /// </remarks>
 public sealed record DiscItemFieldsDetails(
     string? MediaItemSlug,
     string? BoxsetSlug,
     string ReleaseSlug,
-    string? DiscSlug,
-    int DiscIndex,
+    string DiscSlug,
     int TitleIndex,
     // Title direct fields
     string? Comment,
@@ -39,8 +38,8 @@ public sealed record DiscItemFieldsDetails(
     string? ItemEpisode)
 {
     /// <summary>
-    /// Natural-key identifier: <c>"&lt;parent&gt;/&lt;release&gt;/&lt;disc&gt;/&lt;titleIndex&gt;"</c>.
+    /// Natural-key identifier: <c>"&lt;parent&gt;/&lt;release&gt;/&lt;discSlug&gt;/&lt;titleIndex&gt;"</c>.
     /// </summary>
     public string TargetEntityKey =>
-        $"{(this.MediaItemSlug ?? this.BoxsetSlug) ?? string.Empty}/{this.ReleaseSlug}/{DiscFieldsDetails.DiscToken(this.DiscSlug, this.DiscIndex)}/{this.TitleIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+        $"{(this.MediaItemSlug ?? this.BoxsetSlug) ?? string.Empty}/{this.ReleaseSlug}/{this.DiscSlug}/{this.TitleIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
 }

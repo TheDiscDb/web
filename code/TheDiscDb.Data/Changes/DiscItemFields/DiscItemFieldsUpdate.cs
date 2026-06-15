@@ -43,11 +43,8 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
             return null;
         }
 
-        // Use authoritative DB-resolved parent identity, not the proposed values,
-        // so DescribeDrift catches the case where the parent disc's slug or index
-        // shifted but the resolver still matched via the other.
         var (title, disc) = resolved.Value;
-        return SnapshotFrom(title, this.Proposed.MediaItemSlug, this.Proposed.BoxsetSlug, this.Proposed.ReleaseSlug, disc.Slug, disc.Index);
+        return SnapshotFrom(title, this.Proposed.MediaItemSlug, this.Proposed.BoxsetSlug, this.Proposed.ReleaseSlug, disc.Slug!);
     }
 
     protected override async Task ApplyCoreAsync(
@@ -110,7 +107,6 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
         if (original.ReleaseSlug != current.ReleaseSlug
             || original.MediaItemSlug != current.MediaItemSlug
             || original.BoxsetSlug != current.BoxsetSlug
-            || original.DiscIndex != current.DiscIndex
             || original.DiscSlug != current.DiscSlug
             || original.TitleIndex != current.TitleIndex)
         {
@@ -139,16 +135,15 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
         string? mediaItemSlug,
         string? boxsetSlug,
         string releaseSlug,
-        string? discSlug,
-        int discIndex)
+        string discSlug)
     {
         ArgumentNullException.ThrowIfNull(title);
+        ArgumentException.ThrowIfNullOrEmpty(discSlug);
         return new DiscItemFieldsDetails(
             MediaItemSlug: mediaItemSlug,
             BoxsetSlug: boxsetSlug,
             ReleaseSlug: releaseSlug,
             DiscSlug: discSlug,
-            DiscIndex: discIndex,
             TitleIndex: title.Index,
             Comment: title.Comment,
             SourceFile: title.SourceFile,
@@ -167,12 +162,10 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
         DiscItemFieldsDetails details,
         CancellationToken cancellationToken)
     {
-        // Contract: exactly one parent slug must be populated. Both-set is just
-        // as much a caller error as neither-set, and silently choosing one would
-        // hide an entire class of bugs in the submit path.
+        // Contract: exactly one parent slug must be populated and DiscSlug is required.
         var hasMedia = !string.IsNullOrWhiteSpace(details.MediaItemSlug);
         var hasBoxset = !string.IsNullOrWhiteSpace(details.BoxsetSlug);
-        if (hasMedia == hasBoxset)
+        if (hasMedia == hasBoxset || string.IsNullOrEmpty(details.DiscSlug))
         {
             return null;
         }
@@ -204,10 +197,7 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
             return null;
         }
 
-        var disc = !string.IsNullOrEmpty(details.DiscSlug)
-            ? release.Discs.FirstOrDefault(d => d.Slug == details.DiscSlug)
-            : release.Discs.FirstOrDefault(d => d.Index == details.DiscIndex);
-
+        var disc = release.Discs.FirstOrDefault(d => d.Slug == details.DiscSlug);
         if (disc is null)
         {
             return null;

@@ -24,7 +24,6 @@ public class TrackFieldsUpdateTests
             BoxsetSlug: null,
             ReleaseSlug: ChangeTestSeed.ReleaseSlug,
             DiscSlug: ChangeTestSeed.DiscSlug,
-            DiscIndex: ChangeTestSeed.DiscIndex,
             TitleIndex: ChangeTestSeed.TitleIndex,
             TrackIndex: trackIndex,
             Name: name,
@@ -65,7 +64,7 @@ public class TrackFieldsUpdateTests
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
         var snapshot = JsonSerializer.Serialize(
-            TrackFieldsUpdate.SnapshotFrom(seed.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex, ChangeTestSeed.TitleIndex),
+            TrackFieldsUpdate.SnapshotFrom(seed.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.TitleIndex),
             JsonOptions);
 
         var change = new TrackFieldsUpdate(MakeProposed(
@@ -91,7 +90,7 @@ public class TrackFieldsUpdateTests
     {
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
-        var snapshotPayload = TrackFieldsUpdate.SnapshotFrom(seed.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex, ChangeTestSeed.TitleIndex);
+        var snapshotPayload = TrackFieldsUpdate.SnapshotFrom(seed.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.TitleIndex);
         var snapshot = JsonSerializer.Serialize(snapshotPayload, JsonOptions);
 
         var change = new TrackFieldsUpdate(snapshotPayload with { Type = "Subtitle", AudioType = null });
@@ -109,7 +108,7 @@ public class TrackFieldsUpdateTests
         using var dbBefore = ChangeTestSeed.CreateDbContext();
         var seedBefore = ChangeTestSeed.Seed(dbBefore);
         var snapshot = JsonSerializer.Serialize(
-            TrackFieldsUpdate.SnapshotFrom(seedBefore.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex, ChangeTestSeed.TitleIndex),
+            TrackFieldsUpdate.SnapshotFrom(seedBefore.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.TitleIndex),
             JsonOptions);
 
         using var dbAfter = ChangeTestSeed.CreateDbContext();
@@ -124,23 +123,16 @@ public class TrackFieldsUpdateTests
     }
 
     [Test]
-    public async Task ValidateAsync_DetectsParentDiscIndexDrift_EvenWhenResolvedBySlug()
+    public async Task ValidateAsync_ReturnsConflict_WhenDiscSlugIsMissing()
     {
         using var db = ChangeTestSeed.CreateDbContext();
-        var seed = ChangeTestSeed.Seed(db);
-        var snapshot = JsonSerializer.Serialize(
-            TrackFieldsUpdate.SnapshotFrom(seed.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex, ChangeTestSeed.TitleIndex),
-            JsonOptions);
+        ChangeTestSeed.Seed(db);
 
-        seed.Disc.Index = 99;
-        await db.SaveChangesAsync();
+        var change = new TrackFieldsUpdate(MakeProposed() with { DiscSlug = string.Empty });
 
-        var change = new TrackFieldsUpdate(MakeProposed(name: "Proposed"));
-
-        var result = await change.ValidateAsync(db, snapshot, CancellationToken.None);
+        var result = await change.ValidateAsync(db, originalSnapshotJson: null, CancellationToken.None);
 
         await Assert.That(result.IsConflict).IsTrue();
-        await Assert.That(result.ConflictReason).Contains("identity");
     }
 
     [Test]
