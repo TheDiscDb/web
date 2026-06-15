@@ -21,27 +21,6 @@ public partial class ContributionMutations
     [Authorize]
     public async Task<DiscLogs> GetDiscLogs(string contributionId, string discId, SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
     {
-        // TODO: Check the user owns the contribution
-        var blob = await this.assetStore.Download($"{contributionId}/{discId}-logs.txt", cancellationToken);
-        if (blob == null)
-        {
-            throw new LogsNotFoundException(discId);
-        }
-
-        DiscInfo? organized = null;
-
-        try
-        {
-            string text = blob.ToString();
-            var lines = text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var parsed = LogParser.Parse(lines);
-            organized = LogParser.Organize(parsed);
-        }
-        catch (Exception ex)
-        {
-            throw new CouldNotParseLogsException(discId, ex);
-        }
-
         var decodedContributionId = this.idEncoder.Decode(contributionId);
         var decodedDiscId = this.idEncoder.Decode(discId);
         UserContributionDisc? disc = null;
@@ -62,6 +41,34 @@ public partial class ContributionMutations
         if (disc == null)
         {
             throw new DiscNotFoundException(discId);
+        }
+
+        string logPath = $"{contributionId}/{discId}-logs.txt";
+        bool hasLogs = await this.assetStore.Exists(logPath, cancellationToken);
+        if (!hasLogs)
+        {
+            return new DiscLogs
+            {
+                Info = null,
+                Disc = disc,
+                Contribution = contribution
+            };
+        }
+
+        var blob = await this.assetStore.Download(logPath, cancellationToken);
+
+        DiscInfo? organized = null;
+
+        try
+        {
+            string text = blob.ToString();
+            var lines = text.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var parsed = LogParser.Parse(lines);
+            organized = LogParser.Organize(parsed);
+        }
+        catch (Exception ex)
+        {
+            throw new CouldNotParseLogsException(discId, ex);
         }
 
         return new DiscLogs

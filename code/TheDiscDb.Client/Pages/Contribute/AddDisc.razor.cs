@@ -68,6 +68,7 @@ public partial class AddDisc : CancellableComponentBase
     bool manualHashMode;
     string manualHash = string.Empty;
     SlugInput? slugInput;
+    string? copyFlowError;
 
     bool IsDevelopmentMode=> HostEnvironment.Environment == "Development";
 
@@ -120,6 +121,7 @@ public partial class AddDisc : CancellableComponentBase
 
     async Task TryCalculateHash()
     {
+        this.copyFlowError = null;
         items = await handler!.ValuesAsync();
 
         var bdmv = items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("BDMV", StringComparison.OrdinalIgnoreCase));
@@ -178,26 +180,52 @@ public partial class AddDisc : CancellableComponentBase
                             var source = result.Data?.MediaItems?.Nodes.First();
                             if (source != null)
                             {
-                                this.request.Slug = source.Slug!;
-                                this.request.Name = source.Title!;
-                                this.request.Format = source.Type!;
+                                var sourceRelease = source.Releases
+                                    .FirstOrDefault(release => release.Discs.Any(disc => disc.ContentHash == hash));
+                                var sourceDisc = sourceRelease?.Discs.FirstOrDefault(disc => disc.ContentHash == hash);
 
-                                var actualDisc = source.Releases.First().Discs.First();
-
-                                this.request.ExistingDiscPath = UserContributionDisc.GenerateDiscPath(this.contribution!.MediaType!, source.Externalids.Tmdb!, this.contribution.ReleaseSlug!, actualDisc!.Slug!);
-
-                                var createInput = new CreateDiscInput
+                                if (sourceRelease != null && sourceDisc != null)
                                 {
-                                    ContributionId = this.ContributionId!,
-                                    Name = this.request.Name!,
-                                    Slug = this.request.Slug!,
-                                    Format = this.request.Format!,
-                                    ExistingDiscPath = this.request.ExistingDiscPath
-                                };
-                                var createDiscResponse = await this.ContributionClient.CreateDisc.ExecuteAsync(createInput, this.CancellationToken);
-                                if (createDiscResponse.IsSuccessResult())
-                                {
-                                    this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
+                                    this.request.Slug = sourceDisc.Slug!;
+                                    this.request.Name = sourceDisc.Name!;
+                                    this.request.Format = NormalizeFormat(sourceDisc.Format);
+
+                                    this.request.ExistingDiscPath = UserContributionDisc.GenerateDiscPath(
+                                        source.Type!,
+                                        source.Externalids.Tmdb!,
+                                        sourceRelease.Slug!,
+                                        sourceDisc.Slug!);
+
+                                    var createInput = new CreateDiscInput
+                                    {
+                                        ContributionId = this.ContributionId!,
+                                        Name = this.request.Name!,
+                                        Slug = this.request.Slug!,
+                                        Format = this.request.Format!,
+                                        ContentHash = this.request.ContentHash,
+                                        ExistingDiscPath = this.request.ExistingDiscPath
+                                    };
+                                    var createDiscResponse = await this.ContributionClient.CreateDisc.ExecuteAsync(createInput, this.CancellationToken);
+                                    if (createDiscResponse.IsSuccessResult())
+                                    {
+                                        var createdDiscId = createDiscResponse.Data?.CreateDisc?.UserContributionDisc?.EncodedId;
+                                        if (!string.IsNullOrEmpty(createdDiscId))
+                                        {
+                                            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/disc/{createdDiscId}/edit?returnUrl=/contribution/{this.ContributionId}");
+                                        }
+                                        else
+                                        {
+                                            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
+                                        }
+
+                                        return;
+                                    }
+
+                                    var copyErrors = createDiscResponse.Data?.CreateDisc?.Errors;
+                                    if (copyErrors != null && copyErrors.Count > 0)
+                                    {
+                                        this.copyFlowError = "Could not auto-copy this disc. You can still save it manually below.";
+                                    }
                                 }
                             }
                         }
@@ -245,13 +273,37 @@ public partial class AddDisc : CancellableComponentBase
             Name = this.request.Name!,
             Slug = this.request.Slug!,
             Format = this.request.Format!,
-            ContentHash = this.request.ContentHash
+            ContentHash = this.request.ContentHash,
+            ExistingDiscPath = this.request.ExistingDiscPath
         };
         var response = await this.ContributionClient.CreateDisc.ExecuteAsync(input, this.CancellationToken);
         if (response.IsSuccessResult())
         {
-            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{response.Data!.CreateDisc.UserContributionDisc!.EncodedId}");
+            var createdDiscId = response.Data!.CreateDisc.UserContributionDisc!.EncodedId;
+
+            if (!string.IsNullOrEmpty(this.request.ExistingDiscPath))
+            {
+                this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/disc/{createdDiscId}/edit?returnUrl=/contribution/{this.ContributionId}");
+                return;
+            }
+
+            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{createdDiscId}");
         }
+    }
+
+    private static string NormalizeFormat(string? format)
+    {
+        if (string.IsNullOrWhiteSpace(format))
+        {
+            return "Blu-ray";
+        }
+
+        if (format.Equals("UHD", StringComparison.OrdinalIgnoreCase))
+        {
+            return "4K";
+        }
+
+        return format;
     }
 
     private async Task DiscTitleChanged(ChangeEventArgs args)

@@ -148,12 +148,20 @@ public partial class IdentifyDiscItems : CancellableComponentBase
     public IContributionClient ContributionClient { get; set; } = default!;
 
     [Inject]
+    public GetDiscDetailByContentHashQuery? ContentHashQuery { get; set; }
+
+    [Inject]
     private IClipboardService ClipboardService { get; set; } = null!;
 
     private string? mediaType = null;
     private IQueryable<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>? filteredTitles = null;
     private IQueryable<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>? allTitles = null;
     private IGetDiscLogs_DiscLogs_DiscLogs_Disc? disc = null;
+    private IGetDiscDetailByContentHash_MediaItems_Nodes? readOnlyItem = null;
+    private IGetDiscDetailByContentHash_MediaItems_Nodes_Releases? readOnlyRelease = null;
+    private IGetDiscDetailByContentHash_MediaItems_Nodes_Releases_Discs? readOnlyDisc = null;
+    private IQueryable<IGetDiscDetailByContentHash_MediaItems_Nodes_Releases_Discs_Titles>? readOnlyTitles = null;
+    private readonly Dictionary<IGetDiscDetailByContentHash_MediaItems_Nodes_Releases_Discs_Titles, string> readOnlyFilenamesByItem = new();
     private readonly Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles, ItemIdentification> identifiedTitles = new Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles, ItemIdentification>();
     //private SeriesEpisodeNames? episodeNames = null;
 #pragma warning disable IDE0044 // Add readonly modifier
@@ -167,6 +175,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
     private bool callInProgress = false;
 
     private bool commentColumnVisible = false;
+    private string? loadError;
 
     bool showEpisodeDialog = false;
     SfDialog? episodeDialog;
@@ -202,55 +211,77 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         var response = await this.ContributionClient.GetDiscLogs.ExecuteAsync(input, this.CancellationToken);
         if (response?.Data != null && response.IsSuccessResult())
         {
-            this.allTitles = response.Data.DiscLogs.DiscLogs!.Info!.Titles.AsQueryable();
-            this.filteredTitles = allTitles;
-            this.disc = response.Data.DiscLogs.DiscLogs.Disc;
-            this.contribution = response.Data.DiscLogs.DiscLogs.Contribution;
-            InitializeLengthFilter();
-
-            this.commentColumnVisible = this.allTitles.Any(t => !string.IsNullOrEmpty(t.JavaComment));
-
-            if (allTitles != null && disc?.Items != null)
+            var discLogs = response.Data.DiscLogs.DiscLogs;
+            if (discLogs == null)
             {
-                foreach (IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item in disc.Items)
+                this.loadError = "This disc does not have uploaded logs yet, so it cannot be identified here.";
+                return;
+            }
+
+            this.disc = discLogs.Disc;
+            this.contribution = discLogs.Contribution;
+
+            if (discLogs.Info != null)
+            {
+                this.allTitles = discLogs.Info.Titles.AsQueryable();
+                this.filteredTitles = allTitles;
+                InitializeLengthFilter();
+
+                this.commentColumnVisible = this.allTitles.Any(t => !string.IsNullOrEmpty(t.JavaComment));
+
+                if (allTitles != null && disc?.Items != null)
                 {
-                    IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles? title = this.allTitles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
-                    if (title != null)
+                    foreach (IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item in disc.Items)
                     {
-                        var existingItem = new ItemIdentification
+                        IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles? title = this.allTitles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
+                        if (title != null)
                         {
-                            DatabaseId = item.EncodedId,
-                            Title = title,
-                            Type = item.Type,
-                            ItemTitle = item.Name,
-                            Description = item.Description
-                        };
-
-                        if (!string.IsNullOrEmpty(item.Season))
-                        {
-                            existingItem.Episode = new EpisodeIdentification
+                            var existingItem = new ItemIdentification
                             {
-                                Season = item.Season,
-                                Episode = item.Episode
+                                DatabaseId = item.EncodedId,
+                                Title = title,
+                                Type = item.Type,
+                                ItemTitle = item.Name,
+                                Description = item.Description
                             };
+
+                            if (!string.IsNullOrEmpty(item.Season))
+                            {
+                                existingItem.Episode = new EpisodeIdentification
+                                {
+                                    Season = item.Season,
+                                    Episode = item.Episode
+                                };
+                            }
+
+                            InitializeChapters(item, existingItem);
+                            InitializeAudioTracks(item, existingItem, title);
+
+                            identifiedTitles[title] = existingItem;
                         }
+                    }
+                }
 
-                        InitializeChapters(item, existingItem);
-                        InitializeAudioTracks(item, existingItem, title);
-
-                        identifiedTitles[title] = existingItem;
+                if (discLogs.Contribution != null)
+                {
+                    var contribution = discLogs.Contribution;
+                    if (!string.IsNullOrEmpty(contribution.MediaType))
+                    {
+                        this.mediaType = contribution.MediaType;
                     }
                 }
             }
-
-            if (response.Data.DiscLogs.DiscLogs.Contribution != null)
+            else if (this.disc != null && !string.IsNullOrEmpty(this.disc.ContentHash))
             {
-                var contribution = response.Data.DiscLogs.DiscLogs.Contribution;
-                if (!string.IsNullOrEmpty(contribution.MediaType))
+                if (!await LoadReadOnlyDiscAsync(this.disc.ContentHash))
                 {
-                    this.mediaType = contribution.MediaType;
+                    this.loadError = "This disc does not have uploaded logs yet, so it cannot be identified here.";
                 }
             }
+        }
+        else
+        {
+            this.loadError = "This disc does not have uploaded logs yet, so it cannot be identified here.";
         }
 
         if (!string.IsNullOrEmpty(this.mediaType) && this.mediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
@@ -282,6 +313,56 @@ public partial class IdentifyDiscItems : CancellableComponentBase
                 await toast!.ShowAsync();
             }
         }
+    }
+
+    private async Task<bool> LoadReadOnlyDiscAsync(string contentHash)
+    {
+        if (this.ContentHashQuery == null)
+        {
+            return false;
+        }
+
+        var result = await this.ContentHashQuery.ExecuteAsync(contentHash, templates: null, cancellationToken: this.CancellationToken);
+        if (!result.IsSuccessResult())
+        {
+            return false;
+        }
+
+        var item = result.Data?.MediaItems?.Nodes?.FirstOrDefault();
+        if (item == null)
+        {
+            return false;
+        }
+
+        var release = item.Releases?.FirstOrDefault();
+        var disc = release?.Discs?.FirstOrDefault();
+        if (release == null || disc == null)
+        {
+            return false;
+        }
+
+        this.readOnlyItem = item;
+        this.readOnlyRelease = release;
+        this.readOnlyDisc = disc;
+        this.readOnlyTitles = disc.Titles?.AsQueryable();
+
+        if (disc.Titles != null)
+        {
+            foreach (var title in disc.Titles)
+            {
+                if (!string.IsNullOrEmpty(title.Filename))
+                {
+                    this.readOnlyFilenamesByItem[title] = title.Filename;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private string GetReadOnlyFileName(IGetDiscDetailByContentHash_MediaItems_Nodes_Releases_Discs_Titles item)
+    {
+        return this.readOnlyFilenamesByItem.TryGetValue(item, out var filename) ? filename : string.Empty;
     }
 
     private static void InitializeAudioTracks(IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item, ItemIdentification existingItem, IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)

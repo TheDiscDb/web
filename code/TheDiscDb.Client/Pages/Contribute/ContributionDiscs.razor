@@ -107,14 +107,15 @@
                                 @ondragend="OnDragEnd">
                                 <td>
                                     <div class="disc-name">
-                                        <a href="/contribution/@ContributionId/discs/@disc.EncodedId/identify" title="Identify Disc">@disc.Name</a>
+                                        <a href="@GetDiscTargetUrl(disc)" title="Open Disc">@disc.Name</a>
                                     </div>
                                 </td>
                                 <td>@disc.Format</td>
                                 <td>
                                     @if (!string.IsNullOrEmpty(disc.ExistingDiscPath))
                                     {
-                                        <span class="badge bg-light text-dark">Copied from another disc</span>
+                                        <span class="badge bg-light text-dark">Copied from matching disc</span>
+                                        <div class="text-muted small">@GetCopiedFromSummary(disc)</div>
                                     }
                                     else
                                     {

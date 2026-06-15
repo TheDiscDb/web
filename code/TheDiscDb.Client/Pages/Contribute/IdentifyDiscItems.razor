@@ -19,7 +19,62 @@
         <p>You can edit the title by clicking on the title link. Once you have identified all items, click the "Done Identifying" button.</p>
     </section>
 
-    @if (allTitles is null)
+    @if (readOnlyDisc != null && readOnlyItem != null && readOnlyRelease != null)
+    {
+        <div class="alert alert-info">
+            This disc was copied from an existing database disc. The details below are read-only until logs are uploaded.
+        </div>
+
+        <section class="info-card mb-3">
+            <h2>Read-only disc view</h2>
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Media item</dt>
+                <dd class="col-sm-9">@readOnlyItem.Title (@readOnlyItem.Year)</dd>
+
+                <dt class="col-sm-3">Release</dt>
+                <dd class="col-sm-9">@readOnlyRelease.Title</dd>
+
+                <dt class="col-sm-3">Disc</dt>
+                <dd class="col-sm-9">@readOnlyDisc.Name · @readOnlyDisc.Format</dd>
+
+                <dt class="col-sm-3">Content hash</dt>
+                <dd class="col-sm-9"><code>@disc?.ContentHash</code></dd>
+            </dl>
+        </section>
+
+        <section class="info-card mb-3">
+            <h2>Disc titles</h2>
+            @if (readOnlyTitles != null && readOnlyTitles.Any())
+            {
+                <QuickGrid Items="readOnlyTitles" Class="striped-grid">
+                    <PropertyColumn Property="@(t => t.Index)" Title="#" />
+                    <PropertyColumn Property="@(t => t.SourceFile)" Title="Source File" />
+                    <PropertyColumn Property="@(t => t.Description)" Title="Description" />
+                    <PropertyColumn Property="@(t => t.ItemType)" Title="Type" />
+                    <PropertyColumn Property="@(t => t.Season)" Title="Season" />
+                    <PropertyColumn Property="@(t => t.Episode)" Title="Episode" />
+                    <PropertyColumn Property="@(t => t.SegmentMap)" Title="Segment Map" />
+                    <PropertyColumn Property="@(t => t.Duration)" Title="Duration" />
+                    <PropertyColumn Property="@(t => t.DisplaySize)" Title="Size" />
+                    <TemplateColumn Title="Filename">
+                        @GetReadOnlyFileName(context)
+                    </TemplateColumn>
+                </QuickGrid>
+            }
+            else
+            {
+                <p>No title data is available for this copied disc yet.</p>
+            }
+        </section>
+    }
+    else if (!string.IsNullOrEmpty(loadError))
+    {
+        <div class="alert alert-warning">
+            @loadError
+            <a class="ms-2" href="/contribution/@ContributionId">Back to contribution</a>
+        </div>
+    }
+    else if (allTitles is null)
     {
         <p><em>Loading...</em></p>
     }

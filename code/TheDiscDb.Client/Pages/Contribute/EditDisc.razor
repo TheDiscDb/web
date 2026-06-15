@@ -20,6 +20,13 @@ else if (discFound)
         <div class="alert alert-danger">@errorMessage</div>
     }
 
+    @if (!string.IsNullOrEmpty(request.ExistingDiscPath))
+    {
+        <div class="alert alert-info">
+            This disc is linked to an existing database disc and will reuse that data during import.
+        </div>
+    }
+
     <div>Hash: @request.ContentHash</div>
     <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />

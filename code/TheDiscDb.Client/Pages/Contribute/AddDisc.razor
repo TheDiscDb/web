@@ -41,6 +41,10 @@
         else
         {
             <section class="info-card add-disc-form-card">
+                @if (!string.IsNullOrEmpty(copyFlowError))
+                {
+                    <div class="alert alert-warning">@copyFlowError</div>
+                }
                 <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
                     <DataAnnotationsValidator />
                     <ValidationSummary />

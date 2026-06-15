@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using StrawberryShake;
 using TheDiscDb.Client.Contributions;
@@ -105,6 +105,34 @@ public partial class ContributionDiscs : CancellableComponentBase
         if (disc == draggedDisc) return "dragging";
         if (disc == dragOverDisc) return "drag-over";
         return string.Empty;
+    }
+
+    private string GetDiscTargetUrl(IContributionDiscs_MyContributions_Nodes_Discs disc)
+    {
+        if (!string.IsNullOrEmpty(disc.ExistingDiscPath))
+        {
+            return $"/contribution/{ContributionId}/disc/{disc.EncodedId}/edit?returnUrl=/contribution/{ContributionId}";
+        }
+
+        return $"/contribution/{ContributionId}/discs/{disc.EncodedId}/identify";
+    }
+
+    private string GetCopiedFromSummary(IContributionDiscs_MyContributions_Nodes_Discs disc)
+    {
+        if (string.IsNullOrEmpty(disc.ExistingDiscPath))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            var (_, externalId, releaseSlug, discSlug) = TheDiscDb.Web.Data.UserContributionDisc.ParseDiscPath(disc.ExistingDiscPath);
+            return $"{releaseSlug} / {discSlug} (TMDB {externalId})";
+        }
+        catch
+        {
+            return disc.ExistingDiscPath;
+        }
     }
 
     private async Task SaveDiscOrder()
