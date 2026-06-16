@@ -52,6 +52,11 @@ else
                         <AmazonAssociatesButton Asin="@Release?.Asin" Width="25" />
                         <GruvBuyButton MediaItemSlug="@this.Slug" ReleaseSlug="@this.ReleaseSlug" Sid="release-detail" Width="25" />
                     </div>
+                    <div class="mt-2">
+                        <a href="/@Type/@Slug/releases/@ReleaseSlug/edit" class="btn btn-sm btn-outline-secondary">
+                            <span>✏️ Suggest Edit</span>
+                        </a>
+                    </div>
                     @if (Release?.Discs != null && Release.Discs.Count > 0)
                     {
                         <h3 class="disc-list-heading">Discs</h3>
