@@ -31,6 +31,8 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
 
     public override string TypeKey => Key;
 
+    public override string TargetEntityKey => this.Proposed.TargetEntityKey;
+
     protected override async Task<TrackFieldsDetails?> LoadCurrentSnapshotAsync(
         SqlServerDataContext context,
         CancellationToken cancellationToken)

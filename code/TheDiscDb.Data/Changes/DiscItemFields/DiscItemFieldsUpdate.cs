@@ -33,6 +33,8 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
 
     public override string TypeKey => Key;
 
+    public override string TargetEntityKey => this.Proposed.TargetEntityKey;
+
     protected override async Task<DiscItemFieldsDetails?> LoadCurrentSnapshotAsync(
         SqlServerDataContext context,
         CancellationToken cancellationToken)

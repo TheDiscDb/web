@@ -31,6 +31,8 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
 
     public override string TypeKey => Key;
 
+    public override string TargetEntityKey => this.Proposed.TargetEntityKey;
+
     protected override async Task<ChapterDetails?> LoadCurrentSnapshotAsync(
         SqlServerDataContext context,
         CancellationToken cancellationToken)

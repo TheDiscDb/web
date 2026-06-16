@@ -19,6 +19,13 @@ public interface IChange
     string TypeKey { get; }
 
     /// <summary>
+    /// The natural-key path for the target entity this change proposes to modify,
+    /// derived from the proposed <c>*Details</c> payload. Used when creating
+    /// <see cref="EditSuggestion.TargetEntityKey"/> at submission time.
+    /// </summary>
+    string TargetEntityKey { get; }
+
+    /// <summary>
     /// Re-reads the current state of the target entity from <paramref name="context"/>
     /// and compares it against <paramref name="originalSnapshotJson"/> (the state the
     /// user saw when they submitted the suggestion). Returns a conflict if the database
@@ -47,5 +54,15 @@ public interface IChange
     Task ApplyAsync(
         SqlServerDataContext context,
         IChangeApplyContext apply,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Loads the current state of the target entity from the database and serialises
+    /// it as JSON. Used by conflict resolution to take a fresh snapshot as the new
+    /// baseline (the admin has accepted the current state). Returns <c>null</c> if
+    /// the target entity no longer exists.
+    /// </summary>
+    Task<string?> GetCurrentSnapshotJsonAsync(
+        SqlServerDataContext context,
         CancellationToken cancellationToken);
 }

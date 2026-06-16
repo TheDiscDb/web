@@ -40,6 +40,9 @@ public abstract class ChangeBase<TDetails> : IChange
 
     public abstract string TypeKey { get; }
 
+    /// <inheritdoc />
+    public abstract string TargetEntityKey { get; }
+
     /// <summary>
     /// When <c>true</c> (the default), <see cref="ValidateAsync"/> requires the
     /// caller to supply <paramref name="originalSnapshotJson"/> and rejects the
@@ -230,4 +233,19 @@ public abstract class ChangeBase<TDetails> : IChange
 
     /// <summary>Conflict message returned when the target entity no longer exists.</summary>
     protected abstract string MissingTargetMessage();
+
+    /// <inheritdoc />
+    public async Task<string?> GetCurrentSnapshotJsonAsync(
+        SqlServerDataContext context,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        var current = await this.LoadCurrentSnapshotAsync(context, cancellationToken);
+        if (current is null)
+        {
+            return null;
+        }
+
+        return JsonSerializer.Serialize(current, this.jsonOptions);
+    }
 }

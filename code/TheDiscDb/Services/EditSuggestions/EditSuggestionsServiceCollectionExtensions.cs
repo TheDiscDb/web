@@ -36,6 +36,12 @@ public static class EditSuggestionsServiceCollectionExtensions
             TrackFieldsUpdate.Key,
             (d, opts) => new TrackFieldsUpdate(d, opts)));
 
+        // Application services.
+        services.AddScoped<IEditSuggestionHistoryService, EditSuggestionHistoryService>();
+        services.AddScoped<IEditSuggestionService, EditSuggestionService>();
+        services.AddScoped<IEditSuggestionReviewService, EditSuggestionReviewService>();
+        services.AddScoped<IEditSuggestionSyncService, EditSuggestionSyncService>();
+
         return services;
     }
 }

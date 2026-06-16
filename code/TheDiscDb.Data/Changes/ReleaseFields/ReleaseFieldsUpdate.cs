@@ -33,6 +33,8 @@ public sealed class ReleaseFieldsUpdate : ChangeBase<ReleaseFieldsDetails>
 
     public override string TypeKey => Key;
 
+    public override string TargetEntityKey => this.Proposed.TargetEntityKey;
+
     protected override async Task<ReleaseFieldsDetails?> LoadCurrentSnapshotAsync(
         SqlServerDataContext context,
         CancellationToken cancellationToken)
