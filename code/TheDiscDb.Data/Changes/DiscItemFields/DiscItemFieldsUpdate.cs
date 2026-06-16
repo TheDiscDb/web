@@ -45,7 +45,7 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
             return null;
         }
 
-        var (title, disc) = resolved.Value;
+        var (title, disc) = resolved;
         return SnapshotFrom(title, this.Proposed.MediaItemSlug, this.Proposed.BoxsetSlug, this.Proposed.ReleaseSlug, disc.Slug!);
     }
 
@@ -159,7 +159,7 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
             ItemEpisode: title.Item?.Episode);
     }
 
-    internal static async Task<(Title Title, Disc Disc)?> ResolveTitleWithParentAsync(
+    internal static async Task<ResolvedTitle?> ResolveTitleWithParentAsync(
         SqlServerDataContext context,
         DiscItemFieldsDetails details,
         CancellationToken cancellationToken)
@@ -206,6 +206,8 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
         }
 
         var title = disc.Titles.FirstOrDefault(t => t.Index == details.TitleIndex);
-        return title is null ? null : (title, disc);
+        return title is null ? null : new ResolvedTitle(title, disc);
     }
 }
+
+internal sealed record ResolvedTitle(Title Title, Disc Disc);

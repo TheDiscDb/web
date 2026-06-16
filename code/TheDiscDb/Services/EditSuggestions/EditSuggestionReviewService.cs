@@ -20,11 +20,13 @@ public sealed class EditSuggestionReviewService(
         string? adminNote,
         CancellationToken cancellationToken)
     {
-        var (suggestion, change) = await LoadChangeAsync(suggestionId, changeId, cancellationToken);
-        if (suggestion is null || change is null)
+        var loaded = await LoadChangeAsync(suggestionId, changeId, cancellationToken);
+        if (loaded is null)
         {
             return null;
         }
+
+        var (suggestion, change) = loaded;
 
         if (change.Status is not EditSuggestionChangeStatus.Pending)
         {
@@ -75,11 +77,13 @@ public sealed class EditSuggestionReviewService(
         string? adminNote,
         CancellationToken cancellationToken)
     {
-        var (suggestion, change) = await LoadChangeAsync(suggestionId, changeId, cancellationToken);
-        if (suggestion is null || change is null)
+        var loaded = await LoadChangeAsync(suggestionId, changeId, cancellationToken);
+        if (loaded is null)
         {
             return null;
         }
+
+        var (suggestion, change) = loaded;
 
         if (change.Status is not EditSuggestionChangeStatus.Pending)
         {
@@ -130,11 +134,13 @@ public sealed class EditSuggestionReviewService(
         string resolution,
         CancellationToken cancellationToken)
     {
-        var (suggestion, change) = await LoadChangeAsync(suggestionId, changeId, cancellationToken);
-        if (suggestion is null || change is null)
+        var loaded = await LoadChangeAsync(suggestionId, changeId, cancellationToken);
+        if (loaded is null)
         {
             return null;
         }
+
+        var (suggestion, change) = loaded;
 
         if (change.Status is not EditSuggestionChangeStatus.Conflicted)
         {
@@ -191,7 +197,7 @@ public sealed class EditSuggestionReviewService(
         return change;
     }
 
-    private async Task<(EditSuggestion? Suggestion, EditSuggestionChange? Change)> LoadChangeAsync(
+    private async Task<LoadedChange?> LoadChangeAsync(
         int suggestionId,
         int changeId,
         CancellationToken cancellationToken)
@@ -201,7 +207,12 @@ public sealed class EditSuggestionReviewService(
             .FirstOrDefaultAsync(s => s.Id == suggestionId, cancellationToken);
 
         var change = suggestion?.Changes.FirstOrDefault(c => c.Id == changeId);
-        return (suggestion, change);
+        if (suggestion is null || change is null)
+        {
+            return null;
+        }
+
+        return new LoadedChange(suggestion, change);
     }
 
     /// <summary>
@@ -266,4 +277,6 @@ public sealed class EditSuggestionReviewService(
         int SuggestionId,
         int ChangeId,
         string? OriginalSnapshotJson) : IChangeApplyContext;
+
+    private sealed record LoadedChange(EditSuggestion Suggestion, EditSuggestionChange Change);
 }

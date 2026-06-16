@@ -43,7 +43,7 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
             return null;
         }
 
-        var (chapter, disc, title) = resolved.Value;
+        var (chapter, disc, title) = resolved;
         return SnapshotFrom(
             chapter,
             this.Proposed.MediaItemSlug,
@@ -110,7 +110,7 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
             Title: chapter.Title);
     }
 
-    internal static async Task<(EntityChapter Chapter, Disc Disc, Title Title)?> ResolveChapterWithParentAsync(
+    internal static async Task<ResolvedChapter?> ResolveChapterWithParentAsync(
         SqlServerDataContext context,
         ChapterDetails details,
         CancellationToken cancellationToken)
@@ -163,6 +163,8 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
         }
 
         var chapter = title.Item?.Chapters.FirstOrDefault(c => c.Index == details.ChapterIndex);
-        return chapter is null ? null : (chapter, disc, title);
+        return chapter is null ? null : new ResolvedChapter(chapter, disc, title);
     }
 }
+
+internal sealed record ResolvedChapter(EntityChapter Chapter, Disc Disc, Title Title);

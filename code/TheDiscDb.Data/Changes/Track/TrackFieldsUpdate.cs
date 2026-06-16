@@ -43,7 +43,7 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
             return null;
         }
 
-        var (track, disc, title) = resolved.Value;
+        var (track, disc, title) = resolved;
         return SnapshotFrom(
             track,
             this.Proposed.MediaItemSlug,
@@ -140,7 +140,7 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
             Description: track.Description);
     }
 
-    internal static async Task<(EntityTrack Track, Disc Disc, Title Title)?> ResolveTrackWithParentAsync(
+    internal static async Task<ResolvedTrack?> ResolveTrackWithParentAsync(
         SqlServerDataContext context,
         TrackFieldsDetails details,
         CancellationToken cancellationToken)
@@ -193,6 +193,8 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
         }
 
         var track = title.Tracks.FirstOrDefault(tr => tr.Index == details.TrackIndex);
-        return track is null ? null : (track, disc, title);
+        return track is null ? null : new ResolvedTrack(track, disc, title);
     }
 }
+
+internal sealed record ResolvedTrack(EntityTrack Track, Disc Disc, Title Title);
