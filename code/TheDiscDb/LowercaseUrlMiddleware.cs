@@ -5,6 +5,7 @@ public class LowercaseUrlMiddleware(RequestDelegate next)
     // Paths that contain case-sensitive encoded IDs and must not be lowercased
     private static readonly string[] CaseSensitivePrefixes =
     [
+        "/changes",
         "/contribution",
         "/admin",
         "/api",

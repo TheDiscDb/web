@@ -290,12 +290,13 @@ public class SqlServerDataContext : DbContext
             .HasForeignKey(x => x.SuggestionId)
             .OnDelete(DeleteBehavior.Cascade);
         // Optional FK to the specific change row (nullable: some history entries
-        // describe the whole bundle, not an individual change). SetNull on delete
-        // so history survives if individual change rows are pruned.
+        // describe the whole bundle, not an individual change). NoAction because
+        // SQL Server disallows multiple cascade paths — the cascade from
+        // EditSuggestion already handles cleanup.
         history.HasOne<EditSuggestionChange>()
             .WithMany()
             .HasForeignKey(x => x.ChangeId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
         history.HasIndex(x => x.SuggestionId);
 
         var message = modelBuilder.Entity<EditSuggestionMessage>();

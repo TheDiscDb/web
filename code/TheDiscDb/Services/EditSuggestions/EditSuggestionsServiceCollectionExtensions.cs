@@ -36,6 +36,28 @@ public static class EditSuggestionsServiceCollectionExtensions
             TrackFieldsUpdate.Key,
             (d, opts) => new TrackFieldsUpdate(d, opts)));
 
+        // Add types
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<ChapterDetails>(
+            ChapterAdd.Key,
+            (d, opts) => new ChapterAdd(d, opts)));
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<DiscItemFieldsDetails>(
+            DiscItemAdd.Key,
+            (d, opts) => new DiscItemAdd(d, opts)));
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<TrackFieldsDetails>(
+            TrackAdd.Key,
+            (d, opts) => new TrackAdd(d, opts)));
+
+        // Delete types
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<ChapterDeleteDetails>(
+            ChapterDelete.Key,
+            (d, opts) => new ChapterDelete(d, opts)));
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<DiscItemDeleteDetails>(
+            DiscItemDelete.Key,
+            (d, opts) => new DiscItemDelete(d, opts)));
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<TrackDeleteDetails>(
+            TrackDelete.Key,
+            (d, opts) => new TrackDelete(d, opts)));
+
         // Application services.
         services.AddScoped<IEditSuggestionHistoryService, EditSuggestionHistoryService>();
         services.AddScoped<IEditSuggestionService, EditSuggestionService>();

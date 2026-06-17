@@ -63,9 +63,12 @@ else
             <div class="info-card mt-4">
                 <div class="chapter-header">
                     <h3 class="mt-0 mb-0">Chapters</h3>
-                    <TheDiscDb.Client.Controls.CopyChaptersButton
-                        Chapters="@Title.Item.Chapters"
-                        @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+                    <div class="d-flex gap-2">
+                        <TheDiscDb.Client.Controls.CopyChaptersButton
+                            Chapters="@Title.Item.Chapters"
+                            @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+                        <a href="@GetChapterEditUrl()" class="btn btn-sm btn-outline-secondary" title="Suggest chapter edits">✏️</a>
+                    </div>
                 </div>
                 <ol class="chapter-list mb-0">
                     @foreach (var chapter in Title.Item.Chapters)
@@ -73,6 +76,16 @@ else
                         <li>@chapter.Title</li>
                     }
                 </ol>
+            </div>
+        }
+        else
+        {
+            <div class="info-card mt-4">
+                <div class="chapter-header">
+                    <h3 class="mt-0 mb-0">Chapters</h3>
+                    <a href="@GetChapterEditUrl()" class="btn btn-sm btn-outline-secondary" title="Add chapter names">✏️ Add Chapters</a>
+                </div>
+                <p class="text-muted mb-0">No chapter names available. Know them? Suggest adding them!</p>
             </div>
         }
 

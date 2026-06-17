@@ -73,6 +73,8 @@ public partial class ReleaseEdit : ComponentBase
     private string? submitMessage;
     private bool submitSuccess;
     private bool isSubmitting;
+    private bool isReviewing;
+    private List<FieldDiff> changedFields = [];
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -117,7 +119,24 @@ public partial class ReleaseEdit : ComponentBase
         request.ReleaseDate = Release.ReleaseDate;
     }
 
-    private async Task HandleValidSubmit()
+    private void ShowReview()
+    {
+        if (originalSnapshot == null)
+        {
+            return;
+        }
+
+        changedFields = ComputeDiff();
+        isReviewing = true;
+    }
+
+    private void BackToEdit()
+    {
+        isReviewing = false;
+        submitMessage = null;
+    }
+
+    private async Task HandleSubmit()
     {
         if (Release == null || originalSnapshot == null)
         {
@@ -178,6 +197,41 @@ public partial class ReleaseEdit : ComponentBase
         }
     }
 
+    private List<FieldDiff> ComputeDiff()
+    {
+        if (originalSnapshot == null)
+        {
+            return [];
+        }
+
+        var diffs = new List<FieldDiff>();
+
+        AddIfChanged(diffs, "Title", originalSnapshot.Title, request.Title);
+        AddIfChanged(diffs, "Region Code", originalSnapshot.RegionCode, request.RegionCode);
+        AddIfChanged(diffs, "Locale", originalSnapshot.Locale, request.Locale);
+        AddIfChanged(diffs, "Year", originalSnapshot.Year.ToString(), request.Year.ToString());
+        AddIfChanged(diffs, "UPC", originalSnapshot.Upc, request.Upc);
+        AddIfChanged(diffs, "ISBN", originalSnapshot.Isbn, request.Isbn);
+        AddIfChanged(diffs, "ASIN", originalSnapshot.Asin, request.Asin);
+        AddIfChanged(diffs, "Release Date",
+            originalSnapshot.ReleaseDate.ToString("d"),
+            request.ReleaseDate.ToString("d"));
+
+        return diffs;
+    }
+
+    private static void AddIfChanged(List<FieldDiff> diffs, string fieldName, string? currentValue, string? proposedValue)
+    {
+        var current = currentValue ?? string.Empty;
+        var proposed = proposedValue ?? string.Empty;
+        if (!string.Equals(current, proposed, StringComparison.Ordinal))
+        {
+            diffs.Add(new FieldDiff(fieldName, string.IsNullOrEmpty(current) ? "(empty)" : current, string.IsNullOrEmpty(proposed) ? "(empty)" : proposed));
+        }
+    }
+
     private bool IsBoxset() =>
         Type?.Equals("boxset", StringComparison.OrdinalIgnoreCase) == true;
 }
+
+internal sealed record FieldDiff(string FieldName, string CurrentValue, string ProposedValue);

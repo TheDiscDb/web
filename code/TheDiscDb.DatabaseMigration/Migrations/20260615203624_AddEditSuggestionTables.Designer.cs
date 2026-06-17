@@ -1916,7 +1916,7 @@ namespace TheDiscDb.Web.Migrations
                     b.HasOne("TheDiscDb.Web.Data.EditSuggestionChange", null)
                         .WithMany()
                         .HasForeignKey("ChangeId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("TheDiscDb.Web.Data.EditSuggestion", null)
                         .WithMany()

@@ -106,7 +106,7 @@ namespace TheDiscDb.Web.Migrations
                         column: x => x.ChangeId,
                         principalTable: "EditSuggestionChanges",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_EditSuggestionHistory_EditSuggestions_SuggestionId",
                         column: x => x.SuggestionId,

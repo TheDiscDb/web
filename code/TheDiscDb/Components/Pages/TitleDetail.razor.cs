@@ -116,4 +116,14 @@ public partial class TitleDetail : ComponentBase
                 !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
         }
     }
+
+    private string GetChapterEditUrl()
+    {
+        if (ReleaseSlug != null)
+        {
+            return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex}/{File}/{Extension}/chapters/edit";
+        }
+
+        return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{File}/{Extension}/chapters/edit";
+    }
 }
