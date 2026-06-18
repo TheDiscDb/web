@@ -350,6 +350,7 @@ public class ContributionGeneratorService
         Action<string> log,
         CancellationToken cancellationToken)
     {
+        log($"Resolving copied disc source '{disc.ExistingDiscPath}' for contribution disc '{discName.Name}' (hash: {disc.ContentHash}).");
         var existingDisc = UserContributionDisc.ParseDiscPath(disc.ExistingDiscPath!);
         string lookupBasePath = this.fileSystem.Path.Combine(workspace.DataRepositoryPath, subFolderName);
 
@@ -360,29 +361,57 @@ public class ContributionGeneratorService
             existingReleasePath = this.fileSystem.Path.Combine(lookupBasePath, $"{this.fileSystem.CleanPath(existingTitle)} ({existingYear})", existingDisc.ReleaseSlug);
         }
 
+        if (!await this.fileSystem.Directory.Exists(existingReleasePath))
+        {
+            throw new InvalidOperationException($"Copied disc source release path was not found: '{existingReleasePath}' (from '{disc.ExistingDiscPath}').");
+        }
+
         var discFiles = await this.fileSystem.Directory.GetFiles(existingReleasePath, "disc*.json", cancellationToken);
+        if (!discFiles.Any())
+        {
+            throw new InvalidOperationException($"Copied disc source release '{existingReleasePath}' contains no disc*.json files (from '{disc.ExistingDiscPath}').");
+        }
+
+        var matchedDisc = false;
         foreach (var existingDiscFile in discFiles)
         {
             string discFileContents = await this.fileSystem.File.ReadAllText(existingDiscFile, cancellationToken);
             var discJson = JsonSerializer.Deserialize<Disc>(discFileContents, JsonHelper.JsonOptions);
             if (discJson != null && discJson.Slug == existingDisc.DiscSlug)
             {
+                matchedDisc = true;
                 string newDiscFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.json");
                 await this.fileSystem.File.Copy(existingDiscFile, newDiscFilePath, overwrite, cancellationToken: cancellationToken);
                 generatedFiles.Add(newDiscFilePath);
 
                 string existingDir = this.fileSystem.Path.GetDirectoryName(existingDiscFile)!;
                 string newSummaryFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}-summary.txt");
-                string existingSummaryFilePath = this.fileSystem.Path.Combine(existingDir, $"{discName.Name}-summary.txt");
+                var sourceDiscStem = this.fileSystem.Path.GetFileNameWithoutExtension(existingDiscFile);
+                string existingSummaryFilePath = this.fileSystem.Path.Combine(existingDir, $"{sourceDiscStem}-summary.txt");
+                if (!await this.fileSystem.File.Exists(existingSummaryFilePath, cancellationToken))
+                {
+                    throw new InvalidOperationException($"Copied disc source summary file was not found: '{existingSummaryFilePath}' (from '{disc.ExistingDiscPath}').");
+                }
                 await this.fileSystem.File.Copy(existingSummaryFilePath, newSummaryFilePath, overwrite, cancellationToken: cancellationToken);
                 generatedFiles.Add(newSummaryFilePath);
 
                 string newLogFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.txt");
-                string existingLogFilePath = this.fileSystem.Path.Combine(existingDir, $"{discName.Name}.txt");
+                string existingLogFilePath = this.fileSystem.Path.Combine(existingDir, $"{sourceDiscStem}.txt");
+                if (!await this.fileSystem.File.Exists(existingLogFilePath, cancellationToken))
+                {
+                    throw new InvalidOperationException($"Copied disc source log file was not found: '{existingLogFilePath}' (from '{disc.ExistingDiscPath}').");
+                }
                 await this.fileSystem.File.Copy(existingLogFilePath, newLogFilePath, overwrite, cancellationToken: cancellationToken);
                 generatedFiles.Add(newLogFilePath);
+
+                log($"Copied disc source '{disc.ExistingDiscPath}' into '{discName.Name}' using source stem '{sourceDiscStem}' (hash: {disc.ContentHash}).");
                 break;
             }
+        }
+
+        if (!matchedDisc)
+        {
+            throw new InvalidOperationException($"Copied disc source slug '{existingDisc.DiscSlug}' was not found in '{existingReleasePath}' (from '{disc.ExistingDiscPath}').");
         }
     }
 

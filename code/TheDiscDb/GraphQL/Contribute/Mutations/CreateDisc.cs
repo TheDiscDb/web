@@ -13,6 +13,7 @@ public partial class ContributionMutations
     [Error(typeof(AuthenticationException))]
     [Error(typeof(InvalidIdException))]
     [Error(typeof(InvalidOwnershipException))]
+    [Error(typeof(InvalidDiscPathException))]
     [Authorize]
     public async Task<UserContributionDisc> CreateDisc(string contributionId, string contentHash, string format, string name, string slug, [Service] SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, string? existingDiscPath = null, CancellationToken cancellationToken = default)
     {
@@ -33,6 +34,11 @@ public partial class ContributionMutations
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
 
         await EnsureOwnership(userManager, contribution, contributionId, cancellationToken: cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(existingDiscPath))
+        {
+            await ValidateExistingDiscPath(existingDiscPath, database, cancellationToken);
+        }
 
         var existingDisc = contribution?.Discs.FirstOrDefault(d => d.ContentHash == disc.ContentHash);
         if (existingDisc != null)
@@ -86,5 +92,39 @@ public partial class ContributionMutations
 
         await database.SaveChangesAsync(cancellationToken);
         return disc;
+    }
+
+    private static async Task ValidateExistingDiscPath(string existingDiscPath, SqlServerDataContext database, CancellationToken cancellationToken)
+    {
+        string mediaType;
+        string externalId;
+        string releaseSlug;
+        string discSlug;
+
+        try
+        {
+            (mediaType, externalId, releaseSlug, discSlug) = UserContributionDisc.ParseDiscPath(existingDiscPath);
+        }
+        catch (ArgumentException)
+        {
+            throw new InvalidDiscPathException(existingDiscPath);
+        }
+
+        var discKeyIsIndex = int.TryParse(discSlug, out var discIndex);
+        var discExists = await database.Discs
+            .AnyAsync(d =>
+                d.Release != null &&
+                d.Release.Slug == releaseSlug &&
+                d.Release.MediaItem != null &&
+                d.Release.MediaItem.Type == mediaType &&
+                d.Release.MediaItem.Externalids.Tmdb == externalId &&
+                (d.Slug == discSlug ||
+                    (discKeyIsIndex && (d.Slug == null || d.Slug == "") && d.Index == discIndex)),
+                cancellationToken);
+
+        if (!discExists)
+        {
+            throw new InvalidDiscPathException(existingDiscPath);
+        }
     }
 }
