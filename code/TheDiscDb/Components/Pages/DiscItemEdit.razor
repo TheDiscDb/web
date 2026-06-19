@@ -1,0 +1,144 @@
+@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndex}/{file}/{extension}/edit"
+@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndex}/{file}/edit"
+@page "/{type}/{slug}/discs/{slugOrIndex}/{file}/edit"
+@page "/{type}/{slug}/discs/{slugOrIndex}/{file}/{extension}/edit"
+
+@rendermode InteractiveServer
+
+<PageTitle>Edit Disc Item - TheDiscDb</PageTitle>
+
+@if (Item == null || Release == null || Disc == null || Title == null)
+{
+    <div class="alert alert-warning">Title not found.</div>
+}
+else
+{
+    <TheDiscDb.Client.Controls.Breadcrumb Items="@GetBreadcrumbs()" PrimaryText="Edit Disc Item" />
+
+    @if (!string.IsNullOrEmpty(submitMessage))
+    {
+        <div class="alert @(submitSuccess ? "alert-success" : "alert-danger")">@submitMessage</div>
+    }
+
+    @if (!isReviewing)
+    {
+        <h1>Suggest Edits for @Title.SourceFile</h1>
+        <p class="text-muted">
+            Edit the disc item details below. Your changes will be reviewed before being applied.
+        </p>
+
+        <section class="info-grid single-column">
+            <div class="mb-4">
+                <h3>Title Properties</h3>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Comment</label>
+                        <input type="text" class="form-control" @bind="editComment" placeholder="Comment" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Duration</label>
+                        <input type="text" class="form-control" @bind="editDuration" placeholder="0:00:00" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Segment Map</label>
+                        <input type="text" class="form-control" @bind="editSegmentMap" placeholder="1,2,3" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h3>Content Details</h3>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" @bind="editItemTitle" placeholder="Content title" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Type</label>
+                        <select class="form-select" @bind="editItemType">
+                            <option value="">— Select —</option>
+                            <option value="movie">Movie</option>
+                            <option value="episode">Episode</option>
+                            <option value="special">Special</option>
+                            <option value="extra">Extra</option>
+                            <option value="trailer">Trailer</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Season / Episode</label>
+                        <div class="input-group">
+                            <span class="input-group-text">S</span>
+                            <input type="text" class="form-control" @bind="editItemSeason" placeholder="#" />
+                            <span class="input-group-text">E</span>
+                            <input type="text" class="form-control" @bind="editItemEpisode" placeholder="#" />
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="3" @bind="editItemDescription" placeholder="Content description"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges())">
+                    Review Suggested Changes
+                </button>
+                <a href="@GetTitleUrl()" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </section>
+    }
+    else
+    {
+        <h1>Review Your Disc Item Changes</h1>
+        <p class="text-muted">These changes will be submitted for review by an admin.</p>
+
+        <section class="info-grid single-column">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Current</th>
+                        <th>Proposed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var diff in pendingDiffs)
+                    {
+                        <tr class="table-warning">
+                            <td><strong>@diff.FieldName</strong></td>
+                            <td class="text-muted">@(diff.CurrentValue ?? "—")</td>
+                            <td><strong>@(diff.ProposedValue ?? "—")</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (pendingDiffs.Count == 0)
+            {
+                <div class="alert alert-info">No changes detected.</div>
+            }
+
+            @if (pendingDiffs.Count > 0)
+            {
+                <div class="mb-3">
+                    <label>Summary <span class="text-muted">(optional — briefly describe your changes)</span></label>
+                    <input type="text" class="form-control" @bind="summary" />
+                </div>
+            }
+
+            <div class="d-flex gap-2">
+                @if (pendingDiffs.Count > 0 && !submitSuccess)
+                {
+                    <button type="button" class="btn btn-primary" disabled="@isSubmitting" @onclick="HandleSubmit">
+                        @(isSubmitting ? "Submitting…" : "Submit Changes")
+                    </button>
+                }
+                @if (!submitSuccess)
+                {
+                    <button type="button" class="btn btn-outline-secondary" @onclick="BackToEdit">← Back to Edit</button>
+                }
+            </div>
+        </section>
+    }
+}

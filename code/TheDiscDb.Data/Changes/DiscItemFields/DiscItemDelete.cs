@@ -114,7 +114,7 @@ public sealed class DiscItemDelete : ChangeBase<DiscItemDeleteDetails>
         {
             var ms = details.MediaItemSlug;
             release = await context.Releases
-                .Include(r => r.Discs).ThenInclude(d => d.Titles)
+                .Include(r => r.Discs).ThenInclude(d => d.Disc!).ThenInclude(disc => disc.Titles)
                 .FirstOrDefaultAsync(
                     r => r.Slug == releaseSlug && r.MediaItem != null && r.MediaItem.Slug == ms,
                     cancellationToken);
@@ -123,7 +123,7 @@ public sealed class DiscItemDelete : ChangeBase<DiscItemDeleteDetails>
         {
             var bs = details.BoxsetSlug;
             release = await context.Releases
-                .Include(r => r.Discs).ThenInclude(d => d.Titles)
+                .Include(r => r.Discs).ThenInclude(d => d.Disc!).ThenInclude(disc => disc.Titles)
                 .FirstOrDefaultAsync(
                     r => r.Slug == releaseSlug && r.Boxset != null && r.Boxset.Slug == bs,
                     cancellationToken);

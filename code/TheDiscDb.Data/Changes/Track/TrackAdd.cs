@@ -135,7 +135,7 @@ public sealed class TrackAdd : ChangeBase<TrackFieldsDetails>
         {
             var ms = details.MediaItemSlug;
             release = await context.Releases
-                .Include(r => r.Discs).ThenInclude(d => d.Titles).ThenInclude(t => t.Tracks)
+                .Include(r => r.Discs).ThenInclude(d => d.Disc!).ThenInclude(disc => disc.Titles).ThenInclude(t => t.Tracks)
                 .FirstOrDefaultAsync(
                     r => r.Slug == releaseSlug && r.MediaItem != null && r.MediaItem.Slug == ms,
                     cancellationToken);
@@ -144,7 +144,7 @@ public sealed class TrackAdd : ChangeBase<TrackFieldsDetails>
         {
             var bs = details.BoxsetSlug;
             release = await context.Releases
-                .Include(r => r.Discs).ThenInclude(d => d.Titles).ThenInclude(t => t.Tracks)
+                .Include(r => r.Discs).ThenInclude(d => d.Disc!).ThenInclude(disc => disc.Titles).ThenInclude(t => t.Tracks)
                 .FirstOrDefaultAsync(
                     r => r.Slug == releaseSlug && r.Boxset != null && r.Boxset.Slug == bs,
                     cancellationToken);

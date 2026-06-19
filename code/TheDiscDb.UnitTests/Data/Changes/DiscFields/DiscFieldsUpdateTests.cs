@@ -92,7 +92,7 @@ public class DiscFieldsUpdateTests
         await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
         await db.SaveChangesAsync();
 
-        var reloaded = await db.Set<TheDiscDb.InputModels.Disc>().FirstAsync(d => d.Slug == ChangeTestSeed.DiscSlug);
+        var reloaded = await db.Set<TheDiscDb.InputModels.ReleaseDisc>().FirstAsync(d => d.Slug == ChangeTestSeed.DiscSlug);
         await Assert.That(reloaded.Name).IsEqualTo("Renamed Disc");
         await Assert.That(reloaded.Format).IsEqualTo("UHD Blu-ray");
         await Assert.That(reloaded.Slug).IsEqualTo(ChangeTestSeed.DiscSlug);
@@ -111,7 +111,7 @@ public class DiscFieldsUpdateTests
         await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
         await db.SaveChangesAsync();
 
-        var reloaded = await db.Set<TheDiscDb.InputModels.Disc>().FirstAsync(d => d.Slug == ChangeTestSeed.DiscSlug);
+        var reloaded = await db.Set<TheDiscDb.InputModels.ReleaseDisc>().FirstAsync(d => d.Slug == ChangeTestSeed.DiscSlug);
         await Assert.That(reloaded.Name).IsEqualTo("Only Name Changed");
         await Assert.That(reloaded.Format).IsEqualTo("Blu-ray");
     }
@@ -135,7 +135,7 @@ public class DiscFieldsUpdateTests
         await change.ApplyAsync(dbAfter, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
         await dbAfter.SaveChangesAsync();
 
-        var reloaded = await dbAfter.Set<TheDiscDb.InputModels.Disc>().FirstAsync(d => d.Slug == ChangeTestSeed.DiscSlug);
+        var reloaded = await dbAfter.Set<TheDiscDb.InputModels.ReleaseDisc>().FirstAsync(d => d.Slug == ChangeTestSeed.DiscSlug);
         await Assert.That(reloaded.Name).IsEqualTo("After-Rebuild Edit");
     }
 
@@ -161,6 +161,7 @@ public class DiscFieldsUpdateTests
         var seed = ChangeTestSeed.Seed(db);
 
         seed.Disc.Slug = null;
+        seed.ReleaseDisc.Slug = null;
         await db.SaveChangesAsync();
 
         var snapshot = JsonSerializer.Serialize(
@@ -171,7 +172,7 @@ public class DiscFieldsUpdateTests
         await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
         await db.SaveChangesAsync();
 
-        var reloaded = await db.Set<TheDiscDb.InputModels.Disc>().FirstAsync(d => d.Index == ChangeTestSeed.DiscIndex);
+        var reloaded = await db.Set<TheDiscDb.InputModels.ReleaseDisc>().FirstAsync(d => d.Index == ChangeTestSeed.DiscIndex);
         await Assert.That(reloaded.Name).IsEqualTo("Edited");
     }
 }

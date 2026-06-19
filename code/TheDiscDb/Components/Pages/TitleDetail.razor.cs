@@ -126,4 +126,14 @@ public partial class TitleDetail : ComponentBase
 
         return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{File}/{Extension}/chapters/edit";
     }
+
+    private string GetDiscItemEditUrl()
+    {
+        if (ReleaseSlug != null)
+        {
+            return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex}/{File}/{Extension}/edit";
+        }
+
+        return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{File}/{Extension}/edit";
+    }
 }

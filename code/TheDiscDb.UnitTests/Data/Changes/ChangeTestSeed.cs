@@ -31,7 +31,7 @@ internal static class ChangeTestSeed
         return new SqlServerDataContext(options);
     }
 
-    public static (MediaItem MediaItem, Release Release, Disc Disc, Title Title, EntityChapter Chapter, EntityTrack Track) Seed(SqlServerDataContext db)
+    public static (MediaItem MediaItem, Release Release, Disc Disc, ReleaseDisc ReleaseDisc, Title Title, EntityChapter Chapter, EntityTrack Track) Seed(SqlServerDataContext db)
     {
         var chapter = new EntityChapter
         {
@@ -113,6 +113,6 @@ internal static class ChangeTestSeed
         db.Add(mediaItem);
         db.SaveChanges();
 
-        return (mediaItem, release, disc, title, chapter, track);
+        return (mediaItem, release, disc, releaseDisc, title, chapter, track);
     }
 }
