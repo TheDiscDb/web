@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
-using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages;
 
@@ -32,7 +30,7 @@ public partial class DiscDetail : ComponentBase
     private MediaItem? Item { get; set; }
     private Boxset? BoxsetItem { get; set; }
     private Release? DiscRelease { get; set; }
-    private Disc? Disc { get; set; }
+    private ReleaseDisc? Disc { get; set; }
 
     protected override async Task OnInitializedAsync()
     {

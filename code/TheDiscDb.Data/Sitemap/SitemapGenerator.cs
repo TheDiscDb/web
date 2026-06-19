@@ -78,6 +78,7 @@ public class SitemapGenerator
         var mediaItems = dbContext.MediaItems
             .Include(p => p.Releases)
             .ThenInclude(r => r.Discs)
+            .ThenInclude(d => d.Disc!)
             .ThenInclude(d => d.Titles)
             .ThenInclude(t => t.Item)
             .AsAsyncEnumerable();
@@ -115,6 +116,7 @@ public class SitemapGenerator
         var boxsets = dbContext.BoxSets
             .Include(p => p.Release)
             .ThenInclude(r => r!.Discs)
+            .ThenInclude(d => d.Disc!)
             .ThenInclude(d => d.Titles)
             .ThenInclude(t => t.Item)
             .AsAsyncEnumerable();

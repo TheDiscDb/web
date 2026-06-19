@@ -113,7 +113,7 @@ public static partial class BreadCrumbHelper
         return (Text: item.Title, Url: $"/boxset/{item.Slug}");
     }
 
-    public static (string Text, string Url) GetBoxsetDiscLink(Boxset item, Disc disc)
+    public static (string Text, string Url) GetBoxsetDiscLink(Boxset item, IDisc disc)
     {
         if (item?.Release?.Slug == null || item?.Slug == null || disc?.Index == null)
         {
@@ -171,7 +171,7 @@ public static partial class BreadCrumbHelper
         );
     }
 
-    public static (string Text, string Url) GetDiscTitleLink(IDisplayItem item, Release release, Disc disc, string? titleSourceFile)
+    public static (string Text, string Url) GetDiscTitleLink(IDisplayItem item, Release release, IDisc disc, string? titleSourceFile)
     {
         if (item?.Type == null)
         {
@@ -193,7 +193,7 @@ public static partial class BreadCrumbHelper
         return $"https://thediscdb.com{link.Url.ToLower()}";
     }
 
-    public static (string Text, string Url) GetBoxsetDiscTitleLink(Boxset item, Disc disc, string titleSourceFile)
+    public static (string Text, string Url) GetBoxsetDiscTitleLink(Boxset item, IDisc disc, string titleSourceFile)
     {
         return (
             Text: $"Disc {disc.Index}",

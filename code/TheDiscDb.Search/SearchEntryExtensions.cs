@@ -251,7 +251,7 @@ public static partial class SearchEntryExtensions
         };
     }
 
-    private static IEnumerable<SearchEntry> ToSearchEntries(MediaItem item, InputModels.Release release, IEnumerable<InputModels.Disc> discs)
+    private static IEnumerable<SearchEntry> ToSearchEntries(MediaItem item, InputModels.Release release, IEnumerable<InputModels.ReleaseDisc> discs)
     {
         foreach (var disc in discs)
         {
@@ -283,9 +283,9 @@ public static partial class SearchEntryExtensions
         }
     }
 
-    private static IEnumerable<SearchEntry> ToSearchEntries(MediaItem item, InputModels.Release release, InputModels.Disc disc, IEnumerable<InputModels.Title> titles)
+    private static IEnumerable<SearchEntry> ToSearchEntries(MediaItem item, InputModels.Release release, InputModels.ReleaseDisc disc, IEnumerable<InputModels.Title> titles)
     {
-        foreach (var title in disc.Titles)
+        foreach (var title in titles)
         {
             if (title.Item != null)
             {

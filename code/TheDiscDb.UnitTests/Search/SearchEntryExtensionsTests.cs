@@ -40,7 +40,14 @@ public class SearchEntryExtensionsTests
     {
         var item = CreateMediaItem("Movie", "the-matrix", "The Matrix");
         var release = new Release { Slug = "4k-edition", Title = "4K Edition", ImageUrl = "img.jpg" };
-        var disc = new Disc { Id = 1, Index = 1, Name = "Feature Disc", Slug = "feature" };
+        var disc = new ReleaseDisc
+        {
+            Id = 1,
+            Index = 1,
+            Name = "Feature Disc",
+            Slug = "feature",
+            Disc = new Disc()
+        };
         release.Discs.Add(disc);
         item.Releases.Add(release);
 
@@ -113,7 +120,14 @@ public class SearchEntryExtensionsTests
                 ImageUrl = "release.jpg"
             }
         };
-        boxset.Release.Discs.Add(new Disc { Id = 10, Index = 1, Name = "Disc 1", Slug = "disc-1" });
+        boxset.Release.Discs.Add(new ReleaseDisc
+        {
+            Id = 10,
+            Index = 1,
+            Name = "Disc 1",
+            Slug = "disc-1",
+            Disc = new Disc()
+        });
 
         var entries = boxset.ToSearchEntries().ToList();
         var discEntry = entries.FirstOrDefault(e => e.Type == "BoxsetDisc");

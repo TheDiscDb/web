@@ -86,6 +86,7 @@ public class RssFeedMidleware
                 var mediaItems = db.Releases
                     .Include(r => r.MediaItem)
                     .Include(r => r.Discs)
+                    .ThenInclude(d => d.Disc)
                     .ThenInclude(d => d.Titles)
                     .ThenInclude(t => t.Item)
                     .OrderByDescending(r => r.DateAdded)
@@ -137,11 +138,17 @@ public class RssFeedMidleware
         return s.ToString();
     }
 
-    private List<Feature> GetDiscFeatures(Disc disc)
+    private List<Feature> GetDiscFeatures(IDisc disc)
     {
         var features = new List<Feature>();
+        var titles = disc switch
+        {
+            ReleaseDisc releaseDisc => releaseDisc.Titles,
+            Disc canonicalDisc => canonicalDisc.Titles,
+            _ => Array.Empty<Title>()
+        };
 
-        foreach (var title in disc.Titles.Where(t => t.Item != null))
+        foreach (var title in titles.Where(t => t.Item != null))
         {
             if (title.Item?.Type == null)
             {

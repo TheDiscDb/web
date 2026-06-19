@@ -17,11 +17,6 @@ query GetMovies($after: String, $order: [MediaItemSortInput!]) {
         title
         imageUrl
         releaseDate
-        discs {
-          index
-          name
-          format
-        }
       }
     }
     pageInfo {

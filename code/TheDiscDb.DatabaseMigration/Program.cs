@@ -41,7 +41,7 @@ builder.Services.AddSingleton<IStaticAssetStore, BlobStorageStaticAssetStore>();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IFileSystem, PhysicalFileSystem>();
 
-builder.Services.Configure<DataImporterOptions>(builder.Configuration.GetSection("DataImporter"));
+builder.Services.Configure<DataImporterOptions>(builder.Configuration.GetSection("ContributionImport"));
 builder.Services.AddImportPipeline(includeSearchIndex: false);
 
 // DatabaseImportMiddleware and GroupImportMiddleware depend on Scoped IDbContextFactory

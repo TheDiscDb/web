@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net.Http;
     using System.Text.Json;
@@ -270,7 +271,8 @@
                 {
                     foundDisc.Index = discInfo.Index;
                     foundDisc.Name = discInfo.Name;
-                    boxset.Release.Discs.Add(foundDisc);
+                    foundDisc.Slug = discInfo.Slug;
+                    boxset.Release.Discs.Add(await this.ToReleaseDisc(foundDisc, cancellationToken));
                 }
                 else
                 {
@@ -296,13 +298,26 @@
                         var metadata = JsonSerializer.Deserialize<MetadataFile>(json, JsonOptions);
                         if (!string.IsNullOrEmpty(metadata.Slug) && metadata.Slug.Equals(disc.TitleSlug, StringComparison.OrdinalIgnoreCase))
                         {
-                            string releaseDirectory = this.fileSystem.Path.Combine(mediaItemDirectory, file.Slug);
-                            if (await this.fileSystem.Directory.Exists(releaseDirectory, cancellationToken))
+                            await foreach (var releaseDirectory in this.fileSystem.Directory.EnumerateDirectories(mediaItemDirectory, cancellationToken))
                             {
-                                await foreach (var discJsonPath in this.fileSystem.Directory.EnumerateFiles(releaseDirectory, "disc*.json", cancellationToken))
+                                string releaseFilePath = this.fileSystem.Path.Combine(releaseDirectory, ReleaseFile.Filename);
+                                if (!await this.fileSystem.File.Exists(releaseFilePath, cancellationToken))
                                 {
-                                    json = await this.fileSystem.File.ReadAllText(discJsonPath, cancellationToken);
-                                    var discFile = JsonSerializer.Deserialize<Disc>(json, JsonOptions);
+                                    continue;
+                                }
+
+                                await foreach (var discJsonPath in this.fileSystem.Directory.EnumerateFiles(releaseDirectory, "disc*.*", cancellationToken))
+                                {
+                                    if (!this.IsDiscBundleFile(discJsonPath))
+                                    {
+                                        continue;
+                                    }
+
+                                    var discFile = await this.LoadDiscFromBundleFile(discJsonPath, baseDirectory, cancellationToken);
+                                    if (discFile == null)
+                                    {
+                                        continue;
+                                    }
                                     // Boxset members reference discs by Slug when present, otherwise by
                                     // Index (the SlugOrIndex convention used elsewhere on the site).
                                     if (!string.IsNullOrEmpty(discFile.Slug) && discFile.Slug.Equals(disc.Slug, StringComparison.OrdinalIgnoreCase))
@@ -343,12 +358,7 @@
 
         public async Task Import(string inputDirectory, CancellationToken cancellationToken = default)
         {
-            string baseDirectory = this.FindBaseDataDirectory(inputDirectory);
-            if (baseDirectory == null)
-            {
-                AnsiConsole.WriteLine("Unable to determine base directory from '{0}'. Cannot import boxset", inputDirectory);
-                return;
-            }
+            string baseDirectory = await this.ResolveReferenceDataRoot(inputDirectory, cancellationToken);
 
             string boxsetFile = this.fileSystem.Path.Combine(inputDirectory, BoxSetReleaseFile.Filename);
             if (await this.fileSystem.File.Exists(boxsetFile, cancellationToken))
@@ -573,15 +583,15 @@
                             release.Discs.Clear();
                         }
 
-                        foreach (var file in await this.fileSystem.Directory.GetFiles(releaseFolder, "disc*.json", cancellationToken))
+                        foreach (var file in await this.fileSystem.Directory.GetFiles(releaseFolder, "disc*.*", cancellationToken))
                         {
-                            string fileName = this.fileSystem.Path.GetFileName(file);
-                            if (fileName.StartsWith("disc", StringComparison.OrdinalIgnoreCase))
+                            if (this.IsDiscBundleFile(file))
                             {
-                                json = await this.fileSystem.File.ReadAllText(file, cancellationToken);
-                                Disc disc = JsonSerializer.Deserialize<Disc>(json, JsonOptions);
-
-                                release.Discs.Add(disc);
+                                var disc = await this.LoadDiscFromBundleFile(file, baseDirectory, cancellationToken);
+                                if (disc != null)
+                                {
+                                    release.Discs.Add(await this.ToReleaseDisc(disc, cancellationToken));
+                                }
                             }
                         }
                     }
@@ -713,15 +723,15 @@
                     {
                         release.Discs.Clear();
                     }
-                    foreach (var file in await this.fileSystem.Directory.GetFiles(inputDirectory, "disc*.json", cancellationToken))
+                    foreach (var file in await this.fileSystem.Directory.GetFiles(inputDirectory, "disc*.*", cancellationToken))
                     {
-                        string fileName = this.fileSystem.Path.GetFileName(file);
-                        if (fileName.StartsWith("disc", StringComparison.OrdinalIgnoreCase))
+                        if (this.IsDiscBundleFile(file))
                         {
-                            json = await this.fileSystem.File.ReadAllText(file, cancellationToken);
-                            Disc disc = JsonSerializer.Deserialize<Disc>(json, JsonOptions);
-
-                            release.Discs.Add(disc);
+                            var disc = await this.LoadDiscFromBundleFile(file, baseDirectory, cancellationToken);
+                            if (disc != null)
+                            {
+                                release.Discs.Add(await this.ToReleaseDisc(disc, cancellationToken));
+                            }
                         }
                     }
 
@@ -1281,6 +1291,122 @@
             }
 
             return result;
+        }
+
+        private bool IsDiscBundleFile(string path)
+        {
+            var fileName = this.fileSystem.Path.GetFileName(path);
+            if (!fileName.StartsWith("disc", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var extension = this.fileSystem.Path.GetExtension(path);
+            return extension.Equals(".json", StringComparison.OrdinalIgnoreCase)
+                || extension.Equals(".ref", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task<Disc?> LoadDiscFromBundleFile(string path, string dataRoot, CancellationToken cancellationToken)
+        {
+            var extension = this.fileSystem.Path.GetExtension(path);
+            if (extension.Equals(".json", StringComparison.OrdinalIgnoreCase))
+            {
+                var json = await this.fileSystem.File.ReadAllText(path, cancellationToken);
+                return JsonSerializer.Deserialize<Disc>(json, JsonOptions);
+            }
+
+            if (!extension.Equals(".ref", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var refJson = await this.fileSystem.File.ReadAllText(path, cancellationToken);
+            var reference = JsonSerializer.Deserialize<DiscReferenceFile>(refJson, JsonOptions);
+            if (reference == null || string.IsNullOrWhiteSpace(reference.ReleasePath) || string.IsNullOrWhiteSpace(reference.Disc))
+            {
+                throw new InvalidOperationException($"Invalid disc reference file '{path}'. Expected releasePath and disc.");
+            }
+
+            var referencedReleasePath = await this.ResolveReferencedReleasePath(dataRoot, reference.ReleasePath, cancellationToken);
+            var referencedDiscPath = this.fileSystem.Path.Combine(referencedReleasePath, $"{reference.Disc}.json");
+            if (!await this.fileSystem.File.Exists(referencedDiscPath, cancellationToken))
+            {
+                throw new InvalidOperationException($"Disc reference '{path}' points to missing disc json '{referencedDiscPath}'.");
+            }
+
+            var referencedJson = await this.fileSystem.File.ReadAllText(referencedDiscPath, cancellationToken);
+            return JsonSerializer.Deserialize<Disc>(referencedJson, JsonOptions);
+        }
+
+        private async Task<string> ResolveReferencedReleasePath(string dataRoot, string releasePath, CancellationToken cancellationToken)
+        {
+            string normalizedReleasePath = releasePath
+                .Replace('/', this.fileSystem.Path.DirectorySeparatorChar)
+                .Replace('\\', this.fileSystem.Path.DirectorySeparatorChar)
+                .TrimStart(this.fileSystem.Path.DirectorySeparatorChar);
+
+            if (this.fileSystem.Path.IsPathRooted(normalizedReleasePath) &&
+                await this.fileSystem.Directory.Exists(normalizedReleasePath, cancellationToken))
+            {
+                return normalizedReleasePath;
+            }
+
+            string relativeReleasePath = normalizedReleasePath;
+            string dataPrefix = $"data{this.fileSystem.Path.DirectorySeparatorChar}";
+            if (relativeReleasePath.StartsWith(dataPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                relativeReleasePath = relativeReleasePath[dataPrefix.Length..];
+            }
+
+            string resolvedPath = this.fileSystem.Path.Combine(dataRoot, relativeReleasePath);
+            if (await this.fileSystem.Directory.Exists(resolvedPath, cancellationToken))
+            {
+                return resolvedPath;
+            }
+
+            return resolvedPath;
+        }
+
+        private async Task<string> ResolveReferenceDataRoot(string inputDirectory, CancellationToken cancellationToken)
+        {
+            string? configuredDataRepositoryPath = this.dataImportOptions.Value.DataRepositoryPath;
+            if (string.IsNullOrWhiteSpace(configuredDataRepositoryPath))
+            {
+                throw new InvalidOperationException("DataImporter:DataRepositoryPath is not configured.");
+            }
+
+            string dataRepositoryPath = Path.GetFullPath(configuredDataRepositoryPath);
+            if (!await this.fileSystem.Directory.Exists(dataRepositoryPath, cancellationToken))
+            {
+                throw new InvalidOperationException($"DataImporter:DataRepositoryPath '{dataRepositoryPath}' does not exist.");
+            }
+
+            return dataRepositoryPath;
+        }
+
+        private async Task<ReleaseDisc> ToReleaseDisc(Disc disc, CancellationToken cancellationToken)
+        {
+            Disc canonicalDisc = disc;
+            if (!string.IsNullOrWhiteSpace(disc.ContentHash) && !string.IsNullOrWhiteSpace(disc.Format))
+            {
+                canonicalDisc = this.dbContext.Discs.Local
+                    .FirstOrDefault(d =>
+                        d.ContentHash == disc.ContentHash &&
+                        d.Format == disc.Format);
+
+                canonicalDisc ??= await this.dbContext.Discs
+                    .FirstOrDefaultAsync(d =>
+                        d.ContentHash == disc.ContentHash &&
+                        d.Format == disc.Format, cancellationToken);
+            }
+
+            return new ReleaseDisc
+            {
+                Index = disc.Index,
+                Name = disc.Name,
+                Slug = disc.Slug,
+                Disc = canonicalDisc
+            };
         }
 
         private async Task<bool> TryDownloadGroupImage(string url, string remotePath, CancellationToken cancellationToken)

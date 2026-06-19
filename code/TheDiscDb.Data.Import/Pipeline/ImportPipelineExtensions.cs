@@ -23,6 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<IItemHandler<MediaItem>, MediaItemHandler>();
             services.AddSingleton<IItemHandler<Boxset>, BoxsetItemHandler>();
             services.AddSingleton<IItemHandler<Release>, ReleaseItemHandler>();
+            services.AddSingleton<IItemHandler<ReleaseDisc>, ReleaseDiscItemHandler>();
             services.AddSingleton<IItemHandler<Disc>, DiscItemHandler>();
             services.AddSingleton<IItemHandler<DiscItemReference>, DiscItemReferenceItemHandler>();
             services.AddSingleton<IItemHandler<Title>, TitleItemHandler>();

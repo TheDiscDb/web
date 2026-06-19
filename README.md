@@ -1,6 +1,6 @@
 # TheDiscDB.com
 
-Welcome to the official repository for [thediscdb.com](https://thediscdb.com) — a web-based cataloging tool designed to document the contents of physical movie discs (Blu-ray, UHD, and DVD). Built to complement [MakeMKV](https://makemkv.com), this site helps users identify and organize disc titles, chapters, and metadata.
+Welcome to the official repository for [thediscdb.com](https://thediscdb.com) ï¿½ a web-based cataloging tool designed to document the contents of physical movie discs (Blu-ray, UHD, and DVD). Built to complement [MakeMKV](https://makemkv.com), this site helps users identify and organize disc titles, chapters, and metadata.
 
 ---
 
@@ -41,6 +41,28 @@ To run the site locally, you'll need the following tools installed:
 | Backend           | ASP.NET Aspire (.NET 10.0) |
 | Frontend          | Blazor |
 | IDE               | Visual Studio          |
+
+---
+
+## Performance Baseline Script
+
+Use the script below to capture repeatable homepage and infinite-scroll latency metrics before and after changes:
+
+```powershell
+pwsh .\scripts\measure-homepage-performance.ps1 -BaseUrl https://localhost:7443
+```
+
+It writes a timestamped JSON result under `web\scripts\` and prints median/p95 timings for:
+
+- `/`, `/movies`, `/series` document fetches
+- GraphQL first-page fetch for movies and series
+- GraphQL sequential paging (scroll simulation) for movies and series
+
+To compare a new run against a prior baseline:
+
+```powershell
+pwsh .\scripts\measure-homepage-performance.ps1 -BaseUrl https://localhost:7443 -CompareTo .\scripts\homepage-perf-YYYYMMDD-HHMMSS.json
+```
 
 ---
 

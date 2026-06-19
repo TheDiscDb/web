@@ -45,7 +45,7 @@ public static class NavigationExtensions
         return $"{parentItem.ReleaseListUrl()}/{release.Slug}";
     }
 
-    public static string DiscDetailUrl(this Disc disc, Release release, IDisplayItem parentItem)
+    public static string DiscDetailUrl(this IDisc disc, Release release, IDisplayItem parentItem)
     {
         if (disc == null)
         {
@@ -56,7 +56,7 @@ public static class NavigationExtensions
     }
 
     ///Movie/the-marvels-2023/releases/2024-cinematic-universe-edition-4k/discs/1/00801/mpls
-    public static string TitleDetailUrl(this Title title, Disc disc, Release release, IDisplayItem parentItem)
+    public static string TitleDetailUrl(this Title title, IDisc disc, Release release, IDisplayItem parentItem)
     {
         if (title == null)
         {
@@ -76,7 +76,7 @@ public static class NavigationExtensions
         return $"{GetFile(title.SourceFile)}/{GetExtension(title.SourceFile)}";
     }
 
-    public static string FullDiscName(this Disc disc)
+    public static string FullDiscName(this IDisc disc)
     {
         if (string.IsNullOrEmpty(disc.Name))
         {
@@ -199,11 +199,17 @@ public static class NavigationExtensions
         return string.Empty;
     }
 
-    public static IEnumerable<DiscFeature> GetDiscFeatures(InputModels.Disc disc)
+    public static IEnumerable<DiscFeature> GetDiscFeatures(IDisc disc)
     {
         var features = new Dictionary<string, DiscFeature>();
+        var titles = disc switch
+        {
+            ReleaseDisc releaseDisc => releaseDisc.Titles,
+            Disc canonicalDisc => canonicalDisc.Titles,
+            _ => Array.Empty<Title>()
+        };
 
-        foreach (var title in disc.Titles.Where(t => t.Item != null))
+        foreach (var title in titles.Where(t => t.Item != null))
         {
             if (title?.Item?.Type == null)
             {

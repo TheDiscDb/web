@@ -5,9 +5,9 @@ using TheDiscDb.InputModels;
 
 public class ReleaseItemHandler : ItemHandler<Release>
 {
-    private readonly IItemHandler<Disc> discItemHandler;
+    private readonly IItemHandler<ReleaseDisc> discItemHandler;
 
-    public ReleaseItemHandler(IItemHandler<Disc> discItemHandler)
+    public ReleaseItemHandler(IItemHandler<ReleaseDisc> discItemHandler)
     {
         this.discItemHandler = discItemHandler ?? throw new ArgumentNullException(nameof(discItemHandler));
     }

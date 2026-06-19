@@ -17,6 +17,11 @@ public class ExceptionHandlingMiddleware : IMiddleware
         }
         catch (Exception e)
         {
+            var itemLabel = item.MediaItem?.Slug
+                ?? item.Boxset?.Slug
+                ?? item.BasePath
+                ?? "<unknown>";
+            AnsiConsole.MarkupLine($"[red]Import failed for:[/] {itemLabel}");
             AnsiConsole.WriteException(e);
         }
     }
