@@ -178,4 +178,4 @@ public sealed class ChapterAdd : ChangeBase<ChapterDetails>
     }
 }
 
-internal sealed record ResolvedParentItem(DiscItemReference Item, Disc Disc, Title Title);
+internal sealed record ResolvedParentItem(DiscItemReference Item, ReleaseDisc Disc, Title Title);

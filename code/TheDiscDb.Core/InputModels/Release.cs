@@ -28,7 +28,7 @@
 
         [HotChocolate.Data.UseFiltering]
         [HotChocolate.Data.UseSorting]
-        public ICollection<Disc> Discs { get; set; } = new HashSet<Disc>();
+        public ICollection<ReleaseDisc> Discs { get; set; } = new HashSet<ReleaseDisc>();
         [HotChocolate.Data.UseFiltering]
         [HotChocolate.Data.UseSorting]
         public ICollection<ReleaseGroup> ReleaseGroups { get; set; } = new HashSet<ReleaseGroup>();

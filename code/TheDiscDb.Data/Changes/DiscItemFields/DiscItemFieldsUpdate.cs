@@ -210,4 +210,4 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
     }
 }
 
-internal sealed record ResolvedTitle(Title Title, Disc Disc);
+internal sealed record ResolvedTitle(Title Title, ReleaseDisc Disc);

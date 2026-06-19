@@ -30,20 +30,15 @@ var blobs = builder.AddAzureStorage("storage").RunAsEmulator(
                      })
     .AddBlobs("blobs");
 
-// For online import testing: use Azure file share (Y:\data on dev, mounted share in production)
-// The data repository lives at the repo root's data/ subdirectory.
-var dataDirectoryRoot = useAzureFileShare
-    ? Path.GetFullPath(@"Y:\data\data")
-    : Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "..", "..", "data", "data"));
+var dataDirectoryRoot = ResolveRequiredPath(builder, "DataDirectoryRoot");
 
-var workspacePath = useAzureFileShare
-    ? Path.GetFullPath("Y:\\workspace")
-    : Path.GetFullPath(Path.Combine(builder.AppHostDirectory, "..", "..", "..", "import-workspace"));
+var workspacePath = Path.Combine(dataDirectoryRoot, "import-workspace");
 
 var migrations = builder.AddProject<Projects.TheDiscDb_DatabaseMigration>("migrations")
     .WithReference(blobs)
     .WaitFor(blobs)
     .WithEnvironment("DatabaseMigration__DataDirectoryRoot", dataDirectoryRoot)
+    .WithEnvironment("ContributionImport__DataRepositoryPath", dataDirectoryRoot)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__AdminApiKey", adminApiKey)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__PublicApiKey", publicApiKey);
 
@@ -92,6 +87,23 @@ else
 }
 
 builder.Build().Run();
+
+static string ResolveRequiredPath(IDistributedApplicationBuilder builder, string key)
+{
+    var configuredPath = builder.Configuration[key];
+    if (string.IsNullOrWhiteSpace(configuredPath))
+    {
+        throw new InvalidOperationException(
+            $"Missing required AppHost configuration '{key}'. Set it in appsettings, environment variables, or user-secrets.");
+    }
+
+    if (Path.IsPathRooted(configuredPath))
+    {
+        return Path.GetFullPath(configuredPath);
+    }
+
+    return Path.GetFullPath(Path.Combine(builder.AppHostDirectory, configuredPath));
+}
 
 static string ResolveApiKey(IDistributedApplicationBuilder builder, string configKey, string fileName)
 {

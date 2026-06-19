@@ -56,7 +56,7 @@ public partial class ChapterEdit : ComponentBase
 
     private IDisplayItem? Item { get; set; }
     private Release? Release { get; set; }
-    private Disc? Disc { get; set; }
+    private ReleaseDisc? Disc { get; set; }
     private Title? Title { get; set; }
 
     private List<ChapterEditRow> chapters = [];

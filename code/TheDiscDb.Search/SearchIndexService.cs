@@ -222,6 +222,7 @@ public class SearchIndexService : ISearchIndexService
         foreach (var item in dbContext.BoxSets
             .Include(p => p.Release)
             .ThenInclude(r => r.Discs)
+            .ThenInclude(d => d.Disc!)
             .ThenInclude(d => d.Titles)
             .ThenInclude(t => t.Item)
             .Include(p => p.Release)
@@ -324,6 +325,7 @@ public class SearchIndexService : ISearchIndexService
             .ThenInclude(mig => mig.Group)
             .Include(p => p.Releases)
             .ThenInclude(r => r.Discs)
+            .ThenInclude(d => d.Disc!)
             .ThenInclude(d => d.Titles)
             .ThenInclude(t => t.Item)
             .Include(p => p.Releases)

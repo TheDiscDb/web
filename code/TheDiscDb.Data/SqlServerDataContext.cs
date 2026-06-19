@@ -45,6 +45,28 @@ public class SqlServerDataContext : DbContext
 
         var disc = modelBuilder.Entity<Disc>();
         disc.HasMany(x => x.Titles).WithOne(x => x.Disc);
+        disc.HasMany(x => x.ReleaseDiscs).WithOne(x => x.Disc);
+        disc.HasIndex(x => new { x.Format, x.ContentHash }).IsUnique();
+        disc.Ignore(x => x.Index);
+        disc.Ignore(x => x.Slug);
+        disc.Ignore(x => x.Name);
+        disc.Ignore(x => x.Release);
+
+        var releaseDisc = modelBuilder.Entity<ReleaseDisc>();
+        releaseDisc.HasKey(x => x.Id);
+        releaseDisc.HasOne(x => x.Release)
+            .WithMany(x => x.Discs)
+            .HasForeignKey(x => x.ReleaseId)
+            .OnDelete(DeleteBehavior.Cascade);
+        releaseDisc.HasOne(x => x.Disc)
+            .WithMany(x => x.ReleaseDiscs)
+            .HasForeignKey(x => x.DiscId)
+            .OnDelete(DeleteBehavior.Restrict);
+        releaseDisc.Ignore(x => x.Format);
+        releaseDisc.Ignore(x => x.ContentHash);
+        releaseDisc.Ignore(x => x.Titles);
+        releaseDisc.HasIndex(x => new { x.ReleaseId, x.Slug }).IsUnique().HasFilter("[Slug] IS NOT NULL");
+        releaseDisc.HasIndex(x => new { x.ReleaseId, x.Index }).IsUnique();
 
         var title = modelBuilder.Entity<Title>();
         title.HasMany(x => x.Tracks).WithOne(x => x.Title);
@@ -315,6 +337,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<Boxset> BoxSets { get; set; } = null!;
     public DbSet<Chapter> Chapters { get; set; } = null!;
     public DbSet<Disc> Discs { get; set; } = null!;
+    public DbSet<ReleaseDisc> ReleaseDiscs { get; set; } = null!;
     public DbSet<DiscItemReference> DiscItemReferences { get; set; } = null!;
     public DbSet<ExternalIds> ExternalIds { get; set; } = null!;
     public DbSet<Release> Releases { get; set; } = null!;

@@ -22,11 +22,11 @@
     @if (readOnlyDisc != null && readOnlyItem != null && readOnlyRelease != null)
     {
         <div class="alert alert-info">
-            This disc was copied from an existing database disc. The details below are read-only until logs are uploaded.
+            This disc was copied from an existing database disc. The details below will be updated from the source disc when you finish the contribution.
         </div>
 
         <section class="info-card mb-3">
-            <h2>Read-only disc view</h2>
+            <h2>Existing disc view</h2>
             <dl class="row mb-0">
                 <dt class="col-sm-3">Media item</dt>
                 <dd class="col-sm-9">@readOnlyItem.Title (@readOnlyItem.Year)</dd>
@@ -66,6 +66,10 @@
                 <p>No title data is available for this copied disc yet.</p>
             }
         </section>
+
+        <div class="cta-row split">
+            <a class="e-btn e-primary" href="/contribution/@ContributionId">Back to contribution</a>
+        </div>
     }
     else if (!string.IsNullOrEmpty(loadError))
     {

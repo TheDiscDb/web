@@ -32,7 +32,7 @@ public partial class TitleDetail : ComponentBase
 
     private IDisplayItem? Item { get; set; }
     private Release? Release { get; set; }
-    private Disc? Disc { get; set; }
+    private ReleaseDisc? Disc { get; set; }
     private Title? Title { get; set; }
 
     protected override async Task OnInitializedAsync()

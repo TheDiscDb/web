@@ -30,14 +30,18 @@ public class TitleFileNameExtensionTests
                 Title = "2010 Blu-ray",
                 MediaItem = media,
             };
+            media.Releases.Add(release);
             var disc = new Disc
+            {
+                Format = "Blu-ray",
+            };
+            release.Discs.Add(new ReleaseDisc
             {
                 Slug = "disc-1",
                 Index = 1,
                 Name = "Disc 1",
-                Format = "Blu-ray",
-                Release = release,
-            };
+                Disc = disc,
+            });
             var item = new DiscItemReference
             {
                 Title = "Inception",
@@ -160,7 +164,9 @@ public class TitleFileNameExtensionTests
         {
             var media = new MediaItem { Title = "X", Year = 2020, Type = "movie", Slug = "x-2020" };
             var release = new Release { Slug = "r", Title = "R", MediaItem = media };
-            var disc = new Disc { Slug = "d", Index = 1, Name = "D", Format = "Blu-ray", Release = release };
+            media.Releases.Add(release);
+            var disc = new Disc { Format = "Blu-ray" };
+            release.Discs.Add(new ReleaseDisc { Slug = "d", Index = 1, Name = "D", Disc = disc });
             var title = new Title { Index = 1, SourceFile = "x.mkv", Disc = disc };
 
             seed.MediaItems.Add(media);
@@ -205,14 +211,18 @@ public class TitleFileNameExtensionTests
                 Title = "The Wes Anderson Archive",
                 MediaItem = movie,
             };
+            movie.Releases.Add(movieRelease);
             var movieDisc = new Disc
+            {
+                Format = "Blu-ray",
+            };
+            movieRelease.Discs.Add(new ReleaseDisc
             {
                 Slug = discSlug,
                 Index = 1,
                 Name = "Bottle Rocket Blu-ray",
-                Format = "Blu-ray",
-                Release = movieRelease,
-            };
+                Disc = movieDisc,
+            });
             seed.MediaItems.Add(movie);
             seed.Discs.Add(movieDisc);
 
@@ -228,14 +238,18 @@ public class TitleFileNameExtensionTests
                 Year = 2025,
                 Boxset = boxset,
             };
+            boxset.Release = boxsetRelease;
             var boxsetDisc = new Disc
+            {
+                Format = "Blu-ray",
+            };
+            boxsetRelease.Discs.Add(new ReleaseDisc
             {
                 Slug = discSlug,
                 Index = 1,
                 Name = "Bottle Rocket Blu-ray",
-                Format = "Blu-ray",
-                Release = boxsetRelease,
-            };
+                Disc = boxsetDisc,
+            });
             var item = new DiscItemReference { Title = "Bottle Rocket", Type = "MainMovie" };
             var track = new Track { Index = 0, Type = "Video", Resolution = "1920x1080" };
             var title = new Title
@@ -274,7 +288,9 @@ public class TitleFileNameExtensionTests
         {
             var boxset = new Boxset { Title = "Custom Set", Slug = "custom-set" };
             var release = new Release { Slug = "custom-set-r1", Title = "Custom Set", Year = 2024, Boxset = boxset };
-            var disc = new Disc { Slug = "orphan-disc", Index = 1, Name = "Orphan", Format = "Blu-ray", Release = release };
+            boxset.Release = release;
+            var disc = new Disc { Format = "Blu-ray" };
+            release.Discs.Add(new ReleaseDisc { Slug = "orphan-disc", Index = 1, Name = "Orphan", Disc = disc });
             var item = new DiscItemReference { Title = "Some Feature", Type = "MainMovie" };
             var track = new Track { Index = 0, Type = "Video", Resolution = "1920x1080" };
             var title = new Title

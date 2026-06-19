@@ -162,4 +162,4 @@ public sealed class TrackAdd : ChangeBase<TrackFieldsDetails>
     }
 }
 
-internal sealed record ResolvedParentTitle(Title Title, Disc Disc);
+internal sealed record ResolvedParentTitle(Title Title, ReleaseDisc Disc);

@@ -150,6 +150,7 @@ builder.Services
     .RegisterDbContextFactory<SqlServerDataContext>()
     .DisableIntrospection(false)
     .TryAddTypeInterceptor<TitleItemProjectionTypeInterceptor>()
+    .TryAddTypeInterceptor<ReleaseDiscProjectionTypeInterceptor>()
     .AddTypeExtension<TitleFileNameExtension>()
     .AddQueryType<Query>();
 
@@ -336,6 +337,7 @@ builder.Services.AddSingleton<IBoxsetValidation, BoxsetMemberDiscsValidation>();
 builder.Services.AddSingleton<IBoxsetValidation, BoxsetMemberReleaseSlugValidation>();
 
 builder.Services.AddSingleton<IFileSystem>(new PhysicalFileSystem());
+builder.Services.Configure<DataImporterOptions>(builder.Configuration.GetSection("ContributionImport"));
 builder.Services.AddImportPipeline(includeSearchIndex: false);
 
 // Override the import pipeline middleware to upload images into the main images blob container

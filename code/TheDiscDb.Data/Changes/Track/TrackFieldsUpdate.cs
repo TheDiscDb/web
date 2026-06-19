@@ -197,4 +197,4 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
     }
 }
 
-internal sealed record ResolvedTrack(EntityTrack Track, Disc Disc, Title Title);
+internal sealed record ResolvedTrack(EntityTrack Track, ReleaseDisc Disc, Title Title);

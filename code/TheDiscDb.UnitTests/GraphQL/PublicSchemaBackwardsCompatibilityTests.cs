@@ -82,6 +82,7 @@ public class PublicSchemaBackwardsCompatibilityTests
             .AddProjections()
             .RegisterDbContextFactory<SqlServerDataContext>()
             .TryAddTypeInterceptor<TitleItemProjectionTypeInterceptor>()
+            .TryAddTypeInterceptor<ReleaseDiscProjectionTypeInterceptor>()
             .AddTypeExtension<TitleFileNameExtension>()
             .AddQueryType<Query>();
 
@@ -112,14 +113,18 @@ public class PublicSchemaBackwardsCompatibilityTests
             Title = "2010 Blu-ray",
             MediaItem = media,
         };
+        media.Releases.Add(release);
         var disc = new Disc
+        {
+            Format = "Blu-ray",
+        };
+        release.Discs.Add(new ReleaseDisc
         {
             Slug = "disc-1",
             Index = 1,
             Name = "Disc 1",
-            Format = "Blu-ray",
-            Release = release,
-        };
+            Disc = disc,
+        });
         var item = new DiscItemReference { Title = "Inception", Type = "MainMovie" };
         var track = new Track { Index = 0, Type = "Video", Resolution = "1920x1080" };
         var title = new Title

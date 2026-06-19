@@ -34,7 +34,7 @@ public abstract class ItemHandler<T> : IItemHandler<T>
                     var match = fromDatabase.FirstOrDefault(d => handler.IsMatch(d, itemFromDisc));
                     if (match != null)
                     {
-                        handler.TryUpdate(itemFromDisc, match);
+                        handler.TryUpdate(match, itemFromDisc);
                     }
                     else
                     {

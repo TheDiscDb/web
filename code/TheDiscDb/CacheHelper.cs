@@ -34,10 +34,11 @@ public class CacheHelper
             var boxset = await context.BoxSets
             .Include("Release")
             .Include("Release.Discs")
-            .Include("Release.Discs.Titles")
-            .Include("Release.Discs.Titles.Item")
-            .Include("Release.Discs.Titles.Item.Chapters")
-            .Include("Release.Discs.Titles.Tracks")
+            .Include("Release.Discs.Disc")
+            .Include("Release.Discs.Disc.Titles")
+            .Include("Release.Discs.Disc.Titles.Item")
+            .Include("Release.Discs.Disc.Titles.Item.Chapters")
+            .Include("Release.Discs.Disc.Titles.Tracks")
             .AsSplitQuery()
             .FirstOrDefaultAsync(i => i.Slug == slug, cancellationToken);
             return boxset;
@@ -65,10 +66,11 @@ public class CacheHelper
             return await context.MediaItems
                 .Include(i => i.Releases.OrderBy(r => r.ReleaseDate))
                 .Include("Releases.Discs")
-                .Include("Releases.Discs.Titles")
-                .Include("Releases.Discs.Titles.Item")
-                .Include("Releases.Discs.Titles.Item.Chapters")
-                .Include("Releases.Discs.Titles.Tracks")
+                .Include("Releases.Discs.Disc")
+                .Include("Releases.Discs.Disc.Titles")
+                .Include("Releases.Discs.Disc.Titles.Item")
+                .Include("Releases.Discs.Disc.Titles.Item.Chapters")
+                .Include("Releases.Discs.Disc.Titles.Tracks")
                 .Include("Releases.Contributors")
                 .Include("Releases.ReleaseGroups")
                 .Include("Releases.ReleaseGroups.Group")

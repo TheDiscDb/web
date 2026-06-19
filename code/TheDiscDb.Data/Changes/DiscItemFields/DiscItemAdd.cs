@@ -126,7 +126,7 @@ public sealed class DiscItemAdd : ChangeBase<DiscItemFieldsDetails>
         d.ItemTitle is not null || d.ItemType is not null || d.ItemDescription is not null
         || d.ItemSeason is not null || d.ItemEpisode is not null;
 
-    private static async Task<Disc?> ResolveParentDiscAsync(
+    private static async Task<ReleaseDisc?> ResolveParentDiscAsync(
         SqlServerDataContext context,
         DiscItemFieldsDetails details,
         CancellationToken cancellationToken)

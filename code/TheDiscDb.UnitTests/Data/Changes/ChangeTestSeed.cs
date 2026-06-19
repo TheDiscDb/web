@@ -80,6 +80,14 @@ internal static class ChangeTestSeed
         };
         disc.Titles.Add(title);
 
+        var releaseDisc = new ReleaseDisc
+        {
+            Slug = DiscSlug,
+            Index = DiscIndex,
+            Name = "Original Disc Name",
+            Disc = disc,
+        };
+
         var mediaItem = new MediaItem
         {
             Slug = MediaItemSlug,
@@ -99,7 +107,7 @@ internal static class ChangeTestSeed
             ReleaseDate = new DateTimeOffset(2020, 5, 15, 0, 0, 0, TimeSpan.Zero),
             MediaItem = mediaItem,
         };
-        release.Discs.Add(disc);
+        release.Discs.Add(releaseDisc);
         mediaItem.Releases.Add(release);
 
         db.Add(mediaItem);

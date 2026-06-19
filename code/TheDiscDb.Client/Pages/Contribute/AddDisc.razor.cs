@@ -167,69 +167,10 @@ public partial class AddDisc : CancellableComponentBase
                 hash = response.Data!.HashDisc!.DiscHash!.Hash;
                 this.request.ContentHash = hash;
 
-                // TODO: Check for this disc in the current user's submissions
-
-                var result = await Query!.ExecuteAsync(hash, templates: null, cancellationToken: this.CancellationToken);
-                if (result.Data?.MediaItems?.Nodes != null)
+                var copiedExistingDisc = await TryCopyFromExistingDisc(hash);
+                if (copiedExistingDisc)
                 {
-                    if (result.Data?.MediaItems?.Nodes.Count > 0)
-                    {
-                        bool copyDisc = await DialogService.ConfirmAsync("This disc is already found in another release. Would you like to copy that disc into this contribution?", "Copy Existing Disc");
-                        if (copyDisc)
-                        {
-                            var source = result.Data?.MediaItems?.Nodes.First();
-                            if (source != null)
-                            {
-                                var sourceRelease = source.Releases
-                                    .FirstOrDefault(release => release.Discs.Any(disc => disc.ContentHash == hash));
-                                var sourceDisc = sourceRelease?.Discs.FirstOrDefault(disc => disc.ContentHash == hash);
-
-                                if (sourceRelease != null && sourceDisc != null)
-                                {
-                                    this.request.Slug = sourceDisc.Slug!;
-                                    this.request.Name = sourceDisc.Name!;
-                                    this.request.Format = NormalizeFormat(sourceDisc.Format);
-
-                                    this.request.ExistingDiscPath = UserContributionDisc.GenerateDiscPath(
-                                        source.Type!,
-                                        source.Externalids.Tmdb!,
-                                        sourceRelease.Slug!,
-                                        sourceDisc.Slug!);
-
-                                    var createInput = new CreateDiscInput
-                                    {
-                                        ContributionId = this.ContributionId!,
-                                        Name = this.request.Name!,
-                                        Slug = this.request.Slug!,
-                                        Format = this.request.Format!,
-                                        ContentHash = this.request.ContentHash,
-                                        ExistingDiscPath = this.request.ExistingDiscPath
-                                    };
-                                    var createDiscResponse = await this.ContributionClient.CreateDisc.ExecuteAsync(createInput, this.CancellationToken);
-                                    if (createDiscResponse.IsSuccessResult())
-                                    {
-                                        var createdDiscId = createDiscResponse.Data?.CreateDisc?.UserContributionDisc?.EncodedId;
-                                        if (!string.IsNullOrEmpty(createdDiscId))
-                                        {
-                                            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/disc/{createdDiscId}/edit?returnUrl=/contribution/{this.ContributionId}");
-                                        }
-                                        else
-                                        {
-                                            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
-                                        }
-
-                                        return;
-                                    }
-
-                                    var copyErrors = createDiscResponse.Data?.CreateDisc?.Errors;
-                                    if (copyErrors != null && copyErrors.Count > 0)
-                                    {
-                                        this.copyFlowError = "Could not auto-copy this disc. You can still save it manually below.";
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    return;
                 }
             }
         }
@@ -267,6 +208,7 @@ public partial class AddDisc : CancellableComponentBase
 
     async Task HandleValidSubmit()
     {
+        this.copyFlowError = null;
         var input = new CreateDiscInput
         {
             ContributionId = this.ContributionId!,
@@ -277,6 +219,18 @@ public partial class AddDisc : CancellableComponentBase
             ExistingDiscPath = this.request.ExistingDiscPath
         };
         var response = await this.ContributionClient.CreateDisc.ExecuteAsync(input, this.CancellationToken);
+        if (!response.IsSuccessResult())
+        {
+            this.copyFlowError = GetCreateDiscErrorMessage(response) ?? "Could not save this disc. Please verify the copied disc source and try again.";
+            return;
+        }
+
+        if (response.Data?.CreateDisc?.Errors is { Count: > 0 })
+        {
+            this.copyFlowError = GetCreateDiscErrorMessage(response) ?? "Could not save this disc. Please verify the copied disc source and try again.";
+            return;
+        }
+
         if (response.IsSuccessResult())
         {
             var createdDiscId = response.Data!.CreateDisc.UserContributionDisc!.EncodedId;
@@ -289,6 +243,24 @@ public partial class AddDisc : CancellableComponentBase
 
             this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{createdDiscId}");
         }
+    }
+
+    private static string? GetCreateDiscErrorMessage(IOperationResult<ICreateDiscResult> response)
+    {
+        if (response.Data?.CreateDisc?.Errors is { Count: > 0 } payloadErrors)
+        {
+            var payloadError = payloadErrors[0];
+            return payloadError switch
+            {
+                ICreateDisc_CreateDisc_Errors_ContributionNotFoundError e => e.Message,
+                ICreateDisc_CreateDisc_Errors_AuthenticationError e => e.Message,
+                ICreateDisc_CreateDisc_Errors_InvalidIdError e => e.Message,
+                ICreateDisc_CreateDisc_Errors_InvalidOwnershipError e => e.Message,
+                _ => $"Could not save disc ({payloadError.Code})."
+            };
+        }
+
+        return response.Errors?.FirstOrDefault()?.Message;
     }
 
     private static string NormalizeFormat(string? format)
@@ -323,13 +295,97 @@ public partial class AddDisc : CancellableComponentBase
         }
     }
 
-    private void SubmitManualHash()
+    private async Task SubmitManualHash()
     {
         if (!string.IsNullOrWhiteSpace(manualHash))
         {
+            this.copyFlowError = null;
             request.ContentHash = manualHash.Trim();
+            request.ExistingDiscPath = null;
             manualHashMode = true;
+
+            await TryCopyFromExistingDisc(request.ContentHash);
         }
+    }
+
+    private async Task<bool> TryCopyFromExistingDisc(string discHash)
+    {
+        if (string.IsNullOrWhiteSpace(discHash))
+        {
+            return false;
+        }
+
+        var result = await Query!.ExecuteAsync(discHash, templates: null, cancellationToken: this.CancellationToken);
+        if (result.Data?.MediaItems?.Nodes == null || result.Data.MediaItems.Nodes.Count == 0)
+        {
+            return false;
+        }
+
+        bool copyDisc = await DialogService.ConfirmAsync("This disc is already found in another release. Would you like to copy that disc into this contribution?", "Copy Existing Disc");
+        if (!copyDisc)
+        {
+            return false;
+        }
+
+        var source = result.Data.MediaItems.Nodes.First();
+        if (source == null)
+        {
+            return false;
+        }
+
+        var sourceRelease = source.Releases
+            .FirstOrDefault(release => release.Discs.Any(disc => disc.ContentHash == discHash));
+        var sourceDisc = sourceRelease?.Discs.FirstOrDefault(disc => disc.ContentHash == discHash);
+        if (sourceRelease == null || sourceDisc == null)
+        {
+            return false;
+        }
+
+        this.request.Slug = sourceDisc.Slug!;
+        this.request.Name = sourceDisc.Name!;
+        this.request.Format = NormalizeFormat(sourceDisc.Format);
+        this.request.ContentHash = discHash;
+        this.request.ExistingDiscPath = UserContributionDisc.GenerateDiscPath(
+            source.Type!,
+            source.Externalids.Tmdb!,
+            sourceRelease.Slug!,
+            sourceDisc.Slug!);
+
+        var createInput = new CreateDiscInput
+        {
+            ContributionId = this.ContributionId!,
+            Name = this.request.Name!,
+            Slug = this.request.Slug!,
+            Format = this.request.Format!,
+            ContentHash = this.request.ContentHash,
+            ExistingDiscPath = this.request.ExistingDiscPath
+        };
+        var createDiscResponse = await this.ContributionClient.CreateDisc.ExecuteAsync(createInput, this.CancellationToken);
+        if (!createDiscResponse.IsSuccessResult())
+        {
+            this.copyFlowError = GetCreateDiscErrorMessage(createDiscResponse)
+                ?? "Could not auto-copy this disc. You can still save it manually below.";
+            return false;
+        }
+
+        if (createDiscResponse.Data?.CreateDisc?.Errors is { Count: > 0 })
+        {
+            this.copyFlowError = GetCreateDiscErrorMessage(createDiscResponse)
+                ?? "Could not auto-copy this disc. You can still save it manually below.";
+            return false;
+        }
+
+        var createdDiscId = createDiscResponse.Data?.CreateDisc?.UserContributionDisc?.EncodedId;
+        if (!string.IsNullOrEmpty(createdDiscId))
+        {
+            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/disc/{createdDiscId}/edit?returnUrl=/contribution/{this.ContributionId}");
+        }
+        else
+        {
+            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
+        }
+
+        return true;
     }
 
     private async Task<bool> CheckDiscSlugAvailability(string slug, CancellationToken cancellationToken)

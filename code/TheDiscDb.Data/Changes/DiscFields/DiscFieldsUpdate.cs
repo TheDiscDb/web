@@ -81,7 +81,7 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             : "Disc has been modified since the suggestion was submitted: " + drifted.ToString().TrimEnd(',', ' ');
     }
 
-    public static DiscFieldsDetails SnapshotFrom(Disc disc, string? mediaItemSlug, string? boxsetSlug, string releaseSlug)
+    public static DiscFieldsDetails SnapshotFrom(IDisc disc, string? mediaItemSlug, string? boxsetSlug, string releaseSlug)
     {
         ArgumentNullException.ThrowIfNull(disc);
         return new DiscFieldsDetails(
@@ -101,7 +101,7 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
     /// when proposed slug is null/empty. Returns null on any miss; does NOT
     /// use <c>AsNoTracking</c> so the apply path mutates the same tracked row.
     /// </summary>
-    internal static async Task<Disc?> ResolveDiscAsync(
+    internal static async Task<ReleaseDisc?> ResolveDiscAsync(
         SqlServerDataContext context,
         DiscFieldsDetails details,
         CancellationToken cancellationToken)

@@ -167,4 +167,4 @@ public sealed class ChapterUpdate : ChangeBase<ChapterDetails>
     }
 }
 
-internal sealed record ResolvedChapter(EntityChapter Chapter, Disc Disc, Title Title);
+internal sealed record ResolvedChapter(EntityChapter Chapter, ReleaseDisc Disc, Title Title);

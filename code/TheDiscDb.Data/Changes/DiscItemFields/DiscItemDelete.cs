@@ -95,7 +95,7 @@ public sealed class DiscItemDelete : ChangeBase<DiscItemDeleteDetails>
         return disc?.Titles.FirstOrDefault(t => t.Index == details.TitleIndex);
     }
 
-    private static async Task<Disc?> ResolveParentDiscAsync(
+    private static async Task<ReleaseDisc?> ResolveParentDiscAsync(
         SqlServerDataContext context,
         DiscItemDeleteDetails details,
         CancellationToken cancellationToken)

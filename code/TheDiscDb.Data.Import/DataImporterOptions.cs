@@ -8,6 +8,7 @@ namespace TheDiscDb.Data.Import
     {
         public ICollection<CompanyNameMapping> CompanyNameMappings { get; private set; } = new List<CompanyNameMapping>();
         public bool CleanImport { get; set; } = false;
+        public string? DataRepositoryPath { get; set; }
     }
 
     public class CompanyNameMapping

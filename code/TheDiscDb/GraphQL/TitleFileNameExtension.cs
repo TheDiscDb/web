@@ -41,15 +41,21 @@ public class TitleFileNameExtension
             .Include(t => t.Item)
             .Include(t => t.Tracks)
             .Include(t => t.Disc!)
-                .ThenInclude(d => d.Release!)
+                .ThenInclude(d => d.ReleaseDiscs)
+                .ThenInclude(rd => rd.Release!)
                 .ThenInclude(r => r.MediaItem!)
                 .ThenInclude(m => m.Externalids)
             .Include(t => t.Disc!)
-                .ThenInclude(d => d.Release!)
+                .ThenInclude(d => d.ReleaseDiscs)
+                .ThenInclude(rd => rd.Release!)
                 .ThenInclude(r => r.Boxset!)
             .FirstOrDefaultAsync(t => t.Id == parent.Id, cancellationToken);
 
-        if (loaded?.Disc?.Release is null)
+        var loadedDisc = loaded?.Disc;
+        var loadedReleaseDisc = loadedDisc?.ReleaseDiscs
+            .FirstOrDefault(rd => rd.Release?.MediaItem is not null || rd.Release?.Boxset is not null);
+        var loadedRelease = loadedReleaseDisc?.Release;
+        if (loadedDisc is null || loadedRelease is null)
         {
             return string.Empty;
         }
@@ -57,29 +63,29 @@ public class TitleFileNameExtension
         NamingContext ctx;
         string? itemType;
 
-        if (loaded.Disc.Release.MediaItem is not null)
+        if (loadedRelease.MediaItem is not null)
         {
-            ctx = NamingContext.Create(loaded.Disc.Release.MediaItem, loaded.Disc.Release, loaded.Disc, loaded);
+            ctx = NamingContext.Create(loadedRelease.MediaItem, loadedRelease, loadedDisc, loaded);
             itemType = loaded.Item?.Type;
         }
-        else if (loaded.Disc.Release.Boxset is not null)
+        else if (loadedRelease.Boxset is not null)
         {
-            // Boxset releases have no MediaItem in the DB. Look up the source movie /
+            // Boxset releases have no MediaItem in the DB. Look up the source movie / 
             // series release that contributed this disc: the data importer creates a
             // parallel release on each member MediaItem with the same release slug
             // and the same disc slug as the boxset's copy.
             var sourceRelease = await FindSourceReleaseForBoxsetDiscAsync(
-                db, loaded.Disc.Release.Slug, loaded.Disc.Slug, cancellationToken);
+                db, loadedRelease.Slug, loadedReleaseDisc?.Slug, cancellationToken);
 
             if (sourceRelease?.MediaItem is not null)
             {
-                ctx = NamingContext.Create(sourceRelease.MediaItem, sourceRelease, loaded.Disc, loaded);
+                ctx = NamingContext.Create(sourceRelease.MediaItem, sourceRelease, loadedDisc, loaded);
             }
             else
             {
                 // Custom or orphaned boxset disc with no matching source release.
                 // Fall back to boxset-only metadata so the filename still resolves.
-                ctx = NamingContext.Create(loaded.Disc.Release.Boxset, loaded.Disc.Release, loaded.Disc, loaded);
+                ctx = NamingContext.Create(loadedRelease.Boxset, loadedRelease, loadedDisc, loaded);
             }
 
             itemType = loaded.Item?.Type;

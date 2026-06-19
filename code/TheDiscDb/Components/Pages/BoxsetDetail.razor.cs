@@ -34,8 +34,9 @@ public partial class BoxsetDetail : ComponentBase, IDisposable
         Item = await context.BoxSets
             .Include("Release")
             .Include("Release.Discs")
-            .Include("Release.Discs.Titles")
-            .Include("Release.Discs.Titles.Item")
+            .Include("Release.Discs.Disc")
+            .Include("Release.Discs.Disc.Titles")
+            .Include("Release.Discs.Disc.Titles.Item")
             .FirstOrDefaultAsync(i => i.Slug == Slug, this.ComponentCt);
         if (Item != null)
         {

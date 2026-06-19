@@ -56,16 +56,24 @@ namespace TheDiscDb.Data.Import.Pipeline
 
             if (item.MediaItem != null)
             {
+                var canonicalByHashAndFormat = new Dictionary<string, Disc>(StringComparer.OrdinalIgnoreCase);
+                foreach (var release in item.MediaItem.Releases)
+                {
+                    await this.CanonicalizeReleaseDiscs(release.Discs, canonicalByHashAndFormat, cancellationToken);
+                }
+
                 var fromDatabase = await this.GetDbContext().MediaItems
                             .Include(i => i.Externalids)
                             .Include(i => i.MediaItemGroups)
                             .ThenInclude(i => i.Group)
                             .Include(i => i.Releases)
                             .ThenInclude(r => r.Discs)
+                            .ThenInclude(d => d.Disc)
                             .ThenInclude(d => d.Titles)
                             .ThenInclude(t => t.Item)
                             .Include(i => i.Releases) // repeat the path for release => disc => title to also include tracks
                             .ThenInclude(r => r.Discs)
+                            .ThenInclude(d => d.Disc)
                             .ThenInclude(d => d.Titles)
                             .ThenInclude(t => t.Tracks)
                             .Include(i => i.MediaItemGroups)
@@ -79,6 +87,10 @@ namespace TheDiscDb.Data.Import.Pipeline
                 if (fromDatabase != null)
                 {
                     this.mediaItemHandler.TryUpdate(fromDatabase, item.MediaItem);
+                    foreach (var release in fromDatabase.Releases)
+                    {
+                        await this.CanonicalizeReleaseDiscs(release.Discs, canonicalByHashAndFormat, cancellationToken);
+                    }
                     await HandleContributorsOnUpdate(fromDatabase, item.MediaItem, cancellationToken);
                     item.MediaItem = fromDatabase; // allows changes made in other middleware to be tracked by the DB
                 }
@@ -96,9 +108,16 @@ namespace TheDiscDb.Data.Import.Pipeline
             }
             else if (item.Boxset != null)
             {
+                var canonicalByHashAndFormat = new Dictionary<string, Disc>(StringComparer.OrdinalIgnoreCase);
+                if (item.Boxset.Release != null)
+                {
+                    await this.CanonicalizeReleaseDiscs(item.Boxset.Release.Discs, canonicalByHashAndFormat, cancellationToken);
+                }
+
                 var fromDatabase = await this.GetDbContext().BoxSets
                     .Include(i => i.Release)
                     .ThenInclude(r => r!.Discs)
+                    .ThenInclude(d => d.Disc)
                     .ThenInclude(d => d.Titles)
                     .ThenInclude(t => t.Item)
                     .FirstOrDefaultAsync(s => s.Slug == item.Boxset.Slug);
@@ -106,6 +125,10 @@ namespace TheDiscDb.Data.Import.Pipeline
                 if (fromDatabase != null)
                 {
                     this.boxsetItemHandler.TryUpdate(fromDatabase, item.Boxset);
+                    if (fromDatabase.Release != null)
+                    {
+                        await this.CanonicalizeReleaseDiscs(fromDatabase.Release.Discs, canonicalByHashAndFormat, cancellationToken);
+                    }
                     item.Boxset = fromDatabase;
                 }
                 else
@@ -126,6 +149,117 @@ namespace TheDiscDb.Data.Import.Pipeline
             await this.Next(item, cancellationToken);
         }
 
+        private async Task CanonicalizeReleaseDiscs(ICollection<ReleaseDisc> releaseDiscs, Dictionary<string, Disc> canonicalByHashAndFormat, CancellationToken cancellationToken)
+        {
+            var seenSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seenIndexes = new HashSet<int>();
+
+            foreach (var releaseDisc in releaseDiscs)
+            {
+                if (releaseDisc?.Disc == null)
+                {
+                    continue;
+                }
+
+                if (releaseDisc.Index <= 0 || !seenIndexes.Add(releaseDisc.Index))
+                {
+                    var nextIndex = 1;
+                    while (seenIndexes.Contains(nextIndex))
+                    {
+                        nextIndex++;
+                    }
+
+                    releaseDisc.Index = nextIndex;
+                    seenIndexes.Add(nextIndex);
+                }
+
+                if (!string.IsNullOrWhiteSpace(releaseDisc.Slug))
+                {
+                    var normalizedSlug = releaseDisc.Slug.Trim();
+                    if (!seenSlugs.Add(normalizedSlug))
+                    {
+                        // IX_ReleaseDiscs_ReleaseId_Slug is unique (filtered). Keep the first
+                        // occurrence and null out duplicates so import can proceed.
+                        releaseDisc.Slug = null;
+                    }
+                    else
+                    {
+                        releaseDisc.Slug = normalizedSlug;
+                    }
+                }
+
+                var inputDisc = releaseDisc.Disc;
+                var normalizedFormat = inputDisc.Format?.Trim();
+                var normalizedContentHash = inputDisc.ContentHash?.Trim();
+                if (string.IsNullOrWhiteSpace(normalizedFormat) || string.IsNullOrWhiteSpace(normalizedContentHash))
+                {
+                    continue;
+                }
+
+                inputDisc.Format = normalizedFormat;
+                inputDisc.ContentHash = normalizedContentHash;
+                var key = $"{normalizedFormat}|{normalizedContentHash}";
+                var normalizedContentHashLower = normalizedContentHash.ToLowerInvariant();
+
+                if (canonicalByHashAndFormat.TryGetValue(key, out var canonicalFromBatch))
+                {
+                    releaseDisc.Disc = canonicalFromBatch;
+                    continue;
+                }
+
+                var canonicalFromLocal = this.GetDbContext().Discs.Local.FirstOrDefault(d =>
+                    !ReferenceEquals(d, inputDisc) &&
+                    !string.IsNullOrWhiteSpace(d.Format) &&
+                    !string.IsNullOrWhiteSpace(d.ContentHash) &&
+                    string.Equals(d.Format, normalizedFormat, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(d.ContentHash, normalizedContentHash, StringComparison.OrdinalIgnoreCase));
+
+                if (canonicalFromLocal != null)
+                {
+                    this.CopyTitlesToCanonicalDiscIfMissing(canonicalFromLocal, inputDisc);
+                    releaseDisc.Disc = canonicalFromLocal;
+                    canonicalByHashAndFormat[key] = canonicalFromLocal;
+                    continue;
+                }
+
+                var canonicalFromDbCandidates = await this.GetDbContext().Discs
+                    .Include(d => d.Titles)
+                    .ThenInclude(t => t.Item)
+                    .ThenInclude(i => i.Chapters)
+                    .Include(d => d.Titles)
+                    .ThenInclude(t => t.Tracks)
+                    .Where(
+                        d => d.Format != null &&
+                             d.ContentHash != null &&
+                             d.ContentHash.ToLower() == normalizedContentHashLower)
+                    .ToListAsync(cancellationToken);
+                var canonicalFromDb = canonicalFromDbCandidates.FirstOrDefault(d =>
+                    string.Equals(d.Format?.Trim(), normalizedFormat, StringComparison.OrdinalIgnoreCase));
+                if (canonicalFromDb != null)
+                {
+                    this.CopyTitlesToCanonicalDiscIfMissing(canonicalFromDb, inputDisc);
+                    releaseDisc.Disc = canonicalFromDb;
+                    canonicalByHashAndFormat[key] = canonicalFromDb;
+                    continue;
+                }
+
+                canonicalByHashAndFormat[key] = inputDisc;
+            }
+        }
+
+        private void CopyTitlesToCanonicalDiscIfMissing(Disc canonicalDisc, Disc sourceDisc)
+        {
+            if (canonicalDisc.Titles.Count > 0 || sourceDisc.Titles.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var sourceTitle in sourceDisc.Titles)
+            {
+                canonicalDisc.Titles.Add(sourceTitle);
+            }
+        }
+
         private async Task SaveChangesAsync()
         {
             try
@@ -138,12 +272,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                 // After a failed SaveChanges, Added/Modified entities remain in the
                 // change tracker. If the next item shares an entity (e.g. same
                 // contributor), EF would try to insert duplicates.
-                foreach (var entry in this.GetDbContext().ChangeTracker.Entries()
-                    .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified)
-                    .ToList())
-                {
-                    entry.State = EntityState.Detached;
-                }
+                this.GetDbContext().ChangeTracker.Clear();
                 throw;
             }
         }
@@ -273,4 +402,3 @@ namespace TheDiscDb.Data.Import.Pipeline
         }
     }
 }
-
