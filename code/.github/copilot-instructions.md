@@ -32,6 +32,7 @@ Non-user data tables (Releases, Discs, Titles, Tracks, Chapters, MediaItems, Box
 - **Never store database `int` IDs** as foreign references in user-generated data (e.g., edit suggestions, contributions). Int IDs are unstable across rebuilds.
 - **Use natural keys** (slug composites) to identify domain entities. For example, a Release is identified by `MediaItemSlug + ReleaseSlug` (or `BoxsetSlug + ReleaseSlug`), not by `Release.Id`.
 - **Use `IdEncoder` (Sqids)** when exposing database IDs in user-facing URLs. Admin pages may use raw int IDs.
+- **Never display IDs (raw or encoded) as user-visible text** in headings, labels, or page content. Use meaningful domain data (e.g., summary, entity name, target key) instead. Sqids belong in URLs only — they are opaque and meaningless to users.
 
 ## URL Routing: LowercaseUrlMiddleware
 
