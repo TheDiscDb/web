@@ -38,6 +38,13 @@ public partial class EditSuggestionDetail : ComponentBase
     private string conflictResolution = string.Empty;
     private Dictionary<int, string> rejectionReasons = [];
 
+    private static readonly IReadOnlyCollection<string> IdentityFields =
+    [
+        "mediaItemSlug", "boxsetSlug", "releaseSlug",
+        "discSlug", "discIndex", "titleIndex",
+        "chapterIndex", "trackIndex", "sourceFile", "hasItem",
+    ];
+
     private static readonly JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
 
     protected override async Task OnInitializedAsync()

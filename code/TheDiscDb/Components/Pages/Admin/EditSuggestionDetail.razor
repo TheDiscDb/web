@@ -70,7 +70,8 @@ else
                 {
                     <TheDiscDb.Client.Controls.JsonDiff
                         OriginalJson="@change.OriginalSnapshotJson"
-                        ProposedJson="@change.ProposedJson" />
+                        ProposedJson="@change.ProposedJson"
+                        ExcludeKeys="@IdentityFields" />
                 }
 
                 @if (!string.IsNullOrEmpty(change.ConflictReason))

@@ -20,20 +20,29 @@
     [Parameter]
     public string? Class { get; set; }
 
+    [Parameter]
+    public IReadOnlyCollection<string>? ExcludeKeys { get; set; }
+
     private List<DiffLine> diffLines = [];
 
     protected override void OnParametersSet()
     {
-        diffLines = ComputeDiff(OriginalJson, ProposedJson);
+        diffLines = ComputeDiff(OriginalJson, ProposedJson, ExcludeKeys);
     }
 
-    private static List<DiffLine> ComputeDiff(string? originalJson, string? proposedJson)
+    private static List<DiffLine> ComputeDiff(string? originalJson, string? proposedJson, IReadOnlyCollection<string>? excludeKeys)
     {
         var original = ParseFlat(originalJson);
         var proposed = ParseFlat(proposedJson);
         var lines = new List<DiffLine>();
 
         var allKeys = original.Keys.Union(proposed.Keys).ToList();
+
+        if (excludeKeys is { Count: > 0 })
+        {
+            var excluded = new HashSet<string>(excludeKeys, StringComparer.OrdinalIgnoreCase);
+            allKeys = allKeys.Where(k => !excluded.Contains(k)).ToList();
+        }
 
         foreach (var key in allKeys)
         {

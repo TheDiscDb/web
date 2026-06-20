@@ -36,6 +36,13 @@ public partial class MyChangeDetail : ComponentBase
     private bool actionSuccess;
     private bool isProcessing;
 
+    private static readonly IReadOnlyCollection<string> IdentityFields =
+    [
+        "mediaItemSlug", "boxsetSlug", "releaseSlug",
+        "discSlug", "discIndex", "titleIndex",
+        "chapterIndex", "trackIndex", "sourceFile", "hasItem",
+    ];
+
     protected override async Task OnInitializedAsync()
     {
         suggestionId = IdEncoder.Decode(SuggestionSquid);
