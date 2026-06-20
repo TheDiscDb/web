@@ -29,24 +29,6 @@ else
 
         <section class="info-grid single-column">
             <div class="mb-4">
-                <h3>Title Properties</h3>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Comment</label>
-                        <input type="text" class="form-control" @bind="editComment" placeholder="Comment" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Duration</label>
-                        <input type="text" class="form-control" @bind="editDuration" placeholder="0:00:00" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Segment Map</label>
-                        <input type="text" class="form-control" @bind="editSegmentMap" placeholder="1,2,3" />
-                    </div>
-                </div>
-            </div>
-
-            <div class="mb-4">
                 <h3>Content Details</h3>
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -57,11 +39,17 @@ else
                         <label class="form-label">Type</label>
                         <select class="form-select" @bind="editItemType">
                             <option value="">— Select —</option>
-                            <option value="movie">Movie</option>
-                            <option value="episode">Episode</option>
-                            <option value="special">Special</option>
-                            <option value="extra">Extra</option>
-                            <option value="trailer">Trailer</option>
+                            <option value="MainMovie">Main Movie</option>
+                            <option value="Episode">Episode</option>
+                            <option value="Extra">Extra</option>
+                            <option value="DeletedScene">Deleted Scene</option>
+                            <option value="Trailer">Trailer</option>
+                            <option value="Featurette">Featurette</option>
+                            <option value="Interview">Interview</option>
+                            <option value="Scene">Scene</option>
+                            <option value="Music">Music</option>
+                            <option value="Short">Short</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
                     <div class="col-md-3">

@@ -59,11 +59,6 @@ public partial class DiscItemEdit : ComponentBase
     private ReleaseDisc? Disc { get; set; }
     private Title? Title { get; set; }
 
-    // Editable fields — Title direct
-    private string? editComment;
-    private string? editDuration;
-    private string? editSegmentMap;
-
     // Editable fields — DiscItemReference
     private string? editItemTitle;
     private string? editItemType;
@@ -72,9 +67,6 @@ public partial class DiscItemEdit : ComponentBase
     private string? editItemEpisode;
 
     // Original snapshot values
-    private string? originalComment;
-    private string? originalDuration;
-    private string? originalSegmentMap;
     private string? originalItemTitle;
     private string? originalItemType;
     private string? originalItemDescription;
@@ -111,9 +103,6 @@ public partial class DiscItemEdit : ComponentBase
         }
 
         // Populate editable fields from current state
-        editComment = Title.Comment;
-        editDuration = Title.Duration;
-        editSegmentMap = Title.SegmentMap;
         editItemTitle = Title.Item?.Title;
         editItemType = Title.Item?.Type;
         editItemDescription = Title.Item?.Description;
@@ -121,9 +110,6 @@ public partial class DiscItemEdit : ComponentBase
         editItemEpisode = Title.Item?.Episode;
 
         // Capture original snapshot
-        originalComment = editComment;
-        originalDuration = editDuration;
-        originalSegmentMap = editSegmentMap;
         originalItemTitle = editItemTitle;
         originalItemType = editItemType;
         originalItemDescription = editItemDescription;
@@ -178,10 +164,7 @@ public partial class DiscItemEdit : ComponentBase
 
     private bool HasChanges()
     {
-        return editComment != originalComment
-            || editDuration != originalDuration
-            || editSegmentMap != originalSegmentMap
-            || editItemTitle != originalItemTitle
+        return editItemTitle != originalItemTitle
             || editItemType != originalItemType
             || editItemDescription != originalItemDescription
             || editItemSeason != originalItemSeason
@@ -204,9 +187,6 @@ public partial class DiscItemEdit : ComponentBase
     {
         var diffs = new List<DiscItemFieldDiff>();
 
-        AddDiffIfChanged(diffs, "Comment", originalComment, editComment);
-        AddDiffIfChanged(diffs, "Duration", originalDuration, editDuration);
-        AddDiffIfChanged(diffs, "Segment Map", originalSegmentMap, editSegmentMap);
         AddDiffIfChanged(diffs, "Content Title", originalItemTitle, editItemTitle);
         AddDiffIfChanged(diffs, "Type", originalItemType, editItemType);
         AddDiffIfChanged(diffs, "Description", originalItemDescription, editItemDescription);
@@ -251,7 +231,7 @@ public partial class DiscItemEdit : ComponentBase
             var originalSnapshot = new DiscItemFieldsDetails(
                 mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
                 discSlug, Title.Index,
-                originalComment, Title.SourceFile, originalSegmentMap, originalDuration,
+                Title.Comment, Title.SourceFile, Title.SegmentMap, Title.Duration,
                 originalHasItem,
                 originalItemTitle, originalItemType, originalItemDescription,
                 originalItemSeason, originalItemEpisode);
@@ -260,7 +240,7 @@ public partial class DiscItemEdit : ComponentBase
             var proposed = new DiscItemFieldsDetails(
                 mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
                 discSlug, Title.Index,
-                editComment, Title.SourceFile, editSegmentMap, editDuration,
+                Title.Comment, Title.SourceFile, Title.SegmentMap, Title.Duration,
                 originalHasItem || HasAnyItemField(),
                 editItemTitle, editItemType, editItemDescription,
                 editItemSeason, editItemEpisode);
