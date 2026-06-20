@@ -34,9 +34,12 @@ public partial class TitleDetail : ComponentBase
     private Release? Release { get; set; }
     private ReleaseDisc? Disc { get; set; }
     private Title? Title { get; set; }
+    private string? editSubmittedSquid;
 
     protected override async Task OnInitializedAsync()
     {
+        editSubmittedSquid = HttpContext?.Request.Query["editSubmitted"].ToString();
+
         if (Cache == null || string.IsNullOrEmpty(Type) || string.IsNullOrEmpty(Slug))
         {
             return;

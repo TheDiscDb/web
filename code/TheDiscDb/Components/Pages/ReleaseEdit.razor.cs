@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using TheDiscDb.Data.Changes.ReleaseFields;
 using TheDiscDb.InputModels;
 using TheDiscDb.Services.EditSuggestions;
+using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages;
@@ -58,6 +59,9 @@ public partial class ReleaseEdit : ComponentBase
 
     [Inject]
     public NavigationManager Navigation { get; set; } = null!;
+
+    [Inject]
+    public IdEncoder IdEncoder { get; set; } = null!;
 
     [Inject]
     public ILogger<ReleaseEdit> Logger { get; set; } = null!;
@@ -180,10 +184,11 @@ public partial class ReleaseEdit : ComponentBase
                 new(ReleaseFieldsUpdate.Key, proposedJson, snapshotJson),
             };
 
-            await EditSuggestionService.SubmitAsync(userId, EditSuggestionSource.Web, request.Summary, changes);
+            var result = await EditSuggestionService.SubmitAsync(userId, EditSuggestionSource.Web, request.Summary, changes);
 
-            submitSuccess = true;
-            submitMessage = "Your edit suggestion has been submitted for review. Thank you!";
+            var sqid = IdEncoder.Encode(result.Id);
+            var itemUrl = $"/{Type}/{Slug}/releases/{ReleaseSlug}?editSubmitted={sqid}";
+            Navigation.NavigateTo(itemUrl, forceLoad: true);
         }
         catch (Exception ex)
         {

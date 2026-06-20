@@ -21,6 +21,7 @@ else
             GetReleaseLink(this.Item, this.Release),
             GetDiscLink(this.Item, this.Release, this.Disc)
         ]" />
+        <TheDiscDb.Components.Controls.EditSubmittedBanner ChangeSquid="@editSubmittedSquid" />
         <div class="d-flex align-items-center gap-2 mb-2">
             <h1 class="mb-0">@Title.SourceFile — @Release.Title</h1>
             <a href="@GetDiscItemEditUrl()" class="btn btn-sm btn-outline-secondary" title="Suggest edits to this disc item">✏️ Suggest Edit</a>

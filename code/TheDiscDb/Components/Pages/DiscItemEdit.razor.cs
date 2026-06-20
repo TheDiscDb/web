@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using TheDiscDb.Data.Changes.DiscItemFields;
 using TheDiscDb.InputModels;
 using TheDiscDb.Services.EditSuggestions;
+using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages;
@@ -47,6 +48,9 @@ public partial class DiscItemEdit : ComponentBase
 
     [Inject]
     public NavigationManager Navigation { get; set; } = null!;
+
+    [Inject]
+    public IdEncoder IdEncoder { get; set; } = null!;
 
     [Inject]
     public ILogger<DiscItemEdit> Logger { get; set; } = null!;
@@ -251,10 +255,16 @@ public partial class DiscItemEdit : ComponentBase
                 new(DiscItemFieldsUpdate.Key, proposedJson, snapshotJson),
             };
 
-            await EditSuggestionService.SubmitAsync(userId, EditSuggestionSource.Web, summary, changes);
+            var result = await EditSuggestionService.SubmitAsync(userId, EditSuggestionSource.Web, summary, changes);
 
-            submitSuccess = true;
-            submitMessage = "Your disc item edit suggestions have been submitted for review. Thank you!";
+            var sqid = IdEncoder.Encode(result.Id);
+            var titleUrl = $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex}/{File}";
+            if (!string.IsNullOrEmpty(Extension))
+            {
+                titleUrl += $"/{Extension}";
+            }
+            titleUrl += $"?editSubmitted={sqid}";
+            Navigation.NavigateTo(titleUrl, forceLoad: true);
         }
         catch (Exception ex)
         {

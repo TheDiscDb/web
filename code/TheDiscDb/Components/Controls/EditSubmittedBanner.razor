@@ -1,0 +1,13 @@
+@if (!string.IsNullOrEmpty(ChangeSquid))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        Your edit has been submitted for review.
+        <a href="/changes/my/@ChangeSquid" data-enhance-nav="false">View your suggestion</a>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? ChangeSquid { get; set; }
+}
