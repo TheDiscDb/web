@@ -31,9 +31,11 @@ public partial class DiscDetail : ComponentBase
     private Boxset? BoxsetItem { get; set; }
     private Release? DiscRelease { get; set; }
     private ReleaseDisc? Disc { get; set; }
+    private string? editSubmittedSquid;
 
     protected override async Task OnInitializedAsync()
     {
+        editSubmittedSquid = HttpContext?.Request.Query["editSubmitted"].ToString();
         // Detect the boxset disc case (legacy URL: /boxset/{slug}/discs/{slugOrIndex})
         bool isBoxsetUrl = false;
         if (string.IsNullOrEmpty(this.Type) && !string.IsNullOrEmpty(this.Slug) && !string.IsNullOrEmpty(this.SlugOrIndexString))
@@ -88,5 +90,15 @@ public partial class DiscDetail : ComponentBase
                 HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
             }
         }
+    }
+
+    private string GetDiscEditUrl()
+    {
+        if (Item == null && BoxsetItem != null)
+        {
+            return $"/boxset/{BoxsetItem.Slug}/discs/{SlugOrIndex.Create(Disc?.Slug, Disc?.Index ?? 0)}/edit";
+        }
+
+        return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndexString}/edit";
     }
 }
