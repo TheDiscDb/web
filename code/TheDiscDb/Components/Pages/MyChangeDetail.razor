@@ -11,7 +11,7 @@
 }
 else
 {
-    <h1>Suggested Change #@SuggestionSquid</h1>
+    <h1>@(suggestion.Summary ?? $"{suggestion.TargetEntityType} Edit")</h1>
 
     @if (!string.IsNullOrEmpty(actionMessage))
     {
