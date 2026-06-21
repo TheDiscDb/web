@@ -58,6 +58,14 @@ public partial class EditSuggestionDetail : ComponentBase
         suggestion = await db.EditSuggestions
             .Include(s => s.Changes.OrderBy(c => c.Ordinal))
             .FirstOrDefaultAsync(s => s.Id == SuggestionId);
+
+        if (suggestion != null)
+        {
+            foreach (var change in suggestion.Changes)
+            {
+                rejectionReasons.TryAdd(change.Id, string.Empty);
+            }
+        }
     }
 
     private async Task ApproveChange(int changeId)
