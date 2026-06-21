@@ -67,22 +67,7 @@ public partial class DiscEdit : ComponentBase
     private bool submitSuccess;
     private bool isSubmitting;
     private bool isReviewing;
-    private static readonly string[] StandardFormats = ["4K", "Blu-ray", "DVD"];
-
     private List<DiscFieldDiff> pendingDiffs = [];
-
-    private IReadOnlyList<string> FormatOptions
-    {
-        get
-        {
-            if (!string.IsNullOrEmpty(originalFormat) && !StandardFormats.Contains(originalFormat, StringComparer.Ordinal))
-            {
-                return [originalFormat, .. StandardFormats];
-            }
-
-            return StandardFormats;
-        }
-    }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
