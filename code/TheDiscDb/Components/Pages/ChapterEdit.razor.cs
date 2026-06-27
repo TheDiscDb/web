@@ -156,7 +156,7 @@ public partial class ChapterEdit : ComponentBase
 
     private void BulkAddChapters()
     {
-        for (int i = 0; i < bulkAddCount; i++)
+        for (int i = 1; i <= bulkAddCount; i++)
         {
             if (!chapters.Any(c => c.Index == i && !c.IsDeleted))
             {
@@ -175,8 +175,8 @@ public partial class ChapterEdit : ComponentBase
     private void FillMissingChapters()
     {
         var existingIndices = chapters.Where(c => !c.IsDeleted).Select(c => c.Index).ToHashSet();
-        int count = chapters.Max(c => c.Index) + 2;
-        for (int i = 0; i < count; i++)
+        int max = chapters.Count > 0 ? chapters.Max(c => c.Index) : 0;
+        for (int i = 1; i <= max; i++)
         {
             if (!existingIndices.Contains(i))
             {
@@ -196,7 +196,7 @@ public partial class ChapterEdit : ComponentBase
     {
         int nextIndex = chapters.Count > 0
             ? chapters.Max(c => c.Index) + 1
-            : 0;
+            : 1;
 
         chapters.Add(new ChapterEditRow
         {

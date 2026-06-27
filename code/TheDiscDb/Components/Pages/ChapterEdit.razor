@@ -54,17 +54,17 @@ else
                     @foreach (var chapter in chapters.OrderBy(c => c.Index))
                     {
                         <tr class="@(chapter.IsDeleted ? "table-danger text-decoration-line-through" : chapter.IsNew ? "table-success" : "")">
-                            <td>@(chapter.Index + 1)</td>
+                            <td>@chapter.Index</td>
                             <td>
                                 @if (!chapter.IsDeleted)
                                 {
                                     <input type="text" class="form-control form-control-sm"
                                            @bind="chapter.Title" @bind:event="oninput"
-                                           placeholder="Chapter @(chapter.Index + 1)" />
+                                           placeholder="Chapter @chapter.Index" />
                                 }
                                 else
                                 {
-                                    <span class="text-muted">@(chapter.OriginalTitle ?? $"Chapter {chapter.Index + 1}")</span>
+                                    <span class="text-muted">@(chapter.OriginalTitle ?? $"Chapter {chapter.Index}")</span>
                                 }
                             </td>
                             <td>
@@ -123,7 +123,7 @@ else
                     @foreach (var diff in pendingDiffs)
                     {
                         <tr class="@diff.CssClass">
-                            <td>@(diff.ChapterIndex + 1)</td>
+                            <td>@diff.ChapterIndex</td>
                             <td><strong>@diff.ChangeType</strong></td>
                             <td class="text-muted">@(diff.CurrentValue ?? "—")</td>
                             <td><strong>@(diff.ProposedValue ?? "—")</strong></td>
