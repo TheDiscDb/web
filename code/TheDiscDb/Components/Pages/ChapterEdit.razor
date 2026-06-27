@@ -70,20 +70,20 @@ else
                             <td>
                                 @if (chapter.IsDeleted)
                                 {
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => UndoDelete(chapter)" title="Undo delete">
-                                        ↩
+                                    <button type="button" class="btn btn-sm" @onclick="() => UndoDelete(chapter)" title="Undo delete">
+                                        <i class="e-icons e-undo"></i>
                                     </button>
                                 }
                                 else if (!chapter.IsNew)
                                 {
-                                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => MarkDeleted(chapter)" title="Delete">
-                                        ✕
+                                    <button type="button" class="btn btn-sm" @onclick="() => MarkDeleted(chapter)" title="Delete">
+                                        <i class="e-icons e-trash"></i>
                                     </button>
                                 }
                                 else
                                 {
-                                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveNew(chapter)" title="Remove">
-                                        ✕
+                                    <button type="button" class="btn btn-sm" @onclick="() => RemoveNew(chapter)" title="Remove">
+                                        <i class="e-icons e-trash"></i>
                                     </button>
                                 }
                             </td>
