@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
+using Microsoft.JSInterop;
 using TheDiscDb.Data.Changes.Chapter;
 using TheDiscDb.InputModels;
 using TheDiscDb.Services.EditSuggestions;
@@ -14,7 +15,7 @@ using TheDiscDb.Web.Data;
 namespace TheDiscDb.Components.Pages;
 
 [Authorize]
-public partial class ChapterEdit : ComponentBase
+public partial class ChapterEdit : ComponentBase, IDisposable
 {
     [Parameter]
     public string? Type { get; set; }
@@ -55,6 +56,9 @@ public partial class ChapterEdit : ComponentBase
     [Inject]
     public ILogger<ChapterEdit> Logger { get; set; } = null!;
 
+    [Inject]
+    public IJSRuntime JS { get; set; } = null!;
+
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
@@ -71,6 +75,10 @@ public partial class ChapterEdit : ComponentBase
 
     private ChapterEditRow? draggedChapter;
     private ChapterEditRow? dragOverChapter;
+
+    private ElementReference tableBodyRef;
+    private DotNetObjectReference<ChapterEdit>? selfRef;
+    private bool sortableInitialized;
 
     private int bulkAddCount = 1;
     private string? summary;
@@ -224,6 +232,73 @@ public partial class ChapterEdit : ComponentBase
     {
         draggedChapter = null;
         dragOverChapter = null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Title == null)
+        {
+            return;
+        }
+
+        // The edit table only exists when not reviewing. Re-initialize the
+        // touch sortable whenever we return to the edit view (the tbody is a
+        // fresh element each time).
+        if (isReviewing)
+        {
+            sortableInitialized = false;
+            return;
+        }
+
+        if (!sortableInitialized)
+        {
+            selfRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("chapterSortable.init", tableBodyRef, selfRef);
+            sortableInitialized = true;
+        }
+    }
+
+    /// <summary>
+    /// Touch/pen drag start, invoked from chapter-sortable.js. Mirrors
+    /// <see cref="OnDragStart"/> for the native (mouse) drag path.
+    /// </summary>
+    [JSInvokable]
+    public void StartDrag(int index)
+    {
+        if (index < 0 || index >= chapters.Count)
+        {
+            return;
+        }
+
+        OnDragStart(chapters[index]);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Touch/pen drag over a row, invoked from chapter-sortable.js. Mirrors
+    /// <see cref="OnDragEnter"/> for the native (mouse) drag path.
+    /// </summary>
+    [JSInvokable]
+    public void MoveRow(int toIndex)
+    {
+        if (draggedChapter == null || toIndex < 0 || toIndex >= chapters.Count)
+        {
+            return;
+        }
+
+        OnDragEnter(chapters[toIndex]);
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Touch/pen drag end, invoked from chapter-sortable.js. Mirrors
+    /// <see cref="OnDragEnd"/> for the native (mouse) drag path.
+    /// </summary>
+    [JSInvokable]
+    public void EndDrag()
+    {
+        OnDragEnd();
+        StateHasChanged();
     }
 
     private string GetRowClass(ChapterEditRow chapter)
@@ -503,6 +578,11 @@ public partial class ChapterEdit : ComponentBase
 
     private bool IsBoxset() =>
         Type?.Equals("boxset", StringComparison.OrdinalIgnoreCase) == true;
+
+    public void Dispose()
+    {
+        selfRef?.Dispose();
+    }
 }
 
 internal sealed class ChapterEditRow

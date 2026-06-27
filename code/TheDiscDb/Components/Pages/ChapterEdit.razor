@@ -50,19 +50,23 @@ else
                         <th style="width: 80px;"></th>
                     </tr>
                 </thead>
-                <tbody>
-                    @{ var position = 0; }
+                <tbody @ref="tableBodyRef">
+                    @{ var position = 0; var rowIndex = -1; }
                     @foreach (var chapter in chapters)
                     {
+                        rowIndex++;
                         if (!chapter.IsDeleted)
                         {
                             position++;
                         }
                         var chapterNumber = position;
+                        var currentIndex = rowIndex;
                         <tr class="@GetRowClass(chapter)" @key="chapter"
+                            data-row-index="@currentIndex"
+                            data-deleted="@(chapter.IsDeleted ? "true" : "false")"
                             @ondragenter="() => OnDragEnter(chapter)"
                             @ondragover:preventDefault="true">
-                            <td class="drag-handle" title="Drag to reorder"
+                            <td class="drag-handle" data-drag-handle title="Drag to reorder"
                                 draggable="@(chapter.IsDeleted ? "false" : "true")"
                                 @ondragstart="() => OnDragStart(chapter)"
                                 @ondragend="OnDragEnd">
