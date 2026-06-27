@@ -68,15 +68,9 @@ public partial class TrackEdit : ComponentBase
     private Title? Title { get; set; }
     private EntityTrack? Track { get; set; }
 
-    // Editable fields
+    // Only the track Name is user-editable. All other fields come from the
+    // disc file metadata and are shown read-only.
     private string? editName;
-    private string? editType;
-    private string? editResolution;
-    private string? editAspectRatio;
-    private string? editAudioType;
-    private string? editLanguageCode;
-    private string? editLanguage;
-    private string? editDescription;
 
     private TrackFieldsDetails? originalSnapshot;
 
@@ -109,13 +103,6 @@ public partial class TrackEdit : ComponentBase
         }
 
         editName = Track.Name;
-        editType = Track.Type;
-        editResolution = Track.Resolution;
-        editAspectRatio = Track.AspectRatio;
-        editAudioType = Track.AudioType;
-        editLanguageCode = Track.LanguageCode;
-        editLanguage = Track.Language;
-        editDescription = Track.Description;
 
         string? mediaItemSlug = IsBoxset() ? null : Slug;
         string? boxsetSlug = IsBoxset() ? Slug : null;
@@ -173,26 +160,15 @@ public partial class TrackEdit : ComponentBase
     }
 
     /// <summary>
-    /// Builds the proposed details, nulling fields that don't apply to the
-    /// selected track type. This enforces mutual-exclusion so that re-typing a
-    /// track (e.g. Audio → Video) clears the now-irrelevant fields in the diff.
+    /// Builds the proposed details. Only the track Name is editable; all other
+    /// fields are preserved from the original snapshot so they never appear in
+    /// the diff.
     /// </summary>
     private TrackFieldsDetails BuildProposed()
     {
-        bool isVideo = editType == "Video";
-        bool isAudioOrSub = editType is "Audio" or "Subtitles";
-        bool isAudio = editType == "Audio";
-
         return originalSnapshot! with
         {
             Name = editName,
-            Type = editType,
-            Resolution = isVideo ? editResolution : null,
-            AspectRatio = isVideo ? editAspectRatio : null,
-            AudioType = isAudio ? editAudioType : null,
-            LanguageCode = isAudioOrSub ? editLanguageCode : null,
-            Language = isAudioOrSub ? editLanguage : null,
-            Description = isAudioOrSub ? editDescription : null,
         };
     }
 
@@ -229,13 +205,6 @@ public partial class TrackEdit : ComponentBase
         var proposed = BuildProposed();
 
         AddDiffIfChanged(diffs, "Name", originalSnapshot.Name, proposed.Name);
-        AddDiffIfChanged(diffs, "Type", originalSnapshot.Type, proposed.Type);
-        AddDiffIfChanged(diffs, "Resolution", originalSnapshot.Resolution, proposed.Resolution);
-        AddDiffIfChanged(diffs, "Aspect Ratio", originalSnapshot.AspectRatio, proposed.AspectRatio);
-        AddDiffIfChanged(diffs, "Audio Type", originalSnapshot.AudioType, proposed.AudioType);
-        AddDiffIfChanged(diffs, "Language", originalSnapshot.Language, proposed.Language);
-        AddDiffIfChanged(diffs, "Language Code", originalSnapshot.LanguageCode, proposed.LanguageCode);
-        AddDiffIfChanged(diffs, "Description", originalSnapshot.Description, proposed.Description);
 
         return diffs;
     }

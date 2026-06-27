@@ -29,7 +29,7 @@ else
     {
         <h1>Suggest Edits for Track @Track.Index</h1>
         <p class="text-muted">
-            Edit the track details below. Your changes will be reviewed before being applied.
+            Edit the track name below. Your changes will be reviewed before being applied.
         </p>
 
         <section class="info-grid single-column">
@@ -40,54 +40,40 @@ else
                         <label class="form-label">Name</label>
                         <input type="text" class="form-control" @bind="editName" placeholder="Track name" />
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Type</label>
-                        <select class="form-select" @bind="editType">
-                            <option value="">— Select —</option>
-                            <option value="Video">Video</option>
-                            <option value="Audio">Audio</option>
-                            <option value="Subtitles">Subtitles</option>
-                        </select>
-                    </div>
                 </div>
 
-                @if (editType == "Video")
-                {
-                    <div class="row g-3 mt-1">
-                        <div class="col-md-3">
-                            <label class="form-label">Resolution</label>
-                            <input type="text" class="form-control" @bind="editResolution" placeholder="e.g. 1080p" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Aspect Ratio</label>
-                            <input type="text" class="form-control" @bind="editAspectRatio" placeholder="e.g. 1.85:1" />
-                        </div>
-                    </div>
-                }
-                else if (editType == "Audio" || editType == "Subtitles")
-                {
-                    <div class="row g-3 mt-1">
-                        @if (editType == "Audio")
+                <p class="text-muted mt-3 mb-2">
+                    The fields below come from the disc file metadata and can't be edited.
+                </p>
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Type</dt>
+                    <dd class="col-sm-9">@(Track.Type ?? "—")</dd>
+
+                    @if (Track.Type == "Video")
+                    {
+                        <dt class="col-sm-3">Resolution</dt>
+                        <dd class="col-sm-9">@(Track.Resolution ?? "—")</dd>
+                        <dt class="col-sm-3">Aspect Ratio</dt>
+                        <dd class="col-sm-9">@(Track.AspectRatio ?? "—")</dd>
+                    }
+                    else if (Track.Type == "Audio" || Track.Type == "Subtitles")
+                    {
+                        @if (Track.Type == "Audio")
                         {
-                            <div class="col-md-3">
-                                <label class="form-label">Audio Type</label>
-                                <input type="text" class="form-control" @bind="editAudioType" placeholder="e.g. Dolby Atmos" />
-                            </div>
+                            <dt class="col-sm-3">Audio Type</dt>
+                            <dd class="col-sm-9">@(Track.AudioType ?? "—")</dd>
                         }
-                        <div class="col-md-3">
-                            <label class="form-label">Language</label>
-                            <input type="text" class="form-control" @bind="editLanguage" placeholder="e.g. English" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Language Code</label>
-                            <input type="text" class="form-control" @bind="editLanguageCode" placeholder="e.g. eng" />
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-control" rows="2" @bind="editDescription" placeholder="Track description"></textarea>
-                        </div>
-                    </div>
-                }
+                        <dt class="col-sm-3">Language</dt>
+                        <dd class="col-sm-9">@(Track.Language ?? "—")</dd>
+                        <dt class="col-sm-3">Language Code</dt>
+                        <dd class="col-sm-9">@(Track.LanguageCode ?? "—")</dd>
+                        @if (!string.IsNullOrEmpty(Track.Description))
+                        {
+                            <dt class="col-sm-3">Description</dt>
+                            <dd class="col-sm-9">@Track.Description</dd>
+                        }
+                    }
+                </dl>
             </div>
 
             <div class="d-flex gap-2">
