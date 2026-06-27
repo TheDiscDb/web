@@ -64,6 +64,14 @@ public partial class ChapterEdit : ComponentBase
     private Title? Title { get; set; }
 
     private List<ChapterEditRow> chapters = [];
+
+    // Original chapter titles in order, captured at load. Position-based: the
+    // entry at index i is the title that was originally at chapter (i + 1).
+    private List<string?> originalTitles = [];
+
+    private ChapterEditRow? draggedChapter;
+    private ChapterEditRow? dragOverChapter;
+
     private int bulkAddCount = 1;
     private string? summary;
     private string? submitMessage;
@@ -100,12 +108,12 @@ public partial class ChapterEdit : ComponentBase
             {
                 chapters.Add(new ChapterEditRow
                 {
-                    Index = chapter.Index,
                     Title = chapter.Title,
                     OriginalTitle = chapter.Title,
                     IsNew = false,
                     IsDeleted = false,
                 });
+                originalTitles.Add(chapter.Title);
             }
         }
     }
@@ -156,51 +164,22 @@ public partial class ChapterEdit : ComponentBase
 
     private void BulkAddChapters()
     {
-        for (int i = 1; i <= bulkAddCount; i++)
+        for (int i = 0; i < bulkAddCount; i++)
         {
-            if (!chapters.Any(c => c.Index == i && !c.IsDeleted))
+            chapters.Add(new ChapterEditRow
             {
-                chapters.Add(new ChapterEditRow
-                {
-                    Index = i,
-                    Title = null,
-                    OriginalTitle = null,
-                    IsNew = true,
-                    IsDeleted = false,
-                });
-            }
-        }
-    }
-
-    private void FillMissingChapters()
-    {
-        var existingIndices = chapters.Where(c => !c.IsDeleted).Select(c => c.Index).ToHashSet();
-        int max = chapters.Count > 0 ? chapters.Max(c => c.Index) : 0;
-        for (int i = 1; i <= max; i++)
-        {
-            if (!existingIndices.Contains(i))
-            {
-                chapters.Add(new ChapterEditRow
-                {
-                    Index = i,
-                    Title = null,
-                    OriginalTitle = null,
-                    IsNew = true,
-                    IsDeleted = false,
-                });
-            }
+                Title = null,
+                OriginalTitle = null,
+                IsNew = true,
+                IsDeleted = false,
+            });
         }
     }
 
     private void AddOneChapter()
     {
-        int nextIndex = chapters.Count > 0
-            ? chapters.Max(c => c.Index) + 1
-            : 1;
-
         chapters.Add(new ChapterEditRow
         {
-            Index = nextIndex,
             Title = null,
             OriginalTitle = null,
             IsNew = true,
@@ -208,31 +187,110 @@ public partial class ChapterEdit : ComponentBase
         });
     }
 
+    private void OnDragStart(ChapterEditRow chapter)
+    {
+        if (chapter.IsDeleted)
+        {
+            return;
+        }
+
+        draggedChapter = chapter;
+    }
+
+    private void OnDragEnter(ChapterEditRow chapter)
+    {
+        if (draggedChapter == null || chapter == draggedChapter || chapter.IsDeleted)
+        {
+            return;
+        }
+
+        dragOverChapter = chapter;
+
+        int fromIndex = chapters.IndexOf(draggedChapter);
+        int toIndex = chapters.IndexOf(chapter);
+        if (fromIndex < 0 || toIndex < 0)
+        {
+            return;
+        }
+
+        chapters.RemoveAt(fromIndex);
+        chapters.Insert(toIndex, draggedChapter);
+    }
+
+    private void OnDragEnd()
+    {
+        draggedChapter = null;
+        dragOverChapter = null;
+    }
+
+    private string GetRowClass(ChapterEditRow chapter)
+    {
+        if (chapter.IsDeleted)
+        {
+            return "table-danger text-decoration-line-through";
+        }
+
+        if (chapter == draggedChapter)
+        {
+            return "dragging";
+        }
+
+        if (chapter == dragOverChapter)
+        {
+            return "drag-over";
+        }
+
+        if (chapter.IsNew)
+        {
+            return "table-success";
+        }
+
+        return string.Empty;
+    }
+
     private void MarkDeleted(ChapterEditRow chapter) => chapter.IsDeleted = true;
     private void UndoDelete(ChapterEditRow chapter) => chapter.IsDeleted = false;
     private void RemoveNew(ChapterEditRow chapter) => chapters.Remove(chapter);
 
-    private bool HasChanges()
+    private bool HasChanges() => ComputeChanges().Count > 0;
+
+    /// <summary>
+    /// Computes the set of chapter changes by comparing the original chapter
+    /// titles (captured at load, by position) against the current proposed
+    /// order. Because chapters are identified by their 1-based position, a
+    /// reorder naturally surfaces as title updates at the affected positions,
+    /// while adds/deletes fall out of the length difference.
+    /// </summary>
+    private List<ChapterChange> ComputeChanges()
     {
-        // Any new chapters?
-        if (chapters.Any(c => c.IsNew && !c.IsDeleted))
+        var changes = new List<ChapterChange>();
+        var proposed = chapters.Where(c => !c.IsDeleted).ToList();
+        int max = Math.Max(originalTitles.Count, proposed.Count);
+
+        for (int i = 0; i < max; i++)
         {
-            return true;
+            int index = i + 1;
+            bool hasOriginal = i < originalTitles.Count;
+            bool hasProposed = i < proposed.Count;
+            string? original = hasOriginal ? originalTitles[i] : null;
+            string? proposedTitle = hasProposed ? proposed[i].Title : null;
+
+            if (hasProposed && !hasOriginal)
+            {
+                changes.Add(new ChapterChange(index, ChapterChangeKind.Add, null, proposedTitle));
+            }
+            else if (!hasProposed && hasOriginal)
+            {
+                changes.Add(new ChapterChange(index, ChapterChangeKind.Delete, original, null));
+            }
+            else if (hasProposed && hasOriginal &&
+                !string.Equals(original ?? string.Empty, proposedTitle ?? string.Empty, StringComparison.Ordinal))
+            {
+                changes.Add(new ChapterChange(index, ChapterChangeKind.Update, original, proposedTitle));
+            }
         }
 
-        // Any deleted chapters?
-        if (chapters.Any(c => c.IsDeleted && !c.IsNew))
-        {
-            return true;
-        }
-
-        // Any edited chapters?
-        if (chapters.Any(c => !c.IsNew && !c.IsDeleted && c.Title != c.OriginalTitle))
-        {
-            return true;
-        }
-
-        return false;
+        return changes;
     }
 
     private void ShowReview()
@@ -249,28 +307,15 @@ public partial class ChapterEdit : ComponentBase
 
     private List<ChapterDiff> ComputeDiffs()
     {
-        var diffs = new List<ChapterDiff>();
-
-        foreach (var chapter in chapters.OrderBy(c => c.Index))
+        return ComputeChanges().Select(change => change.Kind switch
         {
-            if (chapter.IsNew && !chapter.IsDeleted)
-            {
-                diffs.Add(new ChapterDiff(chapter.Index, "Add", null, chapter.Title ?? "(unnamed)", "table-success"));
-            }
-            else if (chapter.IsDeleted && !chapter.IsNew)
-            {
-                diffs.Add(new ChapterDiff(chapter.Index, "Delete", chapter.OriginalTitle ?? "(unnamed)", null, "table-danger"));
-            }
-            else if (!chapter.IsNew && !chapter.IsDeleted && chapter.Title != chapter.OriginalTitle)
-            {
-                diffs.Add(new ChapterDiff(chapter.Index, "Edit",
-                    chapter.OriginalTitle ?? "(empty)",
-                    chapter.Title ?? "(empty)",
-                    "table-warning"));
-            }
-        }
-
-        return diffs;
+            ChapterChangeKind.Add =>
+                new ChapterDiff(change.Index, "Add", null, change.ProposedTitle ?? "(unnamed)", "table-success"),
+            ChapterChangeKind.Delete =>
+                new ChapterDiff(change.Index, "Delete", change.OriginalTitle ?? "(unnamed)", null, "table-danger"),
+            _ =>
+                new ChapterDiff(change.Index, "Edit", change.OriginalTitle ?? "(empty)", change.ProposedTitle ?? "(empty)", "table-warning"),
+        }).ToList();
     }
 
     private async Task HandleSubmit()
@@ -300,47 +345,43 @@ public partial class ChapterEdit : ComponentBase
 
             var changes = new List<SubmitChangeInput>();
 
-            foreach (var chapter in chapters.OrderBy(c => c.Index))
+            foreach (var change in ComputeChanges())
             {
-                if (chapter.IsNew && !chapter.IsDeleted)
+                switch (change.Kind)
                 {
-                    // Add
-                    var proposed = new ChapterDetails(
-                        mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
-                        discSlug, titleIndex, chapter.Index, chapter.Title);
+                    case ChapterChangeKind.Add:
+                        var addProposed = new ChapterDetails(
+                            mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
+                            discSlug, titleIndex, change.Index, change.ProposedTitle);
+                        changes.Add(new SubmitChangeInput(
+                            ChapterAdd.Key, JsonSerializer.Serialize(addProposed, JsonOptions), null));
+                        break;
 
-                    var proposedJson = JsonSerializer.Serialize(proposed, JsonOptions);
-                    changes.Add(new SubmitChangeInput(ChapterAdd.Key, proposedJson, null));
-                }
-                else if (chapter.IsDeleted && !chapter.IsNew)
-                {
-                    // Delete — original snapshot is the full chapter details for conflict detection
-                    var originalSnapshot = new ChapterDetails(
-                        mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
-                        discSlug, titleIndex, chapter.Index, chapter.OriginalTitle);
-                    var snapshotJson = JsonSerializer.Serialize(originalSnapshot, JsonOptions);
+                    case ChapterChangeKind.Delete:
+                        var deleteSnapshot = new ChapterDetails(
+                            mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
+                            discSlug, titleIndex, change.Index, change.OriginalTitle);
+                        var deleteDetails = new ChapterDeleteDetails(
+                            mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
+                            discSlug, titleIndex, change.Index);
+                        changes.Add(new SubmitChangeInput(
+                            ChapterDelete.Key,
+                            JsonSerializer.Serialize(deleteDetails, JsonOptions),
+                            JsonSerializer.Serialize(deleteSnapshot, JsonOptions)));
+                        break;
 
-                    var deleteDetails = new ChapterDeleteDetails(
-                        mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
-                        discSlug, titleIndex, chapter.Index);
-                    var proposedJson = JsonSerializer.Serialize(deleteDetails, JsonOptions);
-
-                    changes.Add(new SubmitChangeInput(ChapterDelete.Key, proposedJson, snapshotJson));
-                }
-                else if (!chapter.IsNew && !chapter.IsDeleted && chapter.Title != chapter.OriginalTitle)
-                {
-                    // Update
-                    var originalSnapshot = new ChapterDetails(
-                        mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
-                        discSlug, titleIndex, chapter.Index, chapter.OriginalTitle);
-                    var snapshotJson = JsonSerializer.Serialize(originalSnapshot, JsonOptions);
-
-                    var proposed = new ChapterDetails(
-                        mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
-                        discSlug, titleIndex, chapter.Index, chapter.Title);
-                    var proposedJson = JsonSerializer.Serialize(proposed, JsonOptions);
-
-                    changes.Add(new SubmitChangeInput(ChapterUpdate.Key, proposedJson, snapshotJson));
+                    case ChapterChangeKind.Update:
+                        var updateSnapshot = new ChapterDetails(
+                            mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
+                            discSlug, titleIndex, change.Index, change.OriginalTitle);
+                        var updateProposed = new ChapterDetails(
+                            mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
+                            discSlug, titleIndex, change.Index, change.ProposedTitle);
+                        changes.Add(new SubmitChangeInput(
+                            ChapterUpdate.Key,
+                            JsonSerializer.Serialize(updateProposed, JsonOptions),
+                            JsonSerializer.Serialize(updateSnapshot, JsonOptions)));
+                        break;
                 }
             }
 
@@ -417,11 +458,19 @@ public partial class ChapterEdit : ComponentBase
 
 internal sealed class ChapterEditRow
 {
-    public int Index { get; set; }
     public string? Title { get; set; }
     public string? OriginalTitle { get; set; }
     public bool IsNew { get; set; }
     public bool IsDeleted { get; set; }
 }
+
+internal enum ChapterChangeKind
+{
+    Add,
+    Delete,
+    Update,
+}
+
+internal sealed record ChapterChange(int Index, ChapterChangeKind Kind, string? OriginalTitle, string? ProposedTitle);
 
 internal sealed record ChapterDiff(int ChapterIndex, string ChangeType, string? CurrentValue, string? ProposedValue, string CssClass);

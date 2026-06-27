@@ -24,7 +24,7 @@ else
     {
         <h1>Edit Chapters for @Title.SourceFile</h1>
         <p class="text-muted">
-            Edit chapter titles, add missing chapters, or remove incorrect ones.
+            Edit chapter titles, drag the handle to reorder, add missing chapters, or remove incorrect ones.
             Your changes will be reviewed before being applied.
         </p>
 
@@ -45,26 +45,39 @@ else
             <table class="table table-sm">
                 <thead>
                     <tr>
-                        <th style="width: 60px;">#</th>
+                        <th class="drag-col"></th>
                         <th>Chapter Title</th>
                         <th style="width: 80px;"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var chapter in chapters.OrderBy(c => c.Index))
+                    @{ var position = 0; }
+                    @foreach (var chapter in chapters)
                     {
-                        <tr class="@(chapter.IsDeleted ? "table-danger text-decoration-line-through" : chapter.IsNew ? "table-success" : "")">
-                            <td>@chapter.Index</td>
+                        if (!chapter.IsDeleted)
+                        {
+                            position++;
+                        }
+                        var chapterNumber = position;
+                        <tr class="@GetRowClass(chapter)" @key="chapter"
+                            @ondragenter="() => OnDragEnter(chapter)"
+                            @ondragover:preventDefault="true">
+                            <td class="drag-handle" title="Drag to reorder"
+                                draggable="@(chapter.IsDeleted ? "false" : "true")"
+                                @ondragstart="() => OnDragStart(chapter)"
+                                @ondragend="OnDragEnd">
+                                @(chapter.IsDeleted ? "" : "⋮")
+                            </td>
                             <td>
                                 @if (!chapter.IsDeleted)
                                 {
                                     <input type="text" class="form-control form-control-sm"
                                            @bind="chapter.Title" @bind:event="oninput"
-                                           placeholder="Chapter @chapter.Index" />
+                                           placeholder="Chapter @chapterNumber" />
                                 }
                                 else
                                 {
-                                    <span class="text-muted">@(chapter.OriginalTitle ?? $"Chapter {chapter.Index}")</span>
+                                    <span class="text-muted">@(chapter.OriginalTitle ?? "(unnamed)")</span>
                                 }
                             </td>
                             <td>
