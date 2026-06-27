@@ -140,13 +140,13 @@ public partial class TitleDetail : ComponentBase
         return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{File}/{Extension}/edit";
     }
 
-    private string GetTrackEditUrl(int trackIndex)
+    private string GetTracksEditUrl()
     {
         if (ReleaseSlug != null)
         {
-            return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex}/{File}/{Extension}/tracks/{trackIndex}/edit";
+            return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex}/{File}/{Extension}/tracks/edit";
         }
 
-        return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{File}/{Extension}/tracks/{trackIndex}/edit";
+        return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{File}/{Extension}/tracks/edit";
     }
 }

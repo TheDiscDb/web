@@ -94,22 +94,28 @@ else
         }
 
         @{ var trackGroups = new[] { "Video", "Audio", "Subtitles" }; }
+        @if (Title.Tracks.Any())
+        {
+            <div class="d-flex align-items-center gap-2 mt-4 mb-2">
+                <h2 class="mb-0 h3">Tracks</h2>
+                @if (!string.IsNullOrEmpty(Disc.Slug))
+                {
+                    <a href="@GetTracksEditUrl()" class="btn btn-sm btn-outline-secondary" title="Suggest edits to the track names"><i class="e-icons e-edit"></i></a>
+                }
+            </div>
+        }
         @foreach (var groupType in trackGroups)
         {
             var groupTracks = Title.Tracks.Where(t => t.Type == groupType).ToList();
             if (groupTracks.Count > 0)
             {
-                <h3 class="mt-4 mb-2">@groupType Tracks</h3>
+                <h3 class="mt-4 mb-2 h4">@groupType Tracks</h3>
                 <div class="table-responsive">
                     <table class="table striped-grid mb-0">
                         <thead>
                             <tr>
                                 <th scope="col" style="width: 5rem;">Index</th>
                                 <th scope="col">Description</th>
-                                @if (!string.IsNullOrEmpty(Disc.Slug))
-                                {
-                                    <th scope="col" style="width: 8rem;"></th>
-                                }
                             </tr>
                         </thead>
                         <tbody>
@@ -118,12 +124,6 @@ else
                                 <tr>
                                     <td>@track.Index</td>
                                     <td>@track.GetDesciption()</td>
-                                    @if (!string.IsNullOrEmpty(Disc.Slug))
-                                    {
-                                        <td>
-                                            <a href="@GetTrackEditUrl(track.Index)" class="btn btn-sm btn-outline-secondary" title="Suggest edits to this track"><i class="e-icons e-edit"></i></a>
-                                        </td>
-                                    }
                                 </tr>
                             }
                         </tbody>

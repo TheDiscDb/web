@@ -15,7 +15,7 @@ using EntityTrack = TheDiscDb.InputModels.Track;
 namespace TheDiscDb.Components.Pages;
 
 [Authorize]
-public partial class TrackEdit : ComponentBase
+public partial class TracksEdit : ComponentBase
 {
     [Parameter]
     public string? Type { get; set; }
@@ -34,9 +34,6 @@ public partial class TrackEdit : ComponentBase
 
     [Parameter]
     public string? Extension { get; set; }
-
-    [Parameter]
-    public int TrackIndex { get; set; }
 
     [Inject]
     public CacheHelper Cache { get; set; } = null!;
@@ -57,7 +54,7 @@ public partial class TrackEdit : ComponentBase
     public IdEncoder IdEncoder { get; set; } = null!;
 
     [Inject]
-    public ILogger<TrackEdit> Logger { get; set; } = null!;
+    public ILogger<TracksEdit> Logger { get; set; } = null!;
 
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
@@ -66,20 +63,17 @@ public partial class TrackEdit : ComponentBase
     private Release? Release { get; set; }
     private ReleaseDisc? Disc { get; set; }
     private Title? Title { get; set; }
-    private EntityTrack? Track { get; set; }
 
-    // Only the track Name is user-editable. All other fields come from the
-    // disc file metadata and are shown read-only.
-    private string? editName;
-
-    private TrackFieldsDetails? originalSnapshot;
+    // One editable row per track on the title. Only the Name is user-editable;
+    // all other fields come from the disc file metadata and are shown read-only.
+    private readonly List<TrackEditRow> rows = [];
 
     private string? summary;
     private string? submitMessage;
     private bool submitSuccess;
     private bool isSubmitting;
     private bool isReviewing;
-    private List<TrackFieldDiff> pendingDiffs = [];
+    private List<TrackNameDiff> pendingDiffs = [];
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -92,7 +86,7 @@ public partial class TrackEdit : ComponentBase
 
         await LoadItemData();
 
-        if (Item == null || Release == null || Disc == null || Title == null || Track == null)
+        if (Item == null || Release == null || Disc == null || Title == null)
         {
             if (HttpContext != null && !HttpContext.Response.HasStarted)
             {
@@ -102,12 +96,20 @@ public partial class TrackEdit : ComponentBase
             return;
         }
 
-        editName = Track.Name;
+        if (string.IsNullOrEmpty(Disc.Slug))
+        {
+            return;
+        }
 
         string? mediaItemSlug = IsBoxset() ? null : Slug;
         string? boxsetSlug = IsBoxset() ? Slug : null;
-        originalSnapshot = TrackFieldsUpdate.SnapshotFrom(
-            Track, mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty, Disc.Slug ?? string.Empty, Title.Index);
+
+        foreach (var track in Title.Tracks)
+        {
+            var snapshot = TrackFieldsUpdate.SnapshotFrom(
+                track, mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty, Disc.Slug, Title.Index);
+            rows.Add(new TrackEditRow(track, snapshot) { EditName = track.Name });
+        }
     }
 
     private async Task LoadItemData()
@@ -152,35 +154,9 @@ public partial class TrackEdit : ComponentBase
             Title = Disc.Titles.FirstOrDefault(t =>
                 !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
         }
-
-        if (Title != null)
-        {
-            Track = Title.Tracks.FirstOrDefault(t => t.Index == TrackIndex);
-        }
     }
 
-    /// <summary>
-    /// Builds the proposed details. Only the track Name is editable; all other
-    /// fields are preserved from the original snapshot so they never appear in
-    /// the diff.
-    /// </summary>
-    private TrackFieldsDetails BuildProposed()
-    {
-        return originalSnapshot! with
-        {
-            Name = editName,
-        };
-    }
-
-    private bool HasChanges()
-    {
-        if (originalSnapshot == null)
-        {
-            return false;
-        }
-
-        return BuildProposed() != originalSnapshot;
-    }
+    private bool HasChanges() => rows.Any(r => r.HasChange);
 
     private void ShowReview()
     {
@@ -194,32 +170,22 @@ public partial class TrackEdit : ComponentBase
         submitMessage = null;
     }
 
-    private List<TrackFieldDiff> ComputeDiffs()
+    private List<TrackNameDiff> ComputeDiffs()
     {
-        var diffs = new List<TrackFieldDiff>();
-        if (originalSnapshot == null)
-        {
-            return diffs;
-        }
-
-        var proposed = BuildProposed();
-
-        AddDiffIfChanged(diffs, "Name", originalSnapshot.Name, proposed.Name);
-
-        return diffs;
-    }
-
-    private static void AddDiffIfChanged(List<TrackFieldDiff> diffs, string fieldName, string? current, string? proposed)
-    {
-        if (current != proposed)
-        {
-            diffs.Add(new TrackFieldDiff(fieldName, current ?? "(empty)", proposed ?? "(empty)"));
-        }
+        return rows
+            .Where(r => r.HasChange)
+            .Select(r => new TrackNameDiff(
+                r.Track.Index,
+                r.Track.Type ?? "Track",
+                GetMetadata(r.Track),
+                r.Original.Name,
+                r.EditName))
+            .ToList();
     }
 
     private async Task HandleSubmit()
     {
-        if (Track == null || Title == null || Disc == null || Release == null || Item == null || originalSnapshot == null)
+        if (Title == null || Disc == null || Release == null || Item == null)
         {
             return;
         }
@@ -238,13 +204,20 @@ public partial class TrackEdit : ComponentBase
                 return;
             }
 
-            var snapshotJson = JsonSerializer.Serialize(originalSnapshot, JsonOptions);
-            var proposedJson = JsonSerializer.Serialize(BuildProposed(), JsonOptions);
+            var changes = rows
+                .Where(r => r.HasChange)
+                .Select(r => new SubmitChangeInput(
+                    TrackFieldsUpdate.Key,
+                    JsonSerializer.Serialize(r.BuildProposed(), JsonOptions),
+                    JsonSerializer.Serialize(r.Original, JsonOptions)))
+                .ToList();
 
-            var changes = new List<SubmitChangeInput>
+            if (changes.Count == 0)
             {
-                new(TrackFieldsUpdate.Key, proposedJson, snapshotJson),
-            };
+                submitMessage = "No changes to submit.";
+                submitSuccess = false;
+                return;
+            }
 
             var result = await EditSuggestionService.SubmitAsync(userId, EditSuggestionSource.Web, summary, changes);
 
@@ -253,7 +226,7 @@ public partial class TrackEdit : ComponentBase
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to submit track edit suggestion");
+            Logger.LogError(ex, "Failed to submit track edit suggestions");
             submitSuccess = false;
             submitMessage = "Something went wrong while submitting your suggestion. Please try again.";
         }
@@ -261,6 +234,27 @@ public partial class TrackEdit : ComponentBase
         {
             isSubmitting = false;
         }
+    }
+
+    /// <summary>
+    /// Builds the metadata description for a track without including its Name,
+    /// so the context column stays stable while the user edits the name.
+    /// </summary>
+    private static string GetMetadata(EntityTrack track)
+    {
+        return track.Type?.ToLowerInvariant() switch
+        {
+            "video" => Join(track.AspectRatio, Parenthesize(track.Resolution)),
+            "audio" => Join(track.AudioType, Parenthesize(track.Language)),
+            "subtitles" => Parenthesize(track.Language),
+            _ => string.Empty,
+        };
+
+        static string Parenthesize(string? value) =>
+            string.IsNullOrEmpty(value) ? string.Empty : $"({value})";
+
+        static string Join(string? a, string b) =>
+            string.Join(" ", new[] { a, b }.Where(s => !string.IsNullOrEmpty(s))).Trim();
     }
 
     private string GetTitleUrl()
@@ -303,6 +297,19 @@ public partial class TrackEdit : ComponentBase
 
     private bool IsBoxset() =>
         Type?.Equals("boxset", StringComparison.OrdinalIgnoreCase) == true;
+
+    private sealed class TrackEditRow(EntityTrack track, TrackFieldsDetails original)
+    {
+        public EntityTrack Track { get; } = track;
+
+        public TrackFieldsDetails Original { get; } = original;
+
+        public string? EditName { get; set; }
+
+        public TrackFieldsDetails BuildProposed() => Original with { Name = EditName };
+
+        public bool HasChange => Original.Name != EditName;
+    }
 }
 
-internal sealed record TrackFieldDiff(string FieldName, string? CurrentValue, string? ProposedValue);
+internal sealed record TrackNameDiff(int Index, string Type, string Metadata, string? CurrentName, string? ProposedName);
