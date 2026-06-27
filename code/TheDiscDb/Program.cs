@@ -142,7 +142,7 @@ builder.Services
     {
         o.EnforceCostLimits = false;
     })
-    .AddFiltering()
+    .AddFiltering<DiscDbFilterConvention>()
     .AddSorting()
     .AddProjections()
     .RegisterDbContextFactory<SqlServerDataContext>()

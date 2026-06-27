@@ -77,7 +77,7 @@ public class PublicSchemaBackwardsCompatibilityTests
 
         services.AddGraphQLServer()
             .ModifyCostOptions(o => o.EnforceCostLimits = false)
-            .AddFiltering()
+            .AddFiltering<DiscDbFilterConvention>()
             .AddSorting()
             .AddProjections()
             .RegisterDbContextFactory<SqlServerDataContext>()
@@ -117,6 +117,7 @@ public class PublicSchemaBackwardsCompatibilityTests
         var disc = new Disc
         {
             Format = "Blu-ray",
+            ContentHash = "6D062DFCD9899F6B77739AEC3787AE87",
         };
         release.Discs.Add(new ReleaseDisc
         {
@@ -254,6 +255,74 @@ public class PublicSchemaBackwardsCompatibilityTests
 
         var json = result.ToJson();
         await Assert.That(json).Contains("Inception (2010) [1080p].mkv");
+        await Assert.That(json).DoesNotContain("\"errors\"");
+    }
+
+    [Test]
+    public async Task ReleaseDiscs_CanFilterByContentHash()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        Seed(dbName);
+
+        var executor = await BuildExecutorAsync(dbName);
+        var result = await executor.ExecuteAsync("""
+            query {
+              mediaItems(where: {
+                releases: {
+                  some: {
+                    discs: {
+                      some: {
+                        contentHash: {
+                          eq: "6D062DFCD9899F6B77739AEC3787AE87"
+                        }
+                      }
+                    }
+                  }
+                }
+              }) {
+                nodes {
+                  slug
+                }
+              }
+            }
+            """);
+
+        var json = result.ToJson();
+        await Assert.That(json).Contains("inception-2010");
+        await Assert.That(json).DoesNotContain("\"errors\"");
+    }
+
+    [Test]
+    public async Task ReleaseDiscs_CanFilterByFormat()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        Seed(dbName);
+
+        var executor = await BuildExecutorAsync(dbName);
+        var result = await executor.ExecuteAsync("""
+            query {
+              mediaItems(where: {
+                releases: {
+                  some: {
+                    discs: {
+                      some: {
+                        format: {
+                          eq: "Blu-ray"
+                        }
+                      }
+                    }
+                  }
+                }
+              }) {
+                nodes {
+                  slug
+                }
+              }
+            }
+            """);
+
+        var json = result.ToJson();
+        await Assert.That(json).Contains("inception-2010");
         await Assert.That(json).DoesNotContain("\"errors\"");
     }
 }
