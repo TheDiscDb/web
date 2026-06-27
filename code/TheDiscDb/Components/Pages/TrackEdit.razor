@@ -1,0 +1,154 @@
+@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndex}/{file}/{extension}/tracks/{trackIndex:int}/edit"
+@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndex}/{file}/tracks/{trackIndex:int}/edit"
+@page "/{type}/{slug}/discs/{slugOrIndex}/{file}/tracks/{trackIndex:int}/edit"
+@page "/{type}/{slug}/discs/{slugOrIndex}/{file}/{extension}/tracks/{trackIndex:int}/edit"
+
+@rendermode InteractiveServer
+
+<PageTitle>Edit Track - TheDiscDb</PageTitle>
+
+@if (Item == null || Release == null || Disc == null || Title == null || Track == null)
+{
+    <div class="alert alert-warning">Track not found.</div>
+}
+else if (string.IsNullOrEmpty(Disc.Slug))
+{
+    <TheDiscDb.Client.Controls.Breadcrumb Items="@GetBreadcrumbs()" PrimaryText="Edit Track" />
+    <div class="alert alert-info">Track editing isn't available for this disc.</div>
+}
+else
+{
+    <TheDiscDb.Client.Controls.Breadcrumb Items="@GetBreadcrumbs()" PrimaryText="Edit Track" />
+
+    @if (!string.IsNullOrEmpty(submitMessage))
+    {
+        <div class="alert @(submitSuccess ? "alert-success" : "alert-danger")">@submitMessage</div>
+    }
+
+    @if (!isReviewing)
+    {
+        <h1>Suggest Edits for Track @Track.Index</h1>
+        <p class="text-muted">
+            Edit the track details below. Your changes will be reviewed before being applied.
+        </p>
+
+        <section class="info-grid single-column">
+            <div class="mb-4">
+                <h3>Track Details</h3>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" @bind="editName" placeholder="Track name" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Type</label>
+                        <select class="form-select" @bind="editType">
+                            <option value="">— Select —</option>
+                            <option value="Video">Video</option>
+                            <option value="Audio">Audio</option>
+                            <option value="Subtitles">Subtitles</option>
+                        </select>
+                    </div>
+                </div>
+
+                @if (editType == "Video")
+                {
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-3">
+                            <label class="form-label">Resolution</label>
+                            <input type="text" class="form-control" @bind="editResolution" placeholder="e.g. 1080p" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Aspect Ratio</label>
+                            <input type="text" class="form-control" @bind="editAspectRatio" placeholder="e.g. 1.85:1" />
+                        </div>
+                    </div>
+                }
+                else if (editType == "Audio" || editType == "Subtitles")
+                {
+                    <div class="row g-3 mt-1">
+                        @if (editType == "Audio")
+                        {
+                            <div class="col-md-3">
+                                <label class="form-label">Audio Type</label>
+                                <input type="text" class="form-control" @bind="editAudioType" placeholder="e.g. Dolby Atmos" />
+                            </div>
+                        }
+                        <div class="col-md-3">
+                            <label class="form-label">Language</label>
+                            <input type="text" class="form-control" @bind="editLanguage" placeholder="e.g. English" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Language Code</label>
+                            <input type="text" class="form-control" @bind="editLanguageCode" placeholder="e.g. eng" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="2" @bind="editDescription" placeholder="Track description"></textarea>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges())">
+                    Review Suggested Changes
+                </button>
+                <a href="@GetTitleUrl()" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </section>
+    }
+    else
+    {
+        <h1>Review Your Track Changes</h1>
+        <p class="text-muted">These changes will be submitted for review by an admin.</p>
+
+        <section class="info-grid single-column">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Current</th>
+                        <th>Proposed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var diff in pendingDiffs)
+                    {
+                        <tr class="table-warning">
+                            <td><strong>@diff.FieldName</strong></td>
+                            <td class="text-muted">@(diff.CurrentValue ?? "—")</td>
+                            <td><strong>@(diff.ProposedValue ?? "—")</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (pendingDiffs.Count == 0)
+            {
+                <div class="alert alert-info">No changes detected.</div>
+            }
+
+            @if (pendingDiffs.Count > 0)
+            {
+                <div class="mb-3">
+                    <label>Summary <span class="text-muted">(optional — briefly describe your changes)</span></label>
+                    <input type="text" class="form-control" @bind="summary" />
+                </div>
+            }
+
+            <div class="d-flex gap-2">
+                @if (pendingDiffs.Count > 0 && !submitSuccess)
+                {
+                    <button type="button" class="btn btn-primary" disabled="@isSubmitting" @onclick="HandleSubmit">
+                        @(isSubmitting ? "Submitting…" : "Submit Changes")
+                    </button>
+                }
+                @if (!submitSuccess)
+                {
+                    <button type="button" class="btn btn-outline-secondary" @onclick="BackToEdit">← Back to Edit</button>
+                }
+            </div>
+        </section>
+    }
+}
