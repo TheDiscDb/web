@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using TheDiscDb.Data.Changes.Chapter;
 using TheDiscDb.InputModels;
+using TheDiscDb.Client.Interop;
 using TheDiscDb.Services.EditSuggestions;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
@@ -77,8 +78,7 @@ public partial class ChapterEdit : ComponentBase, IDisposable
     private ChapterEditRow? dragOverChapter;
 
     private ElementReference tableBodyRef;
-    private DotNetObjectReference<ChapterEdit>? selfRef;
-    private bool sortableInitialized;
+    private TouchSortable<ChapterEditRow>? sortable;
 
     private int bulkAddCount = 1;
     private string? summary;
@@ -246,59 +246,18 @@ public partial class ChapterEdit : ComponentBase, IDisposable
         // fresh element each time).
         if (isReviewing)
         {
-            sortableInitialized = false;
+            sortable?.Reset();
             return;
         }
 
-        if (!sortableInitialized)
-        {
-            selfRef ??= DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("chapterSortable.init", tableBodyRef, selfRef);
-            sortableInitialized = true;
-        }
-    }
-
-    /// <summary>
-    /// Touch/pen drag start, invoked from chapter-sortable.js. Mirrors
-    /// <see cref="OnDragStart"/> for the native (mouse) drag path.
-    /// </summary>
-    [JSInvokable]
-    public void StartDrag(int index)
-    {
-        if (index < 0 || index >= chapters.Count)
-        {
-            return;
-        }
-
-        OnDragStart(chapters[index]);
-        StateHasChanged();
-    }
-
-    /// <summary>
-    /// Touch/pen drag over a row, invoked from chapter-sortable.js. Mirrors
-    /// <see cref="OnDragEnter"/> for the native (mouse) drag path.
-    /// </summary>
-    [JSInvokable]
-    public void MoveRow(int toIndex)
-    {
-        if (draggedChapter == null || toIndex < 0 || toIndex >= chapters.Count)
-        {
-            return;
-        }
-
-        OnDragEnter(chapters[toIndex]);
-        StateHasChanged();
-    }
-
-    /// <summary>
-    /// Touch/pen drag end, invoked from chapter-sortable.js. Mirrors
-    /// <see cref="OnDragEnd"/> for the native (mouse) drag path.
-    /// </summary>
-    [JSInvokable]
-    public void EndDrag()
-    {
-        OnDragEnd();
-        StateHasChanged();
+        sortable ??= new TouchSortable<ChapterEditRow>(
+            JS,
+            () => chapters,
+            OnDragStart,
+            OnDragEnter,
+            () => { OnDragEnd(); return Task.CompletedTask; },
+            StateHasChanged);
+        await sortable.InitAsync(tableBodyRef);
     }
 
     private string GetRowClass(ChapterEditRow chapter)
@@ -581,7 +540,7 @@ public partial class ChapterEdit : ComponentBase, IDisposable
 
     public void Dispose()
     {
-        selfRef?.Dispose();
+        sortable?.Dispose();
     }
 }
 

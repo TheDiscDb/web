@@ -1,11 +1,17 @@
 /**
- * Touch/pen drag-to-reorder for the chapter edit table.
+ * Shared touch/pen drag-to-reorder for tables across the site.
  *
  * The native HTML5 drag-and-drop API (draggable / ondragstart) does not fire on
- * touch devices, so dragging the handle does nothing on mobile. This module adds
- * a Pointer Events path that works for touch and pen, calling back into the
- * Blazor component to perform the actual reorder. Mouse is intentionally left to
- * the native HTML5 path so desktop behaviour is unchanged.
+ * touch devices, so dragging a handle does nothing on mobile. This module adds a
+ * Pointer Events path that works for touch and pen, calling back into the Blazor
+ * component to perform the actual reorder. Mouse is intentionally left to the
+ * native HTML5 path so desktop behaviour is unchanged.
+ *
+ * It is page-agnostic: any table can opt in by giving its <tbody> (or other
+ * stable container) to `init`, marking each row with `data-row-index`, the drag
+ * affordance with `data-drag-handle`, and optionally non-reorderable rows with
+ * `data-deleted="true"`. The Blazor component must expose JSInvokable
+ * `StartDrag(int)`, `MoveRow(int)` and `EndDrag()` methods.
  *
  * Pointer capture is taken on the stable container element (the <tbody>) rather
  * than the drag handle. Each reorder re-renders and moves the handle's row in the
@@ -15,16 +21,16 @@
  */
 (function () {
     function init(container, dotNetRef) {
-        if (!container || container.dataset.chapterSortableInit) {
+        if (!container || container.dataset.touchSortableInit) {
             return;
         }
-        container.dataset.chapterSortableInit = 'true';
+        container.dataset.touchSortableInit = 'true';
 
         let pointerId = null;
         let lastIndex = -1;
 
         function rowOf(el) {
-            return el && el.closest ? el.closest('tr[data-row-index]') : null;
+            return el && el.closest ? el.closest('[data-row-index]') : null;
         }
 
         function onPointerDown(e) {
@@ -99,19 +105,19 @@
 
         container.addEventListener('pointerdown', onPointerDown);
 
-        container._chapterSortableDispose = function () {
+        container._touchSortableDispose = function () {
             cleanup();
             container.removeEventListener('pointerdown', onPointerDown);
-            delete container.dataset.chapterSortableInit;
+            delete container.dataset.touchSortableInit;
         };
     }
 
     function dispose(container) {
-        if (container && container._chapterSortableDispose) {
-            container._chapterSortableDispose();
-            container._chapterSortableDispose = null;
+        if (container && container._touchSortableDispose) {
+            container._touchSortableDispose();
+            container._touchSortableDispose = null;
         }
     }
 
-    window.chapterSortable = { init: init, dispose: dispose };
+    window.touchSortable = { init: init, dispose: dispose };
 })();

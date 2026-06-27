@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using StrawberryShake;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.Client.Interop;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -16,6 +18,9 @@ public partial class ContributionDiscs : CancellableComponentBase
 
     [Inject]
     public NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject]
+    public IJSRuntime JS { get; set; } = default!;
 
     private IContributionDiscs_MyContributions_Nodes? Contribution { get; set; }
 
@@ -32,6 +37,9 @@ public partial class ContributionDiscs : CancellableComponentBase
 
     private IContributionDiscs_MyContributions_Nodes_Discs? draggedDisc;
     private IContributionDiscs_MyContributions_Nodes_Discs? dragOverDisc;
+
+    private ElementReference tableBodyRef;
+    private TouchSortable<IContributionDiscs_MyContributions_Nodes_Discs>? sortable;
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,6 +115,26 @@ public partial class ContributionDiscs : CancellableComponentBase
         return string.Empty;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // The drag handle (and reorder) only exist while the contribution is
+        // editable. Bind the shared touch sortable to the table body so dragging
+        // works on touch devices, mirroring the native (mouse) drag handlers.
+        if (discList == null || !IsEditable)
+        {
+            return;
+        }
+
+        sortable ??= new TouchSortable<IContributionDiscs_MyContributions_Nodes_Discs>(
+            JS,
+            () => discList ?? (IReadOnlyList<IContributionDiscs_MyContributions_Nodes_Discs>)Array.Empty<IContributionDiscs_MyContributions_Nodes_Discs>(),
+            OnDragStart,
+            OnDragEnter,
+            OnDragEnd,
+            StateHasChanged);
+        await sortable.InitAsync(tableBodyRef);
+    }
+
     private string GetDiscTargetUrl(IContributionDiscs_MyContributions_Nodes_Discs disc)
     {
         if (!string.IsNullOrEmpty(disc.ExistingDiscPath))
@@ -154,5 +182,11 @@ public partial class ContributionDiscs : CancellableComponentBase
         {
             isSaving = false;
         }
+    }
+
+    public override void Dispose()
+    {
+        sortable?.Dispose();
+        base.Dispose();
     }
 }
