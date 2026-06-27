@@ -107,23 +107,86 @@
                                ValueChange="OnSearchValueChange"
                                CssClass="e-field" ShowClearButton="true" />
                 </div>
+                <div class="filter-group reset-sort-group">
+                    <SfButton Disabled="@(!this.hasCustomSort)" OnClick="ResetSort">Reset sort</SfButton>
+                </div>
             </div>
         </div>
 
-        <QuickGrid Items="filteredTitles" Class="striped-grid">
-            <PropertyColumn Property="@(t => t.ChapterCount)" />
-            <PropertyColumn Property="@(t => t.DisplaySize)" />
-            <PropertyColumn Property="@(t => t.Length)" />
-            <TemplateColumn Title="Segment Map">
-                <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
+        <QuickGrid @key="this.quickGridVersion" Items="filteredTitles" Class="striped-grid">
+            <PropertyColumn Property="@(t => t.ChapterCount)" Sortable="true">
+                <HeaderTemplate Context="col">
+                    <button type="button" class="col-title" @onclick="() => SortColumnAsync(col)">
+                        <span class="col-title-text">ChapterCount</span>
+                        <span class="sort-indicator" aria-hidden="true"></span>
+                    </button>
+                </HeaderTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="Display Size" Sortable="true" SortBy="SortDisplaySize">
+                <HeaderTemplate Context="col">
+                    <button type="button" class="col-title" @onclick="() => SortColumnAsync(col)">
+                        <span class="col-title-text">Display Size</span>
+                        <span class="sort-indicator" aria-hidden="true"></span>
+                    </button>
+                </HeaderTemplate>
+                <ChildContent>
+                    @context.DisplaySize
+                </ChildContent>
             </TemplateColumn>
-            <PropertyColumn Property="@(t => t.Playlist)" />
+            <TemplateColumn Title="Length" Sortable="true" SortBy="SortDuration">
+                <HeaderTemplate Context="col">
+                    <button type="button" class="col-title" @onclick="() => SortColumnAsync(col)">
+                        <span class="col-title-text">Length</span>
+                        <span class="sort-indicator" aria-hidden="true"></span>
+                    </button>
+                </HeaderTemplate>
+                <ChildContent>
+                    @context.Length
+                </ChildContent>
+            </TemplateColumn>
+            <TemplateColumn Title="Segment Map" Sortable="true" SortBy="SortSegmentNumber">
+                <HeaderTemplate Context="col">
+                    <button type="button" class="col-title" @onclick="() => SortColumnAsync(col)">
+                        <span class="col-title-text">Segment Map</span>
+                        <span class="sort-indicator" aria-hidden="true"></span>
+                    </button>
+                </HeaderTemplate>
+                <ChildContent>
+                    <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
+                </ChildContent>
+            </TemplateColumn>
+            <TemplateColumn Title="Playlist" Sortable="true" SortBy="SortPlaylistNumber">
+                <HeaderTemplate Context="col">
+                    <button type="button" class="col-title" @onclick="() => SortColumnAsync(col)">
+                        <span class="col-title-text">Playlist</span>
+                        <span class="sort-indicator" aria-hidden="true"></span>
+                    </button>
+                </HeaderTemplate>
+                <ChildContent>
+                    @context.Playlist
+                </ChildContent>
+            </TemplateColumn>
             @if (this.commentColumnVisible)
             {
-                <PropertyColumn Property="@(t => t.JavaComment)" Title="Comment" />
+                <PropertyColumn Property="@(t => t.JavaComment)" Title="Comment" Sortable="true">
+                    <HeaderTemplate Context="col">
+                        <button type="button" class="col-title" @onclick="() => SortColumnAsync(col)">
+                            <span class="col-title-text">Comment</span>
+                            <span class="sort-indicator" aria-hidden="true"></span>
+                        </button>
+                    </HeaderTemplate>
+                </PropertyColumn>
             }
-            <TemplateColumn Title="Name">
-                <a title="edit" style="cursor:pointer" @onclick="() => EditTitle(context)">@GetTitle(context)</a>
+            <TemplateColumn Title="Name" Sortable="true" SortBy="SortName">
+                <HeaderTemplate Context="col">
+                    <button type="button" class="col-title" @onclick="() => SortColumnAsync(col)">
+                        <span class="col-title-text">Name</span>
+                        <span class="sort-indicator" aria-hidden="true"></span>
+                    </button>
+                </HeaderTemplate>
+                <ChildContent>
+                    <a title="edit" style="cursor:pointer" @onclick="() => EditTitle(context)">@GetTitle(context)</a>
+                </ChildContent>
             </TemplateColumn>
             @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -134,36 +197,44 @@
                     @GetEpisode(context)
                 </TemplateColumn>
             }
-            <TemplateColumn>
-                @if (IsIdentified(context))
-                {
-                    <span>@GetIdentifyButtonText(context)</span>
-                }
-                else
-                {
-                    <SfDropDownButton Content="Identify">
-                        <DropDownButtonEvents ItemSelected="(args) => ItemSelected(context, args)"></DropDownButtonEvents>
-                        <DropDownMenuItems>
-                            @if (this.mediaType != null && this.mediaType.Equals("movie", StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                <DropDownMenuItem Text="Main Movie" data-type="MainMovie"></DropDownMenuItem>
-                            }
-                            @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                <DropDownMenuItem Text="Episode" data-type="Episode"></DropDownMenuItem>
-                            }
-                            <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
-                            <DropDownMenuItem Text="Deleted Scene" data-type="DeletedScene"></DropDownMenuItem>
-                            <DropDownMenuItem Text="Trailer" data-type="Trailer"></DropDownMenuItem>
-                            <DropDownMenuItem Text="Featurette" data-type="Featurette"></DropDownMenuItem>
-                            <DropDownMenuItem Text="Interview" data-type="Interview"></DropDownMenuItem>
-                            <DropDownMenuItem Text="Scene" data-type="Scene"></DropDownMenuItem>
-                            <DropDownMenuItem Text="Music" data-type="Music"></DropDownMenuItem>
-                            <DropDownMenuItem Text="Short" data-type="Short"></DropDownMenuItem>
-                            <DropDownMenuItem Text="Other" data-type="Other"></DropDownMenuItem>
-                        </DropDownMenuItems>
-                    </SfDropDownButton>
-                }
+            <TemplateColumn Title="Type" Sortable="true" SortBy="SortType">
+                <HeaderTemplate Context="col">
+                    <button type="button" class="col-title" @onclick="() => SortColumnAsync(col)">
+                        <span class="col-title-text">Type</span>
+                        <span class="sort-indicator" aria-hidden="true"></span>
+                    </button>
+                </HeaderTemplate>
+                <ChildContent>
+                    @if (IsIdentified(context))
+                    {
+                        <span>@GetIdentifyButtonText(context)</span>
+                    }
+                    else
+                    {
+                        <SfDropDownButton Content="Identify">
+                            <DropDownButtonEvents ItemSelected="(args) => ItemSelected(context, args)"></DropDownButtonEvents>
+                            <DropDownMenuItems>
+                                @if (this.mediaType != null && this.mediaType.Equals("movie", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    <DropDownMenuItem Text="Main Movie" data-type="MainMovie"></DropDownMenuItem>
+                                }
+                                @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    <DropDownMenuItem Text="Episode" data-type="Episode"></DropDownMenuItem>
+                                }
+                                <DropDownMenuItem Text="Extra" data-type="Extra"></DropDownMenuItem>
+                                <DropDownMenuItem Text="Deleted Scene" data-type="DeletedScene"></DropDownMenuItem>
+                                <DropDownMenuItem Text="Trailer" data-type="Trailer"></DropDownMenuItem>
+                                <DropDownMenuItem Text="Featurette" data-type="Featurette"></DropDownMenuItem>
+                                <DropDownMenuItem Text="Interview" data-type="Interview"></DropDownMenuItem>
+                                <DropDownMenuItem Text="Scene" data-type="Scene"></DropDownMenuItem>
+                                <DropDownMenuItem Text="Music" data-type="Music"></DropDownMenuItem>
+                                <DropDownMenuItem Text="Short" data-type="Short"></DropDownMenuItem>
+                                <DropDownMenuItem Text="Other" data-type="Other"></DropDownMenuItem>
+                            </DropDownMenuItems>
+                        </SfDropDownButton>
+                    }
+                </ChildContent>
             </TemplateColumn>
             <TemplateColumn Align="Align.Center">
                 @if (IsIdentified(context))
