@@ -24,7 +24,7 @@ else
         <TheDiscDb.Components.Controls.EditSubmittedBanner ChangeSquid="@editSubmittedSquid" />
         <div class="d-flex align-items-center gap-2 mb-2">
             <h1 class="mb-0">@Title.SourceFile — @Release.Title</h1>
-            <a href="@GetDiscItemEditUrl()" class="btn btn-sm btn-outline-secondary" title="Suggest edits to this disc item">✏️ Suggest Edit</a>
+            <a href="@GetDiscItemEditUrl()" class="btn btn-sm btn-outline-secondary" title="Suggest edits to this disc item"><i class="e-icons e-edit"></i></a>
         </div>
         <div class="metadata-card mt-3">
             <dl class="metadata-grid mb-0">
@@ -71,7 +71,7 @@ else
                         <TheDiscDb.Client.Controls.CopyChaptersButton
                             Chapters="@Title.Item.Chapters"
                             @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
-                        <a href="@GetChapterEditUrl()" class="btn btn-sm btn-outline-secondary" title="Suggest chapter edits">✏️</a>
+                        <a href="@GetChapterEditUrl()" class="btn btn-sm btn-outline-secondary" title="Suggest chapter edits"><i class="e-icons e-edit"></i></a>
                     </div>
                 </div>
                 <ol class="chapter-list mb-0">
@@ -87,7 +87,7 @@ else
             <div class="info-card mt-4">
                 <div class="chapter-header">
                     <h3 class="mt-0 mb-0">Chapters</h3>
-                    <a href="@GetChapterEditUrl()" class="btn btn-sm btn-outline-secondary" title="Add chapter names">✏️ Add Chapters</a>
+                    <a href="@GetChapterEditUrl()" class="btn btn-sm btn-outline-secondary" title="Add chapter names"><i class="e-icons e-edit"></i> Add Chapters</a>
                 </div>
                 <p class="text-muted mb-0">No chapter names available. Know them? Suggest adding them!</p>
             </div>
@@ -121,7 +121,7 @@ else
                                     @if (!string.IsNullOrEmpty(Disc.Slug))
                                     {
                                         <td>
-                                            <a href="@GetTrackEditUrl(track.Index)" class="btn btn-sm btn-outline-secondary" title="Suggest edits to this track">✏️ Suggest Edit</a>
+                                            <a href="@GetTrackEditUrl(track.Index)" class="btn btn-sm btn-outline-secondary" title="Suggest edits to this track"><i class="e-icons e-edit"></i></a>
                                         </td>
                                     }
                                 </tr>

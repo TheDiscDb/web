@@ -26,7 +26,8 @@ Run with Aspire: launch `web/code/TheDiscDb.AppHost` which orchestrates the web 
 - Shared logic belongs in base classes (e.g., `ChangeBase<TDetails>`), not duplicated across siblings. Before adding a helper method to a concrete class, check if it belongs in the base.
 
 ## UI Conventions
-- **Icons:** Use the Syncfusion icon font (`<i class="e-icons e-trash"></i>`) for icon buttons, matching the rest of the site. Delete/remove actions use `e-trash`. Do **not** use raw Unicode glyphs (✕, ↩, 🗑, etc.) for actions that have an established icon elsewhere — grep for `e-icons` to find the existing convention before inventing one.
+- **Icons:** Use the Syncfusion icon font (`<i class="e-icons e-trash"></i>`) for icon buttons, matching the rest of the site. Delete/remove actions use `e-trash`; edit / "suggest edit" actions use `e-edit`. Do **not** use raw Unicode glyphs (✕, ↩, 🗑, ✏️, etc.) for actions that have an established icon elsewhere — grep for `e-icons` to find the existing convention before inventing one.
+- **Suggest Edit links** are icon-only (`<i class="e-icons e-edit"></i>` with a descriptive `title`); do **not** add "Suggest Edit" label text next to the icon — it takes too much visual space.
 - **Chapter indexing is 1-based.** Chapter `Index` starts at 1 in the data (unlike `Track.Index`, which is 0-based). Display `chapter.Index` directly — do not add 1 — and create new chapters with 1-based indices. The read-only title page hides this because it renders chapters in an `<ol>` (auto-numbered from 1).
 
 ## Domain: Data Table Rebuilds and Identity

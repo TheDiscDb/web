@@ -54,8 +54,8 @@ else
                         <GruvBuyButton MediaItemSlug="@this.Slug" ReleaseSlug="@this.ReleaseSlug" Sid="release-detail" Width="25" />
                     </div>
                     <div class="mt-2">
-                        <a href="/@Type/@Slug/releases/@ReleaseSlug/edit" class="btn btn-sm btn-outline-secondary">
-                            <span>✏️ Suggest Edit</span>
+                        <a href="/@Type/@Slug/releases/@ReleaseSlug/edit" class="btn btn-sm btn-outline-secondary" title="Suggest edits to this release">
+                            <i class="e-icons e-edit"></i>
                         </a>
                     </div>
                     @if (Release?.Discs != null && Release.Discs.Count > 0)
