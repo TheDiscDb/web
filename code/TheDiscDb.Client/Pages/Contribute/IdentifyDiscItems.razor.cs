@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.QuickGrid;
 using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
 using Syncfusion.Blazor.Notifications;
@@ -200,6 +202,14 @@ public partial class IdentifyDiscItems : CancellableComponentBase
     private int[] sortedUniqueLengths = [];
     private int[] lengthRange = [0, 0];
     private string searchText = string.Empty;
+    private int quickGridVersion = 0;
+    private bool hasCustomSort = false;
+    private readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles> SortSegmentNumber = GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>.ByAscending(t => ParseSegmentNumber(t.SegmentMap));
+    private readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles> SortPlaylistNumber = GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>.ByAscending(t => ParsePlaylistNumber(t.Playlist));
+    private readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles> SortDuration = GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>.ByAscending(t => ParseLengthToSeconds(t.Length));
+    private readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles> SortDisplaySize = GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>.ByAscending(t => ParseDisplaySizeToBytes(t.DisplaySize));
+    private GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles> SortName => GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>.ByAscending(t => GetTitle(t));
+    private GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles> SortType => GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>.ByAscending(t => GetIdentifyButtonText(t));
     
     protected override async Task OnInitializedAsync()
     {
@@ -1171,6 +1181,97 @@ public partial class IdentifyDiscItems : CancellableComponentBase
     private static bool ContainsText(string? value, string search)
     {
         return !string.IsNullOrEmpty(value) && value.Contains(search, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task SortColumnAsync(ColumnBase<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles> column)
+    {
+        await column.Grid.SortByColumnAsync(column);
+        this.hasCustomSort = true;
+    }
+
+    private void ResetSort()
+    {
+        this.hasCustomSort = false;
+        this.quickGridVersion++;
+        this.ApplyFilters();
+    }
+
+    private static int ParseSegmentNumber(string? segmentMap)
+    {
+        if (string.IsNullOrWhiteSpace(segmentMap))
+        {
+            return int.MaxValue;
+        }
+
+        string firstSegment = segmentMap.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+        return ParseFirstNumber(firstSegment);
+    }
+
+    private static int ParsePlaylistNumber(string? playlist)
+    {
+        return ParseFirstNumber(playlist);
+    }
+
+    private static int ParseFirstNumber(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return int.MaxValue;
+        }
+
+        int start = -1;
+        int end = -1;
+        for (int i = 0; i < value.Length; i++)
+        {
+            if (char.IsDigit(value[i]))
+            {
+                if (start < 0)
+                {
+                    start = i;
+                }
+
+                end = i;
+                continue;
+            }
+
+            if (start >= 0)
+            {
+                break;
+            }
+        }
+
+        if (start < 0 || end < start)
+        {
+            return int.MaxValue;
+        }
+
+        var span = value.AsSpan(start, end - start + 1);
+        return int.TryParse(span, out int parsed) ? parsed : int.MaxValue;
+    }
+
+    private static long ParseDisplaySizeToBytes(string? displaySize)
+    {
+        if (string.IsNullOrWhiteSpace(displaySize))
+        {
+            return long.MaxValue;
+        }
+
+        string[] parts = displaySize.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length < 2 || !double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double size))
+        {
+            return long.MaxValue;
+        }
+
+        long multiplier = parts[1].ToUpperInvariant() switch
+        {
+            "KB" => 1024L,
+            "MB" => 1024L * 1024L,
+            "GB" => 1024L * 1024L * 1024L,
+            "TB" => 1024L * 1024L * 1024L * 1024L,
+            _ => 1L,
+        };
+
+        return (long)(size * multiplier);
     }
 
     private void OnLengthTooltipChange(SliderTooltipEventArgs<int[]> args)

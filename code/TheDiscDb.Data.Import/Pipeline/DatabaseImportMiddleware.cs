@@ -83,7 +83,9 @@ namespace TheDiscDb.Data.Import.Pipeline
                             .Include(i => i.Releases)
                             .ThenInclude(r => r.ReleaseGroups)
                             .ThenInclude(rg => rg.Group)
+                            .AsSplitQuery()
                             .FirstOrDefaultAsync(s => s.Type == item.MediaItem.Type && s.Slug == item.MediaItem.Slug);
+
                 if (fromDatabase != null)
                 {
                     this.mediaItemHandler.TryUpdate(fromDatabase, item.MediaItem);
@@ -120,6 +122,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                     .ThenInclude(d => d.Disc)
                     .ThenInclude(d => d.Titles)
                     .ThenInclude(t => t.Item)
+                    .AsSplitQuery()
                     .FirstOrDefaultAsync(s => s.Slug == item.Boxset.Slug);
 
                 if (fromDatabase != null)
@@ -199,7 +202,6 @@ namespace TheDiscDb.Data.Import.Pipeline
                 inputDisc.Format = normalizedFormat;
                 inputDisc.ContentHash = normalizedContentHash;
                 var key = $"{normalizedFormat}|{normalizedContentHash}";
-                var normalizedContentHashLower = normalizedContentHash.ToLowerInvariant();
 
                 if (canonicalByHashAndFormat.TryGetValue(key, out var canonicalFromBatch))
                 {
@@ -222,7 +224,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                     continue;
                 }
 
-                var canonicalFromDbCandidates = await this.GetDbContext().Discs
+                var canonicalFromDb = await this.GetDbContext().Discs
                     .Include(d => d.Titles)
                     .ThenInclude(t => t.Item)
                     .ThenInclude(i => i.Chapters)
@@ -231,10 +233,10 @@ namespace TheDiscDb.Data.Import.Pipeline
                     .Where(
                         d => d.Format != null &&
                              d.ContentHash != null &&
-                             d.ContentHash.ToLower() == normalizedContentHashLower)
-                    .ToListAsync(cancellationToken);
-                var canonicalFromDb = canonicalFromDbCandidates.FirstOrDefault(d =>
-                    string.Equals(d.Format?.Trim(), normalizedFormat, StringComparison.OrdinalIgnoreCase));
+                             d.ContentHash == normalizedContentHash &&
+                             d.Format == normalizedFormat)
+                    .FirstOrDefaultAsync(cancellationToken);
+
                 if (canonicalFromDb != null)
                 {
                     this.CopyTitlesToCanonicalDiscIfMissing(canonicalFromDb, inputDisc);

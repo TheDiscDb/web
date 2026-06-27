@@ -10,6 +10,8 @@ using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
 using SixLabors.ImageSharp.Web.Caching.Azure;
 using SixLabors.ImageSharp.Web.DependencyInjection;
+using SixLabors.ImageSharp.Web.Middleware;
+using SixLabors.ImageSharp.Web.Processors;
 using SixLabors.ImageSharp.Web.Providers.Azure;
 using Sqids;
 using Syncfusion.Blazor;
@@ -144,7 +146,7 @@ builder.Services
     {
         o.EnforceCostLimits = false;
     })
-    .AddFiltering()
+    .AddFiltering<DiscDbFilterConvention>()
     .AddSorting()
     .AddProjections()
     .RegisterDbContextFactory<SqlServerDataContext>()
@@ -222,6 +224,38 @@ var blobConnectionString = builder.Configuration.GetConnectionString("blobs") ??
 var blobContainerName = builder.Configuration.GetValue<string>("BlobStorage:Container") ?? throw new Exception("Blob storage container not configured");
 builder.Services.AddImageSharp()
     .ClearProviders()
+    .Configure<ImageSharpMiddlewareOptions>(options =>
+    {
+        // Transparently serve WebP to browsers that advertise support for it. The source
+        // blob (e.g. front.jpg) and request URL are unchanged: ImageSharp transcodes on the
+        // fly and the browser honours the Content-Type, not the URL extension. Browsers that
+        // do not send "Accept: image/webp" continue to receive the original format.
+        options.OnParseCommandsAsync = context =>
+        {
+            if (context.Commands.Count > 0 && !context.Commands.Contains(FormatWebProcessor.Format))
+            {
+                // Honour RFC 7231 quality values: "image/webp;q=0" explicitly rejects WebP.
+                bool acceptsWebp = context.Context.Request.GetTypedHeaders().Accept
+                    .Any(static media =>
+                        media.MediaType.Equals("image/webp", StringComparison.OrdinalIgnoreCase)
+                        && media.Quality != 0);
+                if (acceptsWebp)
+                {
+                    context.Commands[FormatWebProcessor.Format] = "webp";
+                }
+            }
+
+            return Task.CompletedTask;
+        };
+
+        // The same URL can now yield different bytes depending on the Accept header, so
+        // instruct shared caches (browser/CDN) to vary their stored response accordingly.
+        options.OnPrepareResponseAsync = context =>
+        {
+            context.Response.Headers.Append("Vary", "Accept");
+            return Task.CompletedTask;
+        };
+    })
     .Configure<AzureBlobStorageImageProviderOptions>(options =>
     {
         options.BlobContainers.Add(new AzureBlobContainerClientOptions
