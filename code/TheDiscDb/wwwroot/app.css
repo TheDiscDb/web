@@ -1179,6 +1179,49 @@ pre code {
         font-size: .875rem;
     }
 
+/* Make the Syncfusion split button (Copy chapters) adopt the .icon-btn /
+   copy-button frame: transparent background, the same 1px #c4ccd8 border,
+   6px outer radius, and matching hover/focus colors. The CssClass is applied
+   to the wrapper and both inner buttons, so .copy-split-button.e-btn targets
+   the primary and dropdown segments together. */
+.copy-split-button.e-split-btn-wrapper {
+    border-radius: 6px;
+}
+
+.copy-split-button.e-btn,
+.copy-split-button.e-btn:disabled {
+    background: transparent;
+    border-color: #c4ccd8;
+    color: #52657f;
+    box-shadow: none;
+}
+
+    .copy-split-button.e-btn:hover:not(:disabled),
+    .copy-split-button.e-btn:focus:not(:disabled),
+    .copy-split-button.e-btn:active:not(:disabled) {
+        background: #eef2f7;
+        border-color: #8b98ac;
+        color: #00213f;
+        box-shadow: none;
+    }
+
+    .copy-split-button.e-btn .e-btn-icon {
+        color: inherit;
+    }
+
+/* Round only the outer corners; keep a single divider between the two
+   segments rather than a doubled border. */
+.copy-split-button.e-split-btn {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.copy-split-button.e-dropdown-btn {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-left: none;
+}
+
 .disc-upload-page .info-card {
     padding: 2rem;
 }
