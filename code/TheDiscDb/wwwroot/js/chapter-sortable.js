@@ -6,6 +6,12 @@
  * a Pointer Events path that works for touch and pen, calling back into the
  * Blazor component to perform the actual reorder. Mouse is intentionally left to
  * the native HTML5 path so desktop behaviour is unchanged.
+ *
+ * Pointer capture is taken on the stable container element (the <tbody>) rather
+ * than the drag handle. Each reorder re-renders and moves the handle's row in the
+ * DOM, which would release a capture held on the handle and leave the drag stuck
+ * after a single move. The container is never reordered, so capturing there keeps
+ * the gesture alive for the whole drag.
  */
 (function () {
     function init(container, dotNetRef) {
@@ -15,7 +21,6 @@
         container.dataset.chapterSortableInit = 'true';
 
         let pointerId = null;
-        let handleEl = null;
         let lastIndex = -1;
 
         function rowOf(el) {
@@ -43,13 +48,14 @@
 
             e.preventDefault();
             pointerId = e.pointerId;
-            handleEl = handle;
             lastIndex = parseInt(row.dataset.rowIndex, 10);
 
-            try { handle.setPointerCapture(pointerId); } catch (_) { /* ignore */ }
-            handle.addEventListener('pointermove', onPointerMove);
-            handle.addEventListener('pointerup', onPointerUp);
-            handle.addEventListener('pointercancel', onPointerUp);
+            // Capture on the stable container, not the handle: reordering moves
+            // the handle's row in the DOM and would otherwise drop the capture.
+            try { container.setPointerCapture(pointerId); } catch (_) { /* ignore */ }
+            container.addEventListener('pointermove', onPointerMove);
+            container.addEventListener('pointerup', onPointerUp);
+            container.addEventListener('pointercancel', onPointerUp);
 
             dotNetRef.invokeMethodAsync('StartDrag', lastIndex);
         }
@@ -83,14 +89,11 @@
         }
 
         function cleanup() {
-            if (handleEl) {
-                try { handleEl.releasePointerCapture(pointerId); } catch (_) { /* ignore */ }
-                handleEl.removeEventListener('pointermove', onPointerMove);
-                handleEl.removeEventListener('pointerup', onPointerUp);
-                handleEl.removeEventListener('pointercancel', onPointerUp);
-            }
+            try { container.releasePointerCapture(pointerId); } catch (_) { /* ignore */ }
+            container.removeEventListener('pointermove', onPointerMove);
+            container.removeEventListener('pointerup', onPointerUp);
+            container.removeEventListener('pointercancel', onPointerUp);
             pointerId = null;
-            handleEl = null;
             lastIndex = -1;
         }
 
