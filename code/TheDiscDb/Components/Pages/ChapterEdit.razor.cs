@@ -104,10 +104,13 @@ public partial class ChapterEdit : ComponentBase
         // Load existing chapters into editable rows
         if (Title.Item?.Chapters != null)
         {
+            int originalIndex = 0;
             foreach (var chapter in Title.Item.Chapters.OrderBy(c => c.Index))
             {
+                originalIndex++;
                 chapters.Add(new ChapterEditRow
                 {
+                    OriginalIndex = originalIndex,
                     Title = chapter.Title,
                     OriginalTitle = chapter.Title,
                     IsNew = false,
@@ -305,17 +308,63 @@ public partial class ChapterEdit : ComponentBase
         submitMessage = null;
     }
 
+    /// <summary>
+    /// Builds a human-friendly review of the pending changes. Unlike the
+    /// submission payload (which is position-based because a chapter's identity
+    /// is its index), this presents a reorder as an index change on the moved
+    /// chapter rather than a cascade of title changes.
+    /// </summary>
     private List<ChapterDiff> ComputeDiffs()
     {
-        return ComputeChanges().Select(change => change.Kind switch
+        var diffs = new List<ChapterDiff>();
+
+        // Map each surviving row to its new 1-based position.
+        var proposed = chapters.Where(c => !c.IsDeleted).ToList();
+        var newIndexOf = new Dictionary<ChapterEditRow, int>();
+        for (int i = 0; i < proposed.Count; i++)
         {
-            ChapterChangeKind.Add =>
-                new ChapterDiff(change.Index, "Add", null, change.ProposedTitle ?? "(unnamed)", "table-success"),
-            ChapterChangeKind.Delete =>
-                new ChapterDiff(change.Index, "Delete", change.OriginalTitle ?? "(unnamed)", null, "table-danger"),
-            _ =>
-                new ChapterDiff(change.Index, "Edit", change.OriginalTitle ?? "(empty)", change.ProposedTitle ?? "(empty)", "table-warning"),
-        }).ToList();
+            newIndexOf[proposed[i]] = i + 1;
+        }
+
+        foreach (var row in chapters)
+        {
+            if (row.IsDeleted)
+            {
+                if (!row.IsNew)
+                {
+                    diffs.Add(new ChapterDiff(
+                        row.OriginalIndex, "Removed", $"#{row.OriginalIndex}",
+                        row.OriginalTitle ?? "(unnamed)", null, "table-danger"));
+                }
+
+                continue;
+            }
+
+            int newIndex = newIndexOf[row];
+
+            if (row.IsNew)
+            {
+                diffs.Add(new ChapterDiff(
+                    newIndex, "Added", $"#{newIndex}", null, row.Title ?? "(unnamed)", "table-success"));
+                continue;
+            }
+
+            if (row.OriginalIndex != newIndex)
+            {
+                diffs.Add(new ChapterDiff(
+                    newIndex, "Reordered", row.Title ?? "(unnamed)",
+                    $"#{row.OriginalIndex}", $"#{newIndex}", "table-info"));
+            }
+
+            if (!string.Equals(row.OriginalTitle ?? string.Empty, row.Title ?? string.Empty, StringComparison.Ordinal))
+            {
+                diffs.Add(new ChapterDiff(
+                    newIndex, "Renamed", $"#{newIndex}",
+                    row.OriginalTitle ?? "(empty)", row.Title ?? "(empty)", "table-warning"));
+            }
+        }
+
+        return diffs.OrderBy(d => d.SortIndex).ThenBy(d => d.ChangeType).ToList();
     }
 
     private async Task HandleSubmit()
@@ -458,6 +507,9 @@ public partial class ChapterEdit : ComponentBase
 
 internal sealed class ChapterEditRow
 {
+    // 1-based position the chapter was loaded at. 0 for chapters added in this
+    // session. Used to present reorders as index changes in the review.
+    public int OriginalIndex { get; set; }
     public string? Title { get; set; }
     public string? OriginalTitle { get; set; }
     public bool IsNew { get; set; }
@@ -473,4 +525,4 @@ internal enum ChapterChangeKind
 
 internal sealed record ChapterChange(int Index, ChapterChangeKind Kind, string? OriginalTitle, string? ProposedTitle);
 
-internal sealed record ChapterDiff(int ChapterIndex, string ChangeType, string? CurrentValue, string? ProposedValue, string CssClass);
+internal sealed record ChapterDiff(int SortIndex, string ChangeType, string Chapter, string? Was, string? Now, string CssClass);

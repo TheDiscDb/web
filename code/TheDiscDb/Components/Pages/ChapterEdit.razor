@@ -126,20 +126,20 @@ else
             <table class="table table-sm">
                 <thead>
                     <tr>
-                        <th>#</th>
                         <th>Change</th>
-                        <th>Current</th>
-                        <th>Proposed</th>
+                        <th>Chapter</th>
+                        <th>Was</th>
+                        <th>Now</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var diff in pendingDiffs)
                     {
                         <tr class="@diff.CssClass">
-                            <td>@diff.ChapterIndex</td>
                             <td><strong>@diff.ChangeType</strong></td>
-                            <td class="text-muted">@(diff.CurrentValue ?? "—")</td>
-                            <td><strong>@(diff.ProposedValue ?? "—")</strong></td>
+                            <td>@diff.Chapter</td>
+                            <td class="text-muted">@(diff.Was ?? "—")</td>
+                            <td><strong>@(diff.Now ?? "—")</strong></td>
                         </tr>
                     }
                 </tbody>
