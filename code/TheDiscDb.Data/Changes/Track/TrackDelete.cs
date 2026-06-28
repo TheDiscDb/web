@@ -46,6 +46,9 @@ public sealed class TrackDelete : ChangeBase<TrackDeleteDetails>
 
     public override string TargetEntityKey => this.Proposed.TargetEntityKey;
 
+    /// <summary>A delete must still run when the target matches the snapshot.</summary>
+    protected override bool MatchingSnapshotIsNoOp => false;
+
     protected override async Task<TrackDeleteDetails?> LoadCurrentSnapshotAsync(
         SqlServerDataContext context,
         CancellationToken cancellationToken)
@@ -73,6 +76,7 @@ public sealed class TrackDelete : ChangeBase<TrackDeleteDetails>
                 $"Track '{this.Proposed.TargetEntityKey}' not found at apply time.");
 
         resolved.Title.Tracks.Remove(resolved.Track);
+        context.Remove(resolved.Track);
     }
 
     protected override string MissingTargetMessage()

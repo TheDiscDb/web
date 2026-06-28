@@ -51,6 +51,16 @@ public abstract class ChangeBase<TDetails> : IChange
     /// </summary>
     public virtual bool RequiresOriginalSnapshot => true;
 
+    /// <summary>
+    /// When <c>true</c> (the default), a proposed payload that exactly matches the
+    /// current database state is reported as a no-op and skipped at apply time.
+    /// Removal ("delete") change types override this to <c>false</c>: for a delete,
+    /// "the current state matches the snapshot" means the target still exists exactly
+    /// as expected and the removal SHOULD proceed — treating it as a no-op would
+    /// silently skip the deletion.
+    /// </summary>
+    protected virtual bool MatchingSnapshotIsNoOp => true;
+
     public async Task<ChangeValidationResult> ValidateAsync(
         SqlServerDataContext context,
         string? originalSnapshotJson,
@@ -94,7 +104,7 @@ public abstract class ChangeBase<TDetails> : IChange
             }
         }
 
-        return Equals(current, this.Proposed)
+        return Equals(current, this.Proposed) && this.MatchingSnapshotIsNoOp
             ? ChangeValidationResult.NoOp()
             : ChangeValidationResult.Ok();
     }

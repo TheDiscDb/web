@@ -50,6 +50,9 @@ public sealed class ChapterDelete : ChangeBase<ChapterDeleteDetails>
 
     public override string TargetEntityKey => this.Proposed.TargetEntityKey;
 
+    /// <summary>A delete must still run when the target matches the snapshot.</summary>
+    protected override bool MatchingSnapshotIsNoOp => false;
+
     protected override async Task<ChapterDeleteDetails?> LoadCurrentSnapshotAsync(
         SqlServerDataContext context,
         CancellationToken cancellationToken)
@@ -77,6 +80,7 @@ public sealed class ChapterDelete : ChangeBase<ChapterDeleteDetails>
                 $"Chapter '{this.Proposed.TargetEntityKey}' not found at apply time. Validate should have caught this.");
 
         resolved.Item.Chapters.Remove(resolved.Chapter);
+        context.Remove(resolved.Chapter);
     }
 
     protected override string MissingTargetMessage()

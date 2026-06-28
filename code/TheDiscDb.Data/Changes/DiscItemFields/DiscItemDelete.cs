@@ -46,6 +46,9 @@ public sealed class DiscItemDelete : ChangeBase<DiscItemDeleteDetails>
 
     public override string TargetEntityKey => this.Proposed.TargetEntityKey;
 
+    /// <summary>A delete must still run when the target matches the snapshot.</summary>
+    protected override bool MatchingSnapshotIsNoOp => false;
+
     protected override async Task<DiscItemDeleteDetails?> LoadCurrentSnapshotAsync(
         SqlServerDataContext context,
         CancellationToken cancellationToken)
@@ -76,6 +79,7 @@ public sealed class DiscItemDelete : ChangeBase<DiscItemDeleteDetails>
                 $"Title '{this.Proposed.TargetEntityKey}' not found at apply time.");
 
         disc.Titles.Remove(title);
+        context.Remove(title);
     }
 
     protected override string MissingTargetMessage()
