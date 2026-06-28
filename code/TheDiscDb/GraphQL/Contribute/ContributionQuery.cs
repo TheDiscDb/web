@@ -73,11 +73,14 @@ public class ContributionQuery(IdEncoder idEncoder)
 
         var decodedId = idEncoder.Decode(contributionId);
 
-        // Verify the user owns this contribution
-        var ownsContribution = context.UserContributions.Any(c => c.Id == decodedId && c.UserId == userId);
-        if (!ownsContribution)
+        // Admins can view any contribution's messages; regular users must own the contribution.
+        if (!user.IsInRole(DefaultRoles.Administrator))
         {
-            return Enumerable.Empty<UserMessage>().AsQueryable();
+            var ownsContribution = context.UserContributions.Any(c => c.Id == decodedId && c.UserId == userId);
+            if (!ownsContribution)
+            {
+                return Enumerable.Empty<UserMessage>().AsQueryable();
+            }
         }
 
         return context.UserMessages
@@ -98,11 +101,14 @@ public class ContributionQuery(IdEncoder idEncoder)
 
         var decodedId = idEncoder.Decode(boxsetId);
 
-        // Verify the user owns this boxset
-        var ownsBoxset = context.UserContributionBoxsets.Any(b => b.Id == decodedId && b.UserId == userId);
-        if (!ownsBoxset)
+        // Admins can view any boxset's messages; regular users must own the boxset.
+        if (!user.IsInRole(DefaultRoles.Administrator))
         {
-            return Enumerable.Empty<UserMessage>().AsQueryable();
+            var ownsBoxset = context.UserContributionBoxsets.Any(b => b.Id == decodedId && b.UserId == userId);
+            if (!ownsBoxset)
+            {
+                return Enumerable.Empty<UserMessage>().AsQueryable();
+            }
         }
 
         return context.UserMessages
