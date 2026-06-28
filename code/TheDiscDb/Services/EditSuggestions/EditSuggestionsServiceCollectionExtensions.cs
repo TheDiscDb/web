@@ -1,5 +1,6 @@
 namespace TheDiscDb.Services.EditSuggestions;
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TheDiscDb.Data.Changes;
 using TheDiscDb.Data.Changes.Chapter;
@@ -60,9 +61,36 @@ public static class EditSuggestionsServiceCollectionExtensions
 
         // Application services.
         services.AddScoped<IEditSuggestionHistoryService, EditSuggestionHistoryService>();
+        services.AddScoped<IEditSuggestionRecipientResolver, EditSuggestionRecipientResolver>();
         services.AddScoped<IEditSuggestionService, EditSuggestionService>();
         services.AddScoped<IEditSuggestionReviewService, EditSuggestionReviewService>();
         services.AddScoped<IEditSuggestionSyncService, EditSuggestionSyncService>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers edit-suggestion email notifications. Every call site is wired, but
+    /// the sender ships dormant: the real Mailgun implementation is used only when
+    /// Mailgun is configured (<c>Mailgun:ApiKey</c> present) AND the dedicated
+    /// <c>EditSuggestions:Notifications:Enabled</c> switch is true. Otherwise a no-op
+    /// implementation is registered so the call sites are harmless.
+    /// </summary>
+    public static IServiceCollection AddEditSuggestionNotifications(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<EditSuggestionNotificationOptions>(configuration.GetSection("EditSuggestions:Notifications"));
+
+        var mailgunConfigured = !string.IsNullOrEmpty(configuration.GetValue<string>("Mailgun:ApiKey"));
+        var enabled = configuration.GetValue<bool>("EditSuggestions:Notifications:Enabled");
+
+        if (mailgunConfigured && enabled)
+        {
+            services.AddTransient<IEditSuggestionNotificationService, EditSuggestionNotificationService>();
+        }
+        else
+        {
+            services.AddTransient<IEditSuggestionNotificationService, NullEditSuggestionNotificationService>();
+        }
 
         return services;
     }

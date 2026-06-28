@@ -111,6 +111,32 @@ the signal that invites the "add this missing disc" contribution flow.
 metadata source)? Is a missing disc a placeholder entity or a derived gap? How
 does a partial release render in search/SEO without looking like broken data?
 
+### 7. Per-user notification preferences
+
+Phase 1 ships edit-suggestion email notifications fully wired but **dormant**
+behind a single global config switch (`EditSuggestions:Notifications:Enabled`),
+with one summary email per suggestion at final resolution. Once notifications are
+turned on more broadly, individual users should be able to opt out of some or all
+of them.
+
+**Approach**:
+
+- Add a user settings/preferences area where a user can toggle notification
+  categories (e.g., submission confirmations, resolution emails, message emails).
+- Persist preferences per user (new table or columns on the user/profile record).
+- Each `Notify*` call first checks the recipient's preferences and skips sending
+  if opted out — a **per-user gate layered on top of the global config switch**.
+  The existing `IEditSuggestionRecipientResolver` is the natural place to also
+  surface a recipient's notification preferences.
+- Honor the existing `List-Unsubscribe` email headers by wiring a one-click
+  unsubscribe endpoint to these preferences.
+- Consider unifying with contribution-email preferences so users manage all
+  TheDiscDb email in one place.
+
+**Open questions**: opt-out vs. opt-in defaults per category? Should
+transactional/critical messages (e.g., "your suggestion was rejected") be
+exempt from opt-out? One preferences surface for all email types, or per-feature?
+
 ## Suggested Sequencing
 
 A reasonable order, roughly by leverage and dependency:

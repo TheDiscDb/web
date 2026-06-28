@@ -12,7 +12,9 @@ using TheDiscDb.Web.Data;
 public sealed class EditSuggestionService(
     SqlServerDataContext database,
     IChangeFactory changeFactory,
-    IEditSuggestionHistoryService historyService) : IEditSuggestionService
+    IEditSuggestionHistoryService historyService,
+    IEditSuggestionNotificationService? notifications = null,
+    IEditSuggestionRecipientResolver? recipients = null) : IEditSuggestionService
 {
     public async Task<EditSuggestion> SubmitAsync(
         string userId,
@@ -70,6 +72,15 @@ public sealed class EditSuggestionService(
         await database.SaveChangesAsync(cancellationToken);
 
         await historyService.RecordCreatedAsync(suggestion.Id, userId, cancellationToken);
+
+        if (notifications is not null)
+        {
+            var recipient = recipients is null
+                ? default
+                : await recipients.ResolveAsync(userId, cancellationToken);
+            await notifications.NotifySuggestionSubmittedAsync(
+                suggestion, recipient.Email, recipient.DisplayName, cancellationToken);
+        }
 
         return suggestion;
     }
@@ -189,6 +200,26 @@ public sealed class EditSuggestionService(
             ? EditSuggestionHistoryType.AdminMessage
             : EditSuggestionHistoryType.UserMessage;
         await historyService.RecordMessageAsync(suggestion.Id, fromUserId, historyType, cancellationToken);
+
+        if (notifications is not null)
+        {
+            if (isAdmin)
+            {
+                var recipient = recipients is null
+                    ? default
+                    : await recipients.ResolveAsync(toUserId, cancellationToken);
+                await notifications.NotifyMessageFromAdminAsync(
+                    suggestion, body, recipient.Email, cancellationToken);
+            }
+            else
+            {
+                var sender = recipients is null
+                    ? default
+                    : await recipients.ResolveAsync(fromUserId, cancellationToken);
+                await notifications.NotifyMessageFromUserAsync(
+                    suggestion, body, sender.DisplayName, sender.Email, cancellationToken);
+            }
+        }
 
         return message;
     }

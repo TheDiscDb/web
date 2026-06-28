@@ -11,7 +11,9 @@ using TheDiscDb.Web.Data;
 public sealed class EditSuggestionReviewService(
     SqlServerDataContext database,
     IChangeFactory changeFactory,
-    IEditSuggestionHistoryService historyService) : IEditSuggestionReviewService
+    IEditSuggestionHistoryService historyService,
+    IEditSuggestionNotificationService? notifications = null,
+    IEditSuggestionRecipientResolver? recipients = null) : IEditSuggestionReviewService
 {
     public async Task<EditSuggestionChange?> ApproveChangeAsync(
         int suggestionId,
@@ -269,6 +271,18 @@ public sealed class EditSuggestionReviewService(
             await database.SaveChangesAsync(cancellationToken);
             await historyService.RecordStatusChangedAsync(
                 suggestion.Id, adminUserId, oldStatus, newStatus, cancellationToken);
+
+            // One summary email per resolution. Conflicted is admin-facing only
+            // (it surfaces in the admin queue), so we don't email the user on it.
+            if (notifications is not null &&
+                newStatus is EditSuggestionStatus.Approved or EditSuggestionStatus.Rejected or EditSuggestionStatus.PartiallyApproved)
+            {
+                var recipient = recipients is null
+                    ? default
+                    : await recipients.ResolveAsync(suggestion.UserId, cancellationToken);
+                await notifications.NotifySuggestionResolvedAsync(
+                    suggestion, recipient.Email, cancellationToken);
+            }
         }
     }
 
