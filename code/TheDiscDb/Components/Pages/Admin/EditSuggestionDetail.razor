@@ -46,7 +46,14 @@ else
         </dl>
     </section>
 
-    @if (suggestion.Status == EditSuggestionStatus.Pending || suggestion.Status == EditSuggestionStatus.InReview)
+    @if (!CanReview)
+    {
+        <div class="alert alert-secondary">
+            This suggestion is <strong>@suggestion.Status</strong> and can no longer be reviewed.
+        </div>
+    }
+
+    @if (CanReview && suggestion.Changes.Any(c => c.Status == EditSuggestionChangeStatus.Pending))
     {
         <div class="mb-3">
             <button class="btn btn-success" @onclick="ApproveAll" disabled="@isProcessing">Approve All Pending</button>
@@ -88,7 +95,7 @@ else
                     </div>
                 }
             </div>
-            @if (change.Status == EditSuggestionChangeStatus.Pending)
+            @if (CanReview && change.Status == EditSuggestionChangeStatus.Pending)
             {
                 <div class="card-footer">
                     <div class="d-flex gap-2 align-items-center">
@@ -106,7 +113,7 @@ else
                     </div>
                 </div>
             }
-            @if (change.Status == EditSuggestionChangeStatus.Conflicted)
+            @if (CanReview && change.Status == EditSuggestionChangeStatus.Conflicted)
             {
                 <div class="card-footer d-flex gap-2 align-items-center">
                     <input class="form-control form-control-sm" style="max-width: 300px;"
