@@ -48,7 +48,7 @@ else
                     <ValidationMessage For="@(() => request.Year)" />
                 </div>
                 <div class="mb-3">
-                    <label>UPC</label>
+                    <label>UPC<span class="required">*</span></label>
                     <InputText class="form-control" @bind-Value="request.Upc" />
                     <ValidationMessage For="@(() => request.Upc)" />
                 </div>
@@ -63,9 +63,9 @@ else
                     <ValidationMessage For="@(() => request.Asin)" />
                 </div>
                 <div class="mb-3">
-                    <label>Release Date</label>
-                    <SfDatePicker TValue="DateTimeOffset" class="form-control" @bind-Value="request.ReleaseDate" />
-                    <ValidationMessage For="@(() => request.ReleaseDate)" />
+                    <label>Release Date<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="releaseDate" @oninput="ReleaseDateChanged" />
+                    <div class="validation-message">@releaseDateValidationMessage</div>
                 </div>
 
                 <div class="d-flex gap-2">
