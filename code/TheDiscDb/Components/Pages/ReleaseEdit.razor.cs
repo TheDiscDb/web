@@ -10,21 +10,30 @@ using TheDiscDb.Data.Changes.ReleaseFields;
 using TheDiscDb.InputModels;
 using TheDiscDb.Services.EditSuggestions;
 using TheDiscDb.Services.Server;
+using TheDiscDb.Validation;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages;
 
 public class EditReleaseRequest
 {
+    [Required(ErrorMessage = "Release Title is required")]
     public string? Title { get; set; }
+
+    [Required(ErrorMessage = "Region Code is required")]
     public string? RegionCode { get; set; }
+
+    [Required(ErrorMessage = "Locale is required")]
     public string? Locale { get; set; }
 
     [Range(1900, 2100)]
     public int Year { get; set; }
 
+    [Upc]
     public string? Upc { get; set; }
     public string? Isbn { get; set; }
+
+    [Asin]
     public string? Asin { get; set; }
 
     [Required]

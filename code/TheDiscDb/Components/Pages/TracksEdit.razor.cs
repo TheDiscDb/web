@@ -158,6 +158,9 @@ public partial class TracksEdit : ComponentBase
 
     private bool HasChanges() => rows.Any(r => r.HasChange);
 
+    private bool AllNamesValid() =>
+        rows.Where(r => r.HasChange).All(r => !string.IsNullOrWhiteSpace(r.EditName));
+
     private void ShowReview()
     {
         pendingDiffs = ComputeDiffs();

@@ -58,7 +58,7 @@ else
                                         <td class="text-muted">@GetMetadata(row.Track)</td>
                                         <td>
                                             <input type="text" class="form-control form-control-sm"
-                                                   @bind="row.EditName" placeholder="Track name" />
+                                                   @bind="row.EditName" @bind:event="oninput" placeholder="Track name" />
                                         </td>
                                     </tr>
                                 }
@@ -69,11 +69,15 @@ else
             }
 
             <div class="d-flex gap-2 mt-4">
-                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges())">
+                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges() || !AllNamesValid())">
                     Review Suggested Changes
                 </button>
                 <a href="@GetTitleUrl()" class="btn btn-outline-secondary">Cancel</a>
             </div>
+            @if (!AllNamesValid())
+            {
+                <div class="text-danger small mt-2">A track name cannot be left blank.</div>
+            }
         </section>
     }
     else

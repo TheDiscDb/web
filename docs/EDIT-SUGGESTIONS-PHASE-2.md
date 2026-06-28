@@ -137,6 +137,26 @@ of them.
 transactional/critical messages (e.g., "your suggestion was rejected") be
 exempt from opt-out? One preferences surface for all email types, or per-feature?
 
+### 8. "My Suggested Changes" page design pass
+
+The user-facing `My Suggested Changes` list page (`/changes/my`,
+`MyChanges.razor`) currently renders a bare QuickGrid (Target / Summary /
+Changes count / Submitted / Status / View). It works but **needs a dedicated
+design discussion** before further polish — the layout, status presentation,
+empty/loading states, and how a user drills into and tracks the lifecycle of
+their suggestions all deserve a deliberate UX pass rather than incremental
+tweaks.
+
+**Approach**: treat this as a design task, not a code task. Decide the
+information hierarchy (group by status? surface admin messages / rejection
+reasons inline? show progress through the submit → review → published
+lifecycle?), then implement against an agreed mock. Pairs with the breadcrumb /
+detail-page work already done on `MyChangeDetail`.
+
+**Open questions**: card vs. table layout? How prominently to surface
+admin feedback (notes / rejection reasons)? Should this page and the admin
+review surface share components?
+
 ## Suggested Sequencing
 
 A reasonable order, roughly by leverage and dependency:

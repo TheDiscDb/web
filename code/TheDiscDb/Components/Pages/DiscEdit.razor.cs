@@ -146,6 +146,12 @@ public partial class DiscEdit : ComponentBase
             || editFormat != originalFormat;
     }
 
+    private bool IsValid()
+    {
+        return !string.IsNullOrWhiteSpace(editName)
+            && !string.IsNullOrWhiteSpace(editFormat);
+    }
+
     private void ShowReview()
     {
         pendingDiffs = ComputeDiffs();

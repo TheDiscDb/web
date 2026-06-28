@@ -31,12 +31,15 @@ else
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">Name</label>
-                        <input type="text" class="form-control" @bind="editName" placeholder="Disc name" />
+                        <input type="text" class="form-control" @bind="editName" @bind:event="oninput" placeholder="Disc name" />
+                        @if (string.IsNullOrWhiteSpace(editName))
+                        {
+                            <div class="text-danger small">Name is required.</div>
+                        }
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Format</label>
                         <select class="form-select" @bind="editFormat">
-                            <option value="">— Select —</option>
                             <option value="UHD">4K</option>
                             <option value="Blu-Ray">Blu-ray</option>
                             <option value="DVD">DVD</option>
@@ -46,7 +49,7 @@ else
             </div>
 
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges())">
+                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges() || !IsValid())">
                     Review Suggested Changes
                 </button>
                 <a href="@GetDiscUrl()" class="btn btn-outline-secondary">Cancel</a>

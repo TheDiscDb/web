@@ -175,6 +175,12 @@ public partial class DiscItemEdit : ComponentBase
             || editItemEpisode != originalItemEpisode;
     }
 
+    private bool IsValid()
+    {
+        return !string.IsNullOrWhiteSpace(editItemTitle)
+            && !string.IsNullOrWhiteSpace(editItemType);
+    }
+
     private void ShowReview()
     {
         pendingDiffs = ComputeDiffs();

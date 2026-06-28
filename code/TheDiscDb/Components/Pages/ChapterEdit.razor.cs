@@ -291,6 +291,9 @@ public partial class ChapterEdit : ComponentBase, IDisposable
 
     private bool HasChanges() => ComputeChanges().Count > 0;
 
+    private bool AllTitlesValid() =>
+        chapters.Where(c => !c.IsDeleted).All(c => !string.IsNullOrWhiteSpace(c.Title));
+
     /// <summary>
     /// Computes the set of chapter changes by comparing the original chapter
     /// titles (captured at load, by position) against the current proposed

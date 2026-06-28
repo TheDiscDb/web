@@ -11,6 +11,9 @@
 }
 else
 {
+    <Breadcrumb Items="@(new[] { ("My Suggested Changes", "/changes/my") })"
+                PrimaryText="@($"Suggested Edit: {suggestion.TargetEntityType}")" />
+
     <h1>Suggested Edit: @suggestion.TargetEntityType</h1>
 
     @if (!string.IsNullOrEmpty(actionMessage))

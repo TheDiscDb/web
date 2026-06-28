@@ -114,11 +114,15 @@ else
             </div>
 
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges())">
+                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges() || !AllTitlesValid())">
                     Review Suggested Changes
                 </button>
                 <a href="@GetTitleUrl()" class="btn btn-outline-secondary">Cancel</a>
             </div>
+            @if (!AllTitlesValid())
+            {
+                <div class="text-danger small mt-2">Every chapter must have a title.</div>
+            }
         </section>
     }
     else

@@ -388,6 +388,6 @@ public class EditSuggestionNotificationTests
         await nullService.NotifyMessageFromAdminAsync(suggestion, "hi", "e@x.com", CT);
 
         // Reaching here without throwing is the assertion.
-        await Assert.That(true).IsTrue();
+        await Assert.That(nullService).IsNotNull();
     }
 }
