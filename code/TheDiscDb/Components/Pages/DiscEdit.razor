@@ -46,6 +46,26 @@ else
                             <option value="DVD">DVD</option>
                         </select>
                     </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Content Hash</label>
+                        @if (CanAddContentHash)
+                        {
+                            <input type="text" class="form-control" @bind="editContentHash" @bind:event="oninput" placeholder="32-character disc hash" />
+                            @if (ContentHashInputInvalid)
+                            {
+                                <div class="text-danger small">Content hash must be 32 hexadecimal characters.</div>
+                            }
+                            else
+                            {
+                                <div class="form-text">Optional. Add the disc's content hash if you know it.</div>
+                            }
+                        }
+                        else
+                        {
+                            <input type="text" class="form-control" value="@originalContentHash" readonly disabled />
+                            <div class="form-text">Set during import; can't be changed.</div>
+                        }
+                    </div>
                 </div>
             </div>
 

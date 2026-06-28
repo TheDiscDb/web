@@ -52,9 +52,11 @@ public partial class DiscEdit : AuthenticatedComponentBase
 
     private string? editName;
     private string? editFormat;
+    private string? editContentHash;
 
     private string? originalName;
     private string? originalFormat;
+    private string? originalContentHash;
 
     private string? summary;
     private string? submitMessage;
@@ -92,10 +94,30 @@ public partial class DiscEdit : AuthenticatedComponentBase
 
         editName = Disc.Name;
         editFormat = Disc.Format;
+        editContentHash = Disc.ContentHash;
 
         originalName = editName;
         originalFormat = editFormat;
+        originalContentHash = editContentHash;
     }
+
+    // ContentHash is add-only: editable only when the disc currently has none.
+    private bool CanAddContentHash => string.IsNullOrEmpty(originalContentHash);
+
+    private static string? NormalizeHash(string? hash)
+        => string.IsNullOrWhiteSpace(hash) ? null : hash.Trim().ToUpperInvariant();
+
+    // Disc content hashes are 32-character (MD5) uppercase hex strings.
+    private static bool IsValidContentHash(string hash)
+        => System.Text.RegularExpressions.Regex.IsMatch(hash, "^[0-9A-Fa-f]{32}$");
+
+    private string? ProposedContentHash =>
+        CanAddContentHash ? NormalizeHash(editContentHash) : originalContentHash;
+
+    private bool ContentHashInputInvalid =>
+        CanAddContentHash
+        && !string.IsNullOrWhiteSpace(editContentHash)
+        && !IsValidContentHash(editContentHash.Trim());
 
     private async Task LoadItemData()
     {
@@ -137,13 +159,15 @@ public partial class DiscEdit : AuthenticatedComponentBase
     private bool HasChanges()
     {
         return editName != originalName
-            || editFormat != originalFormat;
+            || editFormat != originalFormat
+            || (CanAddContentHash && ProposedContentHash != originalContentHash);
     }
 
     private bool IsValid()
     {
         return !string.IsNullOrWhiteSpace(editName)
-            && !string.IsNullOrWhiteSpace(editFormat);
+            && !string.IsNullOrWhiteSpace(editFormat)
+            && !ContentHashInputInvalid;
     }
 
     private void ShowReview()
@@ -164,6 +188,10 @@ public partial class DiscEdit : AuthenticatedComponentBase
 
         AddDiffIfChanged(diffs, "Name", originalName, editName);
         AddDiffIfChanged(diffs, "Format", originalFormat, editFormat);
+        if (CanAddContentHash)
+        {
+            AddDiffIfChanged(diffs, "Content Hash", originalContentHash, ProposedContentHash);
+        }
 
         return diffs;
     }
@@ -205,7 +233,7 @@ public partial class DiscEdit : AuthenticatedComponentBase
             var proposed = new DiscFieldsDetails(
                 mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
                 Disc.Slug, Disc.Index,
-                editName, editFormat);
+                editName, editFormat, ProposedContentHash);
             var proposedJson = JsonSerializer.Serialize(proposed, JsonOptions);
 
             var changes = new List<SubmitChangeInput>

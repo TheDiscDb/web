@@ -56,6 +56,13 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
 
         SetIfChanged(original, original?.Name, this.Proposed.Name, v => disc.Name = v);
         SetIfChanged(original, original?.Format, this.Proposed.Format, v => disc.Format = v);
+
+        // ContentHash is add-only: it may be supplied for a disc that has none,
+        // but an existing hash is immutable and must never be overwritten.
+        if (string.IsNullOrEmpty(original?.ContentHash))
+        {
+            SetIfChanged(original, original?.ContentHash, this.Proposed.ContentHash, v => disc.ContentHash = v);
+        }
     }
 
     protected override string MissingTargetMessage()
@@ -75,6 +82,7 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
         var drifted = new StringBuilder();
         AppendIfDifferent(drifted, nameof(original.Name), original.Name, current.Name);
         AppendIfDifferent(drifted, nameof(original.Format), original.Format, current.Format);
+        AppendIfDifferent(drifted, nameof(original.ContentHash), original.ContentHash, current.ContentHash);
 
         return drifted.Length == 0
             ? null
@@ -84,6 +92,17 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
     public static DiscFieldsDetails SnapshotFrom(IDisc disc, string? mediaItemSlug, string? boxsetSlug, string releaseSlug)
     {
         ArgumentNullException.ThrowIfNull(disc);
+
+        // ContentHash isn't part of IDisc (the StrawberryShake-generated result
+        // types also implement IDisc and don't surface it), so read it from the
+        // concrete persistence models.
+        var contentHash = disc switch
+        {
+            ReleaseDisc rd => rd.ContentHash,
+            Disc d => d.ContentHash,
+            _ => null,
+        };
+
         return new DiscFieldsDetails(
             MediaItemSlug: mediaItemSlug,
             BoxsetSlug: boxsetSlug,
@@ -91,7 +110,8 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             DiscSlug: disc.Slug,
             DiscIndex: disc.Index,
             Name: disc.Name,
-            Format: disc.Format);
+            Format: disc.Format,
+            ContentHash: contentHash);
     }
 
     /// <summary>

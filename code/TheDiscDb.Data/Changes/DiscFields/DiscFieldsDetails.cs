@@ -12,8 +12,11 @@ namespace TheDiscDb.Data.Changes.DiscFields;
 /// to Disc.Index per the existing <c>SlugOrIndex()</c> extension convention.
 /// Both <see cref="DiscSlug"/> and <see cref="DiscIndex"/> are carried so the
 /// snapshot can detect drift on either; resolution prefers slug when non-empty.
-/// Slug, Index, and ContentHash are NOT editable here: slug appears in public
-/// URLs, index is positional identity, ContentHash is computed during import.
+/// Slug and Index are NOT editable here: slug appears in public URLs and index is
+/// positional identity. <see cref="ContentHash"/> is normally computed during
+/// import, but is editable here as an <b>add-only</b> field: users may supply a
+/// hash for a disc that has none, while an existing hash is immutable and must
+/// never be overwritten by a suggestion (enforced at apply time).
 /// </remarks>
 public sealed record DiscFieldsDetails(
     string? MediaItemSlug,
@@ -22,7 +25,8 @@ public sealed record DiscFieldsDetails(
     string? DiscSlug,
     int DiscIndex,
     string? Name,
-    string? Format)
+    string? Format,
+    string? ContentHash = null)
 {
     /// <summary>
     /// Natural-key identifier suitable for <see cref="TheDiscDb.Web.Data.EditSuggestion.TargetEntityKey"/>:

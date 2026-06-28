@@ -9,7 +9,7 @@ public class DiscFieldsUpdateTests
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    private static DiscFieldsDetails MakeProposed(string? name = "Original Disc Name", string? format = "Blu-ray", string? discSlug = ChangeTestSeed.DiscSlug, int discIndex = ChangeTestSeed.DiscIndex)
+    private static DiscFieldsDetails MakeProposed(string? name = "Original Disc Name", string? format = "Blu-ray", string? discSlug = ChangeTestSeed.DiscSlug, int discIndex = ChangeTestSeed.DiscIndex, string? contentHash = null)
         => new(
             MediaItemSlug: ChangeTestSeed.MediaItemSlug,
             BoxsetSlug: null,
@@ -17,7 +17,8 @@ public class DiscFieldsUpdateTests
             DiscSlug: discSlug,
             DiscIndex: discIndex,
             Name: name,
-            Format: format);
+            Format: format,
+            ContentHash: contentHash);
 
     private sealed record TestApplyContext(string ApprovingUserId, int SuggestionId, int ChangeId, string? OriginalSnapshotJson = null) : IChangeApplyContext;
 
@@ -174,5 +175,65 @@ public class DiscFieldsUpdateTests
 
         var reloaded = await db.Set<TheDiscDb.InputModels.ReleaseDisc>().FirstAsync(d => d.Index == ChangeTestSeed.DiscIndex);
         await Assert.That(reloaded.Name).IsEqualTo("Edited");
+    }
+
+    [Test]
+    public async Task ApplyAsync_AddsContentHash_WhenDiscHasNone()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            JsonOptions);
+
+        const string newHash = "F748A26D2BF1FEBD491EFA490B9AC6ED";
+        var change = new DiscFieldsUpdate(MakeProposed(contentHash: newHash));
+        await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        var reloaded = await db.Set<TheDiscDb.InputModels.ReleaseDisc>().FirstAsync(d => d.Slug == ChangeTestSeed.DiscSlug);
+        await Assert.That(reloaded.ContentHash).IsEqualTo(newHash);
+    }
+
+    [Test]
+    public async Task ApplyAsync_DoesNotOverwriteContentHash_WhenAlreadyPresent()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        const string existingHash = "AAAA1111BBBB2222CCCC3333DDDD4444";
+        seed.Disc.ContentHash = existingHash;
+        await db.SaveChangesAsync();
+
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            JsonOptions);
+
+        var change = new DiscFieldsUpdate(MakeProposed(contentHash: "9999888877776666555544443333EEEE"));
+        await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        var reloaded = await db.Set<TheDiscDb.InputModels.ReleaseDisc>().FirstAsync(d => d.Slug == ChangeTestSeed.DiscSlug);
+        await Assert.That(reloaded.ContentHash).IsEqualTo(existingHash);
+    }
+
+    [Test]
+    public async Task ValidateAsync_ReturnsConflict_WhenContentHashDrifts()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = "AAAA1111BBBB2222CCCC3333DDDD4444";
+        await db.SaveChangesAsync();
+
+        // Snapshot taken when the disc had no hash; the DB now has one -> drift.
+        var staleSnapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug) with { ContentHash = null },
+            JsonOptions);
+
+        var change = new DiscFieldsUpdate(MakeProposed(contentHash: "9999888877776666555544443333EEEE"));
+
+        var result = await change.ValidateAsync(db, staleSnapshot, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsTrue();
+        await Assert.That(result.ConflictReason).Contains("ContentHash");
     }
 }
