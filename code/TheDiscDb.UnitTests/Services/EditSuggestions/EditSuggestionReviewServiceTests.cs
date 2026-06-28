@@ -205,4 +205,44 @@ public class EditSuggestionReviewServiceTests
 
         await Assert.That(result).IsNull();
     }
+
+    [Test]
+    public async Task ApproveChangeAsync_ReturnsNull_WhenSuggestionWithdrawn()
+    {
+        var (db, reviewService, suggestion) = await SetupAsync();
+        var change = suggestion.Changes.First();
+
+        // User withdrew the suggestion; its change is still Pending.
+        var entity = await db.EditSuggestions.FirstAsync(s => s.Id == suggestion.Id);
+        entity.Status = EditSuggestionStatus.Withdrawn;
+        await db.SaveChangesAsync();
+
+        var result = await reviewService.ApproveChangeAsync(suggestion.Id, change.Id, "admin-1", null, CT);
+
+        await Assert.That(result).IsNull();
+
+        // Change must remain Pending and the release untouched.
+        var reloadedChange = await db.Set<EditSuggestionChange>().FirstAsync(c => c.Id == change.Id);
+        await Assert.That(reloadedChange.Status).IsEqualTo(EditSuggestionChangeStatus.Pending);
+        var release = await db.Releases.FirstAsync(r => r.Slug == "the-release");
+        await Assert.That(release.Title).IsEqualTo("Original Title");
+    }
+
+    [Test]
+    public async Task RejectChangeAsync_ReturnsNull_WhenSuggestionWithdrawn()
+    {
+        var (db, reviewService, suggestion) = await SetupAsync();
+        var change = suggestion.Changes.First();
+
+        var entity = await db.EditSuggestions.FirstAsync(s => s.Id == suggestion.Id);
+        entity.Status = EditSuggestionStatus.Withdrawn;
+        await db.SaveChangesAsync();
+
+        var result = await reviewService.RejectChangeAsync(suggestion.Id, change.Id, "admin-1", "no", CT);
+
+        await Assert.That(result).IsNull();
+
+        var reloadedChange = await db.Set<EditSuggestionChange>().FirstAsync(c => c.Id == change.Id);
+        await Assert.That(reloadedChange.Status).IsEqualTo(EditSuggestionChangeStatus.Pending);
+    }
 }
