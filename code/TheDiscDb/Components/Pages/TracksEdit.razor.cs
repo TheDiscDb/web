@@ -73,7 +73,7 @@ public partial class TracksEdit : ComponentBase
     private bool submitSuccess;
     private bool isSubmitting;
     private bool isReviewing;
-    private List<TrackNameDiff> pendingDiffs = [];
+    private List<TrackDescriptionDiff> pendingDiffs = [];
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -106,9 +106,18 @@ public partial class TracksEdit : ComponentBase
 
         foreach (var track in Title.Tracks)
         {
+            // Only audio and subtitle descriptions are durable: they round-trip
+            // through the summary file as AudioTrack[n]/SubtitleTrack[n] lines.
+            // Every other track field (and video descriptions) is regenerated from
+            // the disc metadata on each import, so we don't expose them for editing.
+            if (!IsDescribableTrack(track.Type))
+            {
+                continue;
+            }
+
             var snapshot = TrackFieldsUpdate.SnapshotFrom(
                 track, mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty, Disc.Slug, Title.Index);
-            rows.Add(new TrackEditRow(track, snapshot) { EditName = track.Name });
+            rows.Add(new TrackEditRow(track, snapshot) { EditDescription = track.Description });
         }
     }
 
@@ -158,8 +167,10 @@ public partial class TracksEdit : ComponentBase
 
     private bool HasChanges() => rows.Any(r => r.HasChange);
 
-    private bool AllNamesValid() =>
-        rows.Where(r => r.HasChange).All(r => !string.IsNullOrWhiteSpace(r.EditName));
+    private static bool IsDescribableTrack(string? type) =>
+        string.Equals(type, "Audio", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(type, "Subtitles", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(type, "Subtitle", StringComparison.OrdinalIgnoreCase);
 
     private void ShowReview()
     {
@@ -173,16 +184,16 @@ public partial class TracksEdit : ComponentBase
         submitMessage = null;
     }
 
-    private List<TrackNameDiff> ComputeDiffs()
+    private List<TrackDescriptionDiff> ComputeDiffs()
     {
         return rows
             .Where(r => r.HasChange)
-            .Select(r => new TrackNameDiff(
+            .Select(r => new TrackDescriptionDiff(
                 r.Track.Index,
                 r.Track.Type ?? "Track",
-                GetMetadata(r.Track),
-                r.Original.Name,
-                r.EditName))
+                GetTrackContext(r.Track),
+                r.Original.Description,
+                r.EditDescription))
             .ToList();
     }
 
@@ -260,6 +271,21 @@ public partial class TracksEdit : ComponentBase
             string.Join(" ", new[] { a, b }.Where(s => !string.IsNullOrEmpty(s))).Trim();
     }
 
+    /// <summary>
+    /// Read-only context shown next to the description input so the user can tell
+    /// which track they're editing: the codec/name plus its metadata.
+    /// </summary>
+    private static string GetTrackContext(EntityTrack track)
+    {
+        var meta = GetMetadata(track);
+        if (string.IsNullOrEmpty(track.Name))
+        {
+            return meta;
+        }
+
+        return string.IsNullOrEmpty(meta) ? track.Name : $"{track.Name} — {meta}";
+    }
+
     private string GetTitleUrl()
     {
         if (Item == null || Release == null || Disc == null || Title == null)
@@ -307,12 +333,18 @@ public partial class TracksEdit : ComponentBase
 
         public TrackFieldsDetails Original { get; } = original;
 
-        public string? EditName { get; set; }
+        public string? EditDescription { get; set; }
 
-        public TrackFieldsDetails BuildProposed() => Original with { Name = EditName };
+        // Empty string clears the description (removes the summary line). null and
+        // empty are treated as equivalent so an untouched blank row isn't a change.
+        public TrackFieldsDetails BuildProposed() =>
+            Original with { Description = EditDescription ?? string.Empty };
 
-        public bool HasChange => Original.Name != EditName;
+        public bool HasChange => !string.Equals(
+            Original.Description ?? string.Empty,
+            EditDescription ?? string.Empty,
+            StringComparison.Ordinal);
     }
 }
 
-internal sealed record TrackNameDiff(int Index, string Type, string Metadata, string? CurrentName, string? ProposedName);
+internal sealed record TrackDescriptionDiff(int Index, string Type, string Metadata, string? CurrentDescription, string? ProposedDescription);

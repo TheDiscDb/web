@@ -29,12 +29,14 @@ else
     {
         <h1>Suggest Track Edits</h1>
         <p class="text-muted">
-            Edit the track names below. Only the name can be changed — all other fields come
-            from the disc file metadata. Your changes will be reviewed before being applied.
+            Add or correct the description of an audio or subtitle track (for example
+            "Director's commentary" or "Forced subtitles"). Other track fields come from the
+            disc file metadata and can't be changed here. Your changes will be reviewed before
+            being applied.
         </p>
 
         <section class="info-grid single-column">
-            @{ var trackGroups = new[] { "Video", "Audio", "Subtitles" }; }
+            @{ var trackGroups = new[] { "Audio", "Subtitles" }; }
             @foreach (var groupType in trackGroups)
             {
                 var groupRows = rows.Where(r => r.Track.Type == groupType).ToList();
@@ -46,8 +48,8 @@ else
                             <thead>
                                 <tr>
                                     <th scope="col" style="width: 5rem;">Index</th>
-                                    <th scope="col">Details</th>
-                                    <th scope="col">Name</th>
+                                    <th scope="col">Track</th>
+                                    <th scope="col">Description</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -55,10 +57,10 @@ else
                                 {
                                     <tr>
                                         <td>@row.Track.Index</td>
-                                        <td class="text-muted">@GetMetadata(row.Track)</td>
+                                        <td class="text-muted">@GetTrackContext(row.Track)</td>
                                         <td>
                                             <input type="text" class="form-control form-control-sm"
-                                                   @bind="row.EditName" @bind:event="oninput" placeholder="Track name" />
+                                                   @bind="row.EditDescription" @bind:event="oninput" placeholder="Description (optional)" />
                                         </td>
                                     </tr>
                                 }
@@ -69,15 +71,11 @@ else
             }
 
             <div class="d-flex gap-2 mt-4">
-                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges() || !AllNamesValid())">
+                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges())">
                     Review Suggested Changes
                 </button>
                 <a href="@GetTitleUrl()" class="btn btn-outline-secondary">Cancel</a>
             </div>
-            @if (!AllNamesValid())
-            {
-                <div class="text-danger small mt-2">A track name cannot be left blank.</div>
-            }
         </section>
     }
     else
@@ -90,8 +88,8 @@ else
                 <thead>
                     <tr>
                         <th>Track</th>
-                        <th>Current Name</th>
-                        <th>Proposed Name</th>
+                        <th>Current Description</th>
+                        <th>Proposed Description</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -99,8 +97,8 @@ else
                     {
                         <tr class="table-warning">
                             <td><strong>@diff.Type @diff.Index</strong> <span class="text-muted">@diff.Metadata</span></td>
-                            <td class="text-muted">@(string.IsNullOrEmpty(diff.CurrentName) ? "—" : diff.CurrentName)</td>
-                            <td><strong>@(string.IsNullOrEmpty(diff.ProposedName) ? "—" : diff.ProposedName)</strong></td>
+                            <td class="text-muted">@(string.IsNullOrEmpty(diff.CurrentDescription) ? "—" : diff.CurrentDescription)</td>
+                            <td><strong>@(string.IsNullOrEmpty(diff.ProposedDescription) ? "—" : diff.ProposedDescription)</strong></td>
                         </tr>
                     }
                 </tbody>
