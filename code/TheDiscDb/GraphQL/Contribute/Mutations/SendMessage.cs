@@ -71,6 +71,11 @@ public partial class ContributionMutations
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken)
             ?? throw new ContributionNotFoundException(contributionId);
 
+        if (user.IsInRole(DefaultRoles.Administrator))
+        {
+            return await messageService.SendAdminMessageAsync(contribution.Id, userId, contribution.UserId, message, cancellationToken);
+        }
+
         await EnsureOwnership(userManager, contribution, contributionId, cancellationToken: cancellationToken);
 
         return await messageService.SendUserMessageAsync(contribution.Id, userId, message, cancellationToken);
@@ -149,6 +154,11 @@ public partial class ContributionMutations
         var boxset = await database.UserContributionBoxsets
             .FirstOrDefaultAsync(b => b.Id == decodedBoxsetId, cancellationToken)
             ?? throw new BoxsetNotFoundException(boxsetId);
+
+        if (user.IsInRole(DefaultRoles.Administrator))
+        {
+            return await messageService.SendAdminBoxsetMessageAsync(boxset.Id, userId, boxset.UserId, message, cancellationToken);
+        }
 
         if (boxset.UserId != userId)
         {
