@@ -15,7 +15,7 @@ using EntityTrack = TheDiscDb.InputModels.Track;
 namespace TheDiscDb.Components.Pages;
 
 [Authorize]
-public partial class TracksEdit : ComponentBase
+public partial class TracksEdit : AuthenticatedComponentBase
 {
     [Parameter]
     public string? Type { get; set; }
@@ -40,12 +40,6 @@ public partial class TracksEdit : ComponentBase
 
     [Inject]
     public IEditSuggestionService EditSuggestionService { get; set; } = null!;
-
-    [Inject]
-    public UserManager<TheDiscDbUser> UserManager { get; set; } = null!;
-
-    [Inject]
-    public AuthenticationStateProvider AuthStateProvider { get; set; } = null!;
 
     [Inject]
     public NavigationManager Navigation { get; set; } = null!;
@@ -209,8 +203,7 @@ public partial class TracksEdit : ComponentBase
 
         try
         {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var userId = UserManager.GetUserId(authState.User);
+            var userId = await GetCurrentUserIdAsync();
             if (string.IsNullOrEmpty(userId))
             {
                 submitMessage = "You must be signed in to submit suggestions.";

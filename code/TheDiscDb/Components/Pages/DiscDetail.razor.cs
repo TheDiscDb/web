@@ -27,15 +27,16 @@ public partial class DiscDetail : ComponentBase
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
+    [SupplyParameterFromQuery(Name = "editSubmitted")]
+    public string? EditSubmittedSquid { get; set; }
+
     private MediaItem? Item { get; set; }
     private Boxset? BoxsetItem { get; set; }
     private Release? DiscRelease { get; set; }
     private ReleaseDisc? Disc { get; set; }
-    private string? editSubmittedSquid;
 
     protected override async Task OnInitializedAsync()
     {
-        editSubmittedSquid = HttpContext?.Request.Query["editSubmitted"].ToString();
         // Detect the boxset disc case (legacy URL: /boxset/{slug}/discs/{slugOrIndex})
         bool isBoxsetUrl = false;
         if (string.IsNullOrEmpty(this.Type) && !string.IsNullOrEmpty(this.Slug) && !string.IsNullOrEmpty(this.SlugOrIndexString))

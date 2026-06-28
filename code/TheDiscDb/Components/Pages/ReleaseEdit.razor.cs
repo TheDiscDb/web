@@ -44,7 +44,7 @@ public class EditReleaseRequest
 }
 
 [Authorize]
-public partial class ReleaseEdit : ComponentBase
+public partial class ReleaseEdit : AuthenticatedComponentBase
 {
     [Parameter]
     public string? Type { get; set; }
@@ -60,12 +60,6 @@ public partial class ReleaseEdit : ComponentBase
 
     [Inject]
     public IEditSuggestionService EditSuggestionService { get; set; } = null!;
-
-    [Inject]
-    public UserManager<TheDiscDbUser> UserManager { get; set; } = null!;
-
-    [Inject]
-    public AuthenticationStateProvider AuthStateProvider { get; set; } = null!;
 
     [Inject]
     public NavigationManager Navigation { get; set; } = null!;
@@ -168,8 +162,7 @@ public partial class ReleaseEdit : ComponentBase
 
         try
         {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var userId = UserManager.GetUserId(authState.User);
+            var userId = await GetCurrentUserIdAsync();
             if (string.IsNullOrEmpty(userId))
             {
                 submitMessage = "You must be logged in to suggest edits.";

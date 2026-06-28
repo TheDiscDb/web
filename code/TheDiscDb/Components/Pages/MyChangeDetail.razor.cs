@@ -10,7 +10,7 @@ using TheDiscDb.Web.Data;
 namespace TheDiscDb.Components.Pages;
 
 [Authorize]
-public partial class MyChangeDetail : ComponentBase
+public partial class MyChangeDetail : AuthenticatedComponentBase
 {
     [Parameter]
     public string SuggestionSquid { get; set; } = null!;
@@ -20,12 +20,6 @@ public partial class MyChangeDetail : ComponentBase
 
     [Inject]
     private IdEncoder IdEncoder { get; set; } = null!;
-
-    [Inject]
-    private AuthenticationStateProvider AuthStateProvider { get; set; } = null!;
-
-    [Inject]
-    private UserManager<TheDiscDbUser> UserManager { get; set; } = null!;
 
     [Inject]
     private ILogger<MyChangeDetail> Logger { get; set; } = null!;
@@ -54,7 +48,7 @@ public partial class MyChangeDetail : ComponentBase
         var loaded = await SuggestionService.GetByIdAsync(suggestionId, CancellationToken.None);
 
         // Only show if the user owns this suggestion
-        var userId = await GetUserId();
+        var userId = await GetCurrentUserIdAsync();
         if (loaded?.UserId == userId)
         {
             suggestion = loaded;
@@ -68,7 +62,7 @@ public partial class MyChangeDetail : ComponentBase
 
         try
         {
-            var userId = await GetUserId();
+            var userId = await GetCurrentUserIdAsync();
             if (userId == null) return;
 
             var result = await SuggestionService.WithdrawAsync(suggestionId, userId, isAdmin: false, CancellationToken.None);
@@ -95,12 +89,6 @@ public partial class MyChangeDetail : ComponentBase
         {
             isProcessing = false;
         }
-    }
-
-    private async Task<string?> GetUserId()
-    {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        return UserManager.GetUserId(authState.User);
     }
 
     private static string GetStatusBadge(EditSuggestionStatus status) => status switch

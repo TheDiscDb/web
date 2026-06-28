@@ -9,19 +9,13 @@ using TheDiscDb.Web.Data;
 namespace TheDiscDb.Components.Pages;
 
 [Authorize]
-public partial class MyChanges : ComponentBase
+public partial class MyChanges : AuthenticatedComponentBase
 {
     [Inject]
     private IEditSuggestionService SuggestionService { get; set; } = null!;
 
     [Inject]
     private IdEncoder IdEncoder { get; set; } = null!;
-
-    [Inject]
-    private AuthenticationStateProvider AuthStateProvider { get; set; } = null!;
-
-    [Inject]
-    private UserManager<TheDiscDbUser> UserManager { get; set; } = null!;
 
     private IReadOnlyList<EditSuggestion>? suggestions;
     private EditSuggestionStatus? selectedStatus;
@@ -45,7 +39,7 @@ public partial class MyChanges : ComponentBase
 
     private async Task RefreshList()
     {
-        var userId = await GetUserId();
+        var userId = await GetCurrentUserIdAsync();
         if (userId == null) return;
 
         var filter = new EditSuggestionListFilter
@@ -56,12 +50,6 @@ public partial class MyChanges : ComponentBase
         };
 
         suggestions = await SuggestionService.ListAsync(filter, CancellationToken.None);
-    }
-
-    private async Task<string?> GetUserId()
-    {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        return UserManager.GetUserId(authState.User);
     }
 
     private static string GetStatusBadge(EditSuggestionStatus status) => status switch

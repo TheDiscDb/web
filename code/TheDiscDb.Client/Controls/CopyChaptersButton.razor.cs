@@ -15,7 +15,7 @@ public partial class CopyChaptersButton : ComponentBase
 
     private CopyButtonState state = CopyButtonState.Default;
 
-    private async Task OnPrimaryClick(ClickEventArgs args)
+    private async Task OnPrimaryClick()
     {
         var defaultFormat = ChapterFormatter.GetFormatNames().First();
         await CopyFormat(defaultFormat);

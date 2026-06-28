@@ -23,9 +23,11 @@ public partial class ReleaseDetail : ComponentBase
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
+    [SupplyParameterFromQuery(Name = "editSubmitted")]
+    public string? EditSubmittedSquid { get; set; }
+
     private MediaItem? Item { get; set; }
     private Release? Release { get; set; }
-    private string? editSubmittedSquid;
 
     private List<Group> AllGroups
     {
@@ -61,8 +63,6 @@ public partial class ReleaseDetail : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
-        editSubmittedSquid = HttpContext?.Request.Query["editSubmitted"].ToString();
-
         if (this.Cache == null)
         {
             throw new Exception("Cache was not injected");

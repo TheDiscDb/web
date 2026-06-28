@@ -30,16 +30,16 @@ public partial class TitleDetail : ComponentBase
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
+    [SupplyParameterFromQuery(Name = "editSubmitted")]
+    public string? EditSubmittedSquid { get; set; }
+
     private IDisplayItem? Item { get; set; }
     private Release? Release { get; set; }
     private ReleaseDisc? Disc { get; set; }
     private Title? Title { get; set; }
-    private string? editSubmittedSquid;
 
     protected override async Task OnInitializedAsync()
     {
-        editSubmittedSquid = HttpContext?.Request.Query["editSubmitted"].ToString();
-
         if (Cache == null || string.IsNullOrEmpty(Type) || string.IsNullOrEmpty(Slug))
         {
             return;

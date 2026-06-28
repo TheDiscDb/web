@@ -359,9 +359,6 @@ else
     builder.Services.AddTransient<IContributionNotificationService, NullContributionNotificationService>();
 }
 
-// Edit-suggestion notifications — every call site is wired, but they ship dormant.
-// Real Mailgun sender runs only when Mailgun is configured AND the dedicated
-// EditSuggestions:Notifications:Enabled switch is true; otherwise a no-op impl runs.
 builder.Services.AddEditSuggestionNotifications(builder.Configuration);
 
 builder.Services.AddSingleton<IContributionValidation, UniqueReleaseSlugValidation>();

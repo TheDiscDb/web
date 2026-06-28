@@ -157,6 +157,22 @@ detail-page work already done on `MyChangeDetail`.
 admin feedback (notes / rejection reasons)? Should this page and the admin
 review surface share components?
 
+### 9. Evaluate the `EditSuggestionSource` enum
+
+`EditSuggestionChange` carries an `EditSuggestionSource` (`Web`, `GraphQL`,
+`ApiKey`). Today every suggestion comes from the web UI, so only `Web` is ever
+written and the other values are speculative. **Decide whether this field earns
+its place**:
+
+- **Remove it** if we don't foresee non-web submission paths, and reintroduce it
+  later if/when a GraphQL mutation or API-key ingestion path is actually built.
+- **Keep and extend it** if we want a single, uniform way to record provenance —
+  in which case also consider tracking other change origins the same way (e.g.
+  the existing contributions pipeline) so source attribution is consistent across
+  the system rather than edit-suggestion-only.
+
+Captured from PR review feedback; no action taken in phase 1 beyond this note.
+
 ## Suggested Sequencing
 
 A reasonable order, roughly by leverage and dependency:

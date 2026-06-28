@@ -16,7 +16,7 @@ using TheDiscDb.Web.Data;
 namespace TheDiscDb.Components.Pages;
 
 [Authorize]
-public partial class ChapterEdit : ComponentBase, IDisposable
+public partial class ChapterEdit : AuthenticatedComponentBase, IDisposable
 {
     [Parameter]
     public string? Type { get; set; }
@@ -41,12 +41,6 @@ public partial class ChapterEdit : ComponentBase, IDisposable
 
     [Inject]
     public IEditSuggestionService EditSuggestionService { get; set; } = null!;
-
-    [Inject]
-    public UserManager<TheDiscDbUser> UserManager { get; set; } = null!;
-
-    [Inject]
-    public AuthenticationStateProvider AuthStateProvider { get; set; } = null!;
 
     [Inject]
     public NavigationManager Navigation { get; set; } = null!;
@@ -416,8 +410,7 @@ public partial class ChapterEdit : ComponentBase, IDisposable
 
         try
         {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var userId = UserManager.GetUserId(authState.User);
+            var userId = await GetCurrentUserIdAsync();
             if (string.IsNullOrEmpty(userId))
             {
                 submitMessage = "You must be logged in to suggest edits.";
