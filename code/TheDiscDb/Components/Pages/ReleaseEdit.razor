@@ -62,11 +62,7 @@ else
                     <InputText class="form-control" @bind-Value="request.Asin" />
                     <ValidationMessage For="@(() => request.Asin)" />
                 </div>
-                <div class="mb-3">
-                    <label>Release Date<span class="required">*</span></label>
-                    <InputText class="form-control" @bind-Value="releaseDate" @oninput="ReleaseDateChanged" />
-                    <div class="validation-message">@releaseDateValidationMessage</div>
-                </div>
+                <TheDiscDb.Client.Controls.ReleaseDateInput @ref="releaseDateInput" @bind-Value="request.ReleaseDate" Required="true" />
 
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">Review Suggested Changes</button>

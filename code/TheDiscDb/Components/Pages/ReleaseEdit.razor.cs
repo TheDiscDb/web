@@ -37,7 +37,8 @@ public class EditReleaseRequest
     [Asin]
     public string? Asin { get; set; }
 
-    public DateTimeOffset ReleaseDate { get; set; }
+    [Required(ErrorMessage = "Release Date is required")]
+    public DateTimeOffset? ReleaseDate { get; set; }
 
     public string? Summary { get; set; }
 }
@@ -83,8 +84,7 @@ public partial class ReleaseEdit : ComponentBase
     private ReleaseFieldsDetails? originalSnapshot;
 
     private readonly EditReleaseRequest request = new();
-    private string releaseDate = string.Empty;
-    private string releaseDateValidationMessage = string.Empty;
+    private TheDiscDb.Client.Controls.ReleaseDateInput? releaseDateInput;
     private string? submitMessage;
     private bool submitSuccess;
     private bool isSubmitting;
@@ -132,7 +132,6 @@ public partial class ReleaseEdit : ComponentBase
         request.Isbn = Release.Isbn;
         request.Asin = Release.Asin;
         request.ReleaseDate = Release.ReleaseDate;
-        releaseDate = Release.ReleaseDate.ToString("MM-dd-yyyy");
     }
 
     private void ShowReview()
@@ -142,61 +141,13 @@ public partial class ReleaseEdit : ComponentBase
             return;
         }
 
-        if (!ValidateReleaseDate())
+        if (releaseDateInput != null && !releaseDateInput.Validate())
         {
             return;
         }
 
         changedFields = ComputeDiff();
         isReviewing = true;
-    }
-
-    // Mirrors the contribution release-detail form: accept the Amazon
-    // "MMMM d, yyyy" format on input, otherwise hold the raw text and validate
-    // it on submit.
-    private void ReleaseDateChanged(ChangeEventArgs args)
-    {
-        var value = args?.Value?.ToString();
-        releaseDateValidationMessage = string.Empty;
-
-        if (!string.IsNullOrEmpty(value))
-        {
-            if (DateTimeOffset.TryParseExact(value, "MMMM d, yyyy", null,
-                System.Globalization.DateTimeStyles.None, out var parsedDate))
-            {
-                request.ReleaseDate = parsedDate;
-                releaseDate = parsedDate.ToString("MM-dd-yyyy");
-            }
-            else
-            {
-                releaseDate = value;
-                request.ReleaseDate = DateTimeOffset.MinValue;
-            }
-        }
-        else
-        {
-            releaseDate = string.Empty;
-            request.ReleaseDate = DateTimeOffset.MinValue;
-        }
-    }
-
-    private bool ValidateReleaseDate()
-    {
-        if (string.IsNullOrWhiteSpace(releaseDate))
-        {
-            releaseDateValidationMessage = "Release Date is required.";
-            return false;
-        }
-
-        if (!DateTimeOffset.TryParse(releaseDate, out var date))
-        {
-            releaseDateValidationMessage = $"'{releaseDate}' is not a valid date.";
-            return false;
-        }
-
-        request.ReleaseDate = date;
-        releaseDateValidationMessage = string.Empty;
-        return true;
     }
 
     private void BackToEdit()
@@ -239,7 +190,7 @@ public partial class ReleaseEdit : ComponentBase
                 Upc: request.Upc,
                 Isbn: request.Isbn,
                 Asin: request.Asin,
-                ReleaseDate: request.ReleaseDate);
+                ReleaseDate: request.ReleaseDate ?? default);
 
             var proposedJson = JsonSerializer.Serialize(proposed, JsonOptions);
             var snapshotJson = JsonSerializer.Serialize(originalSnapshot, JsonOptions);
@@ -285,7 +236,7 @@ public partial class ReleaseEdit : ComponentBase
         AddIfChanged(diffs, "ASIN", originalSnapshot.Asin, request.Asin);
         AddIfChanged(diffs, "Release Date",
             originalSnapshot.ReleaseDate.ToString("d"),
-            request.ReleaseDate.ToString("d"));
+            (request.ReleaseDate ?? default).ToString("d"));
 
         return diffs;
     }
