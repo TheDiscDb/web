@@ -30,6 +30,11 @@ public sealed class EditSuggestionReviewService(
 
         var (suggestion, change) = loaded;
 
+        if (!suggestion.Status.IsReviewable())
+        {
+            return null;
+        }
+
         if (change.Status is not EditSuggestionChangeStatus.Pending)
         {
             return null;
@@ -87,6 +92,11 @@ public sealed class EditSuggestionReviewService(
 
         var (suggestion, change) = loaded;
 
+        if (!suggestion.Status.IsReviewable())
+        {
+            return null;
+        }
+
         if (change.Status is not EditSuggestionChangeStatus.Pending)
         {
             return null;
@@ -118,6 +128,11 @@ public sealed class EditSuggestionReviewService(
             return null;
         }
 
+        if (!suggestion.Status.IsReviewable())
+        {
+            return suggestion;
+        }
+
         foreach (var change in suggestion.Changes.Where(c => c.Status == EditSuggestionChangeStatus.Pending))
         {
             await ApproveChangeAsync(suggestionId, change.Id, adminUserId, adminNote: null, cancellationToken);
@@ -143,6 +158,11 @@ public sealed class EditSuggestionReviewService(
         }
 
         var (suggestion, change) = loaded;
+
+        if (!suggestion.Status.IsReviewable())
+        {
+            return null;
+        }
 
         if (change.Status is not EditSuggestionChangeStatus.Conflicted)
         {

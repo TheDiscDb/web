@@ -233,6 +233,8 @@ public partial class EditSuggestionDetail : ComponentBase
     private bool HasRejectionReason(int changeId) =>
         rejectionReasons.TryGetValue(changeId, out var reason) && !string.IsNullOrWhiteSpace(reason);
 
+    private bool CanReview => suggestion is not null && suggestion.Status.IsReviewable();
+
     private static string FormatJson(string json)
     {
         try
