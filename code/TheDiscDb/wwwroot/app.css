@@ -1138,6 +1138,90 @@ pre code {
         color: #d24f45;
     }
 
+/* Standard icon action button. Mirrors the CopyButton (.copy-button) look so
+   icon actions across the site — suggest edit, copy, etc. — share one
+   consistent border, size, and hover/focus treatment. Keep these values in
+   sync with Controls/CopyButton.razor.css. Use the base class for icon-only
+   buttons; add .icon-btn-label for buttons that also show text. */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid #c4ccd8;
+    background-color: transparent;
+    color: #52657f;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color .15s ease-in-out, color .15s ease-in-out, border-color .15s ease-in-out;
+}
+
+    .icon-btn:hover:not(:disabled) {
+        background-color: #eef2f7;
+        color: #00213f;
+        border-color: #8b98ac;
+        text-decoration: none;
+    }
+
+    .icon-btn:focus-visible {
+        outline: none;
+        border-color: #00213f;
+        box-shadow: 0 0 0 2px rgba(0, 33, 63, 0.15);
+    }
+
+    .icon-btn.icon-btn-label {
+        width: auto;
+        padding: 0 .6rem;
+        font-size: .875rem;
+    }
+
+/* Make the Syncfusion split button (Copy chapters) adopt the .icon-btn /
+   copy-button frame: transparent background, the same 1px #c4ccd8 border,
+   6px outer radius, and matching hover/focus colors. The CssClass is applied
+   to the wrapper and both inner buttons, so .copy-split-button.e-btn targets
+   the primary and dropdown segments together. */
+.copy-split-button.e-split-btn-wrapper {
+    border-radius: 6px;
+}
+
+.copy-split-button.e-btn,
+.copy-split-button.e-btn:disabled {
+    background: transparent;
+    border-color: #c4ccd8;
+    color: #52657f;
+    box-shadow: none;
+}
+
+    .copy-split-button.e-btn:hover:not(:disabled),
+    .copy-split-button.e-btn:focus:not(:disabled),
+    .copy-split-button.e-btn:active:not(:disabled) {
+        background: #eef2f7;
+        border-color: #8b98ac;
+        color: #00213f;
+        box-shadow: none;
+    }
+
+    .copy-split-button.e-btn .e-btn-icon {
+        color: inherit;
+    }
+
+/* Round only the outer corners; keep a single divider between the two
+   segments rather than a doubled border. */
+.copy-split-button.e-split-btn {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+}
+
+.copy-split-button.e-dropdown-btn {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-left: none;
+}
+
 .disc-upload-page .info-card {
     padding: 2rem;
 }

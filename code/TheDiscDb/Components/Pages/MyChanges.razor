@@ -1,0 +1,60 @@
+@page "/changes/my"
+@using TheDiscDb.Client.Controls
+
+@rendermode InteractiveServer
+@inherits TheDiscDb.Components.AuthenticatedComponentBase
+
+<PageTitle>My Suggested Changes</PageTitle>
+
+<h1>My Suggested Changes</h1>
+
+<div class="d-flex gap-3 align-items-center mb-3">
+    <label class="fw-bold">Status:</label>
+    <SfDropDownList TValue="EditSuggestionStatus?"
+                    TItem="StatusOption"
+                    DataSource="statusOptions"
+                    Value="selectedStatus"
+                    ValueChanged="OnStatusChanged"
+                    ValueExpression="@(() => selectedStatus)"
+                    Placeholder="All statuses">
+        <DropDownListFieldSettings Text="Label" Value="Value" />
+    </SfDropDownList>
+</div>
+
+@if (suggestions == null)
+{
+    <p>Loading…</p>
+}
+else if (suggestions.Count == 0)
+{
+    <div class="alert alert-info">
+        @if (selectedStatus.HasValue)
+        {
+            <text>No suggestions with status <strong>@selectedStatus</strong>.</text>
+        }
+        else
+        {
+            <text>You haven't submitted any change suggestions yet.</text>
+        }
+    </div>
+}
+else
+{
+    <QuickGrid Items="suggestions.AsQueryable()" Class="striped-grid">
+        <TemplateColumn Title="Target">
+            <span class="text-muted">@context.TargetEntityType</span>
+            <code>@context.TargetEntityKey</code>
+        </TemplateColumn>
+        <PropertyColumn Property="@(s => s.Summary)" Title="Summary" />
+        <TemplateColumn Title="Changes">
+            @context.Changes.Count
+        </TemplateColumn>
+        <PropertyColumn Property="@(s => s.Created)" Title="Submitted" Format="g" Sortable="true" />
+        <TemplateColumn Title="Status">
+            <span class="badge @GetStatusBadge(context.Status)">@context.Status</span>
+        </TemplateColumn>
+        <TemplateColumn Title="">
+            <a href="/changes/my/@IdEncoder.Encode(context.Id)" class="btn btn-sm btn-outline-primary" data-enhance-nav="false">View</a>
+        </TemplateColumn>
+    </QuickGrid>
+}

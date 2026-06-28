@@ -1,0 +1,184 @@
+@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndex}/{file}/{extension}/chapters/edit"
+@page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndex}/{file}/chapters/edit"
+@page "/{type}/{slug}/discs/{slugOrIndex}/{file}/chapters/edit"
+@page "/{type}/{slug}/discs/{slugOrIndex}/{file}/{extension}/chapters/edit"
+
+@rendermode InteractiveServer
+@inherits TheDiscDb.Components.AuthenticatedComponentBase
+
+<PageTitle>Edit Chapters - TheDiscDb</PageTitle>
+
+@if (Item == null || Release == null || Disc == null || Title == null)
+{
+    <div class="alert alert-warning">Title not found.</div>
+}
+else
+{
+    <TheDiscDb.Client.Controls.Breadcrumb Items="@GetBreadcrumbs()" PrimaryText="Edit Chapters" />
+
+    @if (!string.IsNullOrEmpty(submitMessage))
+    {
+        <div class="alert @(submitSuccess ? "alert-success" : "alert-danger")">@submitMessage</div>
+    }
+
+    @if (!isReviewing)
+    {
+        <h1>Edit Chapters for @Title.SourceFile</h1>
+        <p class="text-muted">
+            Edit chapter titles, drag the handle to reorder, add missing chapters, or remove incorrect ones.
+            Your changes will be reviewed before being applied.
+        </p>
+
+        @if (chapters.Count == 0)
+        {
+            <div class="alert alert-info">
+                <div class="d-flex align-items-center gap-2">
+                    <span>No chapters exist yet. How many chapters does this title have?</span>
+                    <input type="number" class="form-control form-control-sm" style="width: 80px;" min="1" max="200" @bind="bulkAddCount" />
+                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="BulkAddChapters" disabled="@(bulkAddCount < 1)">
+                        Add Chapters
+                    </button>
+                </div>
+            </div>
+        }
+
+        <section class="info-grid single-column">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th class="drag-col"></th>
+                        <th>Chapter Title</th>
+                        <th style="width: 80px;"></th>
+                    </tr>
+                </thead>
+                <tbody @ref="tableBodyRef">
+                    @{ var position = 0; var rowIndex = -1; }
+                    @foreach (var chapter in chapters)
+                    {
+                        rowIndex++;
+                        if (!chapter.IsDeleted)
+                        {
+                            position++;
+                        }
+                        var chapterNumber = position;
+                        var currentIndex = rowIndex;
+                        <tr class="@GetRowClass(chapter)" @key="chapter"
+                            data-row-index="@currentIndex"
+                            data-deleted="@(chapter.IsDeleted ? "true" : "false")"
+                            @ondragenter="() => OnDragEnter(chapter)"
+                            @ondragover:preventDefault="true">
+                            <td class="drag-handle" data-drag-handle title="Drag to reorder"
+                                draggable="@(chapter.IsDeleted ? "false" : "true")"
+                                @ondragstart="() => OnDragStart(chapter)"
+                                @ondragend="OnDragEnd">
+                                @(chapter.IsDeleted ? "" : "⋮")
+                            </td>
+                            <td>
+                                @if (!chapter.IsDeleted)
+                                {
+                                    <input type="text" class="form-control form-control-sm"
+                                           @bind="chapter.Title" @bind:event="oninput"
+                                           placeholder="Chapter @chapterNumber" />
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@(chapter.OriginalTitle ?? "(unnamed)")</span>
+                                }
+                            </td>
+                            <td>
+                                @if (chapter.IsDeleted)
+                                {
+                                    <button type="button" class="btn btn-sm" @onclick="() => UndoDelete(chapter)" title="Undo delete">
+                                        <i class="e-icons e-undo"></i>
+                                    </button>
+                                }
+                                else if (!chapter.IsNew)
+                                {
+                                    <button type="button" class="btn btn-sm" @onclick="() => MarkDeleted(chapter)" title="Delete">
+                                        <i class="e-icons e-trash"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-sm" @onclick="() => RemoveNew(chapter)" title="Remove">
+                                        <i class="e-icons e-trash"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="d-flex gap-2 mb-3">
+                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="AddOneChapter">+ Add Chapter</button>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary" @onclick="ShowReview" disabled="@(!HasChanges() || !AllTitlesValid())">
+                    Review Suggested Changes
+                </button>
+                <a href="@GetTitleUrl()" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+            @if (!AllTitlesValid())
+            {
+                <div class="text-danger small mt-2">Every chapter must have a title.</div>
+            }
+        </section>
+    }
+    else
+    {
+        <h1>Review Your Chapter Changes</h1>
+        <p class="text-muted">These changes will be submitted for review by an admin.</p>
+
+        <section class="info-grid single-column">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Change</th>
+                        <th>Chapter</th>
+                        <th>Was</th>
+                        <th>Now</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var diff in pendingDiffs)
+                    {
+                        <tr class="@diff.CssClass">
+                            <td><strong>@diff.ChangeType</strong></td>
+                            <td>@diff.Chapter</td>
+                            <td class="text-muted">@(diff.Was ?? "—")</td>
+                            <td><strong>@(diff.Now ?? "—")</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (pendingDiffs.Count == 0)
+            {
+                <div class="alert alert-info">No changes detected.</div>
+            }
+
+            @if (pendingDiffs.Count > 0)
+            {
+                <div class="mb-3">
+                    <label>Summary <span class="text-muted">(optional — briefly describe your changes)</span></label>
+                    <input type="text" class="form-control" @bind="summary" />
+                </div>
+            }
+
+            <div class="d-flex gap-2">
+                @if (pendingDiffs.Count > 0 && !submitSuccess)
+                {
+                    <button type="button" class="btn btn-primary" disabled="@isSubmitting" @onclick="HandleSubmit">
+                        @(isSubmitting ? "Submitting…" : "Submit Changes")
+                    </button>
+                }
+                @if (!submitSuccess)
+                {
+                    <button type="button" class="btn btn-outline-secondary" @onclick="BackToEdit">← Back to Edit</button>
+                }
+            </div>
+        </section>
+    }
+}

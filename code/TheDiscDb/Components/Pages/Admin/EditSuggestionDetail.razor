@@ -1,0 +1,122 @@
+@page "/admin/changes/{SuggestionId:int}"
+@using System.Text.Json
+@using TheDiscDb.Client.Controls
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Edit Suggestion #@SuggestionId</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink(), GetChangesLink()]" PrimaryText="@($"Suggestion #{SuggestionId}")" />
+
+@if (suggestion == null)
+{
+    <div class="alert alert-warning">Suggestion not found.</div>
+}
+else
+{
+    <h1>Edit Suggestion #@suggestion.Id</h1>
+
+    @if (!string.IsNullOrEmpty(actionMessage))
+    {
+        <div class="alert @(actionSuccess ? "alert-success" : "alert-danger")">@actionMessage</div>
+    }
+
+    <section class="info-grid single-column mb-4">
+        <dl class="row">
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9"><span class="badge @GetStatusBadge(suggestion.Status)">@suggestion.Status</span></dd>
+
+            <dt class="col-sm-3">Target</dt>
+            <dd class="col-sm-9">@suggestion.TargetEntityType — <code>@suggestion.TargetEntityKey</code></dd>
+
+            <dt class="col-sm-3">Summary</dt>
+            <dd class="col-sm-9">@(suggestion.Summary ?? "(none)")</dd>
+
+            <dt class="col-sm-3">Submitted</dt>
+            <dd class="col-sm-9">@suggestion.Created.ToString("g") by <code>@suggestion.UserId</code></dd>
+
+            <dt class="col-sm-3">Source</dt>
+            <dd class="col-sm-9">@suggestion.Source</dd>
+
+            @if (suggestion.ReviewedAt.HasValue)
+            {
+                <dt class="col-sm-3">Reviewed</dt>
+                <dd class="col-sm-9">@suggestion.ReviewedAt.Value.ToString("g") by <code>@suggestion.ReviewedByUserId</code></dd>
+            }
+        </dl>
+    </section>
+
+    @if (suggestion.Status == EditSuggestionStatus.Pending || suggestion.Status == EditSuggestionStatus.InReview)
+    {
+        <div class="mb-3">
+            <button class="btn btn-success" @onclick="ApproveAll" disabled="@isProcessing">Approve All Pending</button>
+        </div>
+    }
+
+    <h2>Changes (@suggestion.Changes.Count)</h2>
+
+    @foreach (var change in suggestion.Changes.OrderBy(c => c.Ordinal))
+    {
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <strong>@change.Type</strong>
+                    <span class="badge @GetChangeStatusBadge(change.Status) ms-2">@change.Status</span>
+                </span>
+                <span class="text-muted">Change #@change.Id</span>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(change.OriginalSnapshotJson) || !string.IsNullOrEmpty(change.ProposedJson))
+                {
+                    <TheDiscDb.Client.Controls.JsonDiff
+                        OriginalJson="@change.OriginalSnapshotJson"
+                        ProposedJson="@change.ProposedJson"
+                        ExcludeKeys="@IdentityFields" />
+                }
+
+                @if (!string.IsNullOrEmpty(change.ConflictReason))
+                {
+                    <div class="alert alert-danger mt-2 mb-0">
+                        <strong>Conflict:</strong> @change.ConflictReason
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(change.AdminNote))
+                {
+                    <div class="alert alert-secondary mt-2 mb-0">
+                        <strong>Admin note:</strong> @change.AdminNote
+                    </div>
+                }
+            </div>
+            @if (change.Status == EditSuggestionChangeStatus.Pending)
+            {
+                <div class="card-footer">
+                    <div class="d-flex gap-2 align-items-center">
+                        <button class="btn btn-sm btn-success" disabled="@isProcessing"
+                                @onclick="() => ApproveChange(change.Id)">
+                            Approve
+                        </button>
+                        <input class="form-control form-control-sm" style="max-width: 300px;"
+                               placeholder="Rejection reason (required to reject)"
+                               @bind="rejectionReasons[change.Id]" />
+                        <button class="btn btn-sm btn-danger" disabled="@(isProcessing || !HasRejectionReason(change.Id))"
+                                @onclick="() => RejectChange(change.Id)">
+                            Reject
+                        </button>
+                    </div>
+                </div>
+            }
+            @if (change.Status == EditSuggestionChangeStatus.Conflicted)
+            {
+                <div class="card-footer d-flex gap-2 align-items-center">
+                    <input class="form-control form-control-sm" style="max-width: 300px;"
+                           placeholder="Resolution note" @bind="conflictResolution" />
+                    <button class="btn btn-sm btn-warning" disabled="@isProcessing"
+                            @onclick="() => ResolveConflict(change.Id)">
+                        Resolve &amp; Apply
+                    </button>
+                </div>
+            }
+        </div>
+    }
+}

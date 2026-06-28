@@ -28,7 +28,7 @@ public class MailgunClient
     /// <summary>
     /// Sends an email via the Mailgun v3 Messages API.
     /// </summary>
-    public async Task<MailgunSendResult> SendAsync(MailgunMessage message, CancellationToken cancellationToken = default)
+    public virtual async Task<MailgunSendResult> SendAsync(MailgunMessage message, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(message);
 

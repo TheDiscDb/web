@@ -1,0 +1,86 @@
+@page "/changes/my/{SuggestionSquid}"
+@using TheDiscDb.Client.Controls
+
+@rendermode InteractiveServer
+@inherits TheDiscDb.Components.AuthenticatedComponentBase
+
+<PageTitle>My Change</PageTitle>
+
+@if (suggestion == null)
+{
+    <div class="alert alert-warning">Suggestion not found.</div>
+}
+else
+{
+    <Breadcrumb Items="@(new[] { ("My Suggested Changes", "/changes/my") })"
+                PrimaryText="@($"Suggested Edit: {suggestion.TargetEntityType}")" />
+
+    <h1>Suggested Edit: @suggestion.TargetEntityType</h1>
+
+    @if (!string.IsNullOrEmpty(actionMessage))
+    {
+        <div class="alert @(actionSuccess ? "alert-success" : "alert-danger")">@actionMessage</div>
+    }
+
+    <section class="mb-4">
+        <dl class="row">
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9"><span class="badge @GetStatusBadge(suggestion.Status)">@suggestion.Status</span></dd>
+
+            <dt class="col-sm-3">Target</dt>
+            <dd class="col-sm-9">@suggestion.TargetEntityType — <code>@suggestion.TargetEntityKey</code></dd>
+
+            <dt class="col-sm-3">Summary</dt>
+            <dd class="col-sm-9">@(suggestion.Summary ?? "(none)")</dd>
+
+            <dt class="col-sm-3">Submitted</dt>
+            <dd class="col-sm-9">@suggestion.Created.ToString("g")</dd>
+
+            @if (suggestion.ReviewedAt.HasValue)
+            {
+                <dt class="col-sm-3">Reviewed</dt>
+                <dd class="col-sm-9">@suggestion.ReviewedAt.Value.ToString("g")</dd>
+            }
+        </dl>
+    </section>
+
+    @if (suggestion.Status == EditSuggestionStatus.Pending)
+    {
+        <div class="mb-3">
+            <button class="btn btn-outline-danger" @onclick="WithdrawSuggestion" disabled="@isProcessing">
+                Withdraw Suggestion
+            </button>
+        </div>
+    }
+
+    <h2>Changes (@suggestion.Changes.Count)</h2>
+
+    @foreach (var change in suggestion.Changes.OrderBy(c => c.Ordinal))
+    {
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>
+                    <strong>@change.Type</strong>
+                    <span class="badge @GetChangeStatusBadge(change.Status) ms-2">@change.Status</span>
+                </span>
+            </div>
+            <div class="card-body">
+                <TheDiscDb.Client.Controls.JsonDiff
+                    OriginalJson="@change.OriginalSnapshotJson"
+                    ProposedJson="@change.ProposedJson"
+                    ExcludeKeys="@IdentityFields" />
+
+                @if (!string.IsNullOrEmpty(change.AdminNote))
+                {
+                    <div class="alert alert-secondary mt-3 mb-0">
+                        <strong>Reviewer note:</strong> @change.AdminNote
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="mt-3">
+        <a href="/changes/my" class="btn btn-outline-secondary">← Back to My Changes</a>
+    </div>
+}

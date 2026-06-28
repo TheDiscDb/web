@@ -55,7 +55,7 @@ public class TitleFileNameExtension
         var loadedReleaseDisc = loadedDisc?.ReleaseDiscs
             .FirstOrDefault(rd => rd.Release?.MediaItem is not null || rd.Release?.Boxset is not null);
         var loadedRelease = loadedReleaseDisc?.Release;
-        if (loadedDisc is null || loadedRelease is null)
+        if (loaded is null || loadedDisc is null || loadedRelease is null)
         {
             return string.Empty;
         }

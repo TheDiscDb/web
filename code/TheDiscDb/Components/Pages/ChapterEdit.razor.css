@@ -1,0 +1,25 @@
+.drag-handle {
+    cursor: grab;
+    text-align: center;
+    user-select: none;
+    touch-action: none;
+    color: var(--bs-secondary-color, #6c757d);
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+::deep tr.dragging {
+    opacity: 0.4;
+}
+
+::deep tr.drag-over {
+    border-top: 2px solid var(--accent-color, #0d6efd);
+}
+
+.drag-col {
+    width: 2rem;
+}

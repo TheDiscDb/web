@@ -45,9 +45,9 @@ public partial class CopyChaptersButton : ComponentBase
         StateHasChanged();
     }
 
-    private record CopyButtonState(string Text, string IconCss, bool IsDisabled = false)
+    private record CopyButtonState(string IconCss, bool IsDisabled = false)
     {
-        public static readonly CopyButtonState Default = new("Copy", "e-icons e-copy");
-        public static readonly CopyButtonState Copied = new("Copied!", "e-icons e-circle-check", IsDisabled: true);
+        public static readonly CopyButtonState Default = new("e-icons e-copy");
+        public static readonly CopyButtonState Copied = new("e-icons e-circle-check", IsDisabled: true);
     }
 }

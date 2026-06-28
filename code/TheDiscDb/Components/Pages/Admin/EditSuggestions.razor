@@ -1,0 +1,49 @@
+@page "/admin/changes"
+@using TheDiscDb.Client.Controls
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Edit Suggestions</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink()]" PrimaryText="Edit Suggestions" />
+
+<h1>Edit Suggestions</h1>
+
+<div class="d-flex gap-3 align-items-center mb-3">
+    <label class="fw-bold">Status:</label>
+    <SfDropDownList TValue="EditSuggestionStatus"
+                    TItem="EditSuggestionStatus"
+                    DataSource="statusList"
+                    Value="selectedStatus"
+                    ValueChanged="OnStatusChanged"
+                    ValueExpression="@(() => selectedStatus)"
+                    Placeholder="Select status" />
+</div>
+
+@if (suggestions == null)
+{
+    <p>Loading…</p>
+}
+else if (suggestions.Count == 0)
+{
+    <div class="alert alert-info">No suggestions with status <strong>@selectedStatus</strong>.</div>
+}
+else
+{
+    <QuickGrid Items="suggestions.AsQueryable()" Class="striped-grid">
+        <TemplateColumn Title="ID">
+            <a href="/admin/changes/@context.Id">@context.Id</a>
+        </TemplateColumn>
+        <PropertyColumn Property="@(s => s.TargetEntityType)" Title="Entity" />
+        <PropertyColumn Property="@(s => s.TargetEntityKey)" Title="Target" />
+        <PropertyColumn Property="@(s => s.Summary)" Title="Summary" />
+        <TemplateColumn Title="Changes">
+            @context.Changes.Count
+        </TemplateColumn>
+        <PropertyColumn Property="@(s => s.Source)" Title="Source" />
+        <PropertyColumn Property="@(s => s.Created)" Title="Submitted" Format="g" Sortable="true" />
+        <TemplateColumn Title="Status">
+            <span class="badge @GetStatusBadge(context.Status)">@context.Status</span>
+        </TemplateColumn>
+    </QuickGrid>
+}

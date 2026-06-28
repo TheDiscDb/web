@@ -86,7 +86,7 @@ public class RssFeedMidleware
                 var mediaItems = db.Releases
                     .Include(r => r.MediaItem)
                     .Include(r => r.Discs)
-                    .ThenInclude(d => d.Disc)
+                    .ThenInclude(d => d.Disc!)
                     .ThenInclude(d => d.Titles)
                     .ThenInclude(t => t.Item)
                     .OrderByDescending(r => r.DateAdded)

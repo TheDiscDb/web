@@ -72,6 +72,9 @@ public partial class NavMenu : ComponentBase
             case "my-contributions":
                 NavigationManager?.NavigateTo("/contribute/my");
                 break;
+            case "my-changes":
+                NavigationManager?.NavigateTo("/changes/my");
+                break;
             case "messages":
                 NavigationManager?.NavigateTo("/messages");
                 break;

@@ -27,6 +27,9 @@ public partial class DiscDetail : ComponentBase
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
+    [SupplyParameterFromQuery(Name = "editSubmitted")]
+    public string? EditSubmittedSquid { get; set; }
+
     private MediaItem? Item { get; set; }
     private Boxset? BoxsetItem { get; set; }
     private Release? DiscRelease { get; set; }
@@ -88,5 +91,15 @@ public partial class DiscDetail : ComponentBase
                 HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
             }
         }
+    }
+
+    private string GetDiscEditUrl()
+    {
+        if (Item == null && BoxsetItem != null)
+        {
+            return $"/boxset/{BoxsetItem.Slug}/discs/{SlugOrIndex.Create(Disc?.Slug, Disc?.Index ?? 0)}/edit";
+        }
+
+        return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndexString}/edit";
     }
 }

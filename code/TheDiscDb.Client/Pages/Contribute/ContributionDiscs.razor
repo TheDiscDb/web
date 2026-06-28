@@ -96,10 +96,13 @@
                             }
                         </tr>
                     </thead>
-                    <tbody>
-                        @foreach (var disc in discList)
+                    <tbody @ref="tableBodyRef">
+                        @for (int i = 0; i < discList.Count; i++)
                         {
+                            var disc = discList[i];
+                            var rowIndex = i;
                             <tr class="@GetRowClass(disc)"
+                                data-row-index="@rowIndex"
                                 draggable="@IsEditable.ToString().ToLowerInvariant()"
                                 @ondragstart="() => OnDragStart(disc)"
                                 @ondragenter="() => OnDragEnter(disc)"
@@ -127,7 +130,7 @@
                                 </td>
                                 @if (IsEditable)
                                 {
-                                    <td class="drag-handle" title="Drag to reorder">⋮</td>
+                                    <td class="drag-handle" data-drag-handle title="Drag to reorder">⋮</td>
                                 }
                             </tr>
                         }

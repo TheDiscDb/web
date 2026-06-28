@@ -1,0 +1,128 @@
+@page "/{type}/{slug}/releases/{releaseSlug}/edit"
+
+@rendermode InteractiveServer
+@inherits TheDiscDb.Components.AuthenticatedComponentBase
+
+<PageTitle>Edit Release - TheDiscDb</PageTitle>
+
+@if (Item == null || Release == null)
+{
+    <div class="alert alert-warning">Release not found.</div>
+}
+else
+{
+    <TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootLink(this.Item), GetMediaItemLink(this.Item), GetReleaseLink(this.Item, this.Release)]" PrimaryText="Suggest Edit" />
+
+    @if (!string.IsNullOrEmpty(submitMessage))
+    {
+        <div class="alert @(submitSuccess ? "alert-success" : "alert-danger")">@submitMessage</div>
+    }
+
+    @if (!isReviewing)
+    {
+        <h1>Suggest Edits to @Release.FullTitle</h1>
+        <p class="text-muted">Your changes will be reviewed before being applied. Slugs and images cannot be changed here.</p>
+
+        <section class="info-grid single-column">
+            <EditForm Model="@request" OnValidSubmit="ShowReview">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label>Title</label>
+                    <InputText class="form-control" @bind-Value="request.Title" />
+                    <ValidationMessage For="@(() => request.Title)" />
+                </div>
+                <div class="mb-3">
+                    <label>Region Code</label>
+                    <InputText class="form-control" @bind-Value="request.RegionCode" />
+                    <ValidationMessage For="@(() => request.RegionCode)" />
+                </div>
+                <div class="mb-3">
+                    <label>Locale</label>
+                    <InputText class="form-control" @bind-Value="request.Locale" />
+                    <ValidationMessage For="@(() => request.Locale)" />
+                </div>
+                <div class="mb-3">
+                    <label>Year</label>
+                    <InputNumber class="form-control" @bind-Value="request.Year" />
+                    <ValidationMessage For="@(() => request.Year)" />
+                </div>
+                <div class="mb-3">
+                    <label>UPC<span class="required">*</span></label>
+                    <InputText class="form-control" @bind-Value="request.Upc" />
+                    <ValidationMessage For="@(() => request.Upc)" />
+                </div>
+                <div class="mb-3">
+                    <label>ISBN</label>
+                    <InputText class="form-control" @bind-Value="request.Isbn" />
+                    <ValidationMessage For="@(() => request.Isbn)" />
+                </div>
+                <div class="mb-3">
+                    <label>ASIN</label>
+                    <InputText class="form-control" @bind-Value="request.Asin" />
+                    <ValidationMessage For="@(() => request.Asin)" />
+                </div>
+                <TheDiscDb.Client.Controls.ReleaseDateInput @ref="releaseDateInput" @bind-Value="request.ReleaseDate" Required="true" />
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Review Suggested Changes</button>
+                    <a href="/@Type/@Slug/releases/@ReleaseSlug" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </EditForm>
+        </section>
+    }
+    else
+    {
+        <h1>Review Your Suggested Changes</h1>
+        <p class="text-muted">These changes will be submitted for review by an admin.</p>
+
+        <section class="info-grid single-column">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Current Value</th>
+                        <th>Your Suggested Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var diff in changedFields)
+                    {
+                        <tr class="table-warning">
+                            <td><strong>@diff.FieldName</strong></td>
+                            <td class="text-muted"><s>@diff.CurrentValue</s></td>
+                            <td><strong>@diff.ProposedValue</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (changedFields.Count == 0)
+            {
+                <div class="alert alert-info">No changes detected. Go back and modify a field to suggest an edit.</div>
+            }
+
+            @if (changedFields.Count > 0)
+            {
+                <div class="mb-3">
+                    <label>Summary <span class="text-muted">(optional — briefly describe your changes)</span></label>
+                    <InputText class="form-control" @bind-Value="request.Summary" />
+                </div>
+            }
+
+            <div class="d-flex gap-2">
+                @if (changedFields.Count > 0 && !submitSuccess)
+                {
+                    <button type="button" class="btn btn-primary" disabled="@isSubmitting" @onclick="HandleSubmit">
+                        @(isSubmitting ? "Submitting…" : "Submit Changes")
+                    </button>
+                }
+                @if (!submitSuccess)
+                {
+                    <button type="button" class="btn btn-outline-secondary" @onclick="BackToEdit">← Back to Edit</button>
+                }
+            </div>
+        </section>
+    }
+}

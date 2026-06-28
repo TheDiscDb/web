@@ -23,6 +23,9 @@ public partial class ReleaseDetail : ComponentBase
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
+    [SupplyParameterFromQuery(Name = "editSubmitted")]
+    public string? EditSubmittedSquid { get; set; }
+
     private MediaItem? Item { get; set; }
     private Release? Release { get; set; }
 

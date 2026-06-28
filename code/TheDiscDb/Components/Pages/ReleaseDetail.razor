@@ -28,12 +28,18 @@ else
     </HeadContent>
     <div class="vstack">
         <TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootLink(this.Item), GetMediaItemLink(this.Item)]" PrimaryText="@Release.Title" />
+        <TheDiscDb.Components.Controls.EditSubmittedBanner ChangeSquid="@EditSubmittedSquid" />
         <div class="d-flex flex-column flex-md-row gap-3 align-items-start">
             <MediaImage Url="@Release?.ImageUrl" Width="413" Height="525" Title="@Release?.FullTitle" CssClass="mediaItemDetailCover img-fluid" Style="max-width: 413px;" />
             <div class="release-info-column">
                 <div>
                     <h1>@Item.FullTitle</h1>
-                    <h2>@Release?.FullTitle</h2>
+                    <div class="d-flex align-items-center gap-2">
+                        <h2 class="mb-0">@Release?.FullTitle</h2>
+                        <a href="/@Type/@Slug/releases/@ReleaseSlug/edit" class="icon-btn" title="Suggest edits to this release">
+                            <i class="e-icons e-edit"></i>
+                        </a>
+                    </div>
                     <div>Released @string.Format("{0:d}", @Release?.ReleaseDate)</div>
                     @if (!string.IsNullOrEmpty(Release?.Upc))
                     {

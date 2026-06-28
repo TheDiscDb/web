@@ -76,7 +76,7 @@ public class ReleaseDiscProjectionTypeInterceptor : TypeInterceptor
         await using var db = dbFactory.CreateDbContext();
         releaseDisc.Disc = await db.Discs
             .Include(d => d.Titles)
-            .ThenInclude(t => t.Item)
+            .ThenInclude(t => t.Item!)
             .ThenInclude(i => i.Chapters)
             .Include(d => d.Titles)
             .ThenInclude(t => t.Tracks)

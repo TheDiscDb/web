@@ -1,9 +1,9 @@
-<SfSplitButton Content="@state.Text"
-                IconCss="@state.IconCss"
-                CssClass="e-small"
+<SfSplitButton IconCss="@state.IconCss"
+                CssClass="e-small copy-split-button"
                 Disabled="@state.IsDisabled"
-                OnClick="OnPrimaryClick">
-    <SplitButtonEvents ItemSelected="OnItemSelected" />
+                title="Copy chapters"
+                aria-label="Copy chapters">
+    <SplitButtonEvents Clicked="OnPrimaryClick" ItemSelected="OnItemSelected" />
     <DropDownMenuItems>
         @foreach (var formatName in ChapterFormatter.GetFormatNames())
         {

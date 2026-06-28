@@ -861,6 +861,205 @@ namespace TheDiscDb.Web.Migrations
                     b.ToTable("ContributionHistory");
                 });
 
+            modelBuilder.Entity("TheDiscDb.Web.Data.EditSuggestion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ReviewedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("TargetEntityKey")
+                        .HasMaxLength(410)
+                        .HasColumnType("nvarchar(410)");
+
+                    b.Property<string>("TargetEntityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TargetReleasePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "Created");
+
+                    b.HasIndex("TargetEntityType", "TargetEntityKey");
+
+                    b.HasIndex("UserId", "Created");
+
+                    b.ToTable("EditSuggestions");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.EditSuggestionChange", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset?>("AppliedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("AppliedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ConflictReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OriginalSnapshotJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProposedJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("SuggestionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("SyncedToFilesAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "SyncedToFilesAt");
+
+                    b.HasIndex("SuggestionId", "Ordinal");
+
+                    b.ToTable("EditSuggestionChanges");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.EditSuggestionHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("ChangeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("SuggestionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("TimeStamp")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangeId");
+
+                    b.HasIndex("SuggestionId");
+
+                    b.ToTable("EditSuggestionHistory");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.EditSuggestionMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("FromUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SuggestionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ToUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SuggestionId");
+
+                    b.HasIndex("ToUserId", "IsRead");
+
+                    b.ToTable("EditSuggestionMessages");
+                });
+
             modelBuilder.Entity("TheDiscDb.Web.Data.EngramDisc", b =>
                 {
                     b.Property<int>("Id")
@@ -1738,6 +1937,42 @@ namespace TheDiscDb.Web.Migrations
                     b.Navigation("ApiKey");
                 });
 
+            modelBuilder.Entity("TheDiscDb.Web.Data.EditSuggestionChange", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.EditSuggestion", "Suggestion")
+                        .WithMany("Changes")
+                        .HasForeignKey("SuggestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Suggestion");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.EditSuggestionHistory", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.EditSuggestionChange", null)
+                        .WithMany()
+                        .HasForeignKey("ChangeId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("TheDiscDb.Web.Data.EditSuggestion", null)
+                        .WithMany()
+                        .HasForeignKey("SuggestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.EditSuggestionMessage", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.EditSuggestion", "Suggestion")
+                        .WithMany()
+                        .HasForeignKey("SuggestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Suggestion");
+                });
+
             modelBuilder.Entity("TheDiscDb.Web.Data.EngramDisc", b =>
                 {
                     b.HasOne("TheDiscDb.Web.Data.EngramRelease", "EngramRelease")
@@ -1919,6 +2154,11 @@ namespace TheDiscDb.Web.Migrations
             modelBuilder.Entity("TheDiscDb.Web.Data.ApiKey", b =>
                 {
                     b.Navigation("UsageLogs");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.EditSuggestion", b =>
+                {
+                    b.Navigation("Changes");
                 });
 
             modelBuilder.Entity("TheDiscDb.Web.Data.EngramDisc", b =>

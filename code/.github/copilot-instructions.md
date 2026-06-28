@@ -3,5 +3,51 @@
 ## Project Guidelines
 - Never commit directly to the `main` branch. Always use a feature branch for changes.
 
+## Build and Test
+
+```shell
+# Build (NuGetAudit=false required — private ADO feed is unreachable locally)
+cd web/code
+dotnet build TheDiscDb.slnx /p:NuGetAudit=false
+
+# Tests — TUnit framework, run via dotnet run (not dotnet test)
+cd web/code/TheDiscDb.UnitTests
+dotnet run --no-build -c Debug
+
+# Single test
+dotnet run --no-build -c Debug -- --filter "FullyQualifiedName~MyTestName"
+```
+
+Run with Aspire: launch `web/code/TheDiscDb.AppHost` which orchestrates the web project, SQL Server, and Azurite blob storage.
+
 ## Code Style
-- Razor files should be formatted with markup in the .razor file and code in a separate .razor.cs code-behind file. Do not use @code blocks in .razor files.
+- Razor files should be formatted with markup in the .razor file and code in a separate `.razor.cs` code-behind file. Do not use `@code` blocks in `.razor` files.
+- Prefer record types over tuples for method return types. Define the record in the same file that uses it.
+- Shared logic belongs in base classes (e.g., `ChangeBase<TDetails>`), not duplicated across siblings. Before adding a helper method to a concrete class, check if it belongs in the base.
+
+## UI Conventions
+- **Icons:** Use the Syncfusion icon font (`<i class="e-icons e-trash"></i>`) for icon buttons, matching the rest of the site. Delete/remove actions use `e-trash`; edit / "suggest edit" actions use `e-edit`. Do **not** use raw Unicode glyphs (✕, ↩, 🗑, ✏️, etc.) for actions that have an established icon elsewhere — grep for `e-icons` to find the existing convention before inventing one.
+- **Suggest Edit links** are icon-only (`<i class="e-icons e-edit"></i>` with a descriptive `title`); do **not** add "Suggest Edit" label text next to the icon — it takes too much visual space.
+- **Chapter indexing is 1-based.** Chapter `Index` starts at 1 in the data (unlike `Track.Index`, which is 0-based). Display `chapter.Index` directly — do not add 1 — and create new chapters with 1-based indices. The read-only title page hides this because it renders chapters in an `<ol>` (auto-numbered from 1).
+- **Drag-to-reorder must work on touch.** Native HTML5 drag-and-drop (`draggable`/`@ondragstart`) never fires on touch devices. For any sortable table, also wire the shared touch path: `wwwroot/js/touch-sortable.js` (`window.touchSortable`) driven by the `TouchSortable<T>` adapter in `TheDiscDb.Client/Interop`. The DOM contract is `data-row-index` on each `<tr>`, `data-drag-handle` on the handle cell, optional `data-deleted="true"` on non-reorderable rows, and an `@ref` on the stable `<tbody>` (capture is taken there so reorders don't drop the gesture). Keep the native mouse handlers for desktop; the JS module ignores `pointerType === 'mouse'`. See `ChapterEdit` (Server) and `ContributionDiscs` (WASM) for reference wirings.
+
+## Domain: Data Table Rebuilds and Identity
+
+Non-user data tables (Releases, Discs, Titles, Tracks, Chapters, MediaItems, BoxSets) can be **cleared and rewritten at any time** from the `data/` repo JSON files. This means:
+
+- **Never store database `int` IDs** as foreign references in user-generated data (e.g., edit suggestions, contributions). Int IDs are unstable across rebuilds.
+- **Use natural keys** (slug composites) to identify domain entities. For example, a Release is identified by `MediaItemSlug + ReleaseSlug` (or `BoxsetSlug + ReleaseSlug`), not by `Release.Id`.
+- **Use `IdEncoder` (Sqids)** when exposing database IDs in user-facing URLs. Admin pages may use raw int IDs.
+- **Never display IDs (raw or encoded) as user-visible text** in headings, labels, or page content. Use meaningful domain data (e.g., summary, entity name, target key) instead. Sqids belong in URLs only — they are opaque and meaningless to users.
+
+## URL Routing: LowercaseUrlMiddleware
+
+`LowercaseUrlMiddleware` issues 301 redirects to lowercase any URL path that contains uppercase characters, **except** paths starting with prefixes listed in `CaseSensitivePrefixes`. When adding a new route prefix that contains case-sensitive tokens (like Sqids-encoded IDs), you **must** add it to `CaseSensitivePrefixes` in `LowercaseUrlMiddleware.cs`, or the IDs will be corrupted by lowercasing.
+
+## Edit Suggestions: Snapshot-Diff Pattern
+
+The edit suggestion system uses a snapshot-diff approach for partial updates:
+
+- **`null` in a proposed change means "no change"**, not "set to null." The `SetIfChanged` helper in `ChangeBase` compares the proposed value against the original snapshot and only writes when they differ.
+- Each `*Update` class implements `ApplyCoreAsync` which receives the deserialized original snapshot. Use `SetIfChanged(original, o => o.Field, proposed.Field, entity, (e, v) => e.Field = v)` for each field.
+- The `AppendIfDifferent` helper (also in `ChangeBase`) handles string list fields the same way.

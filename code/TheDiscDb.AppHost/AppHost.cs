@@ -24,7 +24,9 @@ var useAzureFileShare = string.Equals(builder.Configuration["UseAzureFileShare"]
 var blobs = builder.AddAzureStorage("storage").RunAsEmulator(
                      azurite =>
                      {
+                         azurite.WithContainerName("thediscdb-storage");
                          azurite.WithLifetime(ContainerLifetime.Persistent);
+                         azurite.WithDataVolume("thediscdb-storage-data");
                      })
     .AddBlobs("blobs");
 
@@ -73,7 +75,12 @@ if (useExternalSql)
 else
 {
     var sql = builder.AddAzureSqlServer("sql")
-        .RunAsContainer(o => o.WithLifetime(ContainerLifetime.Persistent));
+        .RunAsContainer(o =>
+        {
+            o.WithContainerName("thediscdb-sql");
+            o.WithLifetime(ContainerLifetime.Persistent);
+            o.WithDataVolume("thediscdb-sql-data");
+        });
     var db = sql.AddDatabase("thediscdb");
     migrations.WithReference(db).WaitFor(db);
     backend.WithReference(db);

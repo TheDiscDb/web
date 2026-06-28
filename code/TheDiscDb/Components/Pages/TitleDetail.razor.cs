@@ -30,6 +30,9 @@ public partial class TitleDetail : ComponentBase
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
+    [SupplyParameterFromQuery(Name = "editSubmitted")]
+    public string? EditSubmittedSquid { get; set; }
+
     private IDisplayItem? Item { get; set; }
     private Release? Release { get; set; }
     private ReleaseDisc? Disc { get; set; }
@@ -115,5 +118,35 @@ public partial class TitleDetail : ComponentBase
             Title = Disc.Titles.FirstOrDefault(t =>
                 !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
         }
+    }
+
+    private string GetChapterEditUrl()
+    {
+        if (ReleaseSlug != null)
+        {
+            return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex}/{File}/{Extension}/chapters/edit";
+        }
+
+        return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{File}/{Extension}/chapters/edit";
+    }
+
+    private string GetDiscItemEditUrl()
+    {
+        if (ReleaseSlug != null)
+        {
+            return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex}/{File}/{Extension}/edit";
+        }
+
+        return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{File}/{Extension}/edit";
+    }
+
+    private string GetTracksEditUrl()
+    {
+        if (ReleaseSlug != null)
+        {
+            return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex}/{File}/{Extension}/tracks/edit";
+        }
+
+        return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{File}/{Extension}/tracks/edit";
     }
 }

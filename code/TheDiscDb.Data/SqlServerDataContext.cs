@@ -254,7 +254,83 @@ public class SqlServerDataContext : DbContext
         userFileNameTemplate.Property(x => x.Template).IsRequired().HasMaxLength(512);
         userFileNameTemplate.HasIndex(x => new { x.UserId, x.ItemType }).IsUnique();
 
+        ConfigureEditSuggestionModel(modelBuilder);
+
         IdentityModelConfiguration.ConfigureIdentityModel(modelBuilder);
+    }
+
+    private static void ConfigureEditSuggestionModel(ModelBuilder modelBuilder)
+    {
+        var suggestion = modelBuilder.Entity<EditSuggestion>();
+        suggestion.HasKey(x => x.Id);
+        suggestion.Property(x => x.UserId).IsRequired().HasMaxLength(450);
+        suggestion.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+        suggestion.Property(x => x.Source).HasConversion<string>().HasMaxLength(32);
+        suggestion.Property(x => x.Summary).HasMaxLength(500);
+        suggestion.Property(x => x.TargetEntityType).IsRequired().HasMaxLength(50);
+        // 200 (parent slug max, matching ReleaseAffiliateLinks) + 1 separator +
+        // 200 (release slug) + 8 buffer for child segments in future change types
+        // (DiscSlug, etc.) is the reason for 410.
+        suggestion.Property(x => x.TargetEntityKey).HasMaxLength(410);
+        suggestion.Property(x => x.ReviewedByUserId).HasMaxLength(450);
+        suggestion.HasMany(x => x.Changes)
+            .WithOne(x => x.Suggestion)
+            .HasForeignKey(x => x.SuggestionId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // Queue paging: list by status, newest first.
+        suggestion.HasIndex(x => new { x.Status, x.Created });
+        // "My suggestions" list per user.
+        suggestion.HasIndex(x => new { x.UserId, x.Created });
+        // "Show me suggestions affecting this entity" lookups from detail pages.
+        suggestion.HasIndex(x => new { x.TargetEntityType, x.TargetEntityKey });
+
+        var change = modelBuilder.Entity<EditSuggestionChange>();
+        change.HasKey(x => x.Id);
+        change.Property(x => x.Type).IsRequired().HasMaxLength(80);
+        change.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+        change.Property(x => x.AppliedByUserId).HasMaxLength(450);
+        change.Property(x => x.ConflictReason).HasMaxLength(500);
+        change.Property(x => x.AdminNote).HasMaxLength(1000);
+        // Snapshot + proposed payloads are JSON. Stored as nvarchar(max) for SQL Server 2022
+        // compatibility; can migrate to native `json` column type when everywhere we run
+        // supports it (SQL Server 2025+ / Azure SQL).
+        change.Property(x => x.OriginalSnapshotJson).HasColumnType("nvarchar(max)");
+        change.Property(x => x.ProposedJson).IsRequired().HasColumnType("nvarchar(max)");
+        // Drives the batch file-sync query: WHERE Status = 'Applied' AND SyncedToFilesAt IS NULL.
+        change.HasIndex(x => new { x.Status, x.SyncedToFilesAt });
+        // Stable display order within a bundle.
+        change.HasIndex(x => new { x.SuggestionId, x.Ordinal });
+
+        var history = modelBuilder.Entity<EditSuggestionHistory>();
+        history.HasKey(x => x.Id);
+        history.Property(x => x.Type).HasConversion<string>().HasMaxLength(32);
+        history.Property(x => x.UserId).HasMaxLength(450);
+        history.Property(x => x.Description).HasMaxLength(1000);
+        // FK to the parent suggestion: cascade so deleting a suggestion clears its audit trail.
+        history.HasOne<EditSuggestion>()
+            .WithMany()
+            .HasForeignKey(x => x.SuggestionId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // Optional FK to the specific change row (nullable: some history entries
+        // describe the whole bundle, not an individual change). NoAction because
+        // SQL Server disallows multiple cascade paths — the cascade from
+        // EditSuggestion already handles cleanup.
+        history.HasOne<EditSuggestionChange>()
+            .WithMany()
+            .HasForeignKey(x => x.ChangeId)
+            .OnDelete(DeleteBehavior.NoAction);
+        history.HasIndex(x => x.SuggestionId);
+
+        var message = modelBuilder.Entity<EditSuggestionMessage>();
+        message.HasKey(x => x.Id);
+        message.Property(x => x.FromUserId).IsRequired().HasMaxLength(450);
+        message.Property(x => x.ToUserId).IsRequired().HasMaxLength(450);
+        message.HasOne(x => x.Suggestion)
+            .WithMany()
+            .HasForeignKey(x => x.SuggestionId)
+            .OnDelete(DeleteBehavior.Cascade);
+        message.HasIndex(x => x.SuggestionId);
+        message.HasIndex(x => new { x.ToUserId, x.IsRead });
     }
 
     public DbSet<MediaItem> MediaItems { get; set; } = null!;
@@ -290,6 +366,10 @@ public class SqlServerDataContext : DbContext
     public DbSet<EngramRelease> EngramReleases { get; set; } = null!;
     public DbSet<UserFileNameTemplate> UserFileNameTemplates { get; set; } = null!;
     public DbSet<ReleaseAffiliateLink> ReleaseAffiliateLinks { get; set; } = null!;
+    public DbSet<EditSuggestion> EditSuggestions { get; set; } = null!;
+    public DbSet<EditSuggestionChange> EditSuggestionChanges { get; set; } = null!;
+    public DbSet<EditSuggestionHistory> EditSuggestionHistory { get; set; } = null!;
+    public DbSet<EditSuggestionMessage> EditSuggestionMessages { get; set; } = null!;
 }
 
 public class EngramDisc

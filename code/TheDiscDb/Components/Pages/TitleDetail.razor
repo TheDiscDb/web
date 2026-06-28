@@ -21,7 +21,11 @@ else
             GetReleaseLink(this.Item, this.Release),
             GetDiscLink(this.Item, this.Release, this.Disc)
         ]" />
-        <h1>@Title.SourceFile — @Release.Title</h1>
+        <TheDiscDb.Components.Controls.EditSubmittedBanner ChangeSquid="@EditSubmittedSquid" />
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <h1 class="mb-0">@Title.SourceFile — @Release.Title</h1>
+            <a href="@GetDiscItemEditUrl()" class="icon-btn" title="Suggest edits to this disc item"><i class="e-icons e-edit"></i></a>
+        </div>
         <div class="metadata-card mt-3">
             <dl class="metadata-grid mb-0">
                 <div class="metadata-item">
@@ -63,9 +67,12 @@ else
             <div class="info-card mt-4">
                 <div class="chapter-header">
                     <h3 class="mt-0 mb-0">Chapters</h3>
-                    <TheDiscDb.Client.Controls.CopyChaptersButton
-                        Chapters="@Title.Item.Chapters"
-                        @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+                    <div class="d-flex gap-2">
+                        <TheDiscDb.Client.Controls.CopyChaptersButton
+                            Chapters="@Title.Item.Chapters"
+                            @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+                        <a href="@GetChapterEditUrl()" class="icon-btn" title="Suggest chapter edits"><i class="e-icons e-edit"></i></a>
+                    </div>
                 </div>
                 <ol class="chapter-list mb-0">
                     @foreach (var chapter in Title.Item.Chapters)
@@ -75,14 +82,34 @@ else
                 </ol>
             </div>
         }
+        else
+        {
+            <div class="info-card mt-4">
+                <div class="chapter-header">
+                    <h3 class="mt-0 mb-0">Chapters</h3>
+                    <a href="@GetChapterEditUrl()" class="icon-btn" title="Add chapter names"><i class="e-icons e-edit"></i></a>
+                </div>
+                <p class="text-muted mb-0">No chapter names available. Know them? Suggest adding them!</p>
+            </div>
+        }
 
         @{ var trackGroups = new[] { "Video", "Audio", "Subtitles" }; }
+        @if (Title.Tracks.Any())
+        {
+            <div class="d-flex align-items-center gap-2 mt-4 mb-2">
+                <h2 class="mb-0 h3">Tracks</h2>
+                @if (!string.IsNullOrEmpty(Disc.Slug))
+                {
+                    <a href="@GetTracksEditUrl()" class="icon-btn" title="Suggest edits to the track names"><i class="e-icons e-edit"></i></a>
+                }
+            </div>
+        }
         @foreach (var groupType in trackGroups)
         {
             var groupTracks = Title.Tracks.Where(t => t.Type == groupType).ToList();
             if (groupTracks.Count > 0)
             {
-                <h3 class="mt-4 mb-2">@groupType Tracks</h3>
+                <h3 class="mt-4 mb-2 h4">@groupType Tracks</h3>
                 <div class="table-responsive">
                     <table class="table striped-grid mb-0">
                         <thead>
