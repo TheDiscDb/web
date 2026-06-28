@@ -40,6 +40,21 @@ public class EditSuggestion : IHasId
     /// </summary>
     public string? TargetEntityKey { get; set; }
 
+    /// <summary>
+    /// Denormalised, best-effort hint of the target release folder, relative to the
+    /// data-repository root and forward-slash separated, e.g.
+    /// <c>"movie/Star Wars Episode VI - Return of the Jedi (1983)/2020-4k"</c>.
+    /// Computed at submission time from the parent <c>MediaItem</c>/<c>Boxset</c>
+    /// (<c>"&lt;type&gt;/CleanPath(Title) (Year)/&lt;releaseSlug&gt;"</c>) so the
+    /// offline file-sync process can locate the files without scanning every
+    /// <c>metadata.json</c> in the repo. This is a cache, not a source of truth:
+    /// media folders are named by title (not slug) and the cleaning of invalid
+    /// path characters is platform-dependent, so consumers MUST verify the folder
+    /// (e.g. against <c>release.json</c>'s slug) and fall back to a scan on a miss.
+    /// Null when the parent could not be resolved at submission time.
+    /// </summary>
+    public string? TargetReleasePath { get; set; }
+
     public string? ReviewedByUserId { get; set; }
 
     public DateTimeOffset? ReviewedAt { get; set; }

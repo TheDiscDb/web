@@ -2,7 +2,9 @@ namespace TheDiscDb.Services.EditSuggestions;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -55,6 +57,9 @@ public sealed class EditSuggestionService(
             TargetEntityKey = firstChange!.TargetEntityKey,
             Source = source,
         };
+
+        suggestion.TargetReleasePath = await ResolveTargetReleasePathAsync(
+            suggestion.TargetEntityKey, cancellationToken);
 
         for (var i = 0; i < changes.Count; i++)
         {
@@ -246,5 +251,73 @@ public sealed class EditSuggestionService(
         }
 
         return "Unknown";
+    }
+
+    /// <summary>
+    /// Best-effort resolution of the on-disk release folder (relative to the data
+    /// root) from the bundle's natural key. Mirrors how the import/generate tasks
+    /// name folders: <c>"{Type}/{CleanPath(Title)} ({Year})/{releaseSlug}"</c>.
+    /// Returns null when the parent media item / boxset cannot be found (the file
+    /// sync falls back to a scan in that case).
+    /// </summary>
+    private async Task<string?> ResolveTargetReleasePathAsync(
+        string? targetEntityKey,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(targetEntityKey))
+        {
+            return null;
+        }
+
+        // TargetEntityKey is always "<parentSlug>/<releaseSlug>[/...]".
+        var segments = targetEntityKey.Split('/');
+        if (segments.Length < 2)
+        {
+            return null;
+        }
+
+        string parentSlug = segments[0];
+        string releaseSlug = segments[1];
+        if (string.IsNullOrEmpty(parentSlug) || string.IsNullOrEmpty(releaseSlug))
+        {
+            return null;
+        }
+
+        var media = await database.MediaItems
+            .Where(m => m.Slug == parentSlug)
+            .Select(m => new { m.Title, m.Year, m.Type })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (media is not null && !string.IsNullOrEmpty(media.Type) && !string.IsNullOrEmpty(media.Title))
+        {
+            // MediaItem.Type is "Movie"/"Series" -> "movie"/"series" subfolder.
+            string subFolder = media.Type.ToLowerInvariant();
+            return $"{subFolder}/{CleanFileName(media.Title)} ({media.Year})/{releaseSlug}";
+        }
+
+        var boxset = await database.BoxSets
+            .Where(b => b.Slug == parentSlug)
+            .Select(b => new { b.Title, Year = b.Release != null ? b.Release.Year : 0 })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (boxset is not null && !string.IsNullOrEmpty(boxset.Title))
+        {
+            return $"sets/{CleanFileName(boxset.Title)} ({boxset.Year})/{releaseSlug}";
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Strips characters that are invalid in a file name, matching
+    /// <c>FileSystemExtensions.CleanPath</c> used by the import pipeline when these
+    /// folders are created. Note this depends on the platform's invalid-character
+    /// set, which is why <see cref="EditSuggestion.TargetReleasePath"/> is only a hint.
+    /// </summary>
+    private static string CleanFileName(string name)
+    {
+        string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
+        string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);
+        return Regex.Replace(name, invalidRegStr, string.Empty).Replace('·', ' ');
     }
 }
