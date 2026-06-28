@@ -12,7 +12,11 @@ using TheDiscDb.Data.Changes;
 using TheDiscDb.Data.Changes.ReleaseFields;
 using TheDiscDb.InputModels;
 using TheDiscDb.Services.EditSuggestions;
+using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
+using TheDiscDb.Web.Email;
+using Microsoft.Extensions.Options;
+using Sqids;
 
 public class EditSuggestionNotificationTests
 {
@@ -66,6 +70,37 @@ public class EditSuggestionNotificationTests
     }
 
     // ---- Test infrastructure ---------------------------------------------
+
+    private sealed class TestOptionsMonitor<T> : IOptionsMonitor<T>
+    {
+        public TestOptionsMonitor(T value) => CurrentValue = value;
+        public T CurrentValue { get; }
+        public T Get(string? name) => CurrentValue;
+        public IDisposable? OnChange(Action<T, string?> listener) => null;
+    }
+
+    private sealed class NoopHttpClientFactory : System.Net.Http.IHttpClientFactory
+    {
+        public System.Net.Http.HttpClient CreateClient(string name) => new();
+    }
+
+    private sealed class RecordingMailgunClient : MailgunClient
+    {
+        public RecordingMailgunClient()
+            : base(new NoopHttpClientFactory(), new TestOptionsMonitor<MailgunOptions>(new MailgunOptions()))
+        {
+        }
+
+        public List<MailgunMessage> Sent { get; } = [];
+
+        public override Task<MailgunSendResult> SendAsync(MailgunMessage message, CancellationToken cancellationToken = default)
+        {
+            Sent.Add(message);
+            return Task.FromResult(new MailgunSendResult { Id = "test", Message = "Queued." });
+        }
+    }
+
+    private static IdEncoder CreateIdEncoder() => new(new SqidsEncoder<int>());
 
     private static SqlServerDataContext CreateDb()
     {
@@ -329,16 +364,20 @@ public class EditSuggestionNotificationTests
 
     // ---- DI gate ---------------------------------------------------------
 
-    private static Type? RegisteredImpl(string? mailgunApiKey, bool? enabled)
+    private static Type? RegisteredImpl(string? mailgunApiKey, bool? notifyAdmins = null, bool? notifyUsers = null)
     {
         var dict = new Dictionary<string, string?>();
         if (mailgunApiKey is not null)
         {
             dict["Mailgun:ApiKey"] = mailgunApiKey;
         }
-        if (enabled is not null)
+        if (notifyAdmins is not null)
         {
-            dict["EditSuggestions:Notifications:Enabled"] = enabled.Value ? "true" : "false";
+            dict["EditSuggestions:Notifications:NotifyAdmins"] = notifyAdmins.Value ? "true" : "false";
+        }
+        if (notifyUsers is not null)
+        {
+            dict["EditSuggestions:Notifications:NotifyUsers"] = notifyUsers.Value ? "true" : "false";
         }
 
         var config = new ConfigurationBuilder().AddInMemoryCollection(dict).Build();
@@ -350,27 +389,112 @@ public class EditSuggestionNotificationTests
     }
 
     [Test]
-    public async Task DiGate_RealImpl_OnlyWhenMailgunConfiguredAndEnabled()
+    public async Task DiGate_RealImpl_WhenMailgunConfiguredAndAdminsEnabled()
     {
-        await Assert.That(RegisteredImpl("key-123", enabled: true)).IsEqualTo(typeof(EditSuggestionNotificationService));
+        await Assert.That(RegisteredImpl("key-123", notifyAdmins: true, notifyUsers: false)).IsEqualTo(typeof(EditSuggestionNotificationService));
     }
 
     [Test]
-    public async Task DiGate_Null_WhenMailgunConfiguredButDisabled()
+    public async Task DiGate_RealImpl_WhenMailgunConfiguredAndUsersEnabled()
     {
-        await Assert.That(RegisteredImpl("key-123", enabled: false)).IsEqualTo(typeof(NullEditSuggestionNotificationService));
+        await Assert.That(RegisteredImpl("key-123", notifyAdmins: false, notifyUsers: true)).IsEqualTo(typeof(EditSuggestionNotificationService));
     }
 
     [Test]
-    public async Task DiGate_Null_WhenEnabledButMailgunMissing()
+    public async Task DiGate_Null_WhenMailgunConfiguredButAllAudiencesDisabled()
     {
-        await Assert.That(RegisteredImpl(mailgunApiKey: null, enabled: true)).IsEqualTo(typeof(NullEditSuggestionNotificationService));
+        await Assert.That(RegisteredImpl("key-123", notifyAdmins: false, notifyUsers: false)).IsEqualTo(typeof(NullEditSuggestionNotificationService));
+    }
+
+    [Test]
+    public async Task DiGate_Null_WhenAudienceEnabledButMailgunMissing()
+    {
+        await Assert.That(RegisteredImpl(mailgunApiKey: null, notifyAdmins: true)).IsEqualTo(typeof(NullEditSuggestionNotificationService));
     }
 
     [Test]
     public async Task DiGate_Null_WhenNothingConfigured()
     {
-        await Assert.That(RegisteredImpl(mailgunApiKey: null, enabled: null)).IsEqualTo(typeof(NullEditSuggestionNotificationService));
+        await Assert.That(RegisteredImpl(mailgunApiKey: null)).IsEqualTo(typeof(NullEditSuggestionNotificationService));
+    }
+
+    // ---- Real impl per-audience send gating ------------------------------
+
+    private static EditSuggestionNotificationService CreateRealService(bool notifyAdmins, bool notifyUsers, RecordingMailgunClient mailgun)
+    {
+        var mailgunOptions = new TestOptionsMonitor<MailgunOptions>(new MailgunOptions
+        {
+            ApiKey = "key-123",
+            Domain = "mail.test",
+            FromEmail = "from@test",
+            AdminEmail = "admin@test",
+        });
+        var notifyOptions = new TestOptionsMonitor<EditSuggestionNotificationOptions>(new EditSuggestionNotificationOptions
+        {
+            NotifyAdmins = notifyAdmins,
+            NotifyUsers = notifyUsers,
+        });
+        return new EditSuggestionNotificationService(
+            mailgun,
+            mailgunOptions,
+            notifyOptions,
+            CreateIdEncoder(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<EditSuggestionNotificationService>.Instance);
+    }
+
+    [Test]
+    public async Task RealImpl_AdminsOnly_Submitted_SendsAdminNotOnlyAdmin()
+    {
+        var mailgun = new RecordingMailgunClient();
+        var service = CreateRealService(notifyAdmins: true, notifyUsers: false, mailgun);
+        var suggestion = new EditSuggestion { Id = 7, UserId = "user-1", TargetEntityType = "release" };
+
+        await service.NotifySuggestionSubmittedAsync(suggestion, "user@example.com", "Test User", CT);
+
+        // Admin gets the "new suggestion" email; the user confirmation is suppressed.
+        await Assert.That(mailgun.Sent.Count).IsEqualTo(1);
+        await Assert.That(mailgun.Sent[0].To.Single()).IsEqualTo("admin@test");
+    }
+
+    [Test]
+    public async Task RealImpl_AdminsOnly_ResolvedAndAdminMessage_Suppressed()
+    {
+        var mailgun = new RecordingMailgunClient();
+        var service = CreateRealService(notifyAdmins: true, notifyUsers: false, mailgun);
+        var suggestion = new EditSuggestion { Id = 8, UserId = "user-1", Status = EditSuggestionStatus.Approved };
+
+        await service.NotifySuggestionResolvedAsync(suggestion, "user@example.com", CT);
+        await service.NotifyMessageFromAdminAsync(suggestion, "hi", "user@example.com", CT);
+
+        // Both are user-facing — suppressed when only admins are enabled.
+        await Assert.That(mailgun.Sent.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task RealImpl_AdminsOnly_UserMessage_RoutesToAdmin()
+    {
+        var mailgun = new RecordingMailgunClient();
+        var service = CreateRealService(notifyAdmins: true, notifyUsers: false, mailgun);
+        var suggestion = new EditSuggestion { Id = 9, UserId = "user-1" };
+
+        await service.NotifyMessageFromUserAsync(suggestion, "hi", "Test User", "user@example.com", CT);
+
+        await Assert.That(mailgun.Sent.Count).IsEqualTo(1);
+        await Assert.That(mailgun.Sent[0].To.Single()).IsEqualTo("admin@test");
+    }
+
+    [Test]
+    public async Task RealImpl_UsersOnly_Submitted_SendsUserConfirmationOnly()
+    {
+        var mailgun = new RecordingMailgunClient();
+        var service = CreateRealService(notifyAdmins: false, notifyUsers: true, mailgun);
+        var suggestion = new EditSuggestion { Id = 10, UserId = "user-1", TargetEntityType = "release" };
+
+        await service.NotifySuggestionSubmittedAsync(suggestion, "user@example.com", "Test User", CT);
+
+        // The admin notification is suppressed; only the user confirmation goes out.
+        await Assert.That(mailgun.Sent.Count).IsEqualTo(1);
+        await Assert.That(mailgun.Sent[0].To.Single()).IsEqualTo("user@example.com");
     }
 
     // ---- Null impl -------------------------------------------------------

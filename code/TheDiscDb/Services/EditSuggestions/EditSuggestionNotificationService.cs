@@ -21,17 +21,20 @@ public sealed class EditSuggestionNotificationService : IEditSuggestionNotificat
 {
     private readonly MailgunClient mailgun;
     private readonly IOptionsMonitor<MailgunOptions> options;
+    private readonly IOptionsMonitor<EditSuggestionNotificationOptions> notificationOptions;
     private readonly IdEncoder idEncoder;
     private readonly ILogger<EditSuggestionNotificationService> logger;
 
     public EditSuggestionNotificationService(
         MailgunClient mailgun,
         IOptionsMonitor<MailgunOptions> options,
+        IOptionsMonitor<EditSuggestionNotificationOptions> notificationOptions,
         IdEncoder idEncoder,
         ILogger<EditSuggestionNotificationService> logger)
     {
         this.mailgun = mailgun;
         this.options = options;
+        this.notificationOptions = notificationOptions;
         this.idEncoder = idEncoder;
         this.logger = logger;
     }
@@ -39,11 +42,16 @@ public sealed class EditSuggestionNotificationService : IEditSuggestionNotificat
     public async Task NotifySuggestionSubmittedAsync(EditSuggestion suggestion, string? userEmail, string? userName, CancellationToken cancellationToken = default)
     {
         var opts = options.CurrentValue;
+        var notify = notificationOptions.CurrentValue;
         var displayName = userName ?? "A user";
         var label = DescribeSuggestion(suggestion);
 
         // Admin notification
-        if (string.IsNullOrEmpty(opts.AdminEmail))
+        if (!notify.NotifyAdmins)
+        {
+            logger.LogDebug("Admin notifications disabled — skipping admin notification for edit suggestion {Id}", suggestion.Id);
+        }
+        else if (string.IsNullOrEmpty(opts.AdminEmail))
         {
             logger.LogWarning("Mailgun AdminEmail is not configured — skipping admin notification for edit suggestion {Id}", suggestion.Id);
         }
@@ -69,6 +77,12 @@ public sealed class EditSuggestionNotificationService : IEditSuggestionNotificat
         }
 
         // User confirmation
+        if (!notify.NotifyUsers)
+        {
+            logger.LogDebug("User notifications disabled — skipping user confirmation for edit suggestion {Id}", suggestion.Id);
+            return;
+        }
+
         if (string.IsNullOrEmpty(userEmail))
         {
             logger.LogDebug("No user email available — skipping user confirmation for edit suggestion {Id}", suggestion.Id);
@@ -95,6 +109,12 @@ public sealed class EditSuggestionNotificationService : IEditSuggestionNotificat
 
     public async Task NotifySuggestionResolvedAsync(EditSuggestion suggestion, string? userEmail, CancellationToken cancellationToken = default)
     {
+        if (!notificationOptions.CurrentValue.NotifyUsers)
+        {
+            logger.LogDebug("User notifications disabled — skipping resolved notification for edit suggestion {Id}", suggestion.Id);
+            return;
+        }
+
         if (string.IsNullOrEmpty(userEmail))
         {
             logger.LogDebug("No user email available — skipping resolved notification for edit suggestion {Id}", suggestion.Id);
@@ -141,6 +161,12 @@ public sealed class EditSuggestionNotificationService : IEditSuggestionNotificat
 
     public async Task NotifyMessageFromUserAsync(EditSuggestion suggestion, string message, string? userName, string? userEmail, CancellationToken cancellationToken = default)
     {
+        if (!notificationOptions.CurrentValue.NotifyAdmins)
+        {
+            logger.LogDebug("Admin notifications disabled — skipping user-message notification for edit suggestion {Id}", suggestion.Id);
+            return;
+        }
+
         var opts = options.CurrentValue;
         if (string.IsNullOrEmpty(opts.AdminEmail))
         {
@@ -169,6 +195,12 @@ public sealed class EditSuggestionNotificationService : IEditSuggestionNotificat
 
     public async Task NotifyMessageFromAdminAsync(EditSuggestion suggestion, string message, string? userEmail, CancellationToken cancellationToken = default)
     {
+        if (!notificationOptions.CurrentValue.NotifyUsers)
+        {
+            logger.LogDebug("User notifications disabled — skipping admin-message notification for edit suggestion {Id}", suggestion.Id);
+            return;
+        }
+
         if (string.IsNullOrEmpty(userEmail))
         {
             logger.LogDebug("No user email available — skipping admin message notification for edit suggestion {Id}", suggestion.Id);

@@ -72,18 +72,22 @@ public static class EditSuggestionsServiceCollectionExtensions
     /// <summary>
     /// Registers edit-suggestion email notifications. Every call site is wired, but
     /// the sender ships dormant: the real Mailgun implementation is used only when
-    /// Mailgun is configured (<c>Mailgun:ApiKey</c> present) AND the dedicated
-    /// <c>EditSuggestions:Notifications:Enabled</c> switch is true. Otherwise a no-op
-    /// implementation is registered so the call sites are harmless.
+    /// Mailgun is configured (<c>Mailgun:ApiKey</c> present) AND at least one
+    /// audience switch under <c>EditSuggestions:Notifications</c>
+    /// (<c>NotifyAdmins</c> / <c>NotifyUsers</c>) is true. Otherwise a no-op
+    /// implementation is registered so the call sites are harmless. The real
+    /// service additionally gates each send per audience, so enabling only
+    /// <c>NotifyAdmins</c> emails the admin without ever mailing users.
     /// </summary>
     public static IServiceCollection AddEditSuggestionNotifications(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<EditSuggestionNotificationOptions>(configuration.GetSection("EditSuggestions:Notifications"));
+        var section = configuration.GetSection("EditSuggestions:Notifications");
+        services.Configure<EditSuggestionNotificationOptions>(section);
 
         var mailgunConfigured = !string.IsNullOrEmpty(configuration.GetValue<string>("Mailgun:ApiKey"));
-        var enabled = configuration.GetValue<bool>("EditSuggestions:Notifications:Enabled");
+        var notificationOptions = section.Get<EditSuggestionNotificationOptions>() ?? new EditSuggestionNotificationOptions();
 
-        if (mailgunConfigured && enabled)
+        if (mailgunConfigured && notificationOptions.AnyEnabled)
         {
             services.AddTransient<IEditSuggestionNotificationService, EditSuggestionNotificationService>();
         }
