@@ -84,6 +84,33 @@ boxset structure, season/episode context).
 `TracksEdit`, `ChapterEdit`) with a boxset and a TV release and fix anything
 movie-specific.
 
+### 6. Partial releases (incomplete multi-disc sets)
+
+Let a release represent the case where the database has **only some** of the
+discs from a known multi-disc set (e.g., a 4-disc boxset where we've documented
+2 discs). This surfaces exactly where the database needs help and tells users
+which specific discs are worth contributing.
+
+Pairs naturally with **add/remove discs (#2)**: marking a release as partial is
+the signal that invites the "add this missing disc" contribution flow.
+
+**Approach**:
+
+- Represent the expected disc count / known-missing discs at the release level
+  (e.g., a known total vs. documented discs, or explicit placeholders for
+  missing discs). Decide whether a "missing disc" is a real placeholder record
+  or just a count delta.
+- Surface a **"partial / help wanted"** indicator on the release detail page and
+  in listings, ideally calling out which disc numbers/slots are missing.
+- Add a **"contribute this disc"** entry point on each missing slot that feeds
+  the add-disc flow from #2.
+- Consider a browseable view of partial releases ("releases needing discs") so
+  contributors can find gaps across the database.
+
+**Open questions**: how is "expected total discs" known/entered (manual vs.
+metadata source)? Is a missing disc a placeholder entity or a derived gap? How
+does a partial release render in search/SEO without looking like broken data?
+
 ## Suggested Sequencing
 
 A reasonable order, roughly by leverage and dependency:
@@ -94,9 +121,11 @@ A reasonable order, roughly by leverage and dependency:
    relatively contained.
 3. **Add / remove discs and disc-items (#2)** — needs the structural-change
    model and benefits from #4 being in place.
-4. **Image suggestions (#3)** — independent; can slot in when image UX is a
+4. **Partial releases (#6)** — builds directly on #2; turns "missing disc" into a
+   visible, contributable gap.
+5. **Image suggestions (#3)** — independent; can slot in when image UX is a
    priority.
-5. **Non-movie media parity (#5)** — an audit pass that can run alongside the
+6. **Non-movie media parity (#5)** — an audit pass that can run alongside the
    others.
 
 ## Open Questions
