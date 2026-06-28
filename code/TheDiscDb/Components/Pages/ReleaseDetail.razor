@@ -34,7 +34,12 @@ else
             <div class="release-info-column">
                 <div>
                     <h1>@Item.FullTitle</h1>
-                    <h2>@Release?.FullTitle</h2>
+                    <div class="d-flex align-items-center gap-2">
+                        <h2 class="mb-0">@Release?.FullTitle</h2>
+                        <a href="/@Type/@Slug/releases/@ReleaseSlug/edit" class="icon-btn" title="Suggest edits to this release">
+                            <i class="e-icons e-edit"></i>
+                        </a>
+                    </div>
                     <div>Released @string.Format("{0:d}", @Release?.ReleaseDate)</div>
                     @if (!string.IsNullOrEmpty(Release?.Upc))
                     {
@@ -52,11 +57,6 @@ else
                     <div class="affiliate-buttons">
                         <AmazonAssociatesButton Asin="@Release?.Asin" Width="25" />
                         <GruvBuyButton MediaItemSlug="@this.Slug" ReleaseSlug="@this.ReleaseSlug" Sid="release-detail" Width="25" />
-                    </div>
-                    <div class="mt-2">
-                        <a href="/@Type/@Slug/releases/@ReleaseSlug/edit" class="icon-btn" title="Suggest edits to this release">
-                            <i class="e-icons e-edit"></i>
-                        </a>
                     </div>
                     @if (Release?.Discs != null && Release.Discs.Count > 0)
                     {
