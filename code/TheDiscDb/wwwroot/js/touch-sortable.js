@@ -21,7 +21,7 @@
  */
 (function () {
     function init(container, dotNetRef) {
-        if (!container || container.dataset.touchSortableInit) {
+        if (!container || !container.dataset || container.dataset.touchSortableInit) {
             return;
         }
         container.dataset.touchSortableInit = 'true';

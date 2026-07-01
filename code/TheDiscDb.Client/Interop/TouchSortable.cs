@@ -60,6 +60,12 @@ public sealed class TouchSortable<T> : IDisposable
             return;
         }
 
+        // Guard against an uninitialized ElementReference (element not yet in the DOM).
+        if (string.IsNullOrEmpty(container.Id))
+        {
+            return;
+        }
+
         selfRef ??= DotNetObjectReference.Create(this);
         await js.InvokeVoidAsync("touchSortable.init", container, selfRef);
         initialized = true;

@@ -120,7 +120,7 @@ public partial class ContributionDiscs : CancellableComponentBase
         // The drag handle (and reorder) only exist while the contribution is
         // editable. Bind the shared touch sortable to the table body so dragging
         // works on touch devices, mirroring the native (mouse) drag handlers.
-        if (discList == null || !IsEditable)
+        if (discList == null || discList.Count == 0 || !IsEditable)
         {
             return;
         }
