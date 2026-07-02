@@ -88,6 +88,9 @@ else
                         }
                     </div>
                 </TemplateColumn>
+                <PropertyColumn Property="@(t => t.Duration)" Title="Length" Class="col-narrow" />
+                <PropertyColumn Property="@(t => t.Size)" Title="Size" Class="col-narrow" />
+                <PropertyColumn Property="@(t => t.ChapterCount)" Title="Chapters" Class="col-narrow" />
                 <TemplateColumn Title="" Class="details-link-col">
                     @if (HasChapters(context) || HasCustomAudioTracks(context))
                     {

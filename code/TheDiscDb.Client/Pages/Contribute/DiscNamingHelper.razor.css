@@ -68,6 +68,11 @@
     text-align: center;
 }
 
+.col-narrow {
+    white-space: nowrap;
+    width: 1%;
+}
+
 .cell-with-copy {
     display: flex;
     align-items: center;
