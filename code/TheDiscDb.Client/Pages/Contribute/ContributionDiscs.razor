@@ -127,11 +127,11 @@
                                     }
                                 </td>
                                 <td>
-                                    <a href="@($"/contribution/{ContributionId}/disc/{disc.EncodedId}/edit?returnUrl=/contribution/{ContributionId}")" title="Edit disc details"><i class="e-icons e-edit"></i> Edit</a>
-                                    <a class="ms-2" href="@GetNamingHelperUrl(disc)" target="_blank" rel="noopener noreferrer" title="Open naming helper"><i class="e-icons e-copy"></i> Naming</a>
+                                    <a href="@($"/contribution/{ContributionId}/disc/{disc.EncodedId}/edit?returnUrl=/contribution/{ContributionId}")" class="icon-btn" title="Edit disc details"><i class="e-icons e-edit"></i></a>
+                                    <a class="icon-btn ms-1" href="@GetNamingHelperUrl(disc)" target="_blank" rel="noopener noreferrer" title="Open naming helper"><i class="e-icons e-rename"></i></a>
                                     @if (IsEditable)
                                     {
-                                        <button type="button" class="btn btn-sm ms-2" title="Delete disc" @onclick="() => ConfirmDeleteDisc(disc)">
+                                        <button type="button" class="icon-btn ms-1" title="Delete disc" @onclick="() => ConfirmDeleteDisc(disc)">
                                             <i class="e-icons e-trash"></i>
                                         </button>
                                     }
