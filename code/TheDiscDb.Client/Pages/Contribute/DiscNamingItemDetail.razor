@@ -1,0 +1,158 @@
+@inherits CancellableComponentBase
+@page "/contribution/{contributionId}/discs/{discId}/naming/{itemId}"
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@if (isLoading)
+{
+    <div class="naming-item-detail-page">
+        <p><em>Loading...</em></p>
+    </div>
+}
+else if (!string.IsNullOrEmpty(loadError))
+{
+    <div class="naming-item-detail-page">
+        <div class="alert alert-warning">@loadError</div>
+    </div>
+}
+else
+{
+    <div class="naming-item-detail-page">
+        <nav class="naming-item-breadcrumb" aria-label="breadcrumb">
+            <a href="@BackUrl"><i class="e-icons e-chevron-left"></i> Back to disc</a>
+        </nav>
+
+        <div class="d-flex align-items-center gap-2 mb-3 mt-2 title-row">
+            <h1 class="mb-0">@item!.Name</h1>
+            <button type="button"
+                    class="icon-btn copy-inline-btn"
+                    title="Copy title"
+                    aria-label="Copy title"
+                    disabled="@GetTitleCopyState().IsDisabled"
+                    @onclick="CopyTitleToClipboard">
+                <i class="@GetTitleCopyState().IconClassName"></i>
+            </button>
+        </div>
+
+        <div class="metadata-card mt-2">
+            <dl class="metadata-grid mb-0">
+                <div class="metadata-item">
+                    <dt>Source File</dt>
+                    <dd>@item.Source</dd>
+                </div>
+                <div class="metadata-item">
+                    <dt>Type</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(item.Type) ? "—" : item.Type)</dd>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(item.Description))
+                {
+                    <div class="metadata-item metadata-item-wide">
+                        <dt>Description</dt>
+                        <dd>@item.Description</dd>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(item.Season) || !string.IsNullOrWhiteSpace(item.Episode))
+                {
+                    <div class="metadata-item">
+                        <dt>Season / Episode</dt>
+                        <dd>S@(item.Season ?? "?") E@(item.Episode ?? "?")</dd>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(item.Filename))
+                {
+                    <div class="metadata-item metadata-item-wide">
+                        <dt>Filename</dt>
+                        <dd>
+                            <div class="description-with-copy">
+                                <span>@item.Filename</span>
+                                @{
+                                    var filenameCopyState = GetFilenameCopyState();
+                                }
+                                <button type="button"
+                                        class="icon-btn copy-inline-btn"
+                                        title="Copy filename"
+                                        aria-label="Copy filename"
+                                        disabled="@filenameCopyState.IsDisabled"
+                                        @onclick="CopyFilenameToClipboard">
+                                    <i class="@filenameCopyState.IconClassName"></i>
+                                </button>
+                            </div>
+                        </dd>
+                    </div>
+                }
+            </dl>
+        </div>
+
+        @if (HasChapters)
+        {
+            <div class="info-card mt-4">
+                <div class="chapter-header">
+                    <h2 class="mt-0 mb-0 h3">Chapters</h2>
+                </div>
+                <ol class="chapter-list mb-0">
+                    @foreach (var chapter in item.Chapters.OrderBy(c => c.Index))
+                    {
+                        <li>
+                            @if (!string.IsNullOrWhiteSpace(chapter.Title))
+                            {
+                                <div class="description-with-copy">
+                                    <span>@chapter.Title</span>
+                                    <button type="button"
+                                            class="icon-btn copy-inline-btn"
+                                            title="Copy chapter name"
+                                            aria-label="Copy chapter name"
+                                            disabled="@GetChapterCopyState(chapter).IsDisabled"
+                                            @onclick="@(EventCallback.Factory.Create(this, () => CopyChapterToClipboard(chapter)))">
+                                        <i class="@GetChapterCopyState(chapter).IconClassName"></i>
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Chapter @chapter.Index</span>
+                            }
+                        </li>
+                    }
+                </ol>
+            </div>
+        }
+
+        @if (HasCustomAudioTracks)
+        {
+            <div class="info-card mt-4">
+                <h2 class="mt-0 mb-2 h3">Audio Tracks</h2>
+                <div class="table-responsive">
+                    <table class="table striped-grid mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" style="width: 5rem;">Index</th>
+                                <th scope="col">Title</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var track in item.AudioTracks.Where(t => !string.IsNullOrWhiteSpace(t.Title)).OrderBy(t => t.Index))
+                            {
+                                <tr>
+                                    <td>@track.Index</td>
+                                    <td>
+                                        <div class="description-with-copy">
+                                            <span>@track.Title</span>
+                                            <button type="button"
+                                                    class="icon-btn copy-inline-btn"
+                                                    title="Copy track title"
+                                                    aria-label="Copy track title"
+                                                    disabled="@GetAudioTrackCopyState(track).IsDisabled"
+                                                    @onclick="@(EventCallback.Factory.Create(this, () => CopyAudioTrackToClipboard(track)))">
+                                                <i class="@GetAudioTrackCopyState(track).IconClassName"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+}

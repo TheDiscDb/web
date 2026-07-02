@@ -154,6 +154,11 @@ public partial class ContributionDiscs : CancellableComponentBase
         return $"/contribution/{ContributionId}/discs/{disc.EncodedId}/identify";
     }
 
+    private string GetNamingHelperUrl(IContributionDiscs_MyContributions_Nodes_Discs disc)
+    {
+        return $"/contribution/{ContributionId}/discs/{disc.EncodedId}/naming?popup=1";
+    }
+
     private string GetCopiedFromSummary(IContributionDiscs_MyContributions_Nodes_Discs disc)
     {
         if (string.IsNullOrEmpty(disc.ExistingDiscPath))

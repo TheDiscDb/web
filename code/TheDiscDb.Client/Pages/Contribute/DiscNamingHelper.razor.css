@@ -1,0 +1,122 @@
+.naming-helper-page {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-bottom: 1rem;
+}
+
+.naming-helper-header h1 {
+    margin-bottom: 0.25rem;
+}
+
+.naming-helper-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.naming-helper-title-row h1 {
+    margin: 0;
+}
+
+.title-copy-button {
+    opacity: 0;
+}
+
+.naming-helper-title-row:hover .title-copy-button,
+.naming-helper-title-row:focus-within .title-copy-button {
+    opacity: 1;
+}
+
+.naming-helper-header p {
+    margin: 0;
+    color: #4d5a6d;
+}
+
+@media (prefers-color-scheme: dark) {
+    .naming-helper-header p {
+        color: #9aabbc;
+    }
+
+    .cell-copy-button {
+        color: #9aabbc;
+    }
+
+    .cell-copy-button:hover:not(:disabled) {
+        background-color: #1e2a38;
+        color: #e0e8f0;
+        border-color: #3d5068;
+    }
+
+    .cell-copy-button:disabled {
+        color: #51cf66;
+    }
+}
+
+.naming-helper-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.naming-helper-grid {
+    width: 100%;
+}
+
+.details-link-col {
+    width: 3rem;
+    text-align: center;
+}
+
+.cell-with-copy {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 1.5rem;
+}
+
+.cell-with-copy-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.cell-copy-button {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #52657f;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out, background-color 0.15s ease-in-out, color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.cell-copy-button:focus-visible {
+    opacity: 1;
+    outline: none;
+    border-color: #c4ccd8;
+}
+
+.cell-copy-button:hover:not(:disabled) {
+    background-color: #eef2f7;
+    color: #00213f;
+    border-color: #c4ccd8;
+}
+
+.cell-copy-button:disabled {
+    cursor: default;
+    color: #2f9e44;
+    opacity: 1;
+}
+
+::deep tr:hover .cell-copy-button,
+.cell-with-copy:hover .cell-copy-button,
+.cell-with-copy:focus-within .cell-copy-button {
+    opacity: 1;
+}

@@ -1,9 +1,13 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using System.Security.Claims;
 using HotChocolate.Configuration;
 using HotChocolate.Data.Filters;
 using HotChocolate.Data.Filters.Expressions;
 using HotChocolate.Language;
+using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Naming;
+using TheDiscDb.Services.Admin;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 
@@ -70,6 +74,115 @@ public class ContributionDiscItemTypeExtension : EncodedIdTypeExtension<UserCont
         descriptor.Field(t => t.AudioTracks)
                   .UseFiltering()
                   .UseSorting();
+
+        descriptor.Field("filename")
+                  .Type<NonNullType<StringType>>()
+                  .ResolveWith<ContributionDiscItemTypeExtension>(x => GetFilename(default!, default!, default!, default));
+    }
+
+    public static async Task<string> GetFilename(
+        [Parent] UserContributionDiscItem parent,
+        SqlServerDataContext database,
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken)
+    {
+        var loaded = await database.UserContributionDiscItems
+            .AsNoTracking()
+            .Include(i => i.Disc)
+                .ThenInclude(d => d.UserContribution)
+            .FirstOrDefaultAsync(i => i.Id == parent.Id, cancellationToken);
+
+        if (loaded?.Disc?.UserContribution is null)
+        {
+            return string.Empty;
+        }
+
+        var overrides = await GetTemplateOverridesAsync(database, user, cancellationToken);
+        var resolver = new FileNameTemplateResolver(overrides);
+        var context = CreateNamingContext(loaded.Disc.UserContribution, loaded.Disc, loaded);
+        return resolver.Format(loaded.Type, context);
+    }
+
+    private static async Task<IReadOnlyDictionary<string, string>> GetTemplateOverridesAsync(
+        SqlServerDataContext database,
+        ClaimsPrincipal user,
+        CancellationToken cancellationToken)
+    {
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var templates = await database.UserFileNameTemplates
+            .AsNoTracking()
+            .Where(t => t.UserId == userId)
+            .ToListAsync(cancellationToken);
+
+        return templates.ToDictionary(t => t.ItemType, t => t.Template, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static NamingContext CreateNamingContext(
+        UserContribution contribution,
+        UserContributionDisc disc,
+        UserContributionDiscItem item)
+    {
+        string? title = string.IsNullOrWhiteSpace(contribution.Title) ? null : contribution.Title;
+        string? year = string.IsNullOrWhiteSpace(contribution.Year) ? null : contribution.Year;
+
+        string? tmdbId = null;
+        string? imdbId = null;
+        if (string.Equals(contribution.ExternalProvider, "tmdb", StringComparison.OrdinalIgnoreCase))
+        {
+            tmdbId = contribution.ExternalId;
+        }
+        else if (string.Equals(contribution.ExternalProvider, "imdb", StringComparison.OrdinalIgnoreCase))
+        {
+            imdbId = contribution.ExternalId;
+        }
+
+        return new NamingContext
+        {
+            Title = title,
+            Year = year,
+            FullTitle = BuildFullTitle(title, year),
+            Description = string.IsNullOrWhiteSpace(item.Description) ? disc.Name : item.Description,
+            Format = disc.Format,
+            Resolution = ContributionDiscFormat.ResolveResolution(disc.Format),
+            TmdbId = tmdbId,
+            ImdbId = imdbId,
+            SeasonNumber = PadNumber(item.Season),
+            EpisodeNumber = PadNumber(item.Episode),
+            EpisodeName = string.Equals(item.Type, "Episode", StringComparison.OrdinalIgnoreCase) ? item.Name : null,
+            ExtraType = item.Type,
+        };
+    }
+
+    private static string? BuildFullTitle(string? title, string? year)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(year))
+        {
+            return title;
+        }
+
+        return $"{title} ({year})";
+    }
+
+    private static string? PadNumber(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return int.TryParse(value, out var number)
+            ? number.ToString("D2")
+            : value;
     }
 }
 

@@ -1,13 +1,22 @@
 ﻿@inherits LayoutComponentBase
 @using TheDiscDb.Client.Controls
 
-<div>
-    <NavMenu />
-    <main class="main-content">
+@if (UsePopupShell)
+{
+    <main class="main-content popup-main-content">
         @Body
     </main>
-    <!-- Build Number Here -->
-</div>
+}
+else
+{
+    <div>
+        <NavMenu />
+        <main class="main-content">
+            @Body
+        </main>
+        <!-- Build Number Here -->
+    </div>
+}
 
 <div id="blazor-error-ui">
     An unhandled error has occurred.

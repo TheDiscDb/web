@@ -1,0 +1,125 @@
+.naming-item-detail-page {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-bottom: 2rem;
+}
+
+.naming-item-breadcrumb {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.naming-item-breadcrumb a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    text-decoration: none;
+}
+
+.naming-item-breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.metadata-card {
+    padding: 0.5rem 0;
+}
+
+.metadata-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .metadata-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}
+
+.metadata-item dt {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+    margin-bottom: 0.2rem;
+}
+
+.metadata-item dd {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.metadata-item-wide {
+    grid-column: span 1;
+}
+
+@media (min-width: 768px) {
+    .metadata-item-wide {
+        grid-column: span 2;
+    }
+}
+
+.chapter-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.chapter-list {
+    padding-left: 1.5rem;
+    margin: 0;
+}
+
+.chapter-list li {
+    padding: 0.35rem 0;
+    border-bottom: 1px solid #eef1f5;
+}
+
+.chapter-list li:last-child {
+    border-bottom: none;
+}
+
+.description-with-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.copy-inline-btn {
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.title-row:hover .copy-inline-btn,
+.title-row:focus-within .copy-inline-btn {
+    opacity: 1;
+}
+
+.description-with-copy:hover .copy-inline-btn,
+.description-with-copy:focus-within .copy-inline-btn,
+.copy-inline-btn:focus-visible {
+    opacity: 1;
+}
+
+.copy-inline-btn:disabled {
+    color: #2f9e44;
+    opacity: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+    .metadata-item dt {
+        color: #9aabbc;
+    }
+
+    .chapter-list li {
+        border-bottom-color: #2a3a4e;
+    }
+
+    .copy-inline-btn:disabled {
+        color: #51cf66;
+    }
+}

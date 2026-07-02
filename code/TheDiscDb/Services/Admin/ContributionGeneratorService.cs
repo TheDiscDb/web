@@ -246,16 +246,11 @@ public class ContributionGeneratorService
         {
             var discName = new DiscName { Index = index, Name = string.Format("disc{0:00}", index) };
 
-            string resolution = "1080p";
+            string resolution = ContributionDiscFormat.ResolveResolution(disc.Format);
             string discFormat = disc.Format;
             if (disc.Format.Equals("4K", StringComparison.OrdinalIgnoreCase))
             {
                 discFormat = "UHD";
-                resolution = "2160p";
-            }
-            else if (disc.Format.Equals("DVD", StringComparison.OrdinalIgnoreCase))
-            {
-                resolution = "720p";
             }
 
             if (!string.IsNullOrEmpty(disc.ExistingDiscPath))

@@ -1,0 +1,105 @@
+@inherits CancellableComponentBase
+@page "/contribution/{contributionId}/discs/{discId}/naming"
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@if (isLoading)
+{
+    <div class="naming-helper-page">
+        <p><em>Loading naming helper...</em></p>
+    </div>
+}
+else if (!string.IsNullOrEmpty(loadError))
+{
+    <div class="naming-helper-page">
+        <div class="alert alert-warning">@loadError</div>
+    </div>
+}
+else
+{
+    <div class="naming-helper-page">
+        <section class="naming-helper-header">
+            <div class="naming-helper-title-row">
+                <h1>@contribution?.Title (@contribution?.Year)</h1>
+                @{
+                    var titleCopyState = GetTitleCopyState();
+                }
+                <button type="button"
+                        class="cell-copy-button title-copy-button"
+                        title="Copy title"
+                        aria-label="Copy title"
+                        disabled="@titleCopyState.IsDisabled"
+                        @onclick="CopyTitleToClipboard">
+                    <i class="@titleCopyState.IconClassName"></i>
+                </button>
+            </div>
+            <p>@disc?.Name</p>
+        </section>
+
+        <div class="naming-helper-actions">
+            <a class="e-btn e-outline" href="/settings/file-name-templates" target="_blank" rel="noopener noreferrer">
+                <i class="e-icons e-edit"></i> Edit naming templates
+            </a>
+            @if (IsPopup)
+            {
+                <button type="button" class="e-btn e-outline" @onclick="CloseWindowAsync">Close</button>
+            }
+        </div>
+
+        @if (identifiedItems.Count == 0)
+        {
+            <div class="alert alert-info">No identified items were found for this disc yet.</div>
+        }
+        else
+        {
+            <QuickGrid Items="IdentifiedItems" Class="striped-grid naming-helper-grid">
+                <PropertyColumn Property="@(t => t.Source)" Title="Source File" />
+                <TemplateColumn Title="Description">
+                    <div class="cell-with-copy">
+                        <span class="cell-with-copy-text">@context.Name</span>
+                        @if (!string.IsNullOrWhiteSpace(context.Name))
+                        {
+                            var copyState = GetDescriptionCopyState(context);
+                            <button type="button"
+                                    class="cell-copy-button"
+                                    title="Copy description"
+                                    aria-label="Copy description"
+                                    disabled="@copyState.IsDisabled"
+                                    @onclick="() => CopyDescriptionToClipboard(context)">
+                                <i class="@copyState.IconClassName"></i>
+                            </button>
+                        }
+                    </div>
+                </TemplateColumn>
+                <TemplateColumn Title="Filename">
+                    <div class="cell-with-copy">
+                        <span class="cell-with-copy-text">@context.Filename</span>
+                        @if (!string.IsNullOrWhiteSpace(context.Filename))
+                        {
+                            var copyState = GetFileNameCopyState(context);
+                            <button type="button"
+                                    class="cell-copy-button"
+                                    title="Copy filename"
+                                    aria-label="Copy filename"
+                                    disabled="@copyState.IsDisabled"
+                                    @onclick="() => CopyFileNameToClipboard(context)">
+                                <i class="@copyState.IconClassName"></i>
+                            </button>
+                        }
+                    </div>
+                </TemplateColumn>
+                <TemplateColumn Title="" Class="details-link-col">
+                    @if (HasChapters(context) || HasCustomAudioTracks(context))
+                    {
+                        <a href="@GetItemDetailUrl(context)"
+                           class="icon-btn"
+                           title="View chapters &amp; audio tracks"
+                           aria-label="View details for @context.Name">
+                            <i class="e-icons e-eye"></i>
+                        </a>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
+        }
+    </div>
+}

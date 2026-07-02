@@ -601,6 +601,7 @@ type UserContributionDiscItem {
   segmentMap: String!
   type: String!
   description: String
+  filename: String!
   season: String
   episode: String
   chapters(where: UserContributionChapterFilterInput @cost(weight: "10") order: [UserContributionChapterSortInput!] @cost(weight: "10")): [UserContributionChapter!]!

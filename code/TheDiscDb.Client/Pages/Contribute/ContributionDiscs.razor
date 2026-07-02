@@ -128,6 +128,7 @@
                                 </td>
                                 <td>
                                     <a href="@($"/contribution/{ContributionId}/disc/{disc.EncodedId}/edit?returnUrl=/contribution/{ContributionId}")" title="Edit disc details"><i class="e-icons e-edit"></i> Edit</a>
+                                    <a class="ms-2" href="@GetNamingHelperUrl(disc)" target="_blank" rel="noopener noreferrer" title="Open naming helper"><i class="e-icons e-copy"></i> Naming</a>
                                     @if (IsEditable)
                                     {
                                         <button type="button" class="btn btn-sm ms-2" title="Delete disc" @onclick="() => ConfirmDeleteDisc(disc)">

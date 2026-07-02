@@ -15,11 +15,21 @@ main {
     overflow-x: hidden;
 }
 
+::deep .main-content.popup-main-content {
+    margin-top: 0;
+    padding-top: 12px;
+}
+
 @media (min-width: 768px) {
     ::deep .main-content {
         margin-top: 100px;
         padding-left: 20px;
         padding-right: 20px;
+    }
+
+    ::deep .main-content.popup-main-content {
+        margin-top: 0;
+        padding-top: 20px;
     }
 }
 
