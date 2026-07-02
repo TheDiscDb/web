@@ -34,6 +34,10 @@ public partial class ContributionDiscs : CancellableComponentBase
         UserContributionStatus.Rejected;
 
     private bool isSaving;
+    private bool showDeleteDiscDialog;
+    private bool isDeletingDisc;
+    private string? deleteDiscErrorMessage;
+    private IContributionDiscs_MyContributions_Nodes_Discs? deletingDisc;
 
     private IContributionDiscs_MyContributions_Nodes_Discs? draggedDisc;
     private IContributionDiscs_MyContributions_Nodes_Discs? dragOverDisc;
@@ -48,6 +52,11 @@ public partial class ContributionDiscs : CancellableComponentBase
             throw new Exception("Contribution Service was not injected");
         }
 
+        await LoadContributionAsync();
+    }
+
+    private async Task LoadContributionAsync()
+    {
         var result = await this.ContributionClient.ContributionDiscs.ExecuteAsync(ContributionId!, this.CancellationToken);
         if (result != null && result.IsSuccessResult())
         {
@@ -181,6 +190,57 @@ public partial class ContributionDiscs : CancellableComponentBase
         finally
         {
             isSaving = false;
+        }
+    }
+
+    private void ConfirmDeleteDisc(IContributionDiscs_MyContributions_Nodes_Discs disc)
+    {
+        deletingDisc = disc;
+        deleteDiscErrorMessage = null;
+        showDeleteDiscDialog = true;
+    }
+
+    private void CancelDeleteDisc()
+    {
+        showDeleteDiscDialog = false;
+        deletingDisc = null;
+        deleteDiscErrorMessage = null;
+    }
+
+    private async Task ExecuteDeleteDisc()
+    {
+        if (deletingDisc == null)
+        {
+            return;
+        }
+
+        isDeletingDisc = true;
+        deleteDiscErrorMessage = null;
+        try
+        {
+            var result = await this.ContributionClient.DeleteDiscFromContribution.ExecuteAsync(new DeleteDiscFromContributionInput
+            {
+                ContributionId = ContributionId!,
+                DiscId = deletingDisc.EncodedId
+            }, this.CancellationToken);
+
+            if (result.Data?.DeleteDiscFromContribution?.Errors is { Count: > 0 } errors)
+            {
+                deleteDiscErrorMessage = errors[0].Code ?? "Failed to delete disc.";
+                return;
+            }
+
+            showDeleteDiscDialog = false;
+            deletingDisc = null;
+            await LoadContributionAsync();
+        }
+        catch (Exception)
+        {
+            deleteDiscErrorMessage = "Failed to delete disc. Please try again.";
+        }
+        finally
+        {
+            isDeletingDisc = false;
         }
     }
 

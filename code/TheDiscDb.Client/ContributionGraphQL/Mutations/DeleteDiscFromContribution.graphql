@@ -1,0 +1,13 @@
+mutation DeleteDiscFromContribution($input: DeleteDiscFromContributionInput!) {
+  deleteDiscFromContribution(input: $input) {
+    userContributionDisc {
+      __typename
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

@@ -124,6 +124,7 @@ type ContributionMutations {
   createContribution(input: CreateContributionInput!): CreateContributionPayload! @authorize @cost(weight: "10")
   createDisc(input: CreateDiscInput!): CreateDiscPayload! @authorize @cost(weight: "10")
   deleteContribution(input: DeleteContributionInput!): DeleteContributionPayload! @cost(weight: "10")
+  deleteDiscFromContribution(input: DeleteDiscFromContributionInput!): DeleteDiscFromContributionPayload! @cost(weight: "10")
   deleteItemFromDisc(input: DeleteItemFromDiscInput!): DeleteItemFromDiscPayload! @cost(weight: "10")
   editItemOnDisc(input: EditItemOnDiscInput!): EditItemOnDiscPayload! @authorize @cost(weight: "10")
   discLogs(input: DiscLogsInput!): DiscLogsPayload! @authorize @cost(weight: "10")
@@ -284,6 +285,11 @@ type CreateDiscPayload {
 type DeleteContributionPayload {
   userContribution: UserContribution
   errors: [DeleteContributionError!]
+}
+
+type DeleteDiscFromContributionPayload {
+  userContributionDisc: UserContributionDisc
+  errors: [DeleteDiscFromContributionError!]
 }
 
 type DeleteItemFromDiscPayload {
@@ -614,6 +620,8 @@ union CreateDiscError = ContributionNotFoundError | AuthenticationError | Invali
 
 union DeleteContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
 
+union DeleteDiscFromContributionError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
+
 union DeleteItemFromDiscError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 union DiscLogsError = LogsNotFoundError | ContributionNotFoundError | DiscNotFoundError | CouldNotParseLogsError | AuthenticationError | InvalidIdError | InvalidOwnershipError
@@ -754,6 +762,11 @@ input DateTimeOperationFilterInput {
 
 input DeleteContributionInput {
   contributionId: String!
+}
+
+input DeleteDiscFromContributionInput {
+  contributionId: String!
+  discId: String!
 }
 
 input DeleteItemFromDiscInput {

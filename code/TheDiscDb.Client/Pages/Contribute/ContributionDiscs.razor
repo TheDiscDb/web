@@ -1,5 +1,6 @@
 ﻿@inherits CancellableComponentBase
 @page "/contribution/{contributionId}"
+@using Syncfusion.Blazor.Popups
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
 @if (Contribution is not null)
@@ -127,6 +128,12 @@
                                 </td>
                                 <td>
                                     <a href="@($"/contribution/{ContributionId}/disc/{disc.EncodedId}/edit?returnUrl=/contribution/{ContributionId}")" title="Edit disc details"><i class="e-icons e-edit"></i> Edit</a>
+                                    @if (IsEditable)
+                                    {
+                                        <button type="button" class="btn btn-sm ms-2" title="Delete disc" @onclick="() => ConfirmDeleteDisc(disc)">
+                                            <i class="e-icons e-trash"></i>
+                                        </button>
+                                    }
                                 </td>
                                 @if (IsEditable)
                                 {
@@ -154,3 +161,32 @@ else
         </section>
     </div>
 }
+
+@if (showDeleteDiscDialog)
+{
+    <SfDialog Target="body" Width="400px" @bind-Visible="@showDeleteDiscDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Delete Disc">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <p>Delete disc <strong>@deletingDisc?.Name</strong> from this contribution?</p>
+            <p class="text-muted">This will remove the disc and any identified items saved under it.</p>
+            @if (!string.IsNullOrEmpty(deleteDiscErrorMessage))
+            {
+                <div class="alert alert-danger mt-2">@deleteDiscErrorMessage</div>
+            }
+            <div class="e-footer-content">
+                <div class="button-container">
+                    <button type="button" class="e-btn e-normal" @onclick="CancelDeleteDisc" disabled="@isDeletingDisc">Cancel</button>
+                    <button type="button" class="e-btn e-normal e-danger" @onclick="ExecuteDeleteDisc" disabled="@isDeletingDisc">
+                        @if (isDeletingDisc)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        }
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </ChildContent>
+    </SfDialog>
+}
+
+<Syncfusion.Blazor.Popups.SfDialogProvider />
