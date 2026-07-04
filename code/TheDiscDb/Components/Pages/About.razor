@@ -1,8 +1,8 @@
 ﻿@page "/about"
 
-<PageTitle>About Us - TheDiscDb</PageTitle>
+<PageTitle>About TheDiscDb</PageTitle>
 <HeadContent>
-    <meta name="description" content="Learn about TheDiscDb — a community-driven database for Blu-ray, 4K UHD, and DVD collectors. Discover how we help you identify MakeMKV playlists, disc structures, and more." />
+    <meta name="description" content="TheDiscDb is a community-built database of Blu-ray, 4K UHD, and DVD disc structures. Find out exactly which MakeMKV playlist is the movie — no guessing required." />
     <link rel="canonical" href="https://thediscdb.com/about" />
 </HeadContent>
 
@@ -11,8 +11,8 @@
 <div class="page-header">
     <h1>About <span class="page-header__accent">TheDiscDb</span></h1>
     <div class="page-header__desc">
-        We help movie collectors turn shelves of discs into organized digital libraries by sharing
-        accurate playlist mappings and metadata captured by the community.
+        A community-built database that maps every Blu-ray, 4K UHD, and DVD playlist to its actual
+        content — so you always know which file is the movie.
     </div>
 </div>
 
@@ -20,37 +20,132 @@
 
     <section class="info-grid">
         <article class="info-card">
-            <h2>What is this site for?</h2>
+            <h2>The disc playlist problem</h2>
             <p>
-                For anyone building a digital movie collection, <a href="https://makemkv.com" target="_blank"
-                rel="noreferrer" title="Makemkv official site">MakeMKV</a> is indispensable. TheDiscDb extends
-                that workflow by letting collectors share disc layouts so you always know which playlists
-                contain movies, episodes, or extras.
+                When you open a Blu-ray in <a href="https://makemkv.com" target="_blank" rel="noreferrer">MakeMKV</a>,
+                you see dozens of unnamed files: <code>00003.mpls</code>, <code>00011.mpls</code>,
+                <code>00029.mpls</code>… There is no label telling you which one is the movie. Disc publishers use
+                complex playlist schemes for region variants, seamless branching, and sometimes intentionally to
+                frustrate automated ripping.
             </p>
         </article>
 
         <article class="info-card">
-            <h2>How it helps</h2>
+            <h2>What TheDiscDb does</h2>
             <p>
-                Instead of guessing which title is the real movie or which playlist holds the finale of a season,
-                you can see what other contributors discovered, verify logs, and rip once with confidence.
+                Contributors who have already ripped a disc share exactly what they found — which file is the main
+                feature, which are extras, and what the suggested output filename is. When you look up your release
+                you get the full disc map and can rip the right file the first time, every time.
             </p>
         </article>
+    </section>
+
+    <section class="about-stats-bar">
+        <div class="about-stats-item">
+            <span class="about-stats-number">@(stats?.Movies.ToString("N0") ?? "—")</span>
+            <span class="about-stats-label">Movies</span>
+        </div>
+        <div class="about-stats-divider" aria-hidden="true"></div>
+        <div class="about-stats-item">
+            <span class="about-stats-number">@(stats?.Series.ToString("N0") ?? "—")</span>
+            <span class="about-stats-label">Series</span>
+        </div>
+        <div class="about-stats-divider" aria-hidden="true"></div>
+        <div class="about-stats-item">
+            <span class="about-stats-number">@(stats?.Boxsets.ToString("N0") ?? "—")</span>
+            <span class="about-stats-label">Box Sets</span>
+        </div>
+        <div class="about-stats-divider" aria-hidden="true"></div>
+        <div class="about-stats-item">
+            <span class="about-stats-number">@(stats?.Discs.ToString("N0") ?? "—")</span>
+            <span class="about-stats-label">Discs</span>
+        </div>
+        <div class="about-stats-divider" aria-hidden="true"></div>
+        <div class="about-stats-item">
+            <span class="about-stats-number">@(stats?.Contributors.ToString("N0") ?? "—")</span>
+            <span class="about-stats-label">Contributors</span>
+        </div>
+    </section>
+
+    <section class="info-card about-example-card">
+        <h2>See it in action</h2>
+        <p>
+            Here is what the database shows for the
+            <a href="/movie/heat-1995/releases/heat-blu-ray-2009/discs/blu-ray-2009">Heat (1995) Blu-ray</a>.
+            Every playlist is already identified — no guessing required:
+        </p>
+        <div class="about-example-table-wrapper">
+            <table class="about-example-table">
+                <thead>
+                    <tr>
+                        <th>Source File</th>
+                        <th>Description</th>
+                        <th>Type</th>
+                        <th>Suggested Filename</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>00003.mpls</code></td>
+                        <td>Heat (1995)</td>
+                        <td><span class="type-badge type-main">Main Movie</span></td>
+                        <td><code>Heat (1995) [1080p].mkv</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>00011.mpls</code></td>
+                        <td>The Making of HEAT</td>
+                        <td><span class="type-badge type-extra">Featurette</span></td>
+                        <td><code>The Making of HEAT.mkv</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>00029.mpls</code></td>
+                        <td>Trailers</td>
+                        <td><span class="type-badge type-trailer">Trailer</span></td>
+                        <td><code>Trailers.mkv</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <section class="info-card contribute-cta-card">
         <h2>Want to contribute?</h2>
         <p>
-            Start with the <a href="/contribute">contribution flow</a> to identify a release, hash the discs, upload
-            MakeMKV logs, and map playlists. When you share the layout of your discs with the community - everyone benefits.
+            Scan your disc with MakeMKV, upload the log, and label the titles. When you share the layout
+            of your discs with the community — everyone benefits. Your name is credited on every release
+            you contribute.
         </p>
+        <div class="cta-row">
+            <a class="btn btn-primary" href="/contribute">Start contributing</a>
+            <a class="btn btn-secondary" href="/help/contributing">How it works</a>
+        </div>
+    </section>
+
+    <section class="info-grid">
+        <article class="info-card">
+            <h2>Suggest an edit</h2>
+            <p>
+                Spotted incorrect metadata? Any signed-in user can click the pencil icon on any release,
+                disc, or chapter page and submit a correction for review.
+            </p>
+            <a class="btn btn-secondary" href="/help/suggested-edits">Learn about suggested edits</a>
+        </article>
+
+        <article class="info-card">
+            <h2>Browse the database</h2>
+            <p>
+                Search by title, or browse by genre, director, or actor. Over 1,300 movies and 150 series
+                with full disc structures are waiting.
+            </p>
+            <a class="btn btn-secondary" href="/">Browse movies</a>
+        </article>
     </section>
 
     <section class="info-card contact-card">
         <h2>Contact us</h2>
         <p>
             Need help, need to correct metadata, or want to partner? Email us at
-            <a href="mailto:web@thediscdb.com">web@thediscdb.com</a> or open a discussion on GitHub.
+            <a href="mailto:web@thediscdb.com">web@thediscdb.com</a> or <a href="https://github.com/TheDiscDb/web/discussions" target="_blank" rel="noopener noreferrer">open a discussion on GitHub</a>.
         </p>
         <div class="cta-row">
             <a class="btn btn-secondary" href="mailto:web@thediscdb.com">Email support</a>
