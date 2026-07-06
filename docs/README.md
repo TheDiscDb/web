@@ -14,7 +14,8 @@ for the future across the whole project.
 | Plan | Status | Summary |
 |------|--------|---------|
 | [Image Storage Scaling](IMAGE-STORAGE-SCALING-PLAN.md) | 🔵 Proposed | Make Azure Blob the master store for images, pull image files out of the `data` git repo, and rewrite history to shrink the repo. JSON metadata stays in git. Reference design only — no code implemented. |
-| [Canonical Disc Deduplication (Phase 4)](PHASE-4-CANONICAL-DISC-DEDUPLICATION.md) | 🔵 Proposed | Refactor the disc storage model so identical disc content (tracks + chapters) shared across releases is stored once and referenced, rather than duplicated per release. |
+| [Canonical Disc Deduplication (Phase 4)](PHASE-4-CANONICAL-DISC-DEDUPLICATION.md) | 🟢 Shipped | Disc storage refactored so identical disc content (tracks + chapters) shared across releases is stored once as a canonical `Disc` and referenced via `ReleaseDisc`, rather than duplicated per release. Core model, rebuild, import/contribution dedup, and `data/` repo `disc*.ref` dedup are all implemented. |
+| [Disc Deduplication — Future Work](DISC-DEDUP-FUTURE-WORK.md) | 🔵 Proposed | Deferred follow-ons to the shipped canonical disc model: disc versioning, smart copy detection, moderator merge tooling, automated duplicate detection, analytics/insights, and optional `ReleaseDisc` denormalization. |
 | [Edit Suggestions (Phase 2)](EDIT-SUGGESTIONS-PHASE-2.md) | 🟡 In progress / backlog | Phase 1 (suggest/review edits to existing records) shipped. Phase 2 is a backlog broadening what can be suggested, filling metadata gaps, and maturing the admin review-to-publish workflow. |
 
 ## Conventions
