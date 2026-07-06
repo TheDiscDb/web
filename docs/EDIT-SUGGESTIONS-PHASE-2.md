@@ -22,9 +22,44 @@ scheduled. Pick items off it as priorities allow.
 - UI polish: standardized buttons, icon-only suggest-edit links, shared
   touch-friendly drag-to-reorder (`touch-sortable.js` + `TouchSortable<T>`).
 
+## Progress Since Phase 1
+
+Since this backlog was captured, a substantial amount of the underlying Phase 2
+infrastructure has shipped. It is verified in code and the per-workstream status
+below reflects it.
+
+- **Change framework** — `IChange` / `ChangeBase` / `ChangeFactory` /
+  `ChangeBuilder` (`code/TheDiscDb.Data/Changes/`) with snapshot-drift + TOCTOU
+  conflict detection, so approvals re-validate against current DB state.
+- **Registered change types** — `release.fields.update`, `disc.fields.update`,
+  `disc-item.add|delete|fields.update`, `track.add|delete|fields.update`,
+  `chapter.add|delete|update`. This delivers structural add/remove for
+  disc-items, tracks, and chapters (part of #2) and scalar release-metadata
+  editing incl. UPC/ISBN/ASIN (part of #1).
+- **Admin review** (`EditSuggestionReviewService`) — per-change approve/reject,
+  `ApproveAllPendingAsync` (approve-all within a suggestion), conflict resolution,
+  and a bundle-status roll-up. Field-level **JSON diff preview** (`JsonDiff`
+  control) in `EditSuggestionDetail.razor`.
+- **Messaging** (`EditSuggestionMessage` / `SendMessage`), **history/audit trail**
+  (`EditSuggestionHistoryService`), and **email notifications**
+  (`EditSuggestionNotificationService`, still gated behind the global
+  `EditSuggestions:Notifications:Enabled` switch).
+- **DB → data-repo sync hooks** (`EditSuggestionSyncService`) — approvals apply to
+  the DB and flag `SyncedToFilesAt = null`; `GetUnsyncedChangesAsync` /
+  `MarkSyncedAsync` let the external ContributionBuddy tool PR the changes into the
+  `data/` repo. (The in-app one-click git publish itself is not built; publishing
+  is delegated to that tool.)
+
+> Status legend for the workstreams below: **Done** / **Partial** / **Pending**.
+
 ## Candidate Workstreams
 
 ### 1. Release-level metadata editing
+
+> **Status: Partial.** Scalar fields ship via `release.fields.update` (Title,
+> RegionCode, Locale, Year, ReleaseDate, and the **UPC / ISBN / ASIN**
+> identifiers). **Still pending:** the list-valued fields below (cast & crew,
+> categories / groups, contributors) — these need collection diffing.
 
 Cover the release fields phase 1 doesn't yet let users suggest changes to:
 
@@ -40,6 +75,11 @@ than scalar fields, and must avoid storing unstable database `int` IDs.
 
 ### 2. Add / remove discs and disc-items
 
+> **Status: Partial.** Add/remove ships for **disc-items** (`disc-item.add` /
+> `disc-item.delete`), **tracks** (`track.add` / `track.delete`), and **chapters**
+> (`chapter.add` / `chapter.delete`). **Still pending:** adding/removing a whole
+> **disc** on a release (no `disc.add` / `disc.delete` change type yet).
+
 Phase 1 mostly edits records that already exist. Phase 2 should let users
 suggest **structural** changes:
 
@@ -52,6 +92,10 @@ clearly, and the publish step must create/delete records in the `data` repo.
 
 ### 3. Image suggestions (cover art)
 
+> **Status: Pending.** No `release.image.update` change type exists yet (it is
+> referenced aspirationally in a code comment only). Cover art still changes only
+> via the contribution upload path.
+
 Let users propose replacing the front/back cover as a reviewed edit, instead of
 the current contribution-only upload path.
 
@@ -61,6 +105,14 @@ move the image into the `data` repo alongside the metadata change. Reuse the
 existing `SfUploader` components where possible.
 
 ### 4. Admin workflow: approve → publish automation
+
+> **Status: Mostly done.** Shipped: per-change approve/reject, **approve-all**
+> within a suggestion (`ApproveAllPendingAsync`), **field-level diff preview**
+> (`JsonDiff`), conflict detection/resolution, and DB→data-repo **sync hooks**
+> (`EditSuggestionSyncService`; the actual PR to `data/` is produced by the
+> external ContributionBuddy tool). **Still pending:** an **in-app** one-click
+> commit/PR to `data/` (vs. the external tool), and **bulk approve/reject across
+> multiple suggestions** (today's approve-all is scoped to one suggestion).
 
 Today admins review suggestions; phase 2 should close the loop to the `data`
 repo:
@@ -76,6 +128,11 @@ git strategy (PR vs. direct commit) and how approvals map to commits/authors.
 
 ### 5. Non-movie media parity (TV / boxsets)
 
+> **Status: Partial / unverified.** The change types identify releases by a
+> media-item **or** boxset slug pair, so the model is not movie-only. Whether every
+> edit page behaves correctly for TV series and boxsets is still an **audit task**
+> that hasn't been signed off.
+
 Phase 1 was validated primarily against movies. Audit the edit/suggest pages
 against TV series and boxsets and close any gaps (routing, titles, multi-disc
 boxset structure, season/episode context).
@@ -85,6 +142,10 @@ boxset structure, season/episode context).
 movie-specific.
 
 ### 6. Partial releases (incomplete multi-disc sets)
+
+> **Status: Pending.** No expected-disc-count, missing-disc placeholder, or
+> "partial / help wanted" surfacing exists yet. Pairs with whole-disc add/remove
+> from #2.
 
 Let a release represent the case where the database has **only some** of the
 discs from a known multi-disc set (e.g., a 4-disc boxset where we've documented
@@ -113,6 +174,10 @@ does a partial release render in search/SEO without looking like broken data?
 
 ### 7. Per-user notification preferences
 
+> **Status: Pending.** Notifications ship (global-config gated) and emails carry a
+> static `List-Unsubscribe` header, but there is **no per-user preferences
+> store, UI, or gate**, and no wired one-click unsubscribe endpoint.
+
 Phase 1 ships edit-suggestion email notifications fully wired but **dormant**
 behind a single global config switch (`EditSuggestions:Notifications:Enabled`),
 with one summary email per suggestion at final resolution. Once notifications are
@@ -139,6 +204,9 @@ exempt from opt-out? One preferences surface for all email types, or per-feature
 
 ### 8. "My Suggested Changes" page design pass
 
+> **Status: Pending.** `MyChanges.razor` (`/changes/my`) exists and works; the
+> deliberate UX/design pass described below has not been done.
+
 The user-facing `My Suggested Changes` list page (`/changes/my`,
 `MyChanges.razor`) currently renders a bare QuickGrid (Target / Summary /
 Changes count / Submitted / Status / View). It works but **needs a dedicated
@@ -158,6 +226,9 @@ admin feedback (notes / rejection reasons)? Should this page and the admin
 review surface share components?
 
 ### 9. Evaluate the `EditSuggestionSource` enum
+
+> **Status: Pending.** The enum still exists (`Web`, `GraphQL`, `ApiKey`) with only
+> `Web` ever written; the keep-vs-remove decision below has not been made.
 
 `EditSuggestionChange` carries an `EditSuggestionSource` (`Web`, `GraphQL`,
 `ApiKey`). Today every suggestion comes from the web UI, so only `Web` is ever
