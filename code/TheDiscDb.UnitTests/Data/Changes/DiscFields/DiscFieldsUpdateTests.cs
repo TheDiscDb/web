@@ -236,4 +236,56 @@ public class DiscFieldsUpdateTests
         await Assert.That(result.IsConflict).IsTrue();
         await Assert.That(result.ConflictReason).Contains("ContentHash");
     }
+
+    [Test]
+    public async Task ValidateAsync_NotConflict_WhenFormatAndHashDrift_ButOnlyNameProposed()
+    {
+        // Regression: a data rebuild may add Format/ContentHash to discs that had
+        // neither when the suggestion was submitted. A name-only suggestion must not
+        // be blocked by drift in fields it never touched.
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+
+        // Snapshot captured before rebuild: no Format or ContentHash.
+        var snapshot = DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug)
+            with { Format = null, ContentHash = null };
+        var snapshotJson = JsonSerializer.Serialize(snapshot, JsonOptions);
+
+        // Simulate rebuild: disc now has Format and ContentHash.
+        seed.Disc.Format = "UHD Blu-ray";
+        seed.Disc.ContentHash = "BBBB2222CCCC3333DDDD4444EEEE5555";
+        seed.ReleaseDisc.Format = "UHD Blu-ray";
+        seed.ReleaseDisc.ContentHash = "BBBB2222CCCC3333DDDD4444EEEE5555";
+        await db.SaveChangesAsync();
+
+        // The suggestion only proposes a name change; Format/ContentHash are unchanged from snapshot.
+        var change = new DiscFieldsUpdate(snapshot with { Name = "Renamed Disc" });
+
+        var result = await change.ValidateAsync(db, snapshotJson, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsFalse();
+    }
+
+    [Test]
+    public async Task ValidateAsync_NotConflict_WhenFormatDrifts_ButOnlyNameProposed()
+    {
+        // Format changed independently (e.g. corrected by another edit); a name-only
+        // suggestion should still apply.
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+
+        var snapshot = DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug);
+        var snapshotJson = JsonSerializer.Serialize(snapshot, JsonOptions);
+
+        // Someone changed the format after the snapshot was taken.
+        seed.ReleaseDisc.Format = "UHD Blu-ray";
+        await db.SaveChangesAsync();
+
+        // Name-only proposal.
+        var change = new DiscFieldsUpdate(snapshot with { Name = "Better Title" });
+
+        var result = await change.ValidateAsync(db, snapshotJson, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsFalse();
+    }
 }

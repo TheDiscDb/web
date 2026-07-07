@@ -115,17 +115,38 @@ public sealed class DiscItemFieldsUpdate : ChangeBase<DiscItemFieldsDetails>
             return $"DiscItem identity changed: snapshot '{original.TargetEntityKey}' vs current '{current.TargetEntityKey}'.";
         }
 
+        // Only report drift on fields this suggestion is actually proposing to change.
         var drifted = new StringBuilder();
-        AppendIfDifferent(drifted, nameof(original.Comment), original.Comment, current.Comment);
-        AppendIfDifferent(drifted, nameof(original.SourceFile), original.SourceFile, current.SourceFile);
-        AppendIfDifferent(drifted, nameof(original.SegmentMap), original.SegmentMap, current.SegmentMap);
-        AppendIfDifferent(drifted, nameof(original.Duration), original.Duration, current.Duration);
-        AppendIfDifferent(drifted, nameof(original.HasItem), original.HasItem, current.HasItem);
-        AppendIfDifferent(drifted, nameof(original.ItemTitle), original.ItemTitle, current.ItemTitle);
-        AppendIfDifferent(drifted, nameof(original.ItemType), original.ItemType, current.ItemType);
-        AppendIfDifferent(drifted, nameof(original.ItemDescription), original.ItemDescription, current.ItemDescription);
-        AppendIfDifferent(drifted, nameof(original.ItemSeason), original.ItemSeason, current.ItemSeason);
-        AppendIfDifferent(drifted, nameof(original.ItemEpisode), original.ItemEpisode, current.ItemEpisode);
+        if (this.Proposed.Comment != original.Comment)
+            AppendIfDifferent(drifted, nameof(original.Comment), original.Comment, current.Comment);
+        if (this.Proposed.SourceFile != original.SourceFile)
+            AppendIfDifferent(drifted, nameof(original.SourceFile), original.SourceFile, current.SourceFile);
+        if (this.Proposed.SegmentMap != original.SegmentMap)
+            AppendIfDifferent(drifted, nameof(original.SegmentMap), original.SegmentMap, current.SegmentMap);
+        if (this.Proposed.Duration != original.Duration)
+            AppendIfDifferent(drifted, nameof(original.Duration), original.Duration, current.Duration);
+
+        // HasItem is derived from whether Item* fields are populated; only flag its
+        // drift when the suggestion is actually proposing changes to Item* fields.
+        var proposingItemChanges =
+            this.Proposed.ItemTitle != original.ItemTitle
+            || this.Proposed.ItemType != original.ItemType
+            || this.Proposed.ItemDescription != original.ItemDescription
+            || this.Proposed.ItemSeason != original.ItemSeason
+            || this.Proposed.ItemEpisode != original.ItemEpisode;
+
+        if (proposingItemChanges)
+            AppendIfDifferent(drifted, nameof(original.HasItem), original.HasItem, current.HasItem);
+        if (this.Proposed.ItemTitle != original.ItemTitle)
+            AppendIfDifferent(drifted, nameof(original.ItemTitle), original.ItemTitle, current.ItemTitle);
+        if (this.Proposed.ItemType != original.ItemType)
+            AppendIfDifferent(drifted, nameof(original.ItemType), original.ItemType, current.ItemType);
+        if (this.Proposed.ItemDescription != original.ItemDescription)
+            AppendIfDifferent(drifted, nameof(original.ItemDescription), original.ItemDescription, current.ItemDescription);
+        if (this.Proposed.ItemSeason != original.ItemSeason)
+            AppendIfDifferent(drifted, nameof(original.ItemSeason), original.ItemSeason, current.ItemSeason);
+        if (this.Proposed.ItemEpisode != original.ItemEpisode)
+            AppendIfDifferent(drifted, nameof(original.ItemEpisode), original.ItemEpisode, current.ItemEpisode);
 
         return drifted.Length == 0
             ? null

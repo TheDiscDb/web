@@ -136,15 +136,29 @@ public class TrackFieldsUpdateTests
     }
 
     [Test]
-    public async Task ValidateAsync_ReturnsConflict_WhenBothParentSlugsSupplied()
+    public async Task ValidateAsync_NotConflict_WhenUnproposedTrackFieldsDrift_DuringRebuild()
     {
+        // Regression: a rebuild may correct LanguageCode/AudioType etc. after a suggestion
+        // to rename a track was already submitted. The name-only suggestion must not be blocked.
         using var db = ChangeTestSeed.CreateDbContext();
-        ChangeTestSeed.Seed(db);
+        var seed = ChangeTestSeed.Seed(db);
 
-        var change = new TrackFieldsUpdate(MakeProposed() with { BoxsetSlug = "some-boxset" });
+        var snapshotAtSubmit = TrackFieldsUpdate.SnapshotFrom(
+            seed.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug,
+            ChangeTestSeed.DiscSlug, ChangeTestSeed.TitleIndex)
+            with { LanguageCode = null, Language = null };
+        var snapshotJson = JsonSerializer.Serialize(snapshotAtSubmit, JsonOptions);
 
-        var result = await change.ValidateAsync(db, originalSnapshotJson: null, CancellationToken.None);
+        // Rebuild corrects language fields.
+        seed.Track.LanguageCode = "fra";
+        seed.Track.Language = "French";
+        await db.SaveChangesAsync();
 
-        await Assert.That(result.IsConflict).IsTrue();
+        // Suggestion only proposes a Name change; language fields unchanged from snapshot.
+        var change = new TrackFieldsUpdate(snapshotAtSubmit with { Name = "Renamed Track" });
+
+        var result = await change.ValidateAsync(db, snapshotJson, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsFalse();
     }
 }

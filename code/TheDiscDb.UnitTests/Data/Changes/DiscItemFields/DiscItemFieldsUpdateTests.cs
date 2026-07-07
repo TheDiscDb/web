@@ -144,6 +144,31 @@ public class DiscItemFieldsUpdateTests
     }
 
     [Test]
+    public async Task ValidateAsync_NotConflict_WhenUnproposedItemFieldsDrift_DuringRebuild()
+    {
+        // Regression: a rebuild may add or correct SegmentMap/SourceFile after a comment-only
+        // suggestion was submitted. The comment-only suggestion must not be blocked.
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+
+        var snapshotAtSubmit = DiscItemFieldsUpdate.SnapshotFrom(
+            seed.Title, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug)
+            with { SegmentMap = null };
+        var snapshotJson = JsonSerializer.Serialize(snapshotAtSubmit, JsonOptions);
+
+        // Rebuild corrects SegmentMap.
+        seed.Title.SegmentMap = "1,2,3,4";
+        await db.SaveChangesAsync();
+
+        // Suggestion only proposes a Comment change; SegmentMap unchanged from snapshot.
+        var change = new DiscItemFieldsUpdate(snapshotAtSubmit with { Comment = "Updated comment" });
+
+        var result = await change.ValidateAsync(db, snapshotJson, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsFalse();
+    }
+
+    [Test]
     public async Task ValidateAsync_ReturnsConflict_WhenBothParentSlugsSupplied()
     {
         using var db = ChangeTestSeed.CreateDbContext();

@@ -79,10 +79,26 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             return $"Disc identity changed: snapshot '{original.TargetEntityKey}' vs current '{current.TargetEntityKey}'.";
         }
 
+        // Only report drift on fields this suggestion is actually proposing to change.
+        // Background data rebuilds may add Format or ContentHash to discs that had
+        // neither; a name-only suggestion should not be blocked by that.
         var drifted = new StringBuilder();
-        AppendIfDifferent(drifted, nameof(original.Name), original.Name, current.Name);
-        AppendIfDifferent(drifted, nameof(original.Format), original.Format, current.Format);
-        AppendIfDifferent(drifted, nameof(original.ContentHash), original.ContentHash, current.ContentHash);
+        if (this.Proposed.Name != original.Name)
+        {
+            AppendIfDifferent(drifted, nameof(original.Name), original.Name, current.Name);
+        }
+
+        if (this.Proposed.Format != original.Format)
+        {
+            AppendIfDifferent(drifted, nameof(original.Format), original.Format, current.Format);
+        }
+
+        // ContentHash is add-only: only flag drift when a new hash is being proposed
+        // (original was null/empty and proposed provides a value).
+        if (!string.IsNullOrEmpty(this.Proposed.ContentHash) && string.IsNullOrEmpty(original.ContentHash))
+        {
+            AppendIfDifferent(drifted, nameof(original.ContentHash), original.ContentHash, current.ContentHash);
+        }
 
         return drifted.Length == 0
             ? null

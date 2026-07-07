@@ -172,15 +172,26 @@ public sealed class ReleaseFieldsUpdate : ChangeBase<ReleaseFieldsDetails>
             return $"Release identity changed: snapshot '{original.TargetEntityKey}' vs current '{current.TargetEntityKey}'.";
         }
 
+        // Only report drift on fields this suggestion is actually proposing to change.
+        // A rebuild may fill in previously-null fields (UPC, ASIN, etc.); a title-only
+        // suggestion must not be blocked by drift in fields it never touched.
         var drifted = new StringBuilder();
-        AppendIfDifferent(drifted, nameof(original.Title), original.Title, current.Title);
-        AppendIfDifferent(drifted, nameof(original.RegionCode), original.RegionCode, current.RegionCode);
-        AppendIfDifferent(drifted, nameof(original.Locale), original.Locale, current.Locale);
-        AppendIfDifferent(drifted, nameof(original.Year), original.Year, current.Year);
-        AppendIfDifferent(drifted, nameof(original.Upc), original.Upc, current.Upc);
-        AppendIfDifferent(drifted, nameof(original.Isbn), original.Isbn, current.Isbn);
-        AppendIfDifferent(drifted, nameof(original.Asin), original.Asin, current.Asin);
-        AppendIfDifferent(drifted, nameof(original.ReleaseDate), original.ReleaseDate, current.ReleaseDate);
+        if (this.Proposed.Title != original.Title)
+            AppendIfDifferent(drifted, nameof(original.Title), original.Title, current.Title);
+        if (this.Proposed.RegionCode != original.RegionCode)
+            AppendIfDifferent(drifted, nameof(original.RegionCode), original.RegionCode, current.RegionCode);
+        if (this.Proposed.Locale != original.Locale)
+            AppendIfDifferent(drifted, nameof(original.Locale), original.Locale, current.Locale);
+        if (this.Proposed.Year != original.Year)
+            AppendIfDifferent(drifted, nameof(original.Year), original.Year, current.Year);
+        if (this.Proposed.Upc != original.Upc)
+            AppendIfDifferent(drifted, nameof(original.Upc), original.Upc, current.Upc);
+        if (this.Proposed.Isbn != original.Isbn)
+            AppendIfDifferent(drifted, nameof(original.Isbn), original.Isbn, current.Isbn);
+        if (this.Proposed.Asin != original.Asin)
+            AppendIfDifferent(drifted, nameof(original.Asin), original.Asin, current.Asin);
+        if (this.Proposed.ReleaseDate != original.ReleaseDate)
+            AppendIfDifferent(drifted, nameof(original.ReleaseDate), original.ReleaseDate, current.ReleaseDate);
 
         return drifted.Length == 0
             ? null

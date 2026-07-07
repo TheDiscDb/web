@@ -98,15 +98,24 @@ public sealed class TrackFieldsUpdate : ChangeBase<TrackFieldsDetails>
             return $"Track identity changed: snapshot '{original.TargetEntityKey}' vs current '{current.TargetEntityKey}'.";
         }
 
+        // Only report drift on fields this suggestion is actually proposing to change.
         var drifted = new StringBuilder();
-        AppendIfDifferent(drifted, nameof(original.Name), original.Name, current.Name);
-        AppendIfDifferent(drifted, nameof(original.Type), original.Type, current.Type);
-        AppendIfDifferent(drifted, nameof(original.Resolution), original.Resolution, current.Resolution);
-        AppendIfDifferent(drifted, nameof(original.AspectRatio), original.AspectRatio, current.AspectRatio);
-        AppendIfDifferent(drifted, nameof(original.AudioType), original.AudioType, current.AudioType);
-        AppendIfDifferent(drifted, nameof(original.LanguageCode), original.LanguageCode, current.LanguageCode);
-        AppendIfDifferent(drifted, nameof(original.Language), original.Language, current.Language);
-        AppendIfDifferent(drifted, nameof(original.Description), original.Description, current.Description);
+        if (this.Proposed.Name != original.Name)
+            AppendIfDifferent(drifted, nameof(original.Name), original.Name, current.Name);
+        if (this.Proposed.Type != original.Type)
+            AppendIfDifferent(drifted, nameof(original.Type), original.Type, current.Type);
+        if (this.Proposed.Resolution != original.Resolution)
+            AppendIfDifferent(drifted, nameof(original.Resolution), original.Resolution, current.Resolution);
+        if (this.Proposed.AspectRatio != original.AspectRatio)
+            AppendIfDifferent(drifted, nameof(original.AspectRatio), original.AspectRatio, current.AspectRatio);
+        if (this.Proposed.AudioType != original.AudioType)
+            AppendIfDifferent(drifted, nameof(original.AudioType), original.AudioType, current.AudioType);
+        if (this.Proposed.LanguageCode != original.LanguageCode)
+            AppendIfDifferent(drifted, nameof(original.LanguageCode), original.LanguageCode, current.LanguageCode);
+        if (this.Proposed.Language != original.Language)
+            AppendIfDifferent(drifted, nameof(original.Language), original.Language, current.Language);
+        if (this.Proposed.Description != original.Description)
+            AppendIfDifferent(drifted, nameof(original.Description), original.Description, current.Description);
 
         return drifted.Length == 0
             ? null

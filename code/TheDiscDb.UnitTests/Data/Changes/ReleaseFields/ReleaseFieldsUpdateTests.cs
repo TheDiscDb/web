@@ -431,6 +431,32 @@ public class ReleaseFieldsUpdateTests
     };
 
     [Test]
+    public async Task ValidateAsync_NotConflict_WhenUnproposedFieldsDrift_DuringRebuild()
+    {
+        // Regression: a data rebuild may fill in previously-null fields (UPC, ASIN, etc.)
+        // A title-only suggestion must not be blocked by drift in fields it never touched.
+        using var db = CreateDbContext();
+        var release = SeedRelease(db);
+
+        // Snapshot at submission time: no UPC or ASIN.
+        var snapshotAtSubmit = ReleaseFieldsUpdate.SnapshotFrom(release, MediaItemSlug, null)
+            with { Upc = null, Asin = null };
+        var snapshotJson = JsonSerializer.Serialize(snapshotAtSubmit, JsonOptions);
+
+        // Rebuild adds UPC and ASIN.
+        release.Upc = "999888777666";
+        release.Asin = "B00NEW9999";
+        await db.SaveChangesAsync();
+
+        // Suggestion only proposes a Title change; Upc/Asin match the snapshot (null).
+        var change = new ReleaseFieldsUpdate(snapshotAtSubmit with { Title = "Updated Title" });
+
+        var result = await change.ValidateAsync(db, snapshotJson, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsFalse();
+    }
+
+    [Test]
     public async Task TargetEntityKey_FormatsAsParentSlugSlashReleaseSlug()
     {
         var details = MakeProposed();
