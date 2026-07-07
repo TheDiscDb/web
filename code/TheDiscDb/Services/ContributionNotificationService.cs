@@ -1,5 +1,6 @@
 using System.Net;
 using Markdig;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
@@ -12,17 +13,20 @@ public class ContributionNotificationService : IContributionNotificationService
     private readonly MailgunClient mailgun;
     private readonly IOptionsMonitor<MailgunOptions> options;
     private readonly IdEncoder idEncoder;
+    private readonly IDbContextFactory<SqlServerDataContext> dbContextFactory;
     private readonly ILogger<ContributionNotificationService> logger;
 
     public ContributionNotificationService(
         MailgunClient mailgun,
         IOptionsMonitor<MailgunOptions> options,
         IdEncoder idEncoder,
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
         ILogger<ContributionNotificationService> logger)
     {
         this.mailgun = mailgun;
         this.options = options;
         this.idEncoder = idEncoder;
+        this.dbContextFactory = dbContextFactory;
         this.logger = logger;
     }
 
@@ -157,18 +161,15 @@ public class ContributionNotificationService : IContributionNotificationService
         var opts = options.CurrentValue;
 
         var title = $"{contribution.Title} ({contribution.Year})";
-        var mediaType = contribution.MediaType?.ToLowerInvariant() ?? "movie";
-        var hasItemLink = !string.IsNullOrEmpty(contribution.TitleSlug);
-        var itemUrl = hasItemLink ? $"https://thediscdb.com/{mediaType}/{contribution.TitleSlug}" : "https://thediscdb.com";
+        var link = await ResolveImportedItemLinkAsync(contribution, cancellationToken);
 
         var eTitle = E(contribution.Title);
         var eYear = E(contribution.Year);
         var eReleaseTitle = E(contribution.ReleaseTitle);
         var eMediaType = E(contribution.MediaType);
 
-        var linkHtml = hasItemLink
-            ? $"""<p><a href="{itemUrl}" style="display: inline-block; padding: 10px 20px; background-color: {BrandColor}; color: #ffffff; text-decoration: none; border-radius: 4px;">View on TheDiscDb</a></p>"""
-            : $"""<p><a href="{itemUrl}" style="display: inline-block; padding: 10px 20px; background-color: {BrandColor}; color: #ffffff; text-decoration: none; border-radius: 4px;">Visit TheDiscDb</a></p>""";
+        var linkHtml =
+            $"""<p><a href="{link.Url}" style="display: inline-block; padding: 10px 20px; background-color: {BrandColor}; color: #ffffff; text-decoration: none; border-radius: 4px;">{link.ButtonText}</a></p>""";
 
         var html = WrapInEmailLayout($"""
                 <h2 style="color: {BrandColor}; margin-top: 0;">Your Contribution Has Been Imported!</h2>
@@ -200,6 +201,67 @@ public class ContributionNotificationService : IContributionNotificationService
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to send imported notification for contribution {Id}", contribution.Id);
+        }
+    }
+
+    private sealed record ImportedItemLink(string Url, string ButtonText);
+
+    /// <summary>
+    /// Resolves the best link for the imported-contribution email. Prefers a deep link to
+    /// the specific release that was imported, verifying it resolves in the database first.
+    /// Falls back to the media item page, then the site home page.
+    /// </summary>
+    private async Task<ImportedItemLink> ResolveImportedItemLinkAsync(UserContribution contribution, CancellationToken cancellationToken)
+    {
+        const string home = "https://thediscdb.com";
+        var mediaType = contribution.MediaType?.ToLowerInvariant();
+        var titleSlug = contribution.TitleSlug;
+        var releaseSlug = contribution.ReleaseSlug;
+
+        if (string.IsNullOrEmpty(mediaType) || string.IsNullOrEmpty(titleSlug))
+        {
+            return new ImportedItemLink(home, "Visit TheDiscDb");
+        }
+
+        var mediaItemUrl = $"{home}/{mediaType}/{titleSlug}";
+
+        try
+        {
+            await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            if (!string.IsNullOrEmpty(releaseSlug))
+            {
+                var releaseExists = await db.Releases
+                    .AsNoTracking()
+                    .AnyAsync(
+                        r => r.MediaItem != null
+                            && r.MediaItem.Slug == titleSlug
+                            && r.Slug == releaseSlug,
+                        cancellationToken);
+
+                if (releaseExists)
+                {
+                    return new ImportedItemLink(
+                        $"{mediaItemUrl}/releases/{releaseSlug}",
+                        "View this release on TheDiscDb");
+                }
+            }
+
+            var mediaItemExists = await db.MediaItems
+                .AsNoTracking()
+                .AnyAsync(m => m.Slug == titleSlug, cancellationToken);
+
+            if (mediaItemExists)
+            {
+                return new ImportedItemLink(mediaItemUrl, "View on TheDiscDb");
+            }
+
+            return new ImportedItemLink(home, "Visit TheDiscDb");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to verify imported item link for contribution {Id}; falling back to media item URL", contribution.Id);
+            return new ImportedItemLink(mediaItemUrl, "View on TheDiscDb");
         }
     }
 
