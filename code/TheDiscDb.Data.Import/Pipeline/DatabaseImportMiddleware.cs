@@ -17,14 +17,16 @@ namespace TheDiscDb.Data.Import.Pipeline
         private SqlServerDataContext dbContext;
         private readonly IItemHandler<MediaItem> mediaItemHandler;
         private readonly IItemHandler<Boxset> boxsetItemHandler;
+        private readonly IItemHandler<Disc> discItemHandler;
         // UserManager<T> is scoped; this singleton resolves it per-use via a short-lived scope.
         private readonly IServiceScopeFactory scopeFactory;
 
-        public DatabaseImportMiddleware(IDbContextFactory<SqlServerDataContext> dbFactory, IItemHandler<MediaItem> mediaItemHandler, IItemHandler<Boxset> boxsetItemHandler, IServiceScopeFactory scopeFactory)
+        public DatabaseImportMiddleware(IDbContextFactory<SqlServerDataContext> dbFactory, IItemHandler<MediaItem> mediaItemHandler, IItemHandler<Boxset> boxsetItemHandler, IItemHandler<Disc> discItemHandler, IServiceScopeFactory scopeFactory)
         {
             this.dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
             this.mediaItemHandler = mediaItemHandler ?? throw new ArgumentNullException(nameof(mediaItemHandler));
             this.boxsetItemHandler = boxsetItemHandler ?? throw new ArgumentNullException(nameof(boxsetItemHandler));
+            this.discItemHandler = discItemHandler ?? throw new ArgumentNullException(nameof(discItemHandler));
             this.scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
         }
 
@@ -218,7 +220,7 @@ namespace TheDiscDb.Data.Import.Pipeline
 
                 if (canonicalFromLocal != null)
                 {
-                    this.CopyTitlesToCanonicalDiscIfMissing(canonicalFromLocal, inputDisc);
+                    this.discItemHandler.TryUpdate(canonicalFromLocal, inputDisc);
                     releaseDisc.Disc = canonicalFromLocal;
                     canonicalByHashAndFormat[key] = canonicalFromLocal;
                     continue;
@@ -239,7 +241,7 @@ namespace TheDiscDb.Data.Import.Pipeline
 
                 if (canonicalFromDb != null)
                 {
-                    this.CopyTitlesToCanonicalDiscIfMissing(canonicalFromDb, inputDisc);
+                    this.discItemHandler.TryUpdate(canonicalFromDb, inputDisc);
                     releaseDisc.Disc = canonicalFromDb;
                     canonicalByHashAndFormat[key] = canonicalFromDb;
                     continue;
@@ -249,18 +251,6 @@ namespace TheDiscDb.Data.Import.Pipeline
             }
         }
 
-        private void CopyTitlesToCanonicalDiscIfMissing(Disc canonicalDisc, Disc sourceDisc)
-        {
-            if (canonicalDisc.Titles.Count > 0 || sourceDisc.Titles.Count == 0)
-            {
-                return;
-            }
-
-            foreach (var sourceTitle in sourceDisc.Titles)
-            {
-                canonicalDisc.Titles.Add(sourceTitle);
-            }
-        }
 
         private async Task SaveChangesAsync()
         {
