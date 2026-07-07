@@ -1,5 +1,22 @@
 # Phase 4: Canonical Disc Deduplication
 
+> Status: **🟢 Shipped** (verified in code). The canonical disc model, the
+> `ReleaseDisc` join, the one-time rebuild, import-/contribution-time dedup, and the
+> `data/` repo `disc*.ref` dedup are all implemented. Follow-on ideas that were deferred
+> live in [Disc Deduplication — Future Work](DISC-DEDUP-FUTURE-WORK.md).
+>
+> Where it lives in code:
+> - Schema + one-time rebuild: `20260618032717_AddReleaseDiscCanonicalization` migration
+>   (creates `ReleaseDiscs`, adds unique `(Format, ContentHash)` index, collapses
+>   duplicate discs, re-points `Track`/`Chapter`/`Title` FKs, drops `ReleaseId/Name/Slug/Index`
+>   from `Disc`).
+> - Import-time dedup: `DataImporter.ToReleaseDisc` resolves an existing canonical disc by
+>   `Format + ContentHash` (`code/TheDiscDb.Data.Import/DataImporter.cs`).
+> - `data/` repo `disc*.ref` resolution: `DiscReferenceFile` +
+>   `LoadDiscFromBundleFile` / `ResolveReferencedReleasePath`.
+> - GraphQL: `ReleaseDisc` input model (tracks/chapters/titles navigation) +
+>   `ReleaseDiscProjectionTypeInterceptor`.
+
 ## Overview
 
 Phase 4 refactors the disc storage model to eliminate duplication of identical disc content across releases. Currently, if two releases contain discs with identical track and chapter data, that data is stored twice. This phase introduces a canonical disc model that stores content once and references it from multiple releases.
@@ -304,6 +321,12 @@ public class UserContributionDisc
 
 When a user finishes a copied-disc contribution, import just sets `DiscId` instead of copying tracks/chapters.
 
+> **As shipped (deviation from the sketch above):** `UserContributionDisc` does *not*
+> store an `int? DiscId`. It carries `ContentHash` + `Format` (plus `ExistingDiscPath`),
+> and the canonical `Disc` is resolved at import time by `DataImporter.ToReleaseDisc`.
+> This keeps contributions free of unstable database `int` IDs and reuses the same
+> hash-based dedup path as the importer.
+
 ## Timeline & Rollout
 
 - **Requires**: Full database rebuild (not a phased/backwards-compatible change)
@@ -341,41 +364,7 @@ This keeps the repo readable while eliminating duplicated payloads across all th
 
 ## Future Enhancements
 
-Once canonical discs exist:
-
-### Disc Versioning
-Track historical updates to canonical disc data:
-```
-DiscVersion
-├── DiscId (FK)
-├── VersionNumber
-├── ChangedAt
-├── ChangedBy
-└── Changes (JSON diff)
-```
-
-### Smart Copy Detection
-When a user uploads a disc in a contribution, compare its hash against existing canonical discs:
-- Exact match → "This disc is already in the database. Link it?"
-- Partial match → "This looks similar to disc X. Sure you want a new one?"
-
-### Analytics & Insights
-```sql
--- Most-referenced discs
-SELECT d.*, COUNT(rd.Id) as ReferenceCount
-FROM Discs d
-LEFT JOIN ReleaseDiscs rd ON d.Id = rd.DiscId
-GROUP BY d.Id
-ORDER BY ReferenceCount DESC;
-
--- Box sets with high disc reuse
-SELECT r.Title, COUNT(DISTINCT d.Id) as UniqueDiscs, COUNT(rd.Id) as TotalDiscs
-FROM Releases r
-JOIN ReleaseDiscs rd ON r.Id = rd.ReleaseId
-JOIN Discs d ON rd.DiscId = d.Id
-GROUP BY r.Id
-HAVING COUNT(rd.Id) > COUNT(DISTINCT d.Id);
-```
-
-### Future Denormalization
-If needed, could denormalize frequently-accessed fields (format, content hash) onto `ReleaseDisc` for query performance, with an eventual consistency job keeping them in sync.
+The follow-on ideas that were deferred out of Phase 4 (disc versioning, smart copy
+detection, moderator merge tooling, automated duplicate detection, analytics/insights,
+and optional `ReleaseDisc` denormalization) are tracked separately in
+[Disc Deduplication — Future Work](DISC-DEDUP-FUTURE-WORK.md).
