@@ -9,7 +9,7 @@ public class DiscFieldsUpdateTests
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    private static DiscFieldsDetails MakeProposed(string? name = "Original Disc Name", string? format = "Blu-ray", string? discSlug = ChangeTestSeed.DiscSlug, int discIndex = ChangeTestSeed.DiscIndex, string? contentHash = null)
+    private static DiscFieldsDetails MakeProposed(string? name = "Original Disc Name", string? format = "Blu-ray", string? discSlug = ChangeTestSeed.DiscSlug, int discIndex = ChangeTestSeed.DiscIndex, string? contentHash = null, string? globalDiscId = null)
         => new(
             MediaItemSlug: ChangeTestSeed.MediaItemSlug,
             BoxsetSlug: null,
@@ -18,7 +18,8 @@ public class DiscFieldsUpdateTests
             DiscIndex: discIndex,
             Name: name,
             Format: format,
-            ContentHash: contentHash);
+            ContentHash: contentHash,
+            GlobalDiscId: globalDiscId);
 
     private sealed record TestApplyContext(string ApprovingUserId, int SuggestionId, int ChangeId, string? OriginalSnapshotJson = null) : IChangeApplyContext;
 
@@ -287,5 +288,65 @@ public class DiscFieldsUpdateTests
         var result = await change.ValidateAsync(db, snapshotJson, CancellationToken.None);
 
         await Assert.That(result.IsConflict).IsFalse();
+    }
+
+    [Test]
+    public async Task ApplyAsync_AddsGlobalDiscId_WhenDiscHasNone()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            JsonOptions);
+
+        const string newDiscId = "A734E4BEE726B8943F2E8817E3956EFC5F786C8B";
+        var change = new DiscFieldsUpdate(MakeProposed(globalDiscId: newDiscId));
+        await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        var reloaded = await db.Set<TheDiscDb.InputModels.ReleaseDisc>().FirstAsync(d => d.Slug == ChangeTestSeed.DiscSlug);
+        await Assert.That(reloaded.GlobalDiscId).IsEqualTo(newDiscId);
+    }
+
+    [Test]
+    public async Task ApplyAsync_DoesNotOverwriteGlobalDiscId_WhenAlreadyPresent()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        const string existing = "A734E4BEE726B8943F2E8817E3956EFC5F786C8B";
+        seed.Disc.GlobalDiscId = existing;
+        await db.SaveChangesAsync();
+
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            JsonOptions);
+
+        var change = new DiscFieldsUpdate(MakeProposed(globalDiscId: "91C2EB717C4323D8807C01BA79011A6B"));
+        await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        var reloaded = await db.Set<TheDiscDb.InputModels.ReleaseDisc>().FirstAsync(d => d.Slug == ChangeTestSeed.DiscSlug);
+        await Assert.That(reloaded.GlobalDiscId).IsEqualTo(existing);
+    }
+
+    [Test]
+    public async Task ValidateAsync_ReturnsConflict_WhenGlobalDiscIdDrifts()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.GlobalDiscId = "A734E4BEE726B8943F2E8817E3956EFC5F786C8B";
+        await db.SaveChangesAsync();
+
+        // Snapshot taken when the disc had no Disc ID; the DB now has one -> drift.
+        var staleSnapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug) with { GlobalDiscId = null },
+            JsonOptions);
+
+        var change = new DiscFieldsUpdate(MakeProposed(globalDiscId: "91C2EB717C4323D8807C01BA79011A6B"));
+
+        var result = await change.ValidateAsync(db, staleSnapshot, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsTrue();
+        await Assert.That(result.ConflictReason).Contains("GlobalDiscId");
     }
 }

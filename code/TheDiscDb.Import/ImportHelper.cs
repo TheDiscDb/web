@@ -227,6 +227,11 @@ public static class DiscFileFinalizer
             disc.ContentHash = discFile.ContentHash;
         }
 
+        if (string.IsNullOrEmpty(disc.GlobalDiscId))
+        {
+            disc.GlobalDiscId = discFile.GlobalDiscId;
+        }
+
         disc.Titles = logDisc.Titles.Select(mapper.Map).ToList();
 
         if (discFile.Unknown.Any())

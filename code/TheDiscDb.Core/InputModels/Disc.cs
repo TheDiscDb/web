@@ -26,6 +26,14 @@ namespace TheDiscDb.InputModels
         public string? Format { get; set; }
         public string? ContentHash { get; set; }
 
+        /// <summary>
+        /// Globally-stable, per-pressing disc identifier. For Blu-ray/UHD this is the AACS
+        /// Disc ID (SHA-1 of AACS/Unit_Key_RO.inf); for DVD it is the libdvdread DVDDiscID
+        /// (MD5 of the IFO files). The disc <see cref="Format"/> disambiguates which algorithm
+        /// produced it. Add-only and optional (absent on MKV-only rips).
+        /// </summary>
+        public string? GlobalDiscId { get; set; }
+
         [HotChocolate.Data.UseFiltering]
         [HotChocolate.Data.UseSorting]
         public ICollection<Title> Titles { get; set; } = new HashSet<Title>();

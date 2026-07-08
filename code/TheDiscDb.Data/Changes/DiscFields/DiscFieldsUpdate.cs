@@ -63,6 +63,12 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
         {
             SetIfChanged(original, original?.ContentHash, this.Proposed.ContentHash, v => disc.ContentHash = v);
         }
+
+        // GlobalDiscId is add-only, same rule as ContentHash.
+        if (string.IsNullOrEmpty(original?.GlobalDiscId))
+        {
+            SetIfChanged(original, original?.GlobalDiscId, this.Proposed.GlobalDiscId, v => disc.GlobalDiscId = v);
+        }
     }
 
     protected override string MissingTargetMessage()
@@ -100,6 +106,12 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             AppendIfDifferent(drifted, nameof(original.ContentHash), original.ContentHash, current.ContentHash);
         }
 
+        // GlobalDiscId is add-only: same drift rule as ContentHash.
+        if (!string.IsNullOrEmpty(this.Proposed.GlobalDiscId) && string.IsNullOrEmpty(original.GlobalDiscId))
+        {
+            AppendIfDifferent(drifted, nameof(original.GlobalDiscId), original.GlobalDiscId, current.GlobalDiscId);
+        }
+
         return drifted.Length == 0
             ? null
             : "Disc has been modified since the suggestion was submitted: " + drifted.ToString().TrimEnd(',', ' ');
@@ -119,6 +131,13 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             _ => null,
         };
 
+        var globalDiscId = disc switch
+        {
+            ReleaseDisc rd => rd.GlobalDiscId,
+            Disc d => d.GlobalDiscId,
+            _ => null,
+        };
+
         return new DiscFieldsDetails(
             MediaItemSlug: mediaItemSlug,
             BoxsetSlug: boxsetSlug,
@@ -127,7 +146,8 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             DiscIndex: disc.Index,
             Name: disc.Name,
             Format: disc.Format,
-            ContentHash: contentHash);
+            ContentHash: contentHash,
+            GlobalDiscId: globalDiscId);
     }
 
     /// <summary>

@@ -568,6 +568,7 @@ type UserContributionDisc {
   id: Int!
   userContribution: UserContribution!
   contentHash: String!
+  globalDiscId: String
   format: String!
   name: String!
   slug: String!
@@ -744,6 +745,7 @@ input CreateDiscInput {
   name: String!
   slug: String!
   existingDiscPath: String
+  globalDiscId: String
 }
 
 input DateTimeOperationFilterInput {

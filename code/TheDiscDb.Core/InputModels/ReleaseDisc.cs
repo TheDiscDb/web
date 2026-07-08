@@ -51,6 +51,19 @@ public class ReleaseDisc : IDisc
         }
     }
 
+    [NotMapped]
+    public string? GlobalDiscId
+    {
+        get => this.Disc?.GlobalDiscId;
+        set
+        {
+            if (this.Disc != null)
+            {
+                this.Disc.GlobalDiscId = value;
+            }
+        }
+    }
+
     [HotChocolate.Data.UseFiltering]
     [HotChocolate.Data.UseSorting]
     [NotMapped]
