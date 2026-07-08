@@ -267,15 +267,21 @@ public static class DiscFileFinalizer
                 var match = matchingTitles.First();
                 if (matchingTitles.Count() > 1)
                 {
-                    // try to select based on comment
-                    var primaryMatch = matchingTitles.SingleOrDefault(title => !string.IsNullOrEmpty(title.Comment) && title.Comment == item.Comment);
-                    if (primaryMatch != null)
+                    // try to select based on comment (unique match only)
+                    var commentMatches = matchingTitles.Where(title => !string.IsNullOrEmpty(title.Comment) && title.Comment == item.Comment).ToList();
+                    if (commentMatches.Count == 1)
                     {
-                        match = primaryMatch;
+                        match = commentMatches[0];
                     }
                     else
                     {
-                        throw new Exception($"Unable to find unique match for '{item.Comment}'");
+                        // fall back to display size: pick the first title with a matching display size
+                        var sizeMatch = matchingTitles.FirstOrDefault(title => title.DisplaySize == item.Size);
+                        if (sizeMatch != null)
+                        {
+                            match = sizeMatch;
+                        }
+                        // else: keep match = matchingTitles.First() (truly indistinguishable duplicates)
                     }
                 }
 
