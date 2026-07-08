@@ -6,6 +6,7 @@
   </Configurations>
   <Project Path="TheDiscDb.AppHost/TheDiscDb.AppHost.csproj" />
   <Project Path="TheDiscDb.Client/TheDiscDb.Client.csproj" />
+  <Project Path="TheDiscDb.Contributions/TheDiscDb.Contributions.csproj" />
   <Project Path="TheDiscDb.Data.Import/TheDiscDb.Data.Import.csproj" />
   <Project Path="TheDiscDb.Data/TheDiscDb.Data.csproj" />
   <Project Path="TheDiscDb.DatabaseMigration/TheDiscDb.DatabaseMigration.csproj" />

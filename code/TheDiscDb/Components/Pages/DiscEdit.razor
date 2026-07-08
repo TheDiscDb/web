@@ -67,6 +67,16 @@ else
                         }
                     </div>
                 </div>
+                @if (!string.IsNullOrEmpty(originalGlobalDiscId))
+                {
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label">Disc ID</label>
+                            <input type="text" class="form-control" value="@originalGlobalDiscId" readonly disabled />
+                            <div class="form-text">Globally-stable Disc ID (AACS/DVD). Added via a Disc ID contribution.</div>
+                        </div>
+                    </div>
+                }
             </div>
 
             <div class="d-flex gap-2">

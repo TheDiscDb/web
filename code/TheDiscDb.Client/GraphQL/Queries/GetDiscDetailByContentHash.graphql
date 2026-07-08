@@ -30,6 +30,7 @@ query GetDiscDetailByContentHash($hash: String, $templates: [FileNameTemplateInp
           format
           slug
           contentHash
+          globalDiscId
           titles(order: { index: ASC }) {
             index
             duration

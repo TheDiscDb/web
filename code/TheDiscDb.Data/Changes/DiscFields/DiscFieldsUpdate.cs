@@ -179,6 +179,7 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             var ms = details.MediaItemSlug;
             release = await context.Releases
                 .Include(r => r.Discs)
+                    .ThenInclude(d => d.Disc)
                 .FirstOrDefaultAsync(
                     r => r.Slug == releaseSlug && r.MediaItem != null && r.MediaItem.Slug == ms,
                     cancellationToken);
@@ -188,6 +189,7 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             var bs = details.BoxsetSlug;
             release = await context.Releases
                 .Include(r => r.Discs)
+                    .ThenInclude(d => d.Disc)
                 .FirstOrDefaultAsync(
                     r => r.Slug == releaseSlug && r.Boxset != null && r.Boxset.Slug == bs,
                     cancellationToken);

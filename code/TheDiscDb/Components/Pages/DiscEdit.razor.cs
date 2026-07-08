@@ -57,6 +57,7 @@ public partial class DiscEdit : AuthenticatedComponentBase
     private string? originalName;
     private string? originalFormat;
     private string? originalContentHash;
+    private string? originalGlobalDiscId;
 
     private string? summary;
     private string? submitMessage;
@@ -99,6 +100,7 @@ public partial class DiscEdit : AuthenticatedComponentBase
         originalName = editName;
         originalFormat = editFormat;
         originalContentHash = editContentHash;
+        originalGlobalDiscId = Disc.GlobalDiscId;
     }
 
     // ContentHash is add-only: editable only when the disc currently has none.

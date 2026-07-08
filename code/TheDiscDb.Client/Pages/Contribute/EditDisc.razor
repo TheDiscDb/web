@@ -28,6 +28,10 @@ else if (discFound)
     }
 
     <div>Hash: @request.ContentHash</div>
+    @if (!string.IsNullOrEmpty(globalDiscId))
+    {
+        <div>Disc ID: @globalDiscId</div>
+    }
     <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />
         <ValidationSummary />

@@ -1,0 +1,57 @@
+@page "/contribute/discid"
+@inherits CancellableComponentBase
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<PageTitle>Add a Disc ID</PageTitle>
+
+<div class="add-disc-id">
+    <section class="hero">
+        <p class="eyebrow">Contribute</p>
+        <h1>Add a Disc ID</h1>
+        <p>
+            Help complete the database by attaching a <strong>Disc ID</strong> to a disc you own. Point us at the disc - everything is read and hashed in your browser; only the resulting identifier is submitted.
+        </p>
+    </section>
+
+    <section class="pick">
+        <p>Insert the disc, then choose its root folder (the one containing <code>BDMV</code>/<code>AACS</code> or <code>VIDEO_TS</code>).</p>
+        <button class="btn" @onclick="OpenFolderAsync" disabled="@isBusy">Choose disc folder</button>
+    </section>
+
+    @if (isBusy)
+    {
+        <p class="status">Reading disc and matching…</p>
+    }
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="result @resultClass" id="add-disc-id-result">
+            <p>@message</p>
+            @if (!string.IsNullOrEmpty(computedDiscId))
+            {
+                <dl>
+                    <dt>Disc ID</dt>
+                    <dd><code id="computed-disc-id">@computedDiscId</code></dd>
+                    @if (!string.IsNullOrEmpty(existingDiscId))
+                    {
+                        <dt>Existing Disc ID</dt>
+                        <dd><code>@existingDiscId</code></dd>
+                    }
+                </dl>
+            }
+            @if (!string.IsNullOrEmpty(matchedDiscUrl) || !string.IsNullOrEmpty(returnDiscUrl))
+            {
+                <p class="result-links">
+                    @if (!string.IsNullOrEmpty(matchedDiscUrl))
+                    {
+                        <a href="@matchedDiscUrl">View the disc that matched</a>
+                    }
+                    @if (!string.IsNullOrEmpty(returnDiscUrl))
+                    {
+                        <a href="@returnDiscUrl">Go back to the disc you started from</a>
+                    }
+                </p>
+            }
+        </div>
+    }
+</div>

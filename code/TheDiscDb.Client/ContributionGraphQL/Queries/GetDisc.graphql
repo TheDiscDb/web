@@ -12,6 +12,7 @@ query GetDisc($contrubtionId: EncodedIdFilter!, $discId: EncodedIdFilter!) {
       discs (where: { encodedId: { eq: $discId}}) {
         encodedId
         contentHash
+        globalDiscId
         format
         name
         slug

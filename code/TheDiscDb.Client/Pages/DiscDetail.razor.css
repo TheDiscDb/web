@@ -98,3 +98,71 @@
     text-decoration: none;
     outline: none;
 }
+
+.disc-ids {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.disc-id-line {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.disc-id-line .disc-id-label {
+    font-weight: 600;
+    color: #374151;
+    min-width: 5rem;
+}
+
+.disc-id-line .disc-id-value {
+    letter-spacing: 0.02em;
+    word-break: break-all;
+    color: inherit;
+    background: transparent;
+    padding: 0;
+}
+
+.disc-id-line .disc-id-copy {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #52657f;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color .15s ease-in-out, color .15s ease-in-out, border-color .15s ease-in-out;
+}
+
+.disc-id-line .disc-id-copy:hover {
+    background-color: #eef2f7;
+    color: #1f2a37;
+}
+
+.disc-id-line .disc-id-copy:disabled {
+    cursor: default;
+    color: #16a34a;
+}
+
+.disc-id-line .disc-id-missing {
+    color: #6b7280;
+    font-style: italic;
+}
+
+.disc-id-line .disc-id-cta {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.disc-id-line .disc-id-cta:hover {
+    text-decoration: underline;
+}
