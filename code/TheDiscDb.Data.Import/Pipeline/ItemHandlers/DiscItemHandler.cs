@@ -35,6 +35,7 @@ public class DiscItemHandler : ItemHandler<Disc>
     public override void TryUpdate(Disc fromDatabase, Disc newValue)
     {
         fromDatabase.ContentHash = newValue.ContentHash;
+        fromDatabase.GlobalDiscId = newValue.GlobalDiscId;
         fromDatabase.Format = newValue.Format;
         fromDatabase.Index = newValue.Index;
         fromDatabase.Name = newValue.Name;

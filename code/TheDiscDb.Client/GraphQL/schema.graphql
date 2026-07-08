@@ -753,6 +753,7 @@ type ReleaseDisc {
   name: String
   format: String
   contentHash: String
+  globalDiscId: String
   titles(where: TitleFilterInput order: [TitleSortInput!]): [Title!]!
 }
 

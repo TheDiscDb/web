@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using KristofferStrube.Blazor.FileAPI;
 using KristofferStrube.Blazor.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
@@ -28,6 +29,7 @@ public class SaveDiscRequest
     [Required]
     public string Slug { get; set; } = string.Empty;
     public string? ExistingDiscPath { get; set; }
+    public string? GlobalDiscId { get; set; }
 }
 
 [Authorize]
@@ -122,15 +124,20 @@ public partial class AddDisc : CancellableComponentBase
     async Task TryCalculateHash()
     {
         this.copyFlowError = null;
-        items = await handler!.ValuesAsync();
+        this.request.GlobalDiscId = null;
+        var rootItems = await handler!.ValuesAsync();
 
-        var bdmv = items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("BDMV", StringComparison.OrdinalIgnoreCase));
-        var videoTs = items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase));
-        
+        var bdmv = rootItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("BDMV", StringComparison.OrdinalIgnoreCase));
+        var videoTs = rootItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase));
+
         if (bdmv != default && bdmv is FileSystemDirectoryHandleInProcess bdmvDirectory)
         {
-            items = await bdmvDirectory.ValuesAsync();
-            var stream = items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("STREAM", StringComparison.OrdinalIgnoreCase));
+            // Blu-ray / UHD: compute the AACS Disc ID from the sibling AACS folder.
+            // Optional — absent on MKV-only rips, in which case this stays null.
+            this.request.GlobalDiscId = await TryComputeAacsDiscId(rootItems);
+
+            var bdmvItems = await bdmvDirectory.ValuesAsync();
+            var stream = bdmvItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("STREAM", StringComparison.OrdinalIgnoreCase));
             if (stream != default && stream is FileSystemDirectoryHandleInProcess streamDirectory)
             {
                 hashItems = await GetHashItems(streamDirectory, i => i.Name.EndsWith("m2ts", StringComparison.OrdinalIgnoreCase));
@@ -139,6 +146,8 @@ public partial class AddDisc : CancellableComponentBase
         else if (videoTs != default && videoTs is FileSystemDirectoryHandleInProcess videoTsDirectory)
         {
             request.Format = "DVD";
+            // DVD: compute the libdvdread DVDDiscID from the IFO files.
+            this.request.GlobalDiscId = await TryComputeDvdDiscId(videoTsDirectory);
             hashItems = await GetHashItems(videoTsDirectory);
         }
         else
@@ -206,6 +215,103 @@ public partial class AddDisc : CancellableComponentBase
         return results.ToList();
     }
 
+    private static readonly Regex VtsIfoPattern =
+        new(@"^VTS_(\d{2})_0\.IFO$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    // Computes the AACS Disc ID (SHA-1 of AACS/Unit_Key_RO.inf) for Blu-ray/UHD discs.
+    // Best-effort: returns null (and never throws) when the AACS folder or file is absent.
+    async Task<string?> TryComputeAacsDiscId(IFileSystemHandleInProcess[] rootItems)
+    {
+        try
+        {
+            var aacs = rootItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("AACS", StringComparison.OrdinalIgnoreCase)) as FileSystemDirectoryHandleInProcess;
+            if (aacs is null)
+            {
+                return null;
+            }
+
+            var aacsItems = await aacs.ValuesAsync();
+            var unitKey = FindFileHandle(aacsItems, "Unit_Key_RO.inf");
+
+            // libaacs falls back to AACS/DUPLICATE/Unit_Key_RO.inf.
+            if (unitKey is null)
+            {
+                var duplicate = aacsItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("DUPLICATE", StringComparison.OrdinalIgnoreCase)) as FileSystemDirectoryHandleInProcess;
+                if (duplicate is not null)
+                {
+                    unitKey = FindFileHandle(await duplicate.ValuesAsync(), "Unit_Key_RO.inf");
+                }
+            }
+
+            if (unitKey is null)
+            {
+                return null;
+            }
+
+            return AacsDiscId.Compute(await ReadHandleBytes(unitKey));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"AACS Disc ID computation skipped: {ex.Message}");
+            return null;
+        }
+    }
+
+    // Computes the DVD Disc ID (libdvdread DVDDiscID = MD5 of the IFO files).
+    // Best-effort: returns null (and never throws) when VIDEO_TS.IFO is absent.
+    async Task<string?> TryComputeDvdDiscId(FileSystemDirectoryHandleInProcess videoTsDirectory)
+    {
+        try
+        {
+            var ifoItems = await videoTsDirectory.ValuesAsync();
+            var videoTsIfoHandle = FindFileHandle(ifoItems, "VIDEO_TS.IFO");
+            if (videoTsIfoHandle is null)
+            {
+                return null;
+            }
+
+            var videoTsIfo = await ReadHandleBytes(videoTsIfoHandle);
+
+            var vtsByNumber = new SortedDictionary<int, byte[]>();
+            foreach (var item in ifoItems)
+            {
+                if (item.Kind != FileSystemHandleKind.File)
+                {
+                    continue;
+                }
+
+                var match = VtsIfoPattern.Match(item.Name);
+                if (match.Success && item is FileSystemFileHandleInProcess fileHandle)
+                {
+                    vtsByNumber[int.Parse(match.Groups[1].Value)] = await ReadHandleBytes(fileHandle);
+                }
+            }
+
+            int maxNumber = vtsByNumber.Count > 0 ? vtsByNumber.Keys.Max() : 0;
+            var vtsIfos = new byte[]?[maxNumber];
+            foreach (var kvp in vtsByNumber)
+            {
+                vtsIfos[kvp.Key - 1] = kvp.Value;
+            }
+
+            return DvdDiscId.Compute(videoTsIfo, vtsIfos);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DVD Disc ID computation skipped: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static FileSystemFileHandleInProcess? FindFileHandle(IEnumerable<IFileSystemHandleInProcess> items, string name)
+        => items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.File && string.Equals(i.Name, name, StringComparison.OrdinalIgnoreCase)) as FileSystemFileHandleInProcess;
+
+    private static async Task<byte[]> ReadHandleBytes(FileSystemFileHandleInProcess handle)
+    {
+        var file = await handle.GetFileAsync();
+        return await file.ArrayBufferAsync();
+    }
+
     async Task HandleValidSubmit()
     {
         this.copyFlowError = null;
@@ -216,7 +322,8 @@ public partial class AddDisc : CancellableComponentBase
             Slug = this.request.Slug!,
             Format = this.request.Format!,
             ContentHash = this.request.ContentHash,
-            ExistingDiscPath = this.request.ExistingDiscPath
+            ExistingDiscPath = this.request.ExistingDiscPath,
+            GlobalDiscId = this.request.GlobalDiscId
         };
         var response = await this.ContributionClient.CreateDisc.ExecuteAsync(input, this.CancellationToken);
         if (!response.IsSuccessResult())
@@ -358,7 +465,8 @@ public partial class AddDisc : CancellableComponentBase
             Slug = this.request.Slug!,
             Format = this.request.Format!,
             ContentHash = this.request.ContentHash,
-            ExistingDiscPath = this.request.ExistingDiscPath
+            ExistingDiscPath = this.request.ExistingDiscPath,
+            GlobalDiscId = this.request.GlobalDiscId
         };
         var createDiscResponse = await this.ContributionClient.CreateDisc.ExecuteAsync(createInput, this.CancellationToken);
         if (!createDiscResponse.IsSuccessResult())

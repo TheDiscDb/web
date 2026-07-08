@@ -18,6 +18,8 @@ query GetBoxsetDiscs($slug: String, $discNumber: Int, $discSlug: String, $templa
           name
           format
           slug
+          globalDiscId
+          contentHash
           titles (order: { index: ASC }) {
             index
             duration

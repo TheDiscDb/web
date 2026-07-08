@@ -1,0 +1,23 @@
+mutation AttachGlobalDiscId($input: AttachGlobalDiscIdInput!) {
+  attachGlobalDiscId(input: $input) {
+    attachDiscIdResult {
+      outcome
+      contentHash
+      mediaItemSlug
+      boxsetSlug
+      mediaItemType
+      releaseSlug
+      discSlug
+      discIndex
+      globalDiscId
+      existingGlobalDiscId
+      matchedDifferentDisc
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

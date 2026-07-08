@@ -27,6 +27,8 @@ query GetDiscDetail($slug: String, $releaseSlug: String, $discNumber: Int, $disc
             name
             format
             slug
+            globalDiscId
+            contentHash
             titles (order: { index: ASC }) {
               index
               duration

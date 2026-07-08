@@ -133,6 +133,7 @@ type ContributionMutations {
   externalData(input: ExternalDataInput!): ExternalDataPayload! @cost(weight: "10")
   externalDataForContribution(input: ExternalDataForContributionInput!): ExternalDataForContributionPayload! @authorize @cost(weight: "10")
   hashDisc(input: HashDiscInput!): HashDiscPayload! @authorize @cost(weight: "10")
+  attachGlobalDiscId(input: AttachGlobalDiscIdInput!): AttachGlobalDiscIdPayload! @authorize @cost(weight: "10")
   sendAdminMessage(input: SendAdminMessageInput!): SendAdminMessagePayload! @authorize(policy: "Admin") @cost(weight: "10")
   sendUserMessage(input: SendUserMessageInput!): SendUserMessagePayload! @authorize @cost(weight: "10")
   markMessagesAsRead(input: MarkMessagesAsReadInput!): MarkMessagesAsReadPayload! @authorize @cost(weight: "10")
@@ -383,6 +384,33 @@ type HashDiscPayload {
   errors: [HashDiscError!]
 }
 
+type AttachGlobalDiscIdPayload {
+  attachDiscIdResult: AttachDiscIdResult
+  errors: [AttachGlobalDiscIdError!]
+}
+
+type AttachDiscIdResult {
+  outcome: AttachDiscIdOutcome!
+  contentHash: String!
+  mediaItemSlug: String
+  boxsetSlug: String
+  mediaItemType: String
+  releaseSlug: String
+  discSlug: String
+  discIndex: Int
+  globalDiscId: String
+  existingGlobalDiscId: String
+  matchedDifferentDisc: Boolean!
+}
+
+enum AttachDiscIdOutcome {
+  APPLIED
+  ALREADY_RECORDED
+  CONFLICT
+  NOT_FOUND
+  MISMATCH
+}
+
 type HashInfoLogLine {
   matches(prefix: String!): Boolean!
   index: Int!
@@ -568,6 +596,7 @@ type UserContributionDisc {
   id: Int!
   userContribution: UserContribution!
   contentHash: String!
+  globalDiscId: String
   format: String!
   name: String!
   slug: String!
@@ -618,6 +647,8 @@ union AddItemToDiscError = ContributionNotFoundError | DiscNotFoundError | Authe
 union CreateContributionError = AuthenticationError | BoxsetNotFoundError | InvalidIdError | InvalidOwnershipError | InvalidBoxsetStatusError
 
 union CreateDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+union AttachGlobalDiscIdError = AuthenticationError
 
 union DeleteContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
 
@@ -744,6 +775,7 @@ input CreateDiscInput {
   name: String!
   slug: String!
   existingDiscPath: String
+  globalDiscId: String
 }
 
 input DateTimeOperationFilterInput {
@@ -833,6 +865,16 @@ input FileHashInfoInput {
 input HashDiscInput {
   contributionId: String!
   files: [FileHashInfoInput!]!
+}
+
+input AttachGlobalDiscIdInput {
+  files: [FileHashInfoInput!]!
+  globalDiscId: String!
+  mediaItemSlug: String
+  boxsetSlug: String
+  releaseSlug: String
+  discSlug: String
+  discIndex: Int
 }
 
 input IntOperationFilterInput {

@@ -40,6 +40,7 @@ public class ReleaseDiscProjectionTypeInterceptor : TypeInterceptor
 
         SetResolver(typeDef, "format", static d => d.Disc?.Format);
         SetResolver(typeDef, "contentHash", static d => d.Disc?.ContentHash);
+        SetResolver(typeDef, "globalDiscId", static d => d.Disc?.GlobalDiscId);
         SetResolver(typeDef, "titles", static d => d.Disc?.Titles ?? Array.Empty<Title>());
     }
 

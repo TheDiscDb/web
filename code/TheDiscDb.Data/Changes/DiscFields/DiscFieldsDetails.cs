@@ -17,6 +17,7 @@ namespace TheDiscDb.Data.Changes.DiscFields;
 /// import, but is editable here as an <b>add-only</b> field: users may supply a
 /// hash for a disc that has none, while an existing hash is immutable and must
 /// never be overwritten by a suggestion (enforced at apply time).
+/// <see cref="GlobalDiscId"/> follows the same add-only rule.
 /// </remarks>
 public sealed record DiscFieldsDetails(
     string? MediaItemSlug,
@@ -26,7 +27,8 @@ public sealed record DiscFieldsDetails(
     int DiscIndex,
     string? Name,
     string? Format,
-    string? ContentHash = null)
+    string? ContentHash = null,
+    string? GlobalDiscId = null)
 {
     /// <summary>
     /// Natural-key identifier suitable for <see cref="TheDiscDb.Web.Data.EditSuggestion.TargetEntityKey"/>:

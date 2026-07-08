@@ -47,6 +47,7 @@ public class SqlServerDataContext : DbContext
         disc.HasMany(x => x.Titles).WithOne(x => x.Disc);
         disc.HasMany(x => x.ReleaseDiscs).WithOne(x => x.Disc);
         disc.HasIndex(x => new { x.Format, x.ContentHash }).IsUnique();
+        disc.HasIndex(x => x.GlobalDiscId).HasFilter("[GlobalDiscId] IS NOT NULL");
         disc.Ignore(x => x.Index);
         disc.Ignore(x => x.Slug);
         disc.Ignore(x => x.Name);
@@ -64,6 +65,7 @@ public class SqlServerDataContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
         releaseDisc.Ignore(x => x.Format);
         releaseDisc.Ignore(x => x.ContentHash);
+        releaseDisc.Ignore(x => x.GlobalDiscId);
         releaseDisc.Ignore(x => x.Titles);
         releaseDisc.HasIndex(x => new { x.ReleaseId, x.Slug }).IsUnique().HasFilter("[Slug] IS NOT NULL");
         releaseDisc.HasIndex(x => new { x.ReleaseId, x.Index }).IsUnique();

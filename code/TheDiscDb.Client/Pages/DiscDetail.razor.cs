@@ -21,6 +21,7 @@ public partial class DiscDetail : ComponentBase
 
     private readonly Dictionary<IDiscItem, CopyButtonState> descriptionCopyStates = new();
     private readonly Dictionary<IDiscItem, CopyButtonState> filenameCopyStates = new();
+    private readonly Dictionary<string, CopyButtonState> discIdCopyStates = new();
     private readonly Dictionary<IDiscItem, string> filenamesByItem = new();
 
     private IReadOnlyList<FileNameTemplateInput>? userTemplates;
@@ -42,6 +43,9 @@ public partial class DiscDetail : ComponentBase
 
     [Inject]
     private AuthenticationStateProvider? AuthProvider { get; set; }
+
+    [Inject]
+    private NavigationManager Navigation { get; set; } = null!;
 
     [Parameter]
     public string? Type { get; set; }
@@ -65,6 +69,8 @@ public partial class DiscDetail : ComponentBase
     private IDisplayItem? Item { get; set; }
     private IDisplayItem? Release { get; set; }
     private IDisc? Disc { get; set; }
+    private string? DiscGlobalDiscId { get; set; }
+    private string? DiscContentHash { get; set; }
 
     private IEnumerable<IDiscItem> AllTitles { get; set; } = new List<IDiscItem>();
     private IQueryable<IDiscItem> FilteredTitles { get; set; } = new List<IDiscItem>().AsQueryable();
@@ -81,6 +87,37 @@ public partial class DiscDetail : ComponentBase
     private CopyButtonState GetFileNameCopyState(IDiscItem item)
     {
         return filenameCopyStates.TryGetValue(item, out var state) ? state : DefaultCopyState;
+    }
+
+    private CopyButtonState GetDiscIdCopyState(string key)
+    {
+        return discIdCopyStates.TryGetValue(key, out var state) ? state : DefaultCopyState;
+    }
+
+    private async Task CopyDiscIdToClipboard(string key, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
+        discIdCopyStates[key] = CopiedCopyState;
+        StateHasChanged();
+
+        try
+        {
+            await Clipboard.WriteTextAsync(value);
+        }
+        catch
+        {
+            discIdCopyStates.Remove(key);
+            StateHasChanged();
+            return;
+        }
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        discIdCopyStates.Remove(key);
+        StateHasChanged();
     }
 
     private string GetFileName(IDiscItem item)
@@ -235,6 +272,8 @@ public partial class DiscDetail : ComponentBase
 
         var disc = release!.Discs!.First();
         this.Disc = disc;
+        this.DiscGlobalDiscId = disc?.GlobalDiscId;
+        this.DiscContentHash = disc?.ContentHash;
 
         if (Disc == null)
         {
@@ -278,6 +317,8 @@ public partial class DiscDetail : ComponentBase
 
         var disc = release!.Discs!.FirstOrDefault(d => SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
         this.Disc = disc;
+        this.DiscGlobalDiscId = disc?.GlobalDiscId;
+        this.DiscContentHash = disc?.ContentHash;
 
         if (Disc == null)
         {
@@ -321,6 +362,8 @@ public partial class DiscDetail : ComponentBase
 
         var disc = release!.Discs!.FirstOrDefault(d => SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
         this.Disc = disc;
+        this.DiscGlobalDiscId = disc?.GlobalDiscId;
+        this.DiscContentHash = disc?.ContentHash;
 
         if (Disc == null)
         {
@@ -362,6 +405,32 @@ public partial class DiscDetail : ComponentBase
         }
 
         return $"/{Item!.Type!.ToLower()}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex.UrlValue}/{NavigationExtensions.GetFile(title.SourceFile!)}/{NavigationExtensions.GetExtension(title.SourceFile!)}";
+    }
+
+    // Builds the "Help add it" link to the backfill page, carrying this disc's identity (so the
+    // server can warn on a wrong disc) and a return URL back to this page.
+    private string GetAddDiscIdUrl()
+    {
+        var isBoxset = string.Equals(Item?.Type, "Boxset", StringComparison.OrdinalIgnoreCase);
+        var query = new List<string>
+        {
+            $"{(isBoxset ? "boxset" : "media")}={Uri.EscapeDataString(Slug ?? string.Empty)}",
+            $"release={Uri.EscapeDataString(ReleaseSlug ?? string.Empty)}",
+        };
+
+        if (!string.IsNullOrEmpty(Disc?.Slug))
+        {
+            query.Add($"disc={Uri.EscapeDataString(Disc.Slug)}");
+        }
+        else if (Disc is not null)
+        {
+            query.Add($"index={Disc.Index}");
+        }
+
+        var returnUrl = new Uri(Navigation.Uri).PathAndQuery;
+        query.Add($"returnUrl={Uri.EscapeDataString(returnUrl)}");
+
+        return "/contribute/discid?" + string.Join("&", query);
     }
 
     private string? lastSortColumn = null;

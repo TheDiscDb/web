@@ -14,6 +14,10 @@
     {
         <h3>@this.Disc.Name (@this.Disc.Format)</h3>
         <div>Hash: @Disc.ContentHash</div>
+        @if (!string.IsNullOrEmpty(Disc.GlobalDiscId))
+        {
+            <div>Disc ID: @Disc.GlobalDiscId</div>
+        }
         <EditForm Model="@Disc" OnValidSubmit="HandleValidSubmit">
             <DataAnnotationsValidator />
             <ValidationSummary />

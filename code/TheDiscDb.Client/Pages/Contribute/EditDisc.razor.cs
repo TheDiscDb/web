@@ -27,6 +27,8 @@ public partial class EditDisc : CancellableComponentBase
     private readonly SaveDiscRequest request = new();
     private readonly string[] formats = ["4K", "Blu-ray", "DVD"];
 
+    private string? globalDiscId;
+
     private bool isLoading = true;
     private bool discFound;
     private string? errorMessage;
@@ -46,6 +48,7 @@ public partial class EditDisc : CancellableComponentBase
                     this.request.Name = disc.Name;
                     this.request.Slug = disc.Slug;
                     this.request.Format = disc.Format;
+                    this.globalDiscId = disc.GlobalDiscId;
                     this.discFound = true;
                 }
             }

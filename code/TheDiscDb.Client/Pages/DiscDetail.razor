@@ -4,6 +4,45 @@
 }
 else
 {
+    <div class="disc-ids">
+        <div class="disc-id-line">
+            <span class="disc-id-label">Disc ID</span>
+            @if (!string.IsNullOrEmpty(DiscGlobalDiscId))
+            {
+                <code class="disc-id-value">@DiscGlobalDiscId</code>
+                <button type="button"
+                        class="disc-id-copy"
+                        title="Copy Disc ID"
+                        aria-label="Copy Disc ID"
+                        disabled="@GetDiscIdCopyState("discId").IsDisabled"
+                        @onclick='() => CopyDiscIdToClipboard("discId", DiscGlobalDiscId)'>
+                    <i class="@GetDiscIdCopyState("discId").IconClassName"></i>
+                </button>
+            }
+            else
+            {
+                <span class="disc-id-missing">none</span>
+                <a class="disc-id-cta" href="@GetAddDiscIdUrl()">Help add it</a>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(DiscContentHash))
+        {
+            <div class="disc-id-line">
+                <span class="disc-id-label">Disc Hash</span>
+                <code class="disc-id-value">@DiscContentHash</code>
+                <button type="button"
+                        class="disc-id-copy"
+                        title="Copy Disc Hash"
+                        aria-label="Copy Disc Hash"
+                        disabled="@GetDiscIdCopyState("discHash").IsDisabled"
+                        @onclick='() => CopyDiscIdToClipboard("discHash", DiscContentHash)'>
+                    <i class="@GetDiscIdCopyState("discHash").IconClassName"></i>
+                </button>
+            </div>
+        }
+    </div>
+
     <div class="d-flex align-items-center gap-2 mb-2">
         <SfSwitch TChecked="bool" ValueChange="e => AllTitlesChanged(e)" />
         <label>Show all titles</label>

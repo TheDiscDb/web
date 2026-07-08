@@ -269,7 +269,13 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<string>("Format")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("GlobalDiscId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("GlobalDiscId")
+                        .HasFilter("[GlobalDiscId] IS NOT NULL");
 
                     b.HasIndex("Format", "ContentHash")
                         .IsUnique()
@@ -1539,6 +1545,9 @@ namespace TheDiscDb.Web.Migrations
 
                     b.Property<string>("Format")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GlobalDiscId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("Index")

@@ -15,11 +15,12 @@ public partial class ContributionMutations
     [Error(typeof(InvalidOwnershipException))]
     [Error(typeof(InvalidDiscPathException))]
     [Authorize]
-    public async Task<UserContributionDisc> CreateDisc(string contributionId, string contentHash, string format, string name, string slug, [Service] SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, string? existingDiscPath = null, CancellationToken cancellationToken = default)
+    public async Task<UserContributionDisc> CreateDisc(string contributionId, string contentHash, string format, string name, string slug, [Service] SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, string? existingDiscPath = null, string? globalDiscId = null, CancellationToken cancellationToken = default)
     {
         var disc = new UserContributionDisc
         {
             ContentHash = contentHash,
+            GlobalDiscId = globalDiscId,
             Format = format,
             Name = name,
             Slug = slug,
@@ -47,6 +48,7 @@ public partial class ContributionMutations
             existingDisc.Name = name;
             existingDisc.Slug = slug;
             existingDisc.ExistingDiscPath = existingDiscPath ?? "";
+            existingDisc.GlobalDiscId ??= globalDiscId;
             await database.SaveChangesAsync(cancellationToken);
             return existingDisc;
         }
