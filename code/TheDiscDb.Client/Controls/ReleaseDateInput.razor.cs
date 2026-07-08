@@ -10,7 +10,7 @@ public partial class ReleaseDateInput : ComponentBase
     public string Label { get; set; } = "Release Date";
 
     [Parameter]
-    public string Placeholder { get; set; } = "e.g. January 15, 2025 or 01-15-2025";
+    public string Placeholder { get; set; } = "e.g. January 15, 2025 or 2025-01-15";
 
     [Parameter]
     public DateTimeOffset? Value { get; set; }
@@ -28,7 +28,7 @@ public partial class ReleaseDateInput : ComponentBase
     {
         if (Value.HasValue && string.IsNullOrEmpty(dateText))
         {
-            dateText = Value.Value.ToString("MM-dd-yyyy");
+            dateText = Value.Value.ToString("yyyy-MM-dd");
         }
     }
 
@@ -47,7 +47,7 @@ public partial class ReleaseDateInput : ComponentBase
 
         if (DateTimeOffset.TryParseExact(input, "MMMM d, yyyy", null, System.Globalization.DateTimeStyles.None, out var parsedDate))
         {
-            dateText = parsedDate.ToString("MM-dd-yyyy");
+            dateText = parsedDate.ToString("yyyy-MM-dd");
         }
     }
 
@@ -67,9 +67,10 @@ public partial class ReleaseDateInput : ComponentBase
         }
 
         if (DateTimeOffset.TryParseExact(dateText, "MMMM d, yyyy", null, System.Globalization.DateTimeStyles.None, out var parsedDate)
-            || DateTimeOffset.TryParse(dateText, out parsedDate))
+            || DateTimeOffset.TryParseExact(dateText, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out parsedDate)
+            || DateTimeOffset.TryParse(dateText, System.Globalization.CultureInfo.InvariantCulture, out parsedDate))
         {
-            dateText = parsedDate.ToString("MM-dd-yyyy");
+            dateText = parsedDate.ToString("yyyy-MM-dd");
             await ValueChanged.InvokeAsync(parsedDate);
         }
         else
