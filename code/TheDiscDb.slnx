@@ -7,17 +7,17 @@
   <Project Path="TheDiscDb.AppHost/TheDiscDb.AppHost.csproj" />
   <Project Path="TheDiscDb.Client/TheDiscDb.Client.csproj" />
   <Project Path="TheDiscDb.Contributions/TheDiscDb.Contributions.csproj" />
+  <Project Path="TheDiscDb.Core/TheDiscDb.Core.csproj" />
   <Project Path="TheDiscDb.Data.Import/TheDiscDb.Data.Import.csproj" />
   <Project Path="TheDiscDb.Data/TheDiscDb.Data.csproj" />
   <Project Path="TheDiscDb.DatabaseMigration/TheDiscDb.DatabaseMigration.csproj" />
+  <Project Path="TheDiscDb.Import/TheDiscDb.Import.csproj" />
+  <Project Path="TheDiscDb.IntegrationTests/TheDiscDb.IntegrationTests.csproj" />
   <Project Path="TheDiscDb.Mailgun/TheDiscDb.Mailgun.csproj" />
-  <Project Path="TheDiscDb.Search/TheDiscDb.Search.csproj" />
-  <Project Path="TheDiscDb.ServiceDefaults/TheDiscDb.ServiceDefaults.csproj" />
-  <Project Path="TheDiscDb/TheDiscDb.csproj" />
-  <Project Path="TheDiscDb.Core/TheDiscDb.Core.csproj" />
   <Project Path="TheDiscDb.MakeMkv/TheDiscDb.MakeMkv.csproj" />
   <Project Path="TheDiscDb.Naming/TheDiscDb.Naming.csproj" />
+  <Project Path="TheDiscDb.Search/TheDiscDb.Search.csproj" />
+  <Project Path="TheDiscDb.ServiceDefaults/TheDiscDb.ServiceDefaults.csproj" />
   <Project Path="TheDiscDb.UnitTests/TheDiscDb.UnitTests.csproj" />
-  <Project Path="TheDiscDb.IntegrationTests/TheDiscDb.IntegrationTests.csproj" />
-  <Project Path="TheDiscDb.Import/TheDiscDb.Import.csproj" />
+  <Project Path="TheDiscDb/TheDiscDb.csproj" />
 </Solution>

@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Sqids;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Services.Contributions;
@@ -122,5 +123,113 @@ public class ContributionDiscServiceTests
 
         var disc = await db.UserContributionDiscs.FindAsync(result.DiscId);
         await Assert.That(disc!.LogUploadError).IsNotNull();
+    }
+
+    [Test]
+    public async Task AddDiscToContribution_OwnedContribution_AddsSecondDisc()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var (service, _, _) = CreateService(db);
+
+        var created = await service.CreatePendingDiscContributionAsync("user-1", new ContributionDiscRequest
+        {
+            ContentHash = ContentHash,
+            Format = "Blu-ray",
+            Name = "Disc 1",
+            Slug = "disc-1",
+        });
+
+        var added = await service.AddDiscToContributionAsync("user-1", created.EncodedContributionId, new ContributionDiscRequest
+        {
+            ContentHash = "BBBB2222CCCC3333DDDD4444EEEE5555",
+            GlobalDiscId = DiscId,
+            Format = "Blu-ray",
+            Name = "Disc 2",
+            Slug = "disc-2",
+        });
+
+        await Assert.That(added).IsNotNull();
+        await Assert.That(added!.ContributionId).IsEqualTo(created.ContributionId);
+        await Assert.That(added.DiscId).IsNotEqualTo(created.DiscId);
+
+        var contribution = await db.UserContributions.Include(c => c.Discs).FirstAsync(c => c.Id == created.ContributionId);
+        await Assert.That(contribution.Discs.Count).IsEqualTo(2);
+        var second = contribution.Discs.First(d => d.Id == added.DiscId);
+        await Assert.That(second.Index).IsEqualTo(2);
+        await Assert.That(second.GlobalDiscId).IsEqualTo(DiscId);
+    }
+
+    [Test]
+    public async Task AddDiscToContribution_NotOwned_ReturnsNull()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var (service, _, _) = CreateService(db);
+
+        var created = await service.CreatePendingDiscContributionAsync("owner", new ContributionDiscRequest
+        {
+            ContentHash = ContentHash,
+            Format = "Blu-ray",
+            Name = "Disc 1",
+            Slug = "disc-1",
+        });
+
+        var result = await service.AddDiscToContributionAsync("someone-else", created.EncodedContributionId, new ContributionDiscRequest
+        {
+            ContentHash = "BBBB2222CCCC3333DDDD4444EEEE5555",
+            Format = "Blu-ray",
+            Name = "Disc 2",
+            Slug = "disc-2",
+        });
+
+        await Assert.That(result).IsNull();
+    }
+
+    [Test]
+    public async Task AddDiscToContribution_SameContentHash_IsIdempotent()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var (service, _, _) = CreateService(db);
+
+        var created = await service.CreatePendingDiscContributionAsync("user-1", new ContributionDiscRequest
+        {
+            ContentHash = ContentHash,
+            Format = "Blu-ray",
+            Name = "Disc 1",
+            Slug = "disc-1",
+        });
+
+        // Re-submit the same disc (same ContentHash) with a Disc ID -> reuse the disc, fill the id.
+        var added = await service.AddDiscToContributionAsync("user-1", created.EncodedContributionId, new ContributionDiscRequest
+        {
+            ContentHash = ContentHash,
+            GlobalDiscId = DiscId,
+            Format = "Blu-ray",
+            Name = "Disc 1",
+            Slug = "disc-1",
+        });
+
+        await Assert.That(added).IsNotNull();
+        await Assert.That(added!.DiscId).IsEqualTo(created.DiscId);
+
+        var contribution = await db.UserContributions.Include(c => c.Discs).FirstAsync(c => c.Id == created.ContributionId);
+        await Assert.That(contribution.Discs.Count).IsEqualTo(1);
+        await Assert.That(contribution.Discs.First().GlobalDiscId).IsEqualTo(DiscId);
+    }
+
+    [Test]
+    public async Task AddDiscToContribution_UnknownId_ReturnsNull()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var (service, _, _) = CreateService(db);
+
+        var result = await service.AddDiscToContributionAsync("user-1", "zzzzzzzz", new ContributionDiscRequest
+        {
+            ContentHash = ContentHash,
+            Format = "Blu-ray",
+            Name = "Disc 1",
+            Slug = "disc-1",
+        });
+
+        await Assert.That(result).IsNull();
     }
 }

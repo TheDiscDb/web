@@ -45,6 +45,7 @@ builder.AddServiceDefaults();
 
 builder.Services.AddTransient<ContributionEndpoints>();
 builder.Services.AddTransient<EngramEndpoints>();
+builder.Services.AddTransient<DiscLookupEndpoints>();
 builder.Services.AddEditSuggestions();
 
 builder.Services.AddControllersWithViews( options =>
@@ -410,6 +411,9 @@ contributionEndpoints.MapEndpoints(app);
 
 var engramEndpoints = app.Services.GetRequiredService<EngramEndpoints>();
 engramEndpoints.MapEndpoints(app);
+
+var discLookupEndpoints = app.Services.GetRequiredService<DiscLookupEndpoints>();
+discLookupEndpoints.MapEndpoints(app);
 
 app.MapDefaultEndpoints();
 

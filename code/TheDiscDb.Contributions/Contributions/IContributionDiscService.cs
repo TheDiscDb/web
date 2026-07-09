@@ -64,4 +64,16 @@ public interface IContributionDiscService
         string userId,
         ContributionDiscRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Adds a disc to an <em>existing</em> owned contribution (identified by its encoded id) and, when
+    /// logs are supplied, validates and stores them at the canonical path. Idempotent on
+    /// <see cref="ContributionDiscRequest.ContentHash"/>. Returns <c>null</c> when the contribution is
+    /// not found or not owned by <paramref name="userId"/>.
+    /// </summary>
+    Task<ContributionDiscResult?> AddDiscToContributionAsync(
+        string userId,
+        string encodedContributionId,
+        ContributionDiscRequest request,
+        CancellationToken cancellationToken = default);
 }

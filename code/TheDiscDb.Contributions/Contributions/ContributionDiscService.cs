@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using MakeMkv;
+using Microsoft.EntityFrameworkCore;
 using Sqids;
 using TheDiscDb;
 using TheDiscDb.Data.Import;
@@ -81,6 +82,83 @@ public sealed class ContributionDiscService(
 
         return new ContributionDiscResult(
             contribution.Id, disc.Id, encodedContributionId, encodedDiscId, disc.LogsUploaded, disc.LogUploadError);
+    }
+
+    public async Task<ContributionDiscResult?> AddDiscToContributionAsync(
+        string userId,
+        string encodedContributionId,
+        ContributionDiscRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+        ArgumentException.ThrowIfNullOrEmpty(encodedContributionId);
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentException.ThrowIfNullOrEmpty(request.ContentHash);
+
+        int contributionId;
+        try
+        {
+            var decoded = idEncoder.Decode(encodedContributionId);
+            if (decoded.Count != 1)
+            {
+                return null;
+            }
+
+            contributionId = decoded[0];
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+
+        var contribution = await database.UserContributions
+            .Include(c => c.Discs)
+            .FirstOrDefaultAsync(c => c.Id == contributionId, cancellationToken);
+
+        // Not found, or not owned by this user.
+        if (contribution is null || !string.Equals(contribution.UserId, userId, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        // Idempotent on ContentHash: reuse a disc that's already on the contribution.
+        var disc = contribution.Discs.FirstOrDefault(d => d.ContentHash == request.ContentHash);
+        if (disc is null)
+        {
+            var maxIndex = contribution.Discs.Count > 0 ? contribution.Discs.Max(d => d.Index ?? 0) : 0;
+            disc = new UserContributionDisc
+            {
+                ContentHash = request.ContentHash,
+                GlobalDiscId = request.GlobalDiscId,
+                Format = request.Format,
+                Name = request.Name,
+                Slug = request.Slug,
+                Index = maxIndex + 1,
+                ExistingDiscPath = string.Empty,
+            };
+            contribution.Discs.Add(disc);
+        }
+        else
+        {
+            // Add-only: fill in a missing Disc ID without clobbering an existing one.
+            disc.GlobalDiscId ??= request.GlobalDiscId;
+        }
+
+        await database.SaveChangesAsync(cancellationToken);
+
+        var encodedContribution = idEncoder.Encode(contribution.Id);
+        var encodedDiscId = idEncoder.Encode(disc.Id);
+
+        if (!string.IsNullOrWhiteSpace(request.DiscLogs))
+        {
+            var (ok, error) = await TrySaveLogsAsync(encodedContribution, encodedDiscId, request.DiscLogs!, cancellationToken);
+            disc.LogsUploaded = ok;
+            disc.LogUploadError = error;
+            await database.SaveChangesAsync(cancellationToken);
+        }
+
+        return new ContributionDiscResult(
+            contribution.Id, disc.Id, encodedContribution, encodedDiscId, disc.LogsUploaded, disc.LogUploadError);
     }
 
     // Mirrors the web SaveDiscLogsInternal: normalize to CRLF, validate as MakeMKV, then store at
