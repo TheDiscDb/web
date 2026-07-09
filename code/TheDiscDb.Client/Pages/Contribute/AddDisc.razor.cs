@@ -500,10 +500,6 @@ public partial class AddDisc : CancellableComponentBase
             return Task.FromResult(true);
         }
 
-        // Disc slugs only need to be unique within their own release. A contribution
-        // always represents a single (new) release, so we only check against the discs
-        // already in this contribution. The same disc slug (e.g. "blu-ray") is allowed
-        // to exist on other releases of the same media item.
         bool taken = this.contribution.Discs.Any(d =>
             !string.IsNullOrEmpty(d.Slug) &&
             d.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
