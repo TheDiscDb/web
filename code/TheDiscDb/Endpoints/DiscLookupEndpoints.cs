@@ -20,14 +20,11 @@ public sealed class DiscLookupEndpoints
 
     public void MapEndpoints(WebApplication app)
     {
-        var group = app.MapGroup("/api/disc-id");
+        var group = app.MapGroup("/api/discid");
         group.MapGet("{globalDiscId}", Lookup);
     }
 
-    private static async Task<IResult> Lookup(
-        string globalDiscId,
-        IDbContextFactory<SqlServerDataContext> dbContextFactory,
-        CancellationToken cancellationToken)
+    private static async Task<IResult> Lookup(string globalDiscId, IDbContextFactory<SqlServerDataContext> dbContextFactory, CancellationToken cancellationToken)
     {
         if (!DiscLookupQuery.IsValidDiscId(globalDiscId))
         {

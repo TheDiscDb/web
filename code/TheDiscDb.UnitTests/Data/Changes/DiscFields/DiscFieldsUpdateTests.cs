@@ -197,6 +197,46 @@ public class DiscFieldsUpdateTests
     }
 
     [Test]
+    public async Task ValidateAsync_ReturnsConflict_WhenContentHashCollidesWithAnotherDisc()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+
+        // Another disc already owns this (Format, ContentHash) — the unique key would be violated.
+        const string collidingHash = "F748A26D2BF1FEBD491EFA490B9AC6ED";
+        var other = new TheDiscDb.InputModels.Disc { Slug = "disc-two", Index = 1, Name = "Disc Two", Format = "Blu-ray", ContentHash = collidingHash };
+        seed.Release.Discs.Add(new TheDiscDb.InputModels.ReleaseDisc { Slug = "disc-two", Index = 1, Name = "Disc Two", Disc = other });
+        await db.SaveChangesAsync();
+
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            JsonOptions);
+        var change = new DiscFieldsUpdate(MakeProposed(contentHash: collidingHash));
+
+        var result = await change.ValidateAsync(db, snapshot, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsTrue();
+        await Assert.That(result.ConflictReason).Contains("already assigned");
+    }
+
+    [Test]
+    public async Task ValidateAsync_NotConflict_WhenContentHashIsUnique()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        await db.SaveChangesAsync();
+
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            JsonOptions);
+        var change = new DiscFieldsUpdate(MakeProposed(contentHash: "1111222233334444AAAABBBBCCCCDDDD"));
+
+        var result = await change.ValidateAsync(db, snapshot, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsFalse();
+    }
+
+    [Test]
     public async Task ApplyAsync_DoesNotOverwriteContentHash_WhenAlreadyPresent()
     {
         using var db = ChangeTestSeed.CreateDbContext();

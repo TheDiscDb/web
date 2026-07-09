@@ -91,8 +91,25 @@ DB-first then batch-synced to `/data`).
 
 ### Phase 4 — Ecosystem (future)
 
-- Public API/GraphQL **lookup by Disc ID** → disc + item/mpls mapping (the #388 use cases:
-  submit disc details without a release, MakeMKV/Jellyfin naming, re-extraction lookup).
+- **Lookup by Disc ID** → disc + item/mpls mapping (the #388 use cases: submit disc details
+  without a release, MakeMKV/Jellyfin naming, re-extraction lookup).
+  - **REST** — shipped: anonymous `GET /api/disc-id/{globalDiscId}` (`DiscLookupEndpoints`)
+    returns the disc's titles and their item mapping.
+  - **GraphQL** — a dedicated `discsByGlobalDiscId` resolver was **cut** (not deferred): the
+    built-in HotChocolate filter already exposes `globalDiscId` (`ReleaseDiscFilterType`), and
+    the root `mediaItems` / `boxsets` queries reach it through `releases → discs`. Clients use
+    the built-in nested filter instead of a bespoke resolver, e.g.:
+
+    ```graphql
+    query {
+      mediaItems(where: { releases: { some: { discs: { some: {
+        globalDiscId: { eq: "40DB92A566F17D96E053579521D676C50800F682" } } } } } }) {
+        nodes { title slug }
+      }
+    }
+    ```
+
+    (`boxsets` supports the same nested path.)
 - `keydb.cfg` / fvonline-db cross-referencing (same Disc ID).
 - **DVD** `DVDDiscID` investigation (separate algorithm).
 - Disc-without-release **staging** (overlaps Partial Contributions / Engram).

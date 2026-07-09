@@ -74,6 +74,51 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
     protected override string MissingTargetMessage()
         => $"Disc '{this.Proposed.TargetEntityKey}' no longer exists.";
 
+    /// <summary>
+    /// Guards the unique <c>(Format, ContentHash)</c> index: when this change introduces a new
+    /// content hash, reject it up front if another disc already carries the same hash+format, rather
+    /// than letting <c>SaveChanges</c> throw an opaque unique-constraint violation during apply.
+    /// </summary>
+    protected override async Task<ChangeValidationResult?> ValidateAdditionalAsync(
+        SqlServerDataContext context,
+        DiscFieldsDetails? original,
+        DiscFieldsDetails current,
+        CancellationToken cancellationToken)
+    {
+        // ContentHash is add-only; a collision is only possible when a new hash is being introduced
+        // onto a disc that currently has none.
+        var addingHash = !string.IsNullOrEmpty(this.Proposed.ContentHash)
+            && string.IsNullOrEmpty(current.ContentHash);
+        if (!addingHash)
+        {
+            return null;
+        }
+
+        var target = await ResolveDiscAsync(context, this.Proposed, cancellationToken);
+        if (target?.Disc is null)
+        {
+            return null; // missing-target is handled by the standard validation path
+        }
+
+        var hash = this.Proposed.ContentHash;
+        var format = string.IsNullOrEmpty(this.Proposed.Format) ? target.Disc.Format : this.Proposed.Format;
+        var targetDiscId = target.Disc.Id;
+
+        var conflictingDiscId = await context.Discs
+            .Where(d => d.Id != targetDiscId && d.ContentHash == hash && d.Format == format)
+            .Select(d => (int?)d.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (conflictingDiscId is not null)
+        {
+            return ChangeValidationResult.Conflict(
+                $"Content hash {hash} is already assigned to a different {format} disc. Content hashes are " +
+                "unique per format — the wrong disc may have been scanned or the hash entered for the wrong disc.");
+        }
+
+        return null;
+    }
+
     protected override string? DescribeDrift(DiscFieldsDetails original, DiscFieldsDetails current)
     {
         if (original.ReleaseSlug != current.ReleaseSlug

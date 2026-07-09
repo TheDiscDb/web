@@ -102,6 +102,20 @@ public abstract class ChangeBase<TDetails> : IChange
             {
                 return ChangeValidationResult.Conflict(drift);
             }
+
+            var additional = await this.ValidateAdditionalAsync(context, original, current, cancellationToken);
+            if (additional is not null)
+            {
+                return additional;
+            }
+        }
+        else
+        {
+            var additional = await this.ValidateAdditionalAsync(context, null, current, cancellationToken);
+            if (additional is not null)
+            {
+                return additional;
+            }
         }
 
         return Equals(current, this.Proposed) && this.MatchingSnapshotIsNoOp
@@ -224,6 +238,20 @@ public abstract class ChangeBase<TDetails> : IChange
     /// fields otherwise.
     /// </summary>
     protected abstract string? DescribeDrift(TDetails original, TDetails current);
+
+    /// <summary>
+    /// Optional extra validation beyond snapshot-drift — e.g. uniqueness constraints that would
+    /// otherwise fail at <c>SaveChanges</c> with an opaque database exception. Return a
+    /// <see cref="ChangeValidationResult"/> (typically a conflict) to reject the change with a clear
+    /// reason, or <c>null</c> to allow it. <paramref name="original"/> is the user's snapshot (null
+    /// for add-type changes); <paramref name="current"/> is the current database state.
+    /// </summary>
+    protected virtual Task<ChangeValidationResult?> ValidateAdditionalAsync(
+        SqlServerDataContext context,
+        TDetails? original,
+        TDetails current,
+        CancellationToken cancellationToken)
+        => Task.FromResult<ChangeValidationResult?>(null);
 
     /// <summary>
     /// Loads the target entity as a tracked instance and writes the diff between
