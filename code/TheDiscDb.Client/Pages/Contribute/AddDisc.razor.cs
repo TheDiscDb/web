@@ -59,9 +59,6 @@ public partial class AddDisc : CancellableComponentBase
     [Inject]
     public IWebAssemblyHostEnvironment HostEnvironment { get; set; } = default!;
 
-    [Inject]
-    public ITheDiscDbClient TheDiscDbClient { get; set; } = default!;
-
     FileSystemDirectoryHandleInProcess? handler;
     IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
     string hash = string.Empty;
@@ -496,39 +493,21 @@ public partial class AddDisc : CancellableComponentBase
         return true;
     }
 
-    private async Task<bool> CheckDiscSlugAvailability(string slug, CancellationToken cancellationToken)
+    private Task<bool> CheckDiscSlugAvailability(string slug, CancellationToken cancellationToken)
     {
         if (this.contribution == null)
         {
-            return true;
+            return Task.FromResult(true);
         }
 
-        // Check against discs already in this contribution
-        if (this.contribution.Discs.Any(d =>
+        // Disc slugs only need to be unique within their own release. A contribution
+        // always represents a single (new) release, so we only check against the discs
+        // already in this contribution. The same disc slug (e.g. "blu-ray") is allowed
+        // to exist on other releases of the same media item.
+        bool taken = this.contribution.Discs.Any(d =>
             !string.IsNullOrEmpty(d.Slug) &&
-            d.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase)))
-        {
-            return false;
-        }
+            d.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
 
-        // Check against discs in any published release for this media item
-        var externalId = this.contribution.ExternalId;
-
-        if (string.IsNullOrWhiteSpace(externalId))
-        {
-            return true;
-        }
-
-        var result = await this.TheDiscDbClient.CheckDiscSlugAvailability.ExecuteAsync(
-            externalId,
-            slug,
-            cancellationToken);
-
-        if (result?.Data?.MediaItems?.Nodes is { Count: > 0 })
-        {
-            return false;
-        }
-
-        return true;
+        return Task.FromResult(!taken);
     }
 }
