@@ -1,0 +1,12 @@
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Syncfusion buttons carry their own margins; drop them so the flex gap
+   fully controls the spacing between the action icons. */
+.action-buttons ::deep .e-btn {
+    margin: 0;
+}

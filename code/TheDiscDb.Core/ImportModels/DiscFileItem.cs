@@ -5,6 +5,8 @@
 
     public record AudioTrack(int Index, string Name);
 
+    public record SubtitleTrack(int Index, string Name);
+
     public class DiscFileItem
     {
         public string? Title { get; set; }
@@ -23,5 +25,6 @@
 
         public ICollection<Chapter> Chapters { get; set; } = new HashSet<Chapter>();
         public ICollection<AudioTrack> AudioTrackNames { get; set; } = new HashSet<AudioTrack>();
+        public ICollection<SubtitleTrack> SubtitleTrackNames { get; set; } = new HashSet<SubtitleTrack>();
     }
 }

@@ -1,0 +1,65 @@
+﻿using HotChocolate.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using TheDiscDb.GraphQL.Contribute.Exceptions;
+using TheDiscDb.Web.Data;
+
+namespace TheDiscDb.GraphQL.Contribute.Mutations;
+
+public partial class ContributionMutations
+{
+    [Error(typeof(ContributionNotFoundException))]
+    [Error(typeof(DiscNotFoundException))]
+    [Error(typeof(DiscItemNotFoundException))]
+    [Error(typeof(AuthenticationException))]
+    [Error(typeof(InvalidIdException))]
+    [Error(typeof(InvalidOwnershipException))]
+    [Authorize]
+    public async Task<UserContributionSubtitleTrack> AddSubtitleTrackToItem(string contributionId, string discId, string itemId, int trackIndex, string trackName, SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
+    {
+        var subtitleTrack = new UserContributionSubtitleTrack
+        {
+            Index = trackIndex,
+            Title = trackName
+        };
+
+        var decodedContributionId = this.idEncoder.Decode(contributionId);
+        var contribution = await database.UserContributions
+            .Include(c => c.Discs)
+                .ThenInclude(d => d.Items)
+                    .ThenInclude(i => i.SubtitleTracks)
+            .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
+
+        await EnsureOwnership(userManager, contribution, contributionId, discId, itemId, cancellationToken);
+
+        int realDiscId = this.idEncoder.Decode(discId);
+        var disc = contribution!.Discs.FirstOrDefault(d => d.Id == realDiscId);
+
+        if (disc == null)
+        {
+            throw new DiscNotFoundException(discId);
+        }
+
+        int realItemId = this.idEncoder.Decode(itemId);
+        var item = disc.Items.FirstOrDefault(i => i.Id == realItemId);
+
+        if (item == null)
+        {
+            throw new DiscItemNotFoundException(itemId);
+        }
+
+        var existingTrack = item.SubtitleTracks.FirstOrDefault(c => c.Index == subtitleTrack.Index);
+        if (existingTrack != null)
+        {
+            existingTrack.Title = subtitleTrack.Title;
+            await database.SaveChangesAsync(cancellationToken);
+            return existingTrack;
+        }
+        else
+        {
+            item.SubtitleTracks.Add(subtitleTrack);
+            await database.SaveChangesAsync(cancellationToken);
+            return subtitleTrack;
+        }
+    }
+}

@@ -12,6 +12,7 @@
     </PropertyGroup>
     <ItemGroup>
         <GraphQL Remove="contributiongraphql\mutations\addAudioTrackToItem.graphql" />
+        <GraphQL Remove="contributiongraphql\mutations\AddSubtitleTrackToItem.graphql" />
         <GraphQL Remove="contributiongraphql\mutations\AddChapterToItem.graphql" />
         <GraphQL Remove="contributiongraphql\mutations\AddItemToDisc.graphql" />
         <GraphQL Remove="ContributionGraphql\Mutations\CreateContribution.graphql" />

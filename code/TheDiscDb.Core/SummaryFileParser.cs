@@ -10,6 +10,21 @@
     public class SummaryFileParser
     {
         private static Regex AudioTrackPattern = new Regex(@"AudioTrack\[(\d+)\]:\s+(.+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static Regex SubtitleTrackPattern = new Regex(@"SubtitleTrack\[(\d+)\]:\s+(.+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        // Strips an optional trailing " # decorative attributes" comment from a track label. The
+        // reader never treats anything after " #" as authoritative (disc*.txt is the source of
+        // truth), so labels stay clean even if a hand-editor adds a comment.
+        private static string CleanTrackName(string name)
+        {
+            int commentAt = name.IndexOf(" #", StringComparison.Ordinal);
+            if (commentAt >= 0)
+            {
+                name = name.Substring(0, commentAt);
+            }
+
+            return name.Trim();
+        }
 
         public static IEnumerable<Chapter> ParseChapters(string input)
         {
@@ -152,8 +167,20 @@
                 if (matchResult.Success)
                 {
                     string index = matchResult.Groups[1].Value;
-                    string name = matchResult.Groups[2].Value;
+                    string name = CleanTrackName(matchResult.Groups[2].Value);
                     result = new KeyValuePair<string, string>("AudioTrack", $"{index}|{name}");
+                    return true;
+                }
+            }
+
+            if (line.StartsWith("SubtitleTrack"))
+            {
+                Match matchResult = SubtitleTrackPattern.Match(line);
+                if (matchResult.Success)
+                {
+                    string index = matchResult.Groups[1].Value;
+                    string name = CleanTrackName(matchResult.Groups[2].Value);
+                    result = new KeyValuePair<string, string>("SubtitleTrack", $"{index}|{name}");
                     return true;
                 }
             }
@@ -267,12 +294,23 @@
                     else if (result.Key.Equals("AudioTrack", StringComparison.OrdinalIgnoreCase))
                     {
                         CheckChaptersEnded();
-                        string[] parts = result.Value.Split('|');
+                        string[] parts = result.Value.Split('|', 2);
                         if (parts.Length == 2)
                         {
                             int audioTrackIndex = Int32.Parse(parts[0]);
                             string audioTrackName = parts[1];
                             title.AudioTrackNames.Add(new AudioTrack(audioTrackIndex, audioTrackName));
+                        }
+                    }
+                    else if (result.Key.Equals("SubtitleTrack", StringComparison.OrdinalIgnoreCase))
+                    {
+                        CheckChaptersEnded();
+                        string[] parts = result.Value.Split('|', 2);
+                        if (parts.Length == 2)
+                        {
+                            int subtitleTrackIndex = Int32.Parse(parts[0]);
+                            string subtitleTrackName = parts[1];
+                            title.SubtitleTrackNames.Add(new SubtitleTrack(subtitleTrackIndex, subtitleTrackName));
                         }
                     }
                     else if (result.Key.Equals("Chapters", StringComparison.OrdinalIgnoreCase))

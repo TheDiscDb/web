@@ -46,6 +46,11 @@ mutation GetDiscLogs($input: DiscLogsInput!) {
             index
             title
           }
+          subtitleTracks {
+            encodedId
+            index
+            title
+          }
           chapters {
             encodedId
             index

@@ -173,6 +173,7 @@ builder.Services
     .AddTypeExtension<ContributionDiscTypeExtension>()
     .AddTypeExtension<ContributionDiscItemTypeExtension>()
     .AddTypeExtension<UserContributionAudioTrackTypeExtension>()
+    .AddTypeExtension<UserContributionSubtitleTrackTypeExtension>()
     .AddTypeExtension<UserContributionChapterTypeExtension>()
     .AddTypeExtension<UserContributionDiscHashItemTypeExtension>()
     .AddTypeExtension<UserContributionBoxsetTypeExtension>()

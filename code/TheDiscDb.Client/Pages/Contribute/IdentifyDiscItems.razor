@@ -245,27 +245,21 @@
             <TemplateColumn Align="Align.Center">
                 @if (IsIdentified(context))
                 {
-                    <SfButton IconCss="e-icons e-circle-remove" OnClick="() => RemoveIdentification(context)" title="Remove Identification" />
-                }
-                else
-                {
-                    <span>&nbsp;</span>
-                }
-            </TemplateColumn>
-            <TemplateColumn Align="Align.Center">
-                @if (IsIdentified(context) && HasAudioSegments(context))
-                {
-                    <SfButton IconCss="@GetAudioIconCss(context)" OnClick="() => NameAudioTracks(context)" title="@GetAudioButtonToolTip(context)" />
-                }
-                else
-                {
-                    <span>&nbsp;</span>
-                }
-            </TemplateColumn>
-            <TemplateColumn Align="Align.Center">
-                @if (IsIdentified(context) && context.ChapterCount > 1)
-                {
-                    <SfButton IconCss="@GetChapterIconCss(context)" OnClick="() => InputChapters(context)" title="@GetChapterButtonToolTip(context)" />
+                    <div class="action-buttons">
+                        <SfButton IconCss="e-icons e-circle-remove" OnClick="() => RemoveIdentification(context)" title="Remove Identification" />
+                        @if (HasAudioSegments(context))
+                        {
+                            <SfButton IconCss="@GetAudioIconCss(context)" OnClick="() => NameAudioTracks(context)" title="@GetAudioButtonToolTip(context)" />
+                        }
+                        @if (HasSubtitleSegments(context))
+                        {
+                            <SfButton IconCss="@GetSubtitleIconCss(context)" OnClick="() => NameSubtitleTracks(context)" title="@GetSubtitleButtonToolTip(context)" />
+                        }
+                        @if (context.ChapterCount > 1)
+                        {
+                            <SfButton IconCss="@GetChapterIconCss(context)" OnClick="() => InputChapters(context)" title="@GetChapterButtonToolTip(context)" />
+                        }
+                    </div>
                 }
                 else
                 {
@@ -425,6 +419,34 @@
                 <div class="e-footer-content">
                     <div class="button-container">
                         <button type="button" class="e-btn e-normal" @onclick="AudioTrackDialogCancelClicked">Cancel</button>
+                        <button type="submit" class="e-btn e-normal e-primary">Save</button>
+                    </div>
+                </div>
+            </EditForm>
+        </ChildContent>
+    </SfDialog>
+}
+
+@if (showSubtitleTrackDialog)
+{
+    <SfDialog @ref="subtitleTrackDialog" Target="body" Width="400px" @bind-Visible="@showSubtitleTrackDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Name Subtitle Tracks">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <EditForm Model="@currentItem" OnValidSubmit="@HandleValidSubtitleTrackSubmit">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <ol>
+                    @foreach (var item in this.currentItem!.SubtitleTracks)
+                    {
+                        <li>
+                            <div>@item.GetDisplayName()</div>
+                            <InputText @bind-Value="item.Title" class="form-control" />
+                        </li>
+                    }
+                </ol>
+
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="button" class="e-btn e-normal" @onclick="SubtitleTrackDialogCancelClicked">Cancel</button>
                         <button type="submit" class="e-btn e-normal e-primary">Save</button>
                     </div>
                 </div>

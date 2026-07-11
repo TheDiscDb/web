@@ -154,5 +154,43 @@ else
                 </div>
             </div>
         }
+
+        @if (HasCustomSubtitleTracks)
+        {
+            <div class="info-card mt-4">
+                <h2 class="mt-0 mb-2 h3">Subtitle Tracks</h2>
+                <div class="table-responsive">
+                    <table class="table striped-grid mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col" style="width: 5rem;">Index</th>
+                                <th scope="col">Title</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var track in item.SubtitleTracks.Where(t => !string.IsNullOrWhiteSpace(t.Title)).OrderBy(t => t.Index))
+                            {
+                                <tr>
+                                    <td>@track.Index</td>
+                                    <td>
+                                        <div class="description-with-copy">
+                                            <span>@track.Title</span>
+                                            <button type="button"
+                                                    class="icon-btn copy-inline-btn"
+                                                    title="Copy track title"
+                                                    aria-label="Copy track title"
+                                                    disabled="@GetSubtitleTrackCopyState(track).IsDisabled"
+                                                    @onclick="@(EventCallback.Factory.Create(this, () => CopySubtitleTrackToClipboard(track)))">
+                                                <i class="@GetSubtitleTrackCopyState(track).IconClassName"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
     </div>
 }

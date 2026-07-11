@@ -48,6 +48,11 @@ public class SummaryFileSerializer
                 writer.WriteLine($"AudioTrack[{track.Index}]: {track.Name}");
             }
 
+            foreach (var track in item.SubtitleTracks)
+            {
+                writer.WriteLine($"SubtitleTrack[{track.Index}]: {track.Name}");
+            }
+
             if (item.Chapters.Any())
             {
                 writer.WriteLine("Chapters:");
@@ -90,6 +95,7 @@ public class SummaryFileItem
     public string Type { get; set; } = string.Empty;
 
     public List<SummaryFileChildItem> AudioTracks { get; set; } = new();
+    public List<SummaryFileChildItem> SubtitleTracks { get; set; } = new();
     public List<SummaryFileChildItem> Chapters { get; set; } = new();
 
     public string BuildFileName(IFileSystem fileSystem, SummaryFileMetadata metadata)

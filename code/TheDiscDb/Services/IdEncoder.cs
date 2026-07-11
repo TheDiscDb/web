@@ -104,6 +104,11 @@ public class IdEncoder
         track?.EncodedId = this.idEncoder.Encode(track.Id);
     }
 
+    public void EncodeInPlace(UserContributionSubtitleTrack? track)
+    {
+        track?.EncodedId = this.idEncoder.Encode(track.Id);
+    }
+
     public void EncodeInPlace(UserContributionDiscHashItem? item)
     {
         item?.EncodedId = this.idEncoder.Encode(item.Id);

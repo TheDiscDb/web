@@ -307,6 +307,27 @@ public static class DiscFileFinalizer
                     }
                 }
 
+                if (item.SubtitleTrackNames != null && item.SubtitleTrackNames.Any())
+                {
+                    foreach (var track in item.SubtitleTrackNames)
+                    {
+                        // The MakeMKV log/DB use "Subtitles" (plural); some code paths use the
+                        // singular. Match either so the ordinal resolves consistently.
+                        var subtitleTracks = match.Tracks.Where(t =>
+                            string.Equals(t.Type, "Subtitles", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(t.Type, "Subtitle", StringComparison.OrdinalIgnoreCase));
+                        var foundTrack = subtitleTracks.ElementAtOrDefault(track.Index - 1);
+                        if (foundTrack != null)
+                        {
+                            foundTrack.Description = track.Name;
+                        }
+                        else
+                        {
+                            throw new Exception($"Unable to find subtitle track '{track.Name}' at index '{track.Index}'. {subtitleTracks.Count()} total subtitle tracks found.");
+                        }
+                    }
+                }
+
                 match.Item = new TheDiscDb.InputModels.DiscItemReference
                 {
                     Title = item.Title,

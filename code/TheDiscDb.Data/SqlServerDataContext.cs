@@ -162,8 +162,12 @@ public class SqlServerDataContext : DbContext
         userContributiondiscItem.HasMany(x => x.AudioTracks)
             .WithOne(x => x.Item)
             .OnDelete(DeleteBehavior.Cascade);
+        userContributiondiscItem.HasMany(x => x.SubtitleTracks)
+            .WithOne(x => x.Item)
+            .OnDelete(DeleteBehavior.Cascade);
 
         var userContributionAudioTrack = modelBuilder.Entity<UserContributionAudioTrack>();
+        var userContributionSubtitleTrack = modelBuilder.Entity<UserContributionSubtitleTrack>();
         var userContributionChapter = modelBuilder.Entity<UserContributionChapter>();
 
         var contributionHistory = modelBuilder.Entity<ContributionHistory>();
@@ -355,6 +359,7 @@ public class SqlServerDataContext : DbContext
     public DbSet<UserContributionDiscItem> UserContributionDiscItems { get; set; } = null!;
     public DbSet<UserContributionChapter> UserContributionChapters { get; set; } = null!;
     public DbSet<UserContributionAudioTrack> UserContributionAudioTracks { get; set; } = null!;
+    public DbSet<UserContributionSubtitleTrack> UserContributionSubtitleTracks { get; set; } = null!;
     public DbSet<UserContributionDiscHashItem> UserContributionDiscHashItems { get; set; } = null!;
     public DbSet<ContributionHistory> ContributionHistory { get; set; } = null!;
     public DbSet<UserMessage> UserMessages { get; set; } = null!;

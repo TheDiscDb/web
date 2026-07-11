@@ -1,0 +1,13 @@
+mutation AddSubtitleTrackToItem($input: AddSubtitleTrackToItemInput!){
+  addSubtitleTrackToItem(input: $input) {
+    userContributionSubtitleTrack {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

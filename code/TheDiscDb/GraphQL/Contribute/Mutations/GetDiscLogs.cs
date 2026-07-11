@@ -33,6 +33,9 @@ public partial class ContributionMutations
             .Include(c => c.Discs)
             .ThenInclude(c => c.Items)
                 .ThenInclude(d => d.AudioTracks)
+            .Include(c => c.Discs)
+            .ThenInclude(c => c.Items)
+                .ThenInclude(d => d.SubtitleTracks)
             .FirstOrDefaultAsync(c => c.Id == decodedContributionId, cancellationToken);
 
         await EnsureOwnership(userManager, contribution, contributionId, discId, cancellationToken: cancellationToken);

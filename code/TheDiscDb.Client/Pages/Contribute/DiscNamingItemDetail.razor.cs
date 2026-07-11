@@ -37,6 +37,7 @@ public partial class DiscNamingItemDetail : CancellableComponentBase
 
     private readonly Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items_Chapters, CopyButtonState> chapterCopyStates = new();
     private readonly Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items_AudioTracks, CopyButtonState> audioTrackCopyStates = new();
+    private readonly Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items_SubtitleTracks, CopyButtonState> subtitleTrackCopyStates = new();
     private CopyButtonState filenameCopyState = DefaultCopyState;
     private CopyButtonState titleCopyState = DefaultCopyState;
 
@@ -47,6 +48,7 @@ public partial class DiscNamingItemDetail : CancellableComponentBase
     private bool IsPopup => string.Equals(this.Popup, "1", StringComparison.Ordinal);
     private bool HasChapters => this.item?.Chapters.Count > 0;
     private bool HasCustomAudioTracks => this.item?.AudioTracks.Any(t => !string.IsNullOrWhiteSpace(t.Title)) == true;
+    private bool HasCustomSubtitleTracks => this.item?.SubtitleTracks.Any(t => !string.IsNullOrWhiteSpace(t.Title)) == true;
 
     private string BackUrl
     {
@@ -101,6 +103,9 @@ public partial class DiscNamingItemDetail : CancellableComponentBase
 
     private CopyButtonState GetAudioTrackCopyState(IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items_AudioTracks track) =>
         this.audioTrackCopyStates.TryGetValue(track, out var state) ? state : DefaultCopyState;
+
+    private CopyButtonState GetSubtitleTrackCopyState(IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items_SubtitleTracks track) =>
+        this.subtitleTrackCopyStates.TryGetValue(track, out var state) ? state : DefaultCopyState;
 
     private async Task CopyTitleToClipboard()
     {
@@ -167,6 +172,23 @@ public partial class DiscNamingItemDetail : CancellableComponentBase
         await Task.Delay(TimeSpan.FromSeconds(2));
 
         this.audioTrackCopyStates.Remove(track);
+        StateHasChanged();
+    }
+
+    private async Task CopySubtitleTrackToClipboard(IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items_SubtitleTracks track)
+    {
+        if (string.IsNullOrWhiteSpace(track.Title))
+        {
+            return;
+        }
+
+        this.subtitleTrackCopyStates[track] = CopiedCopyState;
+        StateHasChanged();
+
+        await this.Clipboard.WriteTextAsync(track.Title);
+        await Task.Delay(TimeSpan.FromSeconds(2));
+
+        this.subtitleTrackCopyStates.Remove(track);
         StateHasChanged();
     }
 }

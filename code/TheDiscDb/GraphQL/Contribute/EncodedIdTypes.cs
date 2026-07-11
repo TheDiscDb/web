@@ -75,6 +75,10 @@ public class ContributionDiscItemTypeExtension : EncodedIdTypeExtension<UserCont
                   .UseFiltering()
                   .UseSorting();
 
+        descriptor.Field(t => t.SubtitleTracks)
+                  .UseFiltering()
+                  .UseSorting();
+
         descriptor.Field("filename")
                   .Type<NonNullType<StringType>>()
                   .ResolveWith<ContributionDiscItemTypeExtension>(x => GetFilename(default!, default!, default!, default));
@@ -190,6 +194,10 @@ public class UserContributionAudioTrackTypeExtension : EncodedIdTypeExtension<Us
 {
 }
 
+public class UserContributionSubtitleTrackTypeExtension : EncodedIdTypeExtension<UserContributionSubtitleTrack>
+{
+}
+
 public class UserContributionChapterTypeExtension : EncodedIdTypeExtension<UserContributionChapter>
 {
 }
@@ -221,6 +229,7 @@ public class EncodedIdFilterConvention : FilterConvention
         descriptor.BindRuntimeType<UserContributionDisc, EncodedIdFilterType<UserContributionDisc>>();
         descriptor.BindRuntimeType<UserContributionDiscItem, EncodedIdFilterType<UserContributionDiscItem>>();
         descriptor.BindRuntimeType<UserContributionAudioTrack, EncodedIdFilterType<UserContributionAudioTrack>>();
+        descriptor.BindRuntimeType<UserContributionSubtitleTrack, EncodedIdFilterType<UserContributionSubtitleTrack>>();
         descriptor.BindRuntimeType<UserContributionChapter, EncodedIdFilterType<UserContributionChapter>>();
         descriptor.BindRuntimeType<UserContributionDiscHashItem, EncodedIdFilterType<UserContributionDiscHashItem>>();
         descriptor.BindRuntimeType<UserContributionBoxset, EncodedIdFilterType<UserContributionBoxset>>();

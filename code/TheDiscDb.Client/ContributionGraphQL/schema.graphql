@@ -12,6 +12,11 @@ type AddAudioTrackToItemPayload {
   errors: [AddAudioTrackToItemError!]
 }
 
+type AddSubtitleTrackToItemPayload {
+  userContributionSubtitleTrack: UserContributionSubtitleTrack
+  errors: [AddSubtitleTrackToItemError!]
+}
+
 type AddChapterToItemPayload {
   userContributionChapter: UserContributionChapter
   errors: [AddChapterToItemError!]
@@ -119,6 +124,7 @@ type ContributionHistoryEdge {
 
 type ContributionMutations {
   addAudioTrackToItem(input: AddAudioTrackToItemInput!): AddAudioTrackToItemPayload! @authorize @cost(weight: "10")
+  addSubtitleTrackToItem(input: AddSubtitleTrackToItemInput!): AddSubtitleTrackToItemPayload! @authorize @cost(weight: "10")
   addChapterToItem(input: AddChapterToItemInput!): AddChapterToItemPayload! @authorize @cost(weight: "10")
   addItemToDisc(input: AddItemToDiscInput!): AddItemToDiscPayload! @authorize @cost(weight: "10")
   createContribution(input: CreateContributionInput!): CreateContributionPayload! @authorize @cost(weight: "10")
@@ -584,6 +590,14 @@ type UserContributionAudioTrack {
   encodedId: EncodedId! @cost(weight: "10")
 }
 
+type UserContributionSubtitleTrack {
+  id: Int!
+  index: Int!
+  title: String!
+  item: UserContributionDiscItem!
+  encodedId: EncodedId! @cost(weight: "10")
+}
+
 type UserContributionChapter {
   id: Int!
   index: Int!
@@ -635,10 +649,13 @@ type UserContributionDiscItem {
   episode: String
   chapters(where: UserContributionChapterFilterInput @cost(weight: "10") order: [UserContributionChapterSortInput!] @cost(weight: "10")): [UserContributionChapter!]!
   audioTracks(where: UserContributionAudioTrackFilterInput @cost(weight: "10") order: [UserContributionAudioTrackSortInput!] @cost(weight: "10")): [UserContributionAudioTrack!]!
+  subtitleTracks(where: UserContributionSubtitleTrackFilterInput @cost(weight: "10") order: [UserContributionSubtitleTrackSortInput!] @cost(weight: "10")): [UserContributionSubtitleTrack!]!
   encodedId: EncodedId! @cost(weight: "10")
 }
 
 union AddAudioTrackToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
+union AddSubtitleTrackToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
 union AddChapterToItemError = ContributionNotFoundError | DiscNotFoundError | DiscItemNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
@@ -699,6 +716,14 @@ union RemoveDiscFromBoxsetError = AuthenticationError | BoxsetNotFoundError | Di
 union ReorderBoxsetMembersError = AuthenticationError | BoxsetNotFoundError | InvalidIdError | InvalidOwnershipError | InvalidBoxsetStatusError
 
 input AddAudioTrackToItemInput {
+  contributionId: String!
+  discId: String!
+  itemId: String!
+  trackIndex: Int!
+  trackName: String!
+}
+
+input AddSubtitleTrackToItemInput {
   contributionId: String!
   discId: String!
   itemId: String!
@@ -899,6 +924,13 @@ input ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput {
   any: Boolean @cost(weight: "10")
 }
 
+input ListEncodedIdFilterTypeOfUserContributionSubtitleTrackFilterInput {
+  all: UserContributionSubtitleTrackFilterInput @cost(weight: "10")
+  none: UserContributionSubtitleTrackFilterInput @cost(weight: "10")
+  some: UserContributionSubtitleTrackFilterInput @cost(weight: "10")
+  any: Boolean @cost(weight: "10")
+}
+
 input ListEncodedIdFilterTypeOfUserContributionChapterFilterInput {
   all: UserContributionChapterFilterInput @cost(weight: "10")
   none: UserContributionChapterFilterInput @cost(weight: "10")
@@ -1019,7 +1051,23 @@ input UserContributionAudioTrackFilterInput {
   item: UserContributionDiscItemFilterInput
 }
 
+input UserContributionSubtitleTrackFilterInput {
+  and: [UserContributionSubtitleTrackFilterInput!]
+  or: [UserContributionSubtitleTrackFilterInput!]
+  encodedId: EncodedIdOperationFilterInput
+  index: IntOperationFilterInput
+  title: StringOperationFilterInput
+  item: UserContributionDiscItemFilterInput
+}
+
 input UserContributionAudioTrackSortInput {
+  id: SortEnumType @cost(weight: "10")
+  index: SortEnumType @cost(weight: "10")
+  title: SortEnumType @cost(weight: "10")
+  item: UserContributionDiscItemSortInput @cost(weight: "10")
+}
+
+input UserContributionSubtitleTrackSortInput {
   id: SortEnumType @cost(weight: "10")
   index: SortEnumType @cost(weight: "10")
   title: SortEnumType @cost(weight: "10")
@@ -1097,6 +1145,7 @@ input UserContributionDiscItemFilterInput {
   episode: StringOperationFilterInput
   chapters: ListEncodedIdFilterTypeOfUserContributionChapterFilterInput
   audioTracks: ListEncodedIdFilterTypeOfUserContributionAudioTrackFilterInput
+  subtitleTracks: ListEncodedIdFilterTypeOfUserContributionSubtitleTrackFilterInput
 }
 
 input UserContributionDiscItemSortInput {

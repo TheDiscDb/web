@@ -64,6 +64,22 @@ public class AudioTrackItem
     }
 }
 
+public class SubtitleTrackItem
+{
+    public int Index { get; set; }
+    public string? Title { get; set; }
+    public IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles_Segments? Segment { get; set; }
+    public string GetDisplayName()
+    {
+        if (this.Segment != null)
+        {
+            return $"{Segment.Name}".Trim();
+        }
+
+        return "";
+    }
+}
+
 public class AddItemRequest
 {
     public string Name { get; set; } = string.Empty;
@@ -94,6 +110,7 @@ public class ItemIdentification
     public string? DatabaseId { get; set; }
     public List<ChapterItem> Chapters { get; set; } = new List<ChapterItem>();
     public List<AudioTrackItem> AudioTracks { get; set; } = new List<AudioTrackItem>();
+    public List<SubtitleTrackItem> SubtitleTracks { get; set; } = new List<SubtitleTrackItem>();
     public bool EpisodeTitleUserEdited { get; set; } = false;
     public Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Contribution_Discs, IEnumerable<IGetDiscLogs_DiscLogs_DiscLogs_Contribution_Discs_Items>> ChapterMatches { get; set; } = new Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Contribution_Discs, IEnumerable<IGetDiscLogs_DiscLogs_DiscLogs_Contribution_Discs_Items>>();
 
@@ -194,6 +211,8 @@ public partial class IdentifyDiscItems : CancellableComponentBase
 
     bool showAudioTrackDialog = false;
     SfDialog? audioTrackDialog;
+    bool showSubtitleTrackDialog = false;
+    SfDialog? subtitleTrackDialog;
 
     SfToast? toast;
     string? toastContent;
@@ -266,6 +285,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
 
                             InitializeChapters(item, existingItem);
                             InitializeAudioTracks(item, existingItem, title);
+                            InitializeSubtitleTracks(item, existingItem, title);
 
                             identifiedTitles[title] = existingItem;
                         }
@@ -417,6 +437,47 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         }
     }
 
+    private static void InitializeSubtitleTracks(IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item, ItemIdentification existingItem, IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
+    {
+        var subtitleSegments = title.Segments.Where(s => s.Type != null && s.Type.Equals("Subtitles", StringComparison.OrdinalIgnoreCase)).ToList();
+        bool hasSavedSubtitleTracks = item.SubtitleTracks != null && item.SubtitleTracks.Count > 0;
+        int i = 1;
+        foreach (IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles_Segments? segment in subtitleSegments)
+        {
+        if (hasSavedSubtitleTracks)
+        {
+            var existingSubtitleTrack = item.SubtitleTracks!.FirstOrDefault(st => st.Index == i);
+            if (existingSubtitleTrack != null)
+            {
+                existingItem.SubtitleTracks.Add(new SubtitleTrackItem
+                {
+                    Index = existingSubtitleTrack.Index,
+                    Title = existingSubtitleTrack.Title,
+                    Segment = segment
+                });
+            }
+            else
+            {
+                existingItem.SubtitleTracks.Add(new SubtitleTrackItem
+                {
+                    Index = i,
+                    Title = "",
+                    Segment = segment
+                });
+            }
+        }
+        else
+        {
+            existingItem.SubtitleTracks.Add(new SubtitleTrackItem
+            {
+                Index = i,
+                Title = "",
+                Segment = segment
+            });
+        }
+        ++i;
+        }
+    }
     private static void InitializeChapters(IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item, ItemIdentification existingItem)
     {
         if (item.Chapters != null && item.Chapters.Count > 0)
@@ -585,6 +646,55 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         }
 
         return "Label Audio Tracks";
+    }
+
+    void NameSubtitleTracks(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
+    {
+        if (identifiedTitles.TryGetValue(title, out var item))
+        {
+            this.currentItem = item;
+            if (item.SubtitleTracks.Count == 0)
+            {
+                var subtitleSegments = title.Segments.Where(s => s.Type != null && s.Type.Equals("Subtitles", StringComparison.OrdinalIgnoreCase));
+                int i = 1;
+                foreach (var segment in subtitleSegments)
+                {
+                    item.SubtitleTracks.Add(new SubtitleTrackItem
+                    {
+                        Index = i++,
+                        Title = "",
+                        Segment = segment
+                    });
+                }
+            }
+            this.showSubtitleTrackDialog = true;
+        }
+    }
+
+    bool HasSubtitleSegments(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => title.Segments.Any(s => s.Type != null && s.Type.Equals("Subtitles", StringComparison.OrdinalIgnoreCase));
+
+    bool HasSubtitleTracks(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => identifiedTitles.TryGetValue(title, out var item) && item.SubtitleTracks != null && item.SubtitleTracks.Any(c => !string.IsNullOrEmpty(c.Title));
+
+    string GetSubtitleIconCss(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
+    {
+        string css = "e-icons e-translate";
+
+        if (HasSubtitleTracks(title))
+        {
+            return css + " iconIndicator";
+        }
+
+        return css;
+    }
+
+    string GetSubtitleButtonToolTip(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
+    {
+        if (HasSubtitleTracks(title))
+        {
+            return "Edit Subtitle Track Labels";
+        }
+
+        return "Label Subtitle Tracks";
     }
 
     async Task InputChapters(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
@@ -772,6 +882,40 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         await this.audioTrackDialog!.HideAsync();
     }
 
+    public async Task HandleValidSubtitleTrackSubmit()
+    {
+        if (this.currentItem == null || this.callInProgress)
+        {
+            return;
+        }
+
+        foreach (var subtitleTrack in this.currentItem.SubtitleTracks)
+        {
+            if (!string.IsNullOrEmpty(subtitleTrack.Title))
+            {
+                this.callInProgress = true;
+                var response = await this.ContributionClient.AddSubtitleTrackToItem.ExecuteAsync(new AddSubtitleTrackToItemInput
+                {
+                    ContributionId = this.ContributionId!,
+                    DiscId = this.DiscId!,
+                    ItemId = this.currentItem.DatabaseId!,
+                    TrackIndex = subtitleTrack.Index,
+                    TrackName = subtitleTrack.Title!
+                });
+                this.callInProgress = false;
+
+                if (!response.IsSuccessResult())
+                {
+                    toastContent = "Error naming subtitle track";
+                    await toast!.ShowAsync();
+                    continue;
+                }
+            }
+        }
+
+        await this.subtitleTrackDialog!.HideAsync();
+    }
+
     public async Task HandleValidItemSubmit()
     {
         if (this.currentItem == null || callInProgress)
@@ -912,6 +1056,22 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         }
 
         await this.audioTrackDialog!.HideAsync();
+    }
+
+    private async Task SubtitleTrackDialogCancelClicked()
+    {
+        if (this.currentItem == null)
+        {
+            return;
+        }
+
+        bool isEdit = this.currentItem.DatabaseId != null;
+        if (!isEdit)
+        {
+            this.currentItem!.SubtitleTracks.Clear();
+        }
+
+        await this.subtitleTrackDialog!.HideAsync();
     }
 
     public async Task HandleValidEpisodeSubmit()

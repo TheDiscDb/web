@@ -28,4 +28,5 @@ public class UserContributionDiscItem : IHasId
 
     public ICollection<UserContributionChapter> Chapters { get; set; } = new HashSet<UserContributionChapter>();
     public ICollection<UserContributionAudioTrack> AudioTracks { get; set; } = new HashSet<UserContributionAudioTrack>();
+    public ICollection<UserContributionSubtitleTrack> SubtitleTracks { get; set; } = new HashSet<UserContributionSubtitleTrack>();
 }

@@ -65,4 +65,67 @@ public class SummaryFileParserTests
         await Assert.That(disc.Musics).IsEmpty();
         await Assert.That(disc.Shorts).IsEmpty();
     }
+
+    private static string MakeItemWithTracks(params string[] trackLines) =>
+        string.Join(System.Environment.NewLine, new[]
+        {
+            "Name: Feature",
+            "Source file name: Feature.m2ts",
+            "Duration: 2:00:00",
+            "Size: 30.0 GB",
+            "Segment map: 100",
+        }
+        .Concat(trackLines)
+        .Concat(new[]
+        {
+            "Type: MainMovie",
+            "File name: Feature.mkv",
+        }));
+
+    [Test]
+    public async Task Parse_SubtitleTracks_PopulatedAlongsideAudio()
+    {
+        var input = MakeItemWithTracks(
+            "AudioTrack[1]: English 5.1",
+            "AudioTrack[2]: Director's Commentary",
+            "SubtitleTrack[1]: English",
+            "SubtitleTrack[2]: English (SDH)");
+
+        var item = SummaryFileParser.Parse(input).Single();
+
+        await Assert.That(item.AudioTrackNames.Count).IsEqualTo(2);
+        await Assert.That(item.SubtitleTrackNames.Count).IsEqualTo(2);
+
+        var subs = item.SubtitleTrackNames.OrderBy(s => s.Index).ToList();
+        await Assert.That(subs[0].Index).IsEqualTo(1);
+        await Assert.That(subs[0].Name).IsEqualTo("English");
+        await Assert.That(subs[1].Index).IsEqualTo(2);
+        await Assert.That(subs[1].Name).IsEqualTo("English (SDH)");
+    }
+
+    [Test]
+    public async Task Parse_AudioTrack_BackCompatUnchanged()
+    {
+        var input = MakeItemWithTracks("AudioTrack[2]: Director's Commentary");
+
+        var item = SummaryFileParser.Parse(input).Single();
+
+        var audio = item.AudioTrackNames.Single();
+        await Assert.That(audio.Index).IsEqualTo(2);
+        await Assert.That(audio.Name).IsEqualTo("Director's Commentary");
+        await Assert.That(item.SubtitleTrackNames).IsEmpty();
+    }
+
+    [Test]
+    public async Task Parse_StripsTrailingCommentFromTrackLabels()
+    {
+        var input = MakeItemWithTracks(
+            "AudioTrack[1]: English # DTS-HD MA · eng",
+            "SubtitleTrack[1]: English # subtitles · eng");
+
+        var item = SummaryFileParser.Parse(input).Single();
+
+        await Assert.That(item.AudioTrackNames.Single().Name).IsEqualTo("English");
+        await Assert.That(item.SubtitleTrackNames.Single().Name).IsEqualTo("English");
+    }
 }
