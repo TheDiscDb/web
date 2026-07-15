@@ -1,0 +1,50 @@
+.badge-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    padding: 0.4rem;
+    background: rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 0 0 2px currentColor;
+    line-height: 0;
+}
+
+.badge-icon ::deep svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor;
+}
+
+/* Tier colours drive the SVG fill via currentColor. */
+.badge-tier-none {
+    color: #4f6d7a;
+}
+
+.badge-tier-bronze {
+    color: #b08d57;
+}
+
+.badge-tier-silver {
+    color: #9aa4ad;
+}
+
+.badge-tier-gold {
+    color: #d4af37;
+}
+
+.badge-tier-platinum {
+    color: #6ec7d1;
+}
+
+.badge-tier-diamond {
+    color: #7fb4ff;
+}
+
+/* Locked achievements render muted. */
+.badge-locked {
+    color: #b9b9b9;
+    opacity: 0.55;
+    filter: grayscale(100%);
+}

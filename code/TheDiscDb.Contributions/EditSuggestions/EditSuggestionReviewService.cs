@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Data.Changes;
+using TheDiscDb.Services.Achievements;
 using TheDiscDb.Web.Data;
 
 public sealed class EditSuggestionReviewService(
@@ -13,7 +14,8 @@ public sealed class EditSuggestionReviewService(
     IChangeFactory changeFactory,
     IEditSuggestionHistoryService historyService,
     IEditSuggestionNotificationService? notifications = null,
-    IEditSuggestionRecipientResolver? recipients = null) : IEditSuggestionReviewService
+    IEditSuggestionRecipientResolver? recipients = null,
+    IAchievementService? achievements = null) : IEditSuggestionReviewService
 {
     public async Task<EditSuggestionChange?> ApproveChangeAsync(
         int suggestionId,
@@ -302,6 +304,24 @@ public sealed class EditSuggestionReviewService(
                     : await recipients.ResolveAsync(suggestion.UserId, cancellationToken);
                 await notifications.NotifySuggestionResolvedAsync(
                     suggestion, recipient.Email, cancellationToken);
+            }
+
+            // Award achievements for approved edits (incl. auto-approved Disc ID adds).
+            // Non-fatal: a failure here must never block the review workflow.
+            if (achievements is not null &&
+                newStatus is EditSuggestionStatus.Approved or EditSuggestionStatus.PartiallyApproved &&
+                !string.IsNullOrEmpty(suggestion.UserId))
+            {
+                try
+                {
+                    await achievements.EvaluateUserAsync(
+                        suggestion.UserId, AchievementAuditActor.System, cancellationToken);
+                }
+                catch (Exception)
+                {
+                    // Swallowed intentionally; achievement evaluation is best-effort here and
+                    // the nightly reconciliation job will catch any miss.
+                }
             }
         }
     }

@@ -30,6 +30,7 @@ using TheDiscDb.Services.Admin;
 using TheDiscDb.Services.Admin.GitHub;
 using TheDiscDb.Services.Admin.Workspace;
 using TheDiscDb.Services.EditSuggestions;
+using TheDiscDb.Services.Achievements;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Validation.Contribution;
 using TheDiscDb.Validation.Boxset;
@@ -47,6 +48,9 @@ builder.Services.AddTransient<ContributionEndpoints>();
 builder.Services.AddTransient<EngramEndpoints>();
 builder.Services.AddTransient<DiscLookupEndpoints>();
 builder.Services.AddEditSuggestions();
+builder.Services.AddAchievements();
+builder.Services.AddSingleton<TheDiscDb.Services.Achievements.BadgeIconStore>();
+builder.Services.AddHostedService<TheDiscDb.Services.Achievements.AchievementReconciliationService>();
 
 builder.Services.AddControllersWithViews( options =>
 {

@@ -262,7 +262,36 @@ public class SqlServerDataContext : DbContext
 
         ConfigureEditSuggestionModel(modelBuilder);
 
+        ConfigureAchievementModel(modelBuilder);
+
         IdentityModelConfiguration.ConfigureIdentityModel(modelBuilder);
+    }
+
+    private static void ConfigureAchievementModel(ModelBuilder modelBuilder)
+    {
+        var earned = modelBuilder.Entity<UserAchievement>();
+        earned.HasKey(x => x.Id);
+        earned.Property(x => x.UserId).IsRequired().HasMaxLength(450);
+        earned.Property(x => x.AchievementKey).IsRequired().HasMaxLength(80);
+        earned.Property(x => x.ContributorName).HasMaxLength(256);
+        earned.Property(x => x.Context).HasMaxLength(410);
+        // Idempotent awarding: at most one row per (user, achievement).
+        earned.HasIndex(x => new { x.UserId, x.AchievementKey }).IsUnique();
+
+        var progress = modelBuilder.Entity<UserAchievementProgress>();
+        progress.HasKey(x => x.Id);
+        progress.Property(x => x.UserId).IsRequired().HasMaxLength(450);
+        progress.Property(x => x.AchievementKey).IsRequired().HasMaxLength(80);
+        progress.HasIndex(x => new { x.UserId, x.AchievementKey }).IsUnique();
+
+        var audit = modelBuilder.Entity<AchievementAuditEntry>();
+        audit.HasKey(x => x.Id);
+        audit.Property(x => x.UserId).IsRequired().HasMaxLength(450);
+        audit.Property(x => x.AchievementKey).IsRequired().HasMaxLength(80);
+        audit.Property(x => x.Action).HasConversion<string>().HasMaxLength(16);
+        audit.Property(x => x.Actor).HasConversion<string>().HasMaxLength(16);
+        audit.Property(x => x.Reason).HasMaxLength(500);
+        audit.HasIndex(x => new { x.UserId, x.TimestampUtc });
     }
 
     private static void ConfigureEditSuggestionModel(ModelBuilder modelBuilder)
@@ -377,6 +406,9 @@ public class SqlServerDataContext : DbContext
     public DbSet<EditSuggestionChange> EditSuggestionChanges { get; set; } = null!;
     public DbSet<EditSuggestionHistory> EditSuggestionHistory { get; set; } = null!;
     public DbSet<EditSuggestionMessage> EditSuggestionMessages { get; set; } = null!;
+    public DbSet<UserAchievement> UserAchievements { get; set; } = null!;
+    public DbSet<UserAchievementProgress> UserAchievementProgress { get; set; } = null!;
+    public DbSet<AchievementAuditEntry> AchievementAuditEntries { get; set; } = null!;
 }
 
 public class EngramDisc

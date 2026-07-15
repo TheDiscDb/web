@@ -169,7 +169,7 @@ films, reflecting the greater effort; the title `Type` field distinguishes
 Levels are **auto-derived from accumulated points** only (no manual assignment). Points
 come from earned achievements (activity-only badges excluded). Proposed progression:
 
-**Newcomer → Contributor → Regular → Top Contributor → Curator**
+**Newcomer → Contributor → Archivist → Top Contributor → Curator**
 
 (names and point thresholds to be finalized during implementation). Level is displayed on
 the public profile and the leaderboard.

@@ -1,4 +1,5 @@
 @page "/leaderboard"
+@using TheDiscDb.Services.Achievements
 
 <PageTitle>Contributor Leaderboard - TheDiscDb</PageTitle>
 <HeadContent>
@@ -30,6 +31,7 @@
                     <tr>
                         <th class="rank-col">#</th>
                         <th>Contributor</th>
+                        <th class="achievements-col">Achievements</th>
                         <th class="count-col">Releases</th>
                         <th class="date-col">Latest</th>
                     </tr>
@@ -46,6 +48,18 @@
                                 else { @rank }
                             </td>
                             <td class="contributor-name"><a href="/contributedBy/@Uri.EscapeDataString(entry.Name)">@entry.Name</a></td>
+                            <td class="achievements-col">
+                                <div class="leader-achievements">
+                                    @if (!string.IsNullOrEmpty(entry.Level))
+                                    {
+                                        <span class="leader-level">@entry.Level</span>
+                                    }
+                                    @foreach (var badge in entry.Badges)
+                                    {
+                                        <BadgeIcon Icon="@badge.Icon" Tier="badge.Tier" Title="@badge.Name" Earned="true" />
+                                    }
+                                </div>
+                            </td>
                             <td class="count-col">@entry.ReleaseCount</td>
                             <td class="date-col">@entry.LatestRelease.ToString("MMM d, yyyy")</td>
                         </tr>

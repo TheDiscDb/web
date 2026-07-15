@@ -31,6 +31,9 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
     private IContributionNotificationService NotificationService { get; set; } = null!;
 
     [Inject]
+    private TheDiscDb.Services.Achievements.IAchievementService AchievementService { get; set; } = null!;
+
+    [Inject]
     private IMessageService MessageService { get; set; } = null!;
 
     [Inject]
@@ -140,6 +143,16 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to send imported notification for contribution {Id}", this.Contribution.Id);
+            }
+
+            try
+            {
+                await AchievementService.EvaluateUserAsync(
+                    this.Contribution.UserId, AchievementAuditActor.System, this.ComponentCt);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Achievement evaluation failed after importing contribution {Id}", this.Contribution.Id);
             }
         }
     }

@@ -23,6 +23,7 @@ internal static class IdentityModelConfiguration
             b.Property(u => u.NormalizedUserName).HasMaxLength(256);
             b.Property(u => u.Email).HasMaxLength(256);
             b.Property(u => u.NormalizedEmail).HasMaxLength(256);
+            b.Property(u => u.Level).HasMaxLength(64);
 
             b.HasMany<IdentityUserClaim<string>>().WithOne().HasForeignKey(uc => uc.UserId).IsRequired();
             b.HasMany<IdentityUserLogin<string>>().WithOne().HasForeignKey(ul => ul.UserId).IsRequired();

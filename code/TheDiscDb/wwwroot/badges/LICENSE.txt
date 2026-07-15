@@ -1,0 +1,22 @@
+Badge icons in this folder are from game-icons.net and are licensed under
+Creative Commons BY 3.0 (https://creativecommons.org/licenses/by/3.0/).
+
+Attribution (also surfaced on the site's /attributions page):
+
+  trophy.svg            Lorc        https://game-icons.net/1x1/lorc/trophy.html
+  medal.svg             Lorc        https://game-icons.net/1x1/lorc/medal.html
+  feather.svg           Lorc        https://game-icons.net/1x1/lorc/feather.html
+  tv.svg                Delapouite  https://game-icons.net/1x1/delapouite/tv.html
+  compact-disc.svg      Delapouite  https://game-icons.net/1x1/delapouite/compact-disc.html
+  magnifying-glass.svg  Lorc        https://game-icons.net/1x1/lorc/magnifying-glass.html
+  hourglass.svg         Lorc        https://game-icons.net/1x1/lorc/hourglass.html
+  calendar.svg          Delapouite  https://game-icons.net/1x1/delapouite/calendar.html
+  cardboard-box.svg     Delapouite  https://game-icons.net/1x1/delapouite/cardboard-box.html
+  price-tag.svg         Delapouite  https://game-icons.net/1x1/delapouite/price-tag.html
+  round-star.svg        Delapouite  https://game-icons.net/1x1/delapouite/round-star.html
+  campfire.svg          Lorc        https://game-icons.net/1x1/lorc/campfire.html
+  return-arrow.svg      Lorc        https://game-icons.net/1x1/lorc/return-arrow.html
+  on-target.svg         Lorc        https://game-icons.net/1x1/lorc/on-target.html
+
+The SVGs have been modified from the originals: the opaque background rectangle was
+removed and the fill set to `currentColor` so the badge tier colour can tint them.

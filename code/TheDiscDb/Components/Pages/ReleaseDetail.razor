@@ -109,16 +109,13 @@ else
                         <div class="contributor-list">
                             @foreach (var contributor in Release.Contributors)
                             {
-                                @if (string.Equals(contributor.Source, "github", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(contributor.Name))
-                                {
-                                    <a href="https://github.com/@contributor.Name" target="_blank" rel="noopener noreferrer" class="contributor-chip" title="View on GitHub">
-                                        <img src="https://github.com/@(contributor.Name).png?size=24" width="24" height="24" alt="@contributor.Name" class="contributor-avatar" />
-                                        @contributor.Name
-                                    </a>
-                                }
-                                else if (!string.IsNullOrEmpty(contributor.Name))
+                                @if (!string.IsNullOrEmpty(contributor.Name))
                                 {
                                     <a href="/contributedBy/@Uri.EscapeDataString(contributor.Name)" class="contributor-chip" title="View contributions">
+                                        @if (string.Equals(contributor.Source, "github", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <img src="https://github.com/@(contributor.Name).png?size=24" width="24" height="24" alt="@contributor.Name" class="contributor-avatar" />
+                                        }
                                         @contributor.Name
                                     </a>
                                 }

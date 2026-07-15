@@ -26,6 +26,12 @@ public partial class BoxsetDetails : ComponentBase
     IContributionNotificationService NotificationService { get; set; } = null!;
 
     [Inject]
+    TheDiscDb.Services.Achievements.IAchievementService AchievementService { get; set; } = null!;
+
+    [Inject]
+    ILogger<BoxsetDetails> Logger { get; set; } = null!;
+
+    [Inject]
     NavigationManager Navigation { get; set; } = null!;
 
     [Inject]
@@ -111,6 +117,26 @@ public partial class BoxsetDetails : ComponentBase
         await db.SaveChangesAsync();
         statusMessage = "Boxset and all member contributions marked as Imported.";
         Boxset = boxset;
+
+        // Award achievements for every distinct contributor affected by this import.
+        var affectedUserIds = boxset.Members
+            .Select(m => m.Disc?.UserContribution?.UserId)
+            .Append(boxset.UserId)
+            .Where(id => !string.IsNullOrEmpty(id))
+            .Select(id => id!)
+            .Distinct();
+
+        foreach (var affectedUserId in affectedUserIds)
+        {
+            try
+            {
+                await AchievementService.EvaluateUserAsync(affectedUserId, AchievementAuditActor.System);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Achievement evaluation failed after importing boxset for user {UserId}", affectedUserId);
+            }
+        }
     }
 
     private void ShowMessageDialog(bool requestChanges)

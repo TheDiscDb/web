@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using TheDiscDb.Services;
+using TheDiscDb.Services.Achievements;
 using TheDiscDb.Services.Admin.GitHub;
 using TheDiscDb.Services.Admin.Workspace;
 using TheDiscDb.Web.Data;
@@ -21,6 +22,7 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
     private readonly IContributionNotificationService notificationService;
     private readonly ILogger<ContributionImportOrchestrator> logger;
     private readonly UserManager<TheDiscDbUser> userManager;
+    private readonly IAchievementService achievementService;
 
     public ContributionImportOrchestrator(
         ContributionGeneratorService generatorService,
@@ -31,7 +33,8 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
         IContributionHistoryService historyService,
         IContributionNotificationService notificationService,
         ILogger<ContributionImportOrchestrator> logger,
-        UserManager<TheDiscDbUser> userManager)
+        UserManager<TheDiscDbUser> userManager,
+        IAchievementService achievementService)
     {
         this.generatorService = generatorService;
         this.pipelineRunner = pipelineRunner;
@@ -42,6 +45,7 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
         this.notificationService = notificationService;
         this.logger = logger;
         this.userManager = userManager;
+        this.achievementService = achievementService;
     }
 
     public async Task<string> RunAsync(
@@ -84,6 +88,7 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
             {
                 await this.UpdateContributionStatusAsync(contribution, UserContributionStatus.Imported, dbContext, log, cancellationToken);
                 await this.NotifyContributionImportedAsync(contribution, cancellationToken);
+                await this.AwardAchievementsAsync(contribution.UserId, cancellationToken);
             }
         }
 
@@ -200,6 +205,25 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
         catch (Exception ex)
         {
             this.logger.LogError(ex, "Failed to send imported notification for contribution {Id}", contribution.Id);
+        }
+    }
+
+    private async Task AwardAchievementsAsync(string userId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(userId))
+        {
+            return;
+        }
+
+        // Non-fatal: an achievement failure must never fail an import. The nightly
+        // reconciliation job will catch anything missed here.
+        try
+        {
+            await this.achievementService.EvaluateUserAsync(userId, AchievementAuditActor.System, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            this.logger.LogWarning(ex, "Achievement evaluation failed after importing contribution for user {UserId}", userId);
         }
     }
 }

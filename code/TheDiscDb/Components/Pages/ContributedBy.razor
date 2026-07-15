@@ -1,4 +1,5 @@
 @page "/contributedBy/{username}"
+@using TheDiscDb.Services.Achievements
 
 <PageTitle>Releases by @Username - TheDiscDb</PageTitle>
 <HeadContent>
@@ -17,6 +18,55 @@
         <h1>Contributions by <span class="page-header__accent">@Username</span></h1>
         <div class="page-header__sub">@(releases?.Count ?? 0) contribution@(releases?.Count == 1 ? "" : "s") and growing!</div>
     </div>
+
+    @if (profile != null && (profile.Earned.Count > 0 || profile.InProgress.Count > 0))
+    {
+        <section class="achievements">
+            <div class="achievements__header">
+                <h2>Achievements</h2>
+                <span class="achievements__level" title="@profile.TotalPoints points">@profile.Level</span>
+            </div>
+
+            @if (profile.Earned.Count > 0)
+            {
+                <div class="achievements__grid">
+                    @foreach (var earned in profile.Earned)
+                    {
+                        <div class="achievement" title="@earned.Definition.Description">
+                            <BadgeIcon Icon="@earned.Definition.Icon"
+                                       Tier="earned.Definition.Tier"
+                                       Title="@earned.Definition.Name"
+                                       Earned="true" />
+                            <span class="achievement__name">@earned.Definition.Name</span>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (profile.InProgress.Count > 0)
+            {
+                <h3 class="achievements__subhead">In progress</h3>
+                <div class="achievements__progress-list">
+                    @foreach (var item in profile.InProgress)
+                    {
+                        <div class="achievement-progress" title="@item.Definition.Description">
+                            <BadgeIcon Icon="@item.Definition.Icon"
+                                       Tier="item.Definition.Tier"
+                                       Title="@item.Definition.Name"
+                                       Earned="false" />
+                            <div class="achievement-progress__body">
+                                <span class="achievement-progress__name">@item.Definition.Name</span>
+                                <div class="achievement-progress__bar">
+                                    <div class="achievement-progress__fill pw-@ProgressBucket(item.Percent)"></div>
+                                </div>
+                                <span class="achievement-progress__count">@item.Current / @item.Target</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
 
     @if (errorMessage != null)
     {

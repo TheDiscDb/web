@@ -1,0 +1,44 @@
+@page "/attributions"
+@using TheDiscDb.Services.Achievements
+
+<PageTitle>Attributions — TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="Credits and licence attributions for third-party assets used on TheDiscDb, including achievement badge icons from game-icons.net." />
+    <link rel="canonical" href="https://thediscdb.com/attributions" />
+</HeadContent>
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Attributions" Items='[("Home", "/")]' />
+
+<div class="page-header">
+    <h1>Attributions</h1>
+    <div class="page-header__desc">
+        TheDiscDb uses third-party assets under open licences. We're grateful to the artists
+        and their communities.
+    </div>
+</div>
+
+<div class="attributions-page">
+    <section>
+        <h2>Achievement badge icons</h2>
+        <p>
+            Badge icons are from
+            <a href="@BadgeAttributions.CollectionUrl" target="_blank" rel="noopener">game-icons.net</a>
+            and are licensed under
+            <a href="@BadgeAttributions.LicenseUrl" target="_blank" rel="noopener">@BadgeAttributions.License</a>.
+            Each icon is credited to its author below. The icons have been recoloured for use as badges.
+        </p>
+
+        <ul class="attributions-list">
+            @foreach (var attribution in BadgeAttributions.All)
+            {
+                <li>
+                    <BadgeIcon Icon="@attribution.Icon" Tier="AchievementTier.Bronze" Title="@attribution.Icon" />
+                    <span class="attributions-list__text">
+                        <a href="@attribution.SourceUrl" target="_blank" rel="noopener">@attribution.Icon</a>
+                        by @attribution.Author
+                    </span>
+                </li>
+            }
+        </ul>
+    </section>
+</div>

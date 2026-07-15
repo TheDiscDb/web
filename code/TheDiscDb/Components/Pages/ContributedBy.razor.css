@@ -14,3 +14,123 @@
     padding: 40px 20px;
     color: #666;
 }
+
+.achievements {
+    margin: 1.5rem 0 2.5rem;
+    padding: 1.25rem 1.5rem;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 12px;
+}
+
+.achievements__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.achievements__header h2 {
+    margin: 0;
+}
+
+.achievements__level {
+    font-weight: 600;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    background: #2d3748;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.achievements__subhead {
+    margin: 1.25rem 0 0.5rem;
+    font-size: 1rem;
+    color: #555;
+}
+
+.achievements__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.achievement {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 6rem;
+    text-align: center;
+    gap: 0.4rem;
+}
+
+.achievement__name {
+    font-size: 0.78rem;
+    line-height: 1.1;
+    color: #444;
+}
+
+.achievements__progress-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.achievement-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.achievement-progress__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.achievement-progress__name {
+    font-size: 0.85rem;
+    color: #444;
+}
+
+.achievement-progress__bar {
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.achievement-progress__fill {
+    height: 100%;
+    background: #4f6d7a;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.achievement-progress__count {
+    font-size: 0.75rem;
+    color: #777;
+}
+.pw-0 { width: 0%; }
+.pw-5 { width: 5%; }
+.pw-10 { width: 10%; }
+.pw-15 { width: 15%; }
+.pw-20 { width: 20%; }
+.pw-25 { width: 25%; }
+.pw-30 { width: 30%; }
+.pw-35 { width: 35%; }
+.pw-40 { width: 40%; }
+.pw-45 { width: 45%; }
+.pw-50 { width: 50%; }
+.pw-55 { width: 55%; }
+.pw-60 { width: 60%; }
+.pw-65 { width: 65%; }
+.pw-70 { width: 70%; }
+.pw-75 { width: 75%; }
+.pw-80 { width: 80%; }
+.pw-85 { width: 85%; }
+.pw-90 { width: 90%; }
+.pw-95 { width: 95%; }
+.pw-100 { width: 100%; }
