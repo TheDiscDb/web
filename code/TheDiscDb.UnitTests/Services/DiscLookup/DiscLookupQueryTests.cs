@@ -2,6 +2,7 @@ namespace TheDiscDb.UnitTests.Services.DiscLookup;
 
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.InputModels;
 using TheDiscDb.Services.DiscLookup;
 using TheDiscDb.UnitTests.Data.Changes;
 
@@ -80,6 +81,101 @@ public class DiscLookupQueryTests
     }
 
     [Test]
+    public async Task LookupByDiscHashAsync_ReturnsSameCompleteNamingPayload()
+    {
+        const string contentHash = "AAAA1111BBBB2222CCCC3333DDDD4444";
+
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.GlobalDiscId = AacsId;
+        seed.Disc.ContentHash = contentHash;
+        seed.Disc.Format = "UHD";
+        seed.Title.Item!.Type = "MainMovie";
+        seed.Title.Item.Chapters.Add(new Chapter { Index = 1, Title = "Opening" });
+        seed.Title.Tracks.Add(new Track
+        {
+            Index = 0,
+            Name = "Main Video",
+            Type = "Video",
+            Resolution = "3840x2160",
+            AspectRatio = "16:9",
+            Description = "HEVC video",
+        });
+        seed.Title.Tracks.Add(new Track
+        {
+            Index = 4,
+            Name = "English Forced",
+            Type = "Subtitles",
+            LanguageCode = "eng",
+            Language = "English",
+            Description = "Forced subtitles",
+        });
+        seed.Track.Name = "English Atmos";
+        seed.Track.Resolution = "48 kHz";
+        seed.Track.AspectRatio = null;
+        seed.Release.Upc = "123456789012";
+        seed.MediaItem.Externalids.Tmdb = "123";
+        seed.MediaItem.Externalids.Imdb = "tt0000123";
+        await db.SaveChangesAsync();
+
+        var byDiscId = await DiscLookupQuery.LookupAsync(db, AacsId);
+        var byHash = await DiscLookupQuery.LookupByDiscHashAsync(
+            db,
+            contentHash.ToLowerInvariant());
+
+        await Assert.That(byHash).IsNotNull();
+        await Assert.That(byHash!.GlobalDiscId).IsEqualTo(AacsId);
+        await Assert.That(byHash.Format).IsEqualTo(byDiscId!.Format);
+        await Assert.That(byHash.ContentHash).IsEqualTo(byDiscId.ContentHash);
+        await Assert.That(byHash.Media!.Title).IsEqualTo("The Movie");
+        await Assert.That(byHash.Media.FullTitle).IsEqualTo("The Movie (2020)");
+        await Assert.That(byHash.Media.Year).IsEqualTo(2020);
+        await Assert.That(byHash.Media.Type).IsEqualTo("movie");
+        await Assert.That(byHash.Media.ExternalIds.Tmdb).IsEqualTo("123");
+        await Assert.That(byHash.Media.ExternalIds.Imdb).IsEqualTo("tt0000123");
+        await Assert.That(byHash.Release!.Slug).IsEqualTo(ChangeTestSeed.ReleaseSlug);
+        await Assert.That(byHash.Release.Title).IsEqualTo("Original Release Title");
+        await Assert.That(byHash.Release.RegionCode).IsEqualTo("US");
+        await Assert.That(byHash.Release.Locale).IsEqualTo("en-US");
+        await Assert.That(byHash.Release.Upc).IsEqualTo("123456789012");
+        await Assert.That(byHash.Disc!.Slug).IsEqualTo(ChangeTestSeed.DiscSlug);
+        await Assert.That(byHash.Disc.Name).IsEqualTo("Original Disc Name");
+        await Assert.That(byHash.Disc.Index).IsEqualTo(ChangeTestSeed.DiscIndex);
+
+        var title = byHash.Titles[0];
+        await Assert.That(title.FileName).IsEqualTo("The Movie (2020) [2160p].mkv");
+        await Assert.That(title.Resolution).IsEqualTo("2160p");
+        await Assert.That(title.Item!.Description).IsEqualTo("Original description.");
+        await Assert.That(title.Chapters[0].Index).IsEqualTo(1);
+        await Assert.That(title.Chapters[1].Index).IsEqualTo(3);
+        await Assert.That(title.Chapters[0].Title).IsEqualTo("Opening");
+        await Assert.That(title.Tracks[0].Index).IsEqualTo(0);
+        await Assert.That(title.Tracks[1].Index).IsEqualTo(2);
+        await Assert.That(title.Tracks[2].Index).IsEqualTo(4);
+
+        var video = title.Tracks[0];
+        await Assert.That(video.Name).IsEqualTo("Main Video");
+        await Assert.That(video.Type).IsEqualTo("Video");
+        await Assert.That(video.Resolution).IsEqualTo("3840x2160");
+        await Assert.That(video.AspectRatio).IsEqualTo("16:9");
+        await Assert.That(video.Description).IsEqualTo("HEVC video");
+
+        var audio = title.Tracks[1];
+        await Assert.That(audio.Name).IsEqualTo("English Atmos");
+        await Assert.That(audio.AudioType).IsEqualTo("DTS-HD MA");
+        await Assert.That(audio.LanguageCode).IsEqualTo("eng");
+        await Assert.That(audio.Language).IsEqualTo("English");
+        await Assert.That(audio.Description).IsEqualTo("Original track desc");
+
+        var subtitle = title.Tracks[2];
+        await Assert.That(subtitle.Name).IsEqualTo("English Forced");
+        await Assert.That(subtitle.Type).IsEqualTo("Subtitles");
+        await Assert.That(subtitle.LanguageCode).IsEqualTo("eng");
+        await Assert.That(subtitle.Language).IsEqualTo("English");
+        await Assert.That(subtitle.Description).IsEqualTo("Forced subtitles");
+    }
+
+    [Test]
     public async Task IsValidDiscId_ValidatesHexLengths()
     {
         await Assert.That(DiscLookupQuery.IsValidDiscId(AacsId)).IsTrue();     // 40 hex
@@ -89,5 +185,16 @@ public class DiscLookupQueryTests
         await Assert.That(DiscLookupQuery.IsValidDiscId("")).IsFalse();
         await Assert.That(DiscLookupQuery.IsValidDiscId(null)).IsFalse();
         await Assert.That(DiscLookupQuery.IsValidDiscId(AacsId + "AA")).IsFalse(); // 42
+    }
+
+    [Test]
+    public async Task IsValidDiscHash_Requires32HexCharacters()
+    {
+        await Assert.That(DiscLookupQuery.IsValidDiscHash(DvdId)).IsTrue();
+        await Assert.That(DiscLookupQuery.IsValidDiscHash(DvdId.ToLowerInvariant())).IsTrue();
+        await Assert.That(DiscLookupQuery.IsValidDiscHash(AacsId)).IsFalse();
+        await Assert.That(DiscLookupQuery.IsValidDiscHash("not-hex")).IsFalse();
+        await Assert.That(DiscLookupQuery.IsValidDiscHash("")).IsFalse();
+        await Assert.That(DiscLookupQuery.IsValidDiscHash(null)).IsFalse();
     }
 }

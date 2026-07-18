@@ -20,11 +20,12 @@ public sealed class DiscLookupEndpoints
 
     public void MapEndpoints(WebApplication app)
     {
-        var group = app.MapGroup("/api/discid");
-        group.MapGet("{globalDiscId}", Lookup);
+        var group = app.MapGroup("/api");
+        group.MapGet("/discid/{globalDiscId}", LookupByDiscId);
+        group.MapGet("/dischash/{discHash}", LookupByDiscHash);
     }
 
-    private static async Task<IResult> Lookup(string globalDiscId, IDbContextFactory<SqlServerDataContext> dbContextFactory, CancellationToken cancellationToken)
+    private static async Task<IResult> LookupByDiscId(string globalDiscId, IDbContextFactory<SqlServerDataContext> dbContextFactory, CancellationToken cancellationToken)
     {
         if (!DiscLookupQuery.IsValidDiscId(globalDiscId))
         {
@@ -33,6 +34,21 @@ public sealed class DiscLookupEndpoints
 
         await using var database = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var result = await DiscLookupQuery.LookupAsync(database, globalDiscId, cancellationToken);
+
+        return result is null
+            ? TypedResults.NotFound()
+            : TypedResults.Json(result, JsonOptions);
+    }
+
+    private static async Task<IResult> LookupByDiscHash(string discHash, IDbContextFactory<SqlServerDataContext> dbContextFactory, CancellationToken cancellationToken)
+    {
+        if (!DiscLookupQuery.IsValidDiscHash(discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash — must be a 32-character hex string.");
+        }
+
+        await using var database = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var result = await DiscLookupQuery.LookupByDiscHashAsync(database, discHash, cancellationToken);
 
         return result is null
             ? TypedResults.NotFound()
