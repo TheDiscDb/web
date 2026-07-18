@@ -161,6 +161,10 @@ public class DataImportItemFactory
                                 }
                             }
                         }
+
+                        // A release is partial when it has at least one placeholder disc
+                        // (a known-missing disc that has not yet been contributed).
+                        release.IsPartial = release.Discs.Any(d => d.Disc?.IsPlaceholder == true);
                     }
                 }
 
@@ -368,6 +372,8 @@ public class DataImportItemFactory
         release.ReleaseDate = releaseFile.ReleaseDate;
         release.DateAdded = releaseFile.DateAdded;
 
+        // Release.IsPartial is import-derived from placeholder discs (set after discs load),
+        // not read from release.json.
         foreach (var contributor in releaseFile.Contributors)
         {
             release.Contributors.Add(new InputModels.Contributor
@@ -467,6 +473,29 @@ public class DataImportItemFactory
 
     private async Task<Disc?> LoadDiscFromBundleFile(string path, string dataRoot, CancellationToken cancellationToken)
     {
+        string fileName = this.fileSystem.Path.GetFileName(path);
+
+        // Placeholder discs (discNN.placeholder.json): a known-missing disc with no logs,
+        // summary, or titles. Materialize a lightweight placeholder Disc.
+        if (fileName.EndsWith(PlaceholderDiscFile.Suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            var placeholderJson = await this.fileSystem.File.ReadAllText(path, cancellationToken);
+            var placeholder = JsonSerializer.Deserialize<PlaceholderDiscFile>(placeholderJson, DataImporter.JsonOptions);
+            if (placeholder == null)
+            {
+                return null;
+            }
+
+            return new Disc
+            {
+                Index = placeholder.Index,
+                Name = placeholder.Name,
+                Slug = placeholder.Slug,
+                Format = placeholder.Format,
+                IsPlaceholder = true
+            };
+        }
+
         var extension = this.fileSystem.Path.GetExtension(path);
         if (extension.Equals(".json", StringComparison.OrdinalIgnoreCase))
         {

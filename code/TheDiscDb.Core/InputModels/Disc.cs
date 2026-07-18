@@ -41,6 +41,17 @@ namespace TheDiscDb.InputModels
         public Release? Release { get; set; }
         [System.Text.Json.Serialization.JsonIgnore]
         public ICollection<ReleaseDisc> ReleaseDiscs { get; set; } = new HashSet<ReleaseDisc>();
+        public bool IsPartial { get; set; }
+
+        /// <summary>
+        /// Marks this disc as a placeholder for a disc that is known to belong to a release
+        /// but has not yet been contributed (no logs, no summary, no titles). Placeholders
+        /// carry only <see cref="Name"/>, <see cref="Slug"/>, and <see cref="Format"/> and are
+        /// release-specific: they are excluded from canonical disc dedup and have a null
+        /// <see cref="ContentHash"/>. A release is considered partial when it contains at least
+        /// one placeholder disc. Persisted in <c>/data</c> as <c>discNN.placeholder.json</c>.
+        /// </summary>
+        public bool IsPlaceholder { get; set; }
     }
 }
 

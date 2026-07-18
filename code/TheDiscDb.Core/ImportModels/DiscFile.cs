@@ -10,6 +10,7 @@
         public string? Name { get; set; }
         public string? ContentHash { get; set; }
         public string? GlobalDiscId { get; set; }
+        public bool IsPartial { get; set; }
 
         public ICollection<DiscFileItem> Episodes { get; set; } = new HashSet<DiscFileItem>();
         public ICollection<DiscFileItem> Extras { get; set; } = new HashSet<DiscFileItem>();

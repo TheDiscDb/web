@@ -46,7 +46,10 @@ public class SqlServerDataContext : DbContext
         var disc = modelBuilder.Entity<Disc>();
         disc.HasMany(x => x.Titles).WithOne(x => x.Disc);
         disc.HasMany(x => x.ReleaseDiscs).WithOne(x => x.Disc);
-        disc.HasIndex(x => new { x.Format, x.ContentHash }).IsUnique();
+        // Placeholder discs have a null ContentHash and are release-specific (never deduped),
+        // so multiple (Format, NULL) rows must be allowed. Filter the unique index to rows
+        // with a non-null ContentHash so real discs still get uniqueness enforcement.
+        disc.HasIndex(x => new { x.Format, x.ContentHash }).IsUnique().HasFilter("[ContentHash] IS NOT NULL");
         disc.HasIndex(x => x.GlobalDiscId).HasFilter("[GlobalDiscId] IS NOT NULL");
         disc.Ignore(x => x.Index);
         disc.Ignore(x => x.Slug);

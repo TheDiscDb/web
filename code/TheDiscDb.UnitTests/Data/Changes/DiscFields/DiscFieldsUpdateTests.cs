@@ -102,6 +102,28 @@ public class DiscFieldsUpdateTests
     }
 
     [Test]
+    public async Task ApplyAsync_ClearsIsPartial_WhenProposedFalse()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+
+        // Mark the canonical disc partial, then propose clearing it (the manual "resolve" action).
+        seed.Disc.IsPartial = true;
+        await db.SaveChangesAsync();
+
+        var snapshotPayload = DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug);
+        await Assert.That(snapshotPayload.IsPartial).IsTrue();
+        var snapshot = JsonSerializer.Serialize(snapshotPayload, JsonOptions);
+
+        var change = new DiscFieldsUpdate(snapshotPayload with { IsPartial = false });
+        await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        var reloaded = await db.Set<TheDiscDb.InputModels.Disc>().FirstAsync(d => d.Id == seed.Disc.Id);
+        await Assert.That(reloaded.IsPartial).IsFalse();
+    }
+
+    [Test]
     public async Task ApplyAsync_OnlyWritesChangedFields()
     {
         using var db = ChangeTestSeed.CreateDbContext();

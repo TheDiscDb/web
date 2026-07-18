@@ -69,6 +69,8 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
         {
             SetIfChanged(original, original?.GlobalDiscId, this.Proposed.GlobalDiscId, v => disc.GlobalDiscId = v);
         }
+
+        SetIfChanged(original, original?.IsPartial ?? false, this.Proposed.IsPartial, v => disc.Disc!.IsPartial = v);
     }
 
     protected override string MissingTargetMessage()
@@ -157,6 +159,11 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             AppendIfDifferent(drifted, nameof(original.GlobalDiscId), original.GlobalDiscId, current.GlobalDiscId);
         }
 
+        if (this.Proposed.IsPartial != original.IsPartial)
+        {
+            AppendIfDifferent(drifted, nameof(original.IsPartial), original.IsPartial, current.IsPartial);
+        }
+
         return drifted.Length == 0
             ? null
             : "Disc has been modified since the suggestion was submitted: " + drifted.ToString().TrimEnd(',', ' ');
@@ -183,6 +190,13 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             _ => null,
         };
 
+        var isPartial = disc switch
+        {
+            ReleaseDisc rd => rd.Disc?.IsPartial ?? false,
+            Disc d => d.IsPartial,
+            _ => false,
+        };
+
         return new DiscFieldsDetails(
             MediaItemSlug: mediaItemSlug,
             BoxsetSlug: boxsetSlug,
@@ -192,7 +206,8 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             Name: disc.Name,
             Format: disc.Format,
             ContentHash: contentHash,
-            GlobalDiscId: globalDiscId);
+            GlobalDiscId: globalDiscId,
+            IsPartial: isPartial);
     }
 
     /// <summary>

@@ -28,7 +28,8 @@ public sealed record DiscFieldsDetails(
     string? Name,
     string? Format,
     string? ContentHash = null,
-    string? GlobalDiscId = null)
+    string? GlobalDiscId = null,
+    bool IsPartial = false)
 {
     /// <summary>
     /// Natural-key identifier suitable for <see cref="TheDiscDb.Web.Data.EditSuggestion.TargetEntityKey"/>:

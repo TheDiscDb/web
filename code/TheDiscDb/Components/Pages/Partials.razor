@@ -1,0 +1,97 @@
+@page "/contribute/partials"
+
+<PageTitle>Partial contributions - TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="Releases missing discs and discs still needing identification — help complete them and grow the database." />
+</HeadContent>
+
+<div class="vstack">
+    <section class="contribute-hero compact">
+        <h1>Partial contributions</h1>
+        <p>
+            These releases and discs are incomplete. Pick one to help finish it and grow the database.
+        </p>
+    </section>
+
+    <div class="partials-filter">
+        <a href="/contribute/partials" class="@FilterClass(null)">All</a>
+        <a href="/contribute/partials?type=releases" class="@FilterClass("releases")">Missing discs</a>
+        <a href="/contribute/partials?type=discs" class="@FilterClass("discs")">Unidentified discs</a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-warning">@errorMessage</div>
+    }
+    else if (partialReleases is null || partialDiscs is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else
+    {
+        @if (ShowReleases)
+        {
+            <section class="partials-section">
+                <h2>Releases missing discs</h2>
+                @if (partialReleases.Count == 0)
+                {
+                    <p>No releases are currently missing discs.</p>
+                }
+                else
+                {
+                    <ul class="partials-list">
+                        @foreach (var release in partialReleases)
+                        {
+                            <li class="partials-item">
+                                <a href="@release.Url" class="partials-item-title">
+                                    @release.MediaItemTitle
+                                    @if (!string.IsNullOrEmpty(release.ReleaseTitle))
+                                    {
+                                        <span class="partials-item-sub">@release.ReleaseTitle</span>
+                                    }
+                                </a>
+                                @if (release.MissingDiscs.Count > 0)
+                                {
+                                    <span class="partials-missing">
+                                        Missing:
+                                        @string.Join(", ", release.MissingDiscs.Select(d =>
+                                            string.IsNullOrEmpty(d.Name)
+                                                ? (d.Format ?? "disc")
+                                                : (string.IsNullOrEmpty(d.Format) ? d.Name : $"{d.Name} ({d.Format})")))
+                                    </span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+
+        @if (ShowDiscs)
+        {
+            <section class="partials-section">
+                <h2>Discs needing identification</h2>
+                @if (partialDiscs.Count == 0)
+                {
+                    <p>No discs currently need identification.</p>
+                }
+                else
+                {
+                    <ul class="partials-list">
+                        @foreach (var disc in partialDiscs)
+                        {
+                            <li class="partials-item">
+                                <a href="@disc.Url" class="partials-item-title">
+                                    @disc.MediaItemTitle
+                                    <span class="partials-item-sub">
+                                        @disc.DiscName@(string.IsNullOrEmpty(disc.Format) ? "" : $" · {disc.Format}")
+                                    </span>
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        }
+    }
+</div>

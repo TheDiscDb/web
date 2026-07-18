@@ -1,0 +1,61 @@
+.partials-filter {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.partials-filter-link {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--bs-border-color, #ccc);
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.partials-filter-link.active {
+    background-color: var(--bs-warning, #ffc107);
+    border-color: var(--bs-warning, #ffc107);
+    color: #000;
+    font-weight: 600;
+}
+
+.partials-section {
+    margin-bottom: 2rem;
+}
+
+.partials-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.partials-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--bs-border-color, #e0e0e0);
+    border-radius: 6px;
+}
+
+.partials-item-title {
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.partials-item-sub {
+    display: block;
+    font-weight: 400;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.partials-missing {
+    font-size: 0.85rem;
+    opacity: 0.85;
+}

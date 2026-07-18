@@ -36,6 +36,7 @@ else
                     <h1>@Item.FullTitle</h1>
                     <div class="d-flex align-items-center gap-2">
                         <h2 class="mb-0">@Release?.FullTitle</h2>
+                        <TheDiscDb.Components.Controls.PartialBadge IsPartial="Release?.IsPartial ?? false" />
                         <a href="/@Type/@Slug/releases/@ReleaseSlug/edit" class="icon-btn" title="Suggest edits to this release">
                             <i class="e-icons e-edit"></i>
                         </a>
@@ -73,6 +74,7 @@ else
                                                 <circle cx="12" cy="12" r="3" />
                                             </svg>
                                             <span>@disc.FullDiscName()</span>
+                                            <TheDiscDb.Components.Controls.PartialBadge IsPartial="disc.Disc?.IsPartial ?? false" />
                                         </span>
                                         @if (features.Count > 0)
                                         {

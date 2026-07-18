@@ -1,0 +1,14 @@
+mutation CreatePlaceholderDisc($input: CreatePlaceholderDiscInput!) {
+  createPlaceholderDisc(input: $input)
+  {
+    userContributionDisc {
+      encodedId
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

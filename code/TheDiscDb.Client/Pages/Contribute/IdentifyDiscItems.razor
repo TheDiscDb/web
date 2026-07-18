@@ -270,7 +270,10 @@
 
         <div class="cta-row split">
             <a class="e-btn e-outline" href="/contribution/@ContributionId/discs/@DiscId/naming?popup=1" target="_blank" rel="noopener noreferrer">Open Naming Helper</a>
-            <button class="e-btn e-primary" @onclick="SubmitIdentifications" disabled="@IsDoneButtonDisabled">Done Identifying</button>
+            <div class="right-buttons">
+                <button class="e-btn e-outline" @onclick="MarkDiscPartial" disabled="@callInProgress">I don't intend to identify this disc</button>
+                <button class="e-btn e-primary" @onclick="SubmitIdentifications" disabled="@IsDoneButtonDisabled">Done Identifying</button>
+            </div>
         </div>
     }
 </div>
@@ -455,6 +458,28 @@
     </SfDialog>
 }
 
+
+@if (showPartialDialog)
+{
+    <SfDialog @ref="partialDialog" Target="body" Width="400px" @bind-Visible="@showPartialDialog" CssClass="e-edit-dialog" IsModal="true" ShowCloseIcon="true" Header="Mark Disc as Partial">
+        <ChildContent>
+            <DialogAnimationSettings Effect="DialogEffect.Zoom"></DialogAnimationSettings>
+            <EditForm Model="@partialModel" OnValidSubmit="@HandleValidPartialSubmit">
+                <DataAnnotationsValidator></DataAnnotationsValidator>
+                <div class="field-container name-container">
+                    <SfTextBox CssClass="item-description e-field" Placeholder="Reason / Note (optional)" FloatLabelType="@FloatLabelType.Always" @bind-Value="@partialModel.Note" Multiline="true"></SfTextBox>
+                    <ValidationMessage For="@(() => partialModel.Note)" />
+                </div>
+                <div class="e-footer-content">
+                    <div class="button-container">
+                        <button type="button" class="e-btn e-normal" @onclick="PartialDialogCancelClicked">Cancel</button>
+                        <button type="submit" class="e-btn e-normal e-primary">Save and Finish</button>
+                    </div>
+                </div>
+            </EditForm>
+        </ChildContent>
+    </SfDialog>
+}
 
 <Syncfusion.Blazor.Popups.SfDialogProvider />
 

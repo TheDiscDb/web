@@ -15,7 +15,7 @@ public partial class ContributionMutations
     [Error(typeof(InvalidIdException))]
     [Error(typeof(InvalidOwnershipException))]
     [Authorize]
-    public async Task<UserContributionDisc> UpdateDisc([Service] SqlServerDataContext database, string contributionId, string discId, string format, string name, string slug, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken = default)
+    public async Task<UserContributionDisc> UpdateDisc([Service] SqlServerDataContext database, string contributionId, string discId, string format, string name, string slug, UserManager<TheDiscDbUser> userManager, bool isPartial = false, string? partialNote = null, CancellationToken cancellationToken = default)
     {
         var decodedContributionId = this.idEncoder.Decode(contributionId);
         var contribution = await database.UserContributions
@@ -34,6 +34,8 @@ public partial class ContributionMutations
         disc.Format = format;
         disc.Name = name;
         disc.Slug = slug;
+        disc.IsPartial = isPartial;
+        disc.PartialNote = partialNote;
 
         await database.SaveChangesAsync(cancellationToken);
         return disc;

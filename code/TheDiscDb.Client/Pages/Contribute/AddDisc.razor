@@ -37,6 +37,42 @@
                     </div>
                 }
             </section>
+
+            <section class="info-card">
+                <h2>Don't have the disc?</h2>
+                <p>
+                    If you know this release includes a disc you don't own, record it as a
+                    <strong>missing disc</strong> so someone else can complete it later. This marks the
+                    release as partial until the disc is contributed.
+                </p>
+                @if (!string.IsNullOrEmpty(placeholderError))
+                {
+                    <div class="alert alert-warning">@placeholderError</div>
+                }
+                <EditForm Model="@placeholderRequest" OnValidSubmit="AddPlaceholderDisc">
+                    <DataAnnotationsValidator />
+                    <div class="form-grid">
+                        <div class="mb-3">
+                            <label>Disc Format</label>
+                            <SfDropDownList TValue="string" TItem="string" DataSource="formats" class="form-control" @bind-Value="placeholderRequest.Format" Placeholder="Select format" />
+                            <ValidationMessage For="@(() => placeholderRequest.Format)" />
+                        </div>
+                        <div class="mb-3">
+                            <label>Disc Title</label>
+                            <InputText class="form-control" @bind-Value="placeholderRequest.Name" @oninput="PlaceholderTitleChanged" />
+                            <ValidationMessage For="@(() => placeholderRequest.Name)" />
+                        </div>
+                        <div class="mb-3">
+                            <label>Disc Slug</label>
+                            <SlugInput @ref="placeholderSlugInput" class="form-control" @bind-Value="placeholderRequest.Slug" CheckAvailability="CheckDiscSlugAvailability" />
+                            <ValidationMessage For="@(() => placeholderRequest.Slug)" />
+                        </div>
+                    </div>
+                    <div class="cta-row">
+                        <button type="submit" class="btn btn-secondary">Record Missing Disc</button>
+                    </div>
+                </EditForm>
+            </section>
         }
         else
         {

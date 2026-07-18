@@ -24,6 +24,15 @@ public class UserContributionDisc : IHasId
     public string? LogUploadError { get; set; }
     public int? Index { get; set; }
     public string? ExistingDiscPath { get; set; } = default!;
+    public bool IsPartial { get; set; }
+    public string? PartialNote { get; set; }
+
+    /// <summary>
+    /// Marks this contribution disc as a placeholder for a known-missing disc: it has a
+    /// name/slug/format but no logs, summary, or identified items. On generation it produces
+    /// a <c>discNN.placeholder.json</c> in the release folder instead of the normal disc bundle.
+    /// </summary>
+    public bool IsPlaceholder { get; set; }
 
     public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();
 

@@ -38,5 +38,6 @@
         [System.Text.Json.Serialization.JsonIgnore]
         public Boxset? Boxset { get; set; }
         public ICollection<Contributor> Contributors { get; set; } = new List<Contributor>();
+        public bool IsPartial { get; set; }
     }
 }

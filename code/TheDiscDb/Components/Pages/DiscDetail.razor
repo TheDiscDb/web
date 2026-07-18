@@ -41,6 +41,7 @@ else
     <TheDiscDb.Components.Controls.EditSubmittedBanner ChangeSquid="@EditSubmittedSquid" />
     <div class="d-flex align-items-center gap-2 mb-2">
         <h1 class="fs-3 fs-md-1 mb-0">@Disc.GetFullName()</h1>
+        <TheDiscDb.Components.Controls.PartialBadge IsPartial="Disc.Disc?.IsPartial ?? false" />
         <a href="@GetDiscEditUrl()" class="icon-btn" title="Suggest edits to this disc"><i class="e-icons e-edit"></i></a>
     </div>
     <h2 class="fs-5 fs-md-2">@DiscRelease.Title</h2>

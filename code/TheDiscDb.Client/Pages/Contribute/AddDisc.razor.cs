@@ -32,6 +32,16 @@ public class SaveDiscRequest
     public string? GlobalDiscId { get; set; }
 }
 
+public class PlaceholderDiscRequest
+{
+    [Required]
+    public string Format { get; set; } = "Blu-ray";
+    [Required]
+    public string Name { get; set; } = string.Empty;
+    [Required]
+    public string Slug { get; set; } = string.Empty;
+}
+
 [Authorize]
 public partial class AddDisc : CancellableComponentBase
 {
@@ -68,6 +78,10 @@ public partial class AddDisc : CancellableComponentBase
     string manualHash = string.Empty;
     SlugInput? slugInput;
     string? copyFlowError;
+
+    SlugInput? placeholderSlugInput;
+    string? placeholderError;
+    private readonly PlaceholderDiscRequest placeholderRequest = new PlaceholderDiscRequest();
 
     bool IsDevelopmentMode=> HostEnvironment.Environment == "Development";
 
@@ -397,6 +411,62 @@ public partial class AddDisc : CancellableComponentBase
                 }
             }
         }
+    }
+
+    private async Task PlaceholderTitleChanged(ChangeEventArgs args)
+    {
+        if (args?.Value != null)
+        {
+            string title = args.Value.ToString()!;
+
+            if (!string.IsNullOrEmpty(title))
+            {
+                this.placeholderRequest.Slug = title.Slugify();
+                if (this.placeholderSlugInput != null)
+                {
+                    await this.placeholderSlugInput.RecheckAvailability(this.placeholderRequest.Slug);
+                }
+            }
+        }
+    }
+
+    private async Task AddPlaceholderDisc()
+    {
+        this.placeholderError = null;
+        var input = new CreatePlaceholderDiscInput
+        {
+            ContributionId = this.ContributionId!,
+            Format = this.placeholderRequest.Format,
+            Name = this.placeholderRequest.Name,
+            Slug = this.placeholderRequest.Slug
+        };
+
+        var response = await this.ContributionClient.CreatePlaceholderDisc.ExecuteAsync(input, this.CancellationToken);
+        if (!response.IsSuccessResult() || response.Data?.CreatePlaceholderDisc?.Errors is { Count: > 0 })
+        {
+            this.placeholderError = GetPlaceholderErrorMessage(response)
+                ?? "Could not record the missing disc. Please try again.";
+            return;
+        }
+
+        this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
+    }
+
+    private static string? GetPlaceholderErrorMessage(IOperationResult<ICreatePlaceholderDiscResult> response)
+    {
+        if (response.Data?.CreatePlaceholderDisc?.Errors is { Count: > 0 } payloadErrors)
+        {
+            return payloadErrors[0] switch
+            {
+                ICreatePlaceholderDisc_CreatePlaceholderDisc_Errors_ContributionNotFoundError e => e.Message,
+                ICreatePlaceholderDisc_CreatePlaceholderDisc_Errors_AuthenticationError e => e.Message,
+                ICreatePlaceholderDisc_CreatePlaceholderDisc_Errors_InvalidIdError e => e.Message,
+                ICreatePlaceholderDisc_CreatePlaceholderDisc_Errors_InvalidOwnershipError e => e.Message,
+                var other => $"Could not record the missing disc ({other.Code})."
+            };
+        }
+
+        return response.Errors?.FirstOrDefault()?.Message;
     }
 
     private async Task SubmitManualHash()

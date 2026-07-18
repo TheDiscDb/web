@@ -129,6 +129,7 @@ type ContributionMutations {
   addItemToDisc(input: AddItemToDiscInput!): AddItemToDiscPayload! @authorize @cost(weight: "10")
   createContribution(input: CreateContributionInput!): CreateContributionPayload! @authorize @cost(weight: "10")
   createDisc(input: CreateDiscInput!): CreateDiscPayload! @authorize @cost(weight: "10")
+  createPlaceholderDisc(input: CreatePlaceholderDiscInput!): CreatePlaceholderDiscPayload! @authorize @cost(weight: "10")
   deleteContribution(input: DeleteContributionInput!): DeleteContributionPayload! @cost(weight: "10")
   deleteDiscFromContribution(input: DeleteDiscFromContributionInput!): DeleteDiscFromContributionPayload! @cost(weight: "10")
   deleteItemFromDisc(input: DeleteItemFromDiscInput!): DeleteItemFromDiscPayload! @cost(weight: "10")
@@ -287,6 +288,11 @@ type MyMessagesEdge {
 type CreateDiscPayload {
   userContributionDisc: UserContributionDisc
   errors: [CreateDiscError!]
+}
+
+type CreatePlaceholderDiscPayload {
+  userContributionDisc: UserContributionDisc
+  errors: [CreatePlaceholderDiscError!]
 }
 
 type DeleteContributionPayload {
@@ -665,6 +671,8 @@ union CreateContributionError = AuthenticationError | BoxsetNotFoundError | Inva
 
 union CreateDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
 
+union CreatePlaceholderDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+
 union AttachGlobalDiscIdError = AuthenticationError
 
 union DeleteContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
@@ -801,6 +809,15 @@ input CreateDiscInput {
   slug: String!
   existingDiscPath: String
   globalDiscId: String
+  isPartial: Boolean!
+  partialNote: String
+}
+
+input CreatePlaceholderDiscInput {
+  contributionId: String!
+  format: String!
+  name: String!
+  slug: String!
 }
 
 input DateTimeOperationFilterInput {
@@ -1035,6 +1052,8 @@ input UpdateDiscInput {
   format: String!
   name: String!
   slug: String!
+  isPartial: Boolean!
+  partialNote: String
 }
 
 input ReorderDiscsInput {

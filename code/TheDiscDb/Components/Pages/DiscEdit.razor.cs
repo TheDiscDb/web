@@ -53,11 +53,13 @@ public partial class DiscEdit : AuthenticatedComponentBase
     private string? editName;
     private string? editFormat;
     private string? editContentHash;
+    private bool editIsPartial;
 
     private string? originalName;
     private string? originalFormat;
     private string? originalContentHash;
     private string? originalGlobalDiscId;
+    private bool originalIsPartial;
 
     private string? summary;
     private string? submitMessage;
@@ -96,11 +98,13 @@ public partial class DiscEdit : AuthenticatedComponentBase
         editName = Disc.Name;
         editFormat = Disc.Format;
         editContentHash = Disc.ContentHash;
+        editIsPartial = Disc.Disc?.IsPartial ?? false;
 
         originalName = editName;
         originalFormat = editFormat;
         originalContentHash = editContentHash;
         originalGlobalDiscId = Disc.GlobalDiscId;
+        originalIsPartial = editIsPartial;
     }
 
     // ContentHash is add-only: editable only when the disc currently has none.
@@ -162,6 +166,7 @@ public partial class DiscEdit : AuthenticatedComponentBase
     {
         return editName != originalName
             || editFormat != originalFormat
+            || editIsPartial != originalIsPartial
             || (CanAddContentHash && ProposedContentHash != originalContentHash);
     }
 
@@ -193,6 +198,14 @@ public partial class DiscEdit : AuthenticatedComponentBase
         if (CanAddContentHash)
         {
             AddDiffIfChanged(diffs, "Content Hash", originalContentHash, ProposedContentHash);
+        }
+
+        if (editIsPartial != originalIsPartial)
+        {
+            diffs.Add(new DiscFieldDiff(
+                "Partial (needs identification)",
+                originalIsPartial ? "Yes" : "No",
+                editIsPartial ? "Yes" : "No"));
         }
 
         return diffs;
@@ -235,7 +248,9 @@ public partial class DiscEdit : AuthenticatedComponentBase
             var proposed = new DiscFieldsDetails(
                 mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty,
                 Disc.Slug, Disc.Index,
-                editName, editFormat, ProposedContentHash);
+                editName, editFormat, ProposedContentHash,
+                GlobalDiscId: originalGlobalDiscId,
+                IsPartial: editIsPartial);
             var proposedJson = JsonSerializer.Serialize(proposed, JsonOptions);
 
             var changes = new List<SubmitChangeInput>

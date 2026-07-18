@@ -14,6 +14,7 @@
                         <div class="release-title">
                             <div class="release-title-header">
                                 <a href="@release?.ReleaseDetailUrl(Item)">@release?.Title</a>
+                                <TheDiscDb.Components.Controls.PartialBadge IsPartial="release?.IsPartial ?? false" />
                                 <div class="affiliate-buttons">
                                     <AmazonAssociatesButton Asin="@release?.Asin" />
                                     <GruvBuyButton MediaItemSlug="@this.ParentMediaItemSlug" BoxsetSlug="@this.ParentBoxsetSlug" ReleaseSlug="@release?.Slug" Sid="release-list" />
@@ -33,6 +34,7 @@
                                                         <circle cx="12" cy="12" r="3" />
                                                     </svg>
                                                     <span>@disc.GetFullName()</span>
+                                                    <TheDiscDb.Components.Controls.PartialBadge IsPartial="disc.Disc?.IsPartial ?? false" />
                                                 </span>
                                                 @if (features.Count > 0)
                                                 {

@@ -77,6 +77,20 @@ else
                         </div>
                     </div>
                 }
+                <div class="row g-3 mt-1">
+                    <div class="col-md-12">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="discIsPartial" @bind="editIsPartial" />
+                            <label class="form-check-label" for="discIsPartial">
+                                This disc is partial (needs identification)
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            Uncheck to mark this disc as fully identified. This disc's identification state is
+                            shared across every release that uses it.
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="d-flex gap-2">

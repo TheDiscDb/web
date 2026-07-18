@@ -151,6 +151,11 @@ public class ItemIdentification
     }
 }
 
+public class PartialDiscModel
+{
+    public string? Note { get; set; }
+}
+
 [Authorize]
 public partial class IdentifyDiscItems : CancellableComponentBase
 {
@@ -214,6 +219,10 @@ public partial class IdentifyDiscItems : CancellableComponentBase
     bool showSubtitleTrackDialog = false;
     SfDialog? subtitleTrackDialog;
 
+    bool showPartialDialog = false;
+    SfDialog? partialDialog;
+    PartialDiscModel partialModel = new PartialDiscModel();
+
     SfToast? toast;
     string? toastContent;
     ItemIdentification? currentItem;
@@ -262,7 +271,15 @@ public partial class IdentifyDiscItems : CancellableComponentBase
                 {
                     foreach (IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item in disc.Items)
                     {
-                        IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles? title = this.allTitles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
+                        // Near-duplicate playlists (same segment map, chapter count and size) must be
+                        // disambiguated by source file, otherwise multiple saved items collapse onto the
+                        // first matching title. That binds an item to the wrong title's audio/subtitle
+                        // segments and lets a contributor label tracks that don't exist on the real
+                        // playlist (which finalize, matching on source file, then rejects).
+                        var titleCandidates = this.allTitles
+                            .Where(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size)
+                            .ToList();
+                        IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles? title = titleCandidates.FirstOrDefault(t => t.Playlist == item.Source) ?? titleCandidates.FirstOrDefault();
                         if (title != null)
                         {
                             var existingItem = new ItemIdentification
@@ -1467,5 +1484,49 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         return ts.Hours > 0
             ? ts.ToString(@"h\:mm\:ss")
             : ts.ToString(@"m\:ss");
+    }
+
+    private void MarkDiscPartial(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    {
+        this.partialModel = new PartialDiscModel();
+        this.showPartialDialog = true;
+    }
+
+    private async Task PartialDialogCancelClicked()
+    {
+        await this.partialDialog!.HideAsync();
+    }
+
+    private async Task HandleValidPartialSubmit()
+    {
+        if (this.callInProgress)
+        {
+            return;
+        }
+
+        this.callInProgress = true;
+        var response = await this.ContributionClient.UpdateDisc.ExecuteAsync(new UpdateDiscInput
+        {
+            ContributionId = this.ContributionId!,
+            DiscId = this.DiscId!,
+            Format = this.disc!.Format,
+            Name = this.disc!.Name,
+            Slug = this.disc!.Slug ?? "",
+            IsPartial = true,
+            PartialNote = this.partialModel.Note
+        }, this.CancellationToken);
+        
+        this.callInProgress = false;
+
+        if (response?.Data != null && response.IsSuccessResult())
+        {
+            await this.partialDialog!.HideAsync();
+            this.NavigationManager.NavigateTo($"/contribution/{this.ContributionId}");
+        }
+        else
+        {
+            toastContent = "Error marking disc as partial";
+            await toast!.ShowAsync();
+        }
     }
 }

@@ -19,6 +19,14 @@ public class DiscItemHandler : ItemHandler<Disc>
             return false;
         }
 
+        // Placeholder discs are release-specific and never share/dedup with other discs
+        // (real or placeholder). They have no ContentHash and represent a "known missing"
+        // slot on a single release.
+        if (d1.IsPlaceholder || d2.IsPlaceholder)
+        {
+            return false;
+        }
+
         if (!string.IsNullOrEmpty(d1.ContentHash) && !string.IsNullOrEmpty(d2.ContentHash) && d1.ContentHash == d2.ContentHash)
         {
             return true;
@@ -40,6 +48,8 @@ public class DiscItemHandler : ItemHandler<Disc>
         fromDatabase.Index = newValue.Index;
         fromDatabase.Name = newValue.Name;
         fromDatabase.Slug = newValue.Slug;
+        fromDatabase.IsPartial = newValue.IsPartial;
+        fromDatabase.IsPlaceholder = newValue.IsPlaceholder;
 
         this.HandleList(fromDatabase.Titles, newValue.Titles, this.titleItemHandler);
     }

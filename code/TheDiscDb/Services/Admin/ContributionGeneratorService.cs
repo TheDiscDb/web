@@ -253,7 +253,11 @@ public class ContributionGeneratorService
                 discFormat = "UHD";
             }
 
-            if (!string.IsNullOrEmpty(disc.ExistingDiscPath))
+            if (disc.IsPlaceholder)
+            {
+                await GeneratePlaceholderDiscFile(disc, discName, releaseFolder, discFormat, overwrite, generatedFiles, log, cancellationToken);
+            }
+            else if (!string.IsNullOrEmpty(disc.ExistingDiscPath))
             {
                 await CopyExistingDisc(disc, discName, basePath, releaseFolder, subFolderName, workspace, contribution, overwrite, generatedFiles, log, cancellationToken);
             }
@@ -410,6 +414,35 @@ public class ContributionGeneratorService
         }
     }
 
+    private async Task GeneratePlaceholderDiscFile(
+        UserContributionDisc disc,
+        DiscName discName,
+        string releaseFolder,
+        string discFormat,
+        bool overwrite,
+        ICollection<string> generatedFiles,
+        Action<string> log,
+        CancellationToken cancellationToken)
+    {
+        string placeholderPath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}{PlaceholderDiscFile.Suffix}");
+        if (await this.fileSystem.File.Exists(placeholderPath) && !overwrite)
+        {
+            return;
+        }
+
+        var placeholder = new PlaceholderDiscFile
+        {
+            Index = discName.Index,
+            Name = disc.Name,
+            Slug = disc.Slug,
+            Format = discFormat
+        };
+
+        await this.fileSystem.File.WriteAllText(placeholderPath, JsonSerializer.Serialize(placeholder, JsonHelper.JsonOptions));
+        generatedFiles.Add(placeholderPath);
+        log($"Generated placeholder disc file: {discName.Name}{PlaceholderDiscFile.Suffix}");
+    }
+
     private async Task GenerateDiscFiles(
         UserContribution contribution,
         UserContributionDisc disc,
@@ -485,7 +518,8 @@ public class ContributionGeneratorService
                 Slug = disc.Slug,
                 Name = disc.Name,
                 Format = discFormat,
-                ContentHash = disc.ContentHash
+                ContentHash = disc.ContentHash,
+                IsPartial = disc.IsPartial
             };
 
             summaryFileMemoryStream.Position = 0;

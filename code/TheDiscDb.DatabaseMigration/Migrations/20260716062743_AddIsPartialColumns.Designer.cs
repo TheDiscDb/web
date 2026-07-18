@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TheDiscDb.Web.Data;
 
@@ -11,9 +12,11 @@ using TheDiscDb.Web.Data;
 namespace TheDiscDb.Web.Migrations
 {
     [DbContext(typeof(SqlServerDataContext))]
-    partial class SqlServerDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260716062743_AddIsPartialColumns")]
+    partial class AddIsPartialColumns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -275,9 +278,6 @@ namespace TheDiscDb.Web.Migrations
                     b.Property<bool>("IsPartial")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsPlaceholder")
-                        .HasColumnType("bit");
-
                     b.HasKey("Id");
 
                     b.HasIndex("GlobalDiscId")
@@ -285,7 +285,7 @@ namespace TheDiscDb.Web.Migrations
 
                     b.HasIndex("Format", "ContentHash")
                         .IsUnique()
-                        .HasFilter("[ContentHash] IS NOT NULL");
+                        .HasFilter("[Format] IS NOT NULL AND [ContentHash] IS NOT NULL");
 
                     b.ToTable("Discs");
                 });
@@ -1684,9 +1684,6 @@ namespace TheDiscDb.Web.Migrations
                         .HasColumnType("int");
 
                     b.Property<bool>("IsPartial")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsPlaceholder")
                         .HasColumnType("bit");
 
                     b.Property<string>("LogUploadError")

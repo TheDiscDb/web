@@ -1,0 +1,11 @@
+@if (IsPartial)
+{
+    <span class="badge bg-warning text-dark partial-badge">
+        <i class="e-icons e-warning me-1"></i> Partial
+    </span>
+}
+
+@code {
+    [Parameter]
+    public bool IsPartial { get; set; }
+}
