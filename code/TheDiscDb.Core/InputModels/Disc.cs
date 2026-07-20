@@ -27,11 +27,16 @@ namespace TheDiscDb.InputModels
         public string? ContentHash { get; set; }
 
         /// <summary>
-        /// Globally-stable, per-pressing disc identifier. For Blu-ray/UHD this is the AACS
-        /// Disc ID (SHA-1 of AACS/Unit_Key_RO.inf); for DVD it is the libdvdread DVDDiscID
-        /// (MD5 of the IFO files). The disc <see cref="Format"/> disambiguates which algorithm
-        /// produced it. Add-only and optional (absent on MKV-only rips).
+        /// Transient carrier for the pressing's globally-stable Disc ID as read from a
+        /// <c>disc*.json</c> (or overridden from a <c>.ref</c>). This is NOT a column on the shared
+        /// canonical disc: the id identifies a physical pressing, so import copies it onto the
+        /// owning <see cref="ReleaseDisc.GlobalDiscId"/> (the same pattern as
+        /// <see cref="Index"/>/<see cref="Slug"/>/<see cref="Name"/>). Serialized under the
+        /// PascalCase <c>GlobalDiscId</c> key like the rest of <c>disc*.json</c> (no naming policy),
+        /// so it needs no <c>JsonPropertyName</c>.
         /// </summary>
+        [NotMapped]
+        [HotChocolate.GraphQLIgnore]
         public string? GlobalDiscId { get; set; }
 
         [HotChocolate.Data.UseFiltering]

@@ -32,6 +32,7 @@ public class ReleaseDiscItemHandler : ItemHandler<ReleaseDisc>
         fromDatabase.Index = newValue.Index;
         fromDatabase.Name = newValue.Name;
         fromDatabase.Slug = newValue.Slug;
+        fromDatabase.GlobalDiscId = newValue.GlobalDiscId;
 
         if (newValue.Disc == null)
         {

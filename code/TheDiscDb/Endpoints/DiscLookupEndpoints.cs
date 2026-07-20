@@ -33,11 +33,13 @@ public sealed class DiscLookupEndpoints
         }
 
         await using var database = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        var result = await DiscLookupQuery.LookupAsync(database, globalDiscId, cancellationToken);
+        // A Disc ID can be shared by several release-discs (the same pressing sold in multiple
+        // products), so return every release that carries it.
+        var results = await DiscLookupQuery.LookupAllAsync(database, globalDiscId, cancellationToken);
 
-        return result is null
+        return results.Count == 0
             ? TypedResults.NotFound()
-            : TypedResults.Json(result, JsonOptions);
+            : TypedResults.Json(results, JsonOptions);
     }
 
     private static async Task<IResult> LookupByDiscHash(string discHash, IDbContextFactory<SqlServerDataContext> dbContextFactory, CancellationToken cancellationToken)

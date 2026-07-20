@@ -15,14 +15,32 @@ public partial class Index : ComponentBase
     [Inject]
     private IdEncoder IdEncoder { get; set; } = null!;
 
+    [Inject]
+    private NavigationManager Navigation { get; set; } = null!;
+
+    // Persisted in the query string so the chosen status survives navigation away and back.
+    [SupplyParameterFromQuery(Name = "status")]
+    public string? StatusQuery { get; set; }
+
     private IQueryable<UserContribution>? PendingContributions { get; set; }
     private IQueryable<UserContributionBoxset>? PendingBoxsets { get; set; }
     private readonly UserContributionStatus[] statusList = Enum.GetValues<UserContributionStatus>();
     private UserContributionStatus selectedStatus = UserContributionStatus.ReadyForReview;
+    private UserContributionStatus? loadedStatus;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        await RefreshList();
+        selectedStatus = Enum.TryParse<UserContributionStatus>(this.StatusQuery, ignoreCase: true, out var parsed)
+            ? parsed
+            : UserContributionStatus.ReadyForReview;
+
+        // Only hit the database when the effective status actually changed (query navigation or
+        // first load), not on every re-render.
+        if (this.loadedStatus != selectedStatus)
+        {
+            this.loadedStatus = selectedStatus;
+            await RefreshList();
+        }
     }
 
     private async Task RefreshList()
@@ -49,9 +67,10 @@ public partial class Index : ComponentBase
         PendingBoxsets = boxsets.AsQueryable();
     }
 
-    private async Task OnStatusChanged(UserContributionStatus value)
+    private void OnStatusChanged(UserContributionStatus value)
     {
-        selectedStatus = value;
-        await RefreshList();
+        // Update the URL; OnParametersSetAsync re-reads the query and refreshes the list.
+        this.Navigation.NavigateTo(
+            this.Navigation.GetUriWithQueryParameter("status", value.ToString()));
     }
 }

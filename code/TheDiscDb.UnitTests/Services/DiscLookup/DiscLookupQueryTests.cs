@@ -1,5 +1,6 @@
 namespace TheDiscDb.UnitTests.Services.DiscLookup;
 
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.InputModels;
@@ -16,7 +17,7 @@ public class DiscLookupQueryTests
     {
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
-        seed.Disc.GlobalDiscId = AacsId;
+        seed.ReleaseDisc.GlobalDiscId = AacsId;
         seed.Disc.ContentHash = "AAAA1111BBBB2222CCCC3333DDDD4444";
         await db.SaveChangesAsync();
 
@@ -44,7 +45,7 @@ public class DiscLookupQueryTests
     {
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
-        seed.Disc.GlobalDiscId = AacsId;
+        seed.ReleaseDisc.GlobalDiscId = AacsId;
         await db.SaveChangesAsync();
 
         var result = await DiscLookupQuery.LookupAsync(db, AacsId.ToLowerInvariant());
@@ -70,7 +71,7 @@ public class DiscLookupQueryTests
     {
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
-        seed.Disc.GlobalDiscId = DvdId;
+        seed.ReleaseDisc.GlobalDiscId = DvdId;
         seed.Disc.Format = "DVD";
         await db.SaveChangesAsync();
 
@@ -87,7 +88,7 @@ public class DiscLookupQueryTests
 
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
-        seed.Disc.GlobalDiscId = AacsId;
+        seed.ReleaseDisc.GlobalDiscId = AacsId;
         seed.Disc.ContentHash = contentHash;
         seed.Disc.Format = "UHD";
         seed.Title.Item!.Type = "MainMovie";
@@ -173,6 +174,79 @@ public class DiscLookupQueryTests
         await Assert.That(subtitle.LanguageCode).IsEqualTo("eng");
         await Assert.That(subtitle.Language).IsEqualTo("English");
         await Assert.That(subtitle.Description).IsEqualTo("Forced subtitles");
+    }
+
+    [Test]
+    public async Task LookupAllAsync_SharedPressing_FindsBothReleases()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.ReleaseDisc.GlobalDiscId = AacsId;   // standalone release stores the id
+        seed.Disc.ContentHash = "AAAA1111BBBB2222CCCC3333DDDD4444";
+
+        // A second release (e.g. a boxset copy via .ref) whose release-disc shares the SAME canonical
+        // disc but stores no id of its own — it should be found via the shared-pressing fallback.
+        var otherRelease = new TheDiscDb.InputModels.Release
+        {
+            Slug = "boxset-release",
+            Title = "Boxset Release",
+            Year = 2021,
+            MediaItem = seed.MediaItem,
+        };
+        otherRelease.Discs.Add(new TheDiscDb.InputModels.ReleaseDisc
+        {
+            Slug = ChangeTestSeed.DiscSlug,
+            Index = ChangeTestSeed.DiscIndex,
+            Name = "Original Disc Name",
+            Disc = seed.Disc,          // same canonical disc
+            GlobalDiscId = null,       // no own id -> relies on fallback
+        });
+        seed.MediaItem.Releases.Add(otherRelease);
+        await db.SaveChangesAsync();
+
+        var results = await DiscLookupQuery.LookupAllAsync(db, AacsId);
+
+        await Assert.That(results.Count).IsEqualTo(2);
+        // Both report the same (effective) Disc ID.
+        await Assert.That(results.All(r => r.GlobalDiscId == AacsId)).IsTrue();
+        // Both releases are represented.
+        var releaseSlugs = results.Select(r => r.Release!.Slug).ToList();
+        await Assert.That(releaseSlugs).Contains(ChangeTestSeed.ReleaseSlug);
+        await Assert.That(releaseSlugs).Contains("boxset-release");
+    }
+
+    [Test]
+    public async Task LookupAllAsync_Collision_ExcludesReleaseDiscWithDifferentId()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.ReleaseDisc.GlobalDiscId = AacsId;
+        seed.Disc.ContentHash = "AAAA1111BBBB2222CCCC3333DDDD4444";
+
+        // A re-press: same content (same canonical disc) but a DIFFERENT Disc ID.
+        var otherRelease = new TheDiscDb.InputModels.Release
+        {
+            Slug = "repress-release",
+            Title = "Re-press Release",
+            Year = 2022,
+            MediaItem = seed.MediaItem,
+        };
+        otherRelease.Discs.Add(new TheDiscDb.InputModels.ReleaseDisc
+        {
+            Slug = ChangeTestSeed.DiscSlug,
+            Index = ChangeTestSeed.DiscIndex,
+            Name = "Original Disc Name",
+            Disc = seed.Disc,
+            GlobalDiscId = DvdId,      // different id -> a distinct pressing
+        });
+        seed.MediaItem.Releases.Add(otherRelease);
+        await db.SaveChangesAsync();
+
+        // Querying one id returns only its own release-disc, never the re-press.
+        var results = await DiscLookupQuery.LookupAllAsync(db, AacsId);
+
+        await Assert.That(results.Count).IsEqualTo(1);
+        await Assert.That(results[0].Release!.Slug).IsEqualTo(ChangeTestSeed.ReleaseSlug);
     }
 
     [Test]

@@ -64,10 +64,12 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             SetIfChanged(original, original?.ContentHash, this.Proposed.ContentHash, v => disc.ContentHash = v);
         }
 
-        // GlobalDiscId is add-only, same rule as ContentHash.
-        if (string.IsNullOrEmpty(original?.GlobalDiscId))
+        // GlobalDiscId is add-only per pressing: fill it when this release-disc has none. A
+        // different non-empty id is rejected in validation (uniqueness / same-release re-press),
+        // so here we only populate an empty slot.
+        if (!string.IsNullOrEmpty(this.Proposed.GlobalDiscId) && string.IsNullOrEmpty(disc.GlobalDiscId))
         {
-            SetIfChanged(original, original?.GlobalDiscId, this.Proposed.GlobalDiscId, v => disc.GlobalDiscId = v);
+            disc.GlobalDiscId = this.Proposed.GlobalDiscId;
         }
     }
 
@@ -75,9 +77,10 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
         => $"Disc '{this.Proposed.TargetEntityKey}' no longer exists.";
 
     /// <summary>
-    /// Guards the unique <c>(Format, ContentHash)</c> index: when this change introduces a new
-    /// content hash, reject it up front if another disc already carries the same hash+format, rather
-    /// than letting <c>SaveChanges</c> throw an opaque unique-constraint violation during apply.
+    /// Guards the unique <c>(Format, ContentHash)</c> index and the global uniqueness of Disc IDs:
+    /// when this change introduces a new content hash or a new Disc ID, reject it up front if it
+    /// collides with a different disc, rather than letting <c>SaveChanges</c> throw an opaque
+    /// unique-constraint violation during apply.
     /// </summary>
     protected override async Task<ChangeValidationResult?> ValidateAdditionalAsync(
         SqlServerDataContext context,
@@ -89,7 +92,11 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
         // onto a disc that currently has none.
         var addingHash = !string.IsNullOrEmpty(this.Proposed.ContentHash)
             && string.IsNullOrEmpty(current.ContentHash);
-        if (!addingHash)
+
+        var proposedId = this.Proposed.GlobalDiscId;
+        var addingGlobalId = !string.IsNullOrEmpty(proposedId);
+
+        if (!addingHash && !addingGlobalId)
         {
             return null;
         }
@@ -100,20 +107,50 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             return null; // missing-target is handled by the standard validation path
         }
 
-        var hash = this.Proposed.ContentHash;
-        var format = string.IsNullOrEmpty(this.Proposed.Format) ? target.Disc.Format : this.Proposed.Format;
         var targetDiscId = target.Disc.Id;
 
-        var conflictingDiscId = await context.Discs
-            .Where(d => d.Id != targetDiscId && d.ContentHash == hash && d.Format == format)
-            .Select(d => (int?)d.Id)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (conflictingDiscId is not null)
+        if (addingHash)
         {
-            return ChangeValidationResult.Conflict(
-                $"Content hash {hash} is already assigned to a different {format} disc. Content hashes are " +
-                "unique per format — the wrong disc may have been scanned or the hash entered for the wrong disc.");
+            var hash = this.Proposed.ContentHash;
+            var format = string.IsNullOrEmpty(this.Proposed.Format) ? target.Disc.Format : this.Proposed.Format;
+
+            var conflictingDiscId = await context.Discs
+                .Where(d => d.Id != targetDiscId && d.ContentHash == hash && d.Format == format)
+                .Select(d => (int?)d.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (conflictingDiscId is not null)
+            {
+                return ChangeValidationResult.Conflict(
+                    $"Content hash {hash} is already assigned to a different {format} disc. Content hashes are " +
+                    "unique per format — the wrong disc may have been scanned or the hash entered for the wrong disc.");
+            }
+        }
+
+        if (addingGlobalId)
+        {
+            // A Disc ID identifies one physical pressing (one release-disc). Reject if another
+            // release-disc already owns it, or if THIS release-disc already carries a different id
+            // (a same-release re-press needs review rather than a silent overwrite).
+            var ownerReleaseDiscId = await context.ReleaseDiscs
+                .Where(rd => rd.GlobalDiscId == proposedId)
+                .Select(rd => (int?)rd.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (ownerReleaseDiscId is not null && ownerReleaseDiscId != target.Id)
+            {
+                return ChangeValidationResult.Conflict(
+                    $"Disc ID {proposedId} is already assigned to a different release-disc. Each Disc ID " +
+                    "identifies a single pressing — this may indicate the same disc recorded under two releases.");
+            }
+
+            if (!string.IsNullOrEmpty(target.GlobalDiscId)
+                && !string.Equals(target.GlobalDiscId, proposedId, StringComparison.OrdinalIgnoreCase))
+            {
+                return ChangeValidationResult.Conflict(
+                    $"This disc already has Disc ID {target.GlobalDiscId}; the submitted {proposedId} differs — " +
+                    "needs review (possible re-press or mis-scan).");
+            }
         }
 
         return null;
@@ -151,7 +188,8 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             AppendIfDifferent(drifted, nameof(original.ContentHash), original.ContentHash, current.ContentHash);
         }
 
-        // GlobalDiscId is add-only: same drift rule as ContentHash.
+        // GlobalDiscId is add-only: only flag drift when a new id is being proposed
+        // (original was null/empty and proposed provides a value).
         if (!string.IsNullOrEmpty(this.Proposed.GlobalDiscId) && string.IsNullOrEmpty(original.GlobalDiscId))
         {
             AppendIfDifferent(drifted, nameof(original.GlobalDiscId), original.GlobalDiscId, current.GlobalDiscId);
@@ -176,6 +214,7 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             _ => null,
         };
 
+        // GlobalDiscId is the pressing's id on the ReleaseDisc; read it from the concrete models.
         var globalDiscId = disc switch
         {
             ReleaseDisc rd => rd.GlobalDiscId,
@@ -202,7 +241,7 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
     /// when proposed slug is null/empty. Returns null on any miss; does NOT
     /// use <c>AsNoTracking</c> so the apply path mutates the same tracked row.
     /// </summary>
-    internal static async Task<ReleaseDisc?> ResolveDiscAsync(
+    public static async Task<ReleaseDisc?> ResolveDiscAsync(
         SqlServerDataContext context,
         DiscFieldsDetails details,
         CancellationToken cancellationToken)
@@ -224,7 +263,7 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             var ms = details.MediaItemSlug;
             release = await context.Releases
                 .Include(r => r.Discs)
-                    .ThenInclude(d => d.Disc)
+                    .ThenInclude(d => d.Disc!)
                 .FirstOrDefaultAsync(
                     r => r.Slug == releaseSlug && r.MediaItem != null && r.MediaItem.Slug == ms,
                     cancellationToken);
@@ -234,7 +273,7 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             var bs = details.BoxsetSlug;
             release = await context.Releases
                 .Include(r => r.Discs)
-                    .ThenInclude(d => d.Disc)
+                    .ThenInclude(d => d.Disc!)
                 .FirstOrDefaultAsync(
                     r => r.Slug == releaseSlug && r.Boxset != null && r.Boxset.Slug == bs,
                     cancellationToken);
