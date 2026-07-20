@@ -11,19 +11,38 @@ public partial class EditSuggestions : ComponentBase
     [Inject]
     private IDbContextFactory<SqlServerDataContext> DbFactory { get; set; } = null!;
 
+    [Inject]
+    private NavigationManager Navigation { get; set; } = null!;
+
+    // Persisted in the query string so the chosen status survives navigation away and back.
+    [SupplyParameterFromQuery(Name = "status")]
+    public string? StatusQuery { get; set; }
+
     private List<EditSuggestion>? suggestions;
     private readonly EditSuggestionStatus[] statusList = Enum.GetValues<EditSuggestionStatus>();
     private EditSuggestionStatus selectedStatus = EditSuggestionStatus.Pending;
+    private EditSuggestionStatus? loadedStatus;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        await RefreshList();
+        selectedStatus = Enum.TryParse<EditSuggestionStatus>(this.StatusQuery, ignoreCase: true, out var parsed)
+            ? parsed
+            : EditSuggestionStatus.Pending;
+
+        // Only hit the database when the effective status actually changed (query navigation or
+        // first load), not on every re-render.
+        if (this.loadedStatus != selectedStatus)
+        {
+            this.loadedStatus = selectedStatus;
+            await RefreshList();
+        }
     }
 
-    private async Task OnStatusChanged(EditSuggestionStatus newStatus)
+    private void OnStatusChanged(EditSuggestionStatus newStatus)
     {
-        selectedStatus = newStatus;
-        await RefreshList();
+        // Update the URL; OnParametersSetAsync re-reads the query and refreshes the list.
+        this.Navigation.NavigateTo(
+            this.Navigation.GetUriWithQueryParameter("status", newStatus.ToString()));
     }
 
     private async Task RefreshList()

@@ -20,7 +20,7 @@ public enum AttachDiscIdOutcome
     /// <summary>The disc already carried this exact Disc ID; nothing to do.</summary>
     AlreadyRecorded,
 
-    /// <summary>The disc already has a different Disc ID; a pending change was filed for review, DB untouched.</summary>
+    /// <summary>The Disc ID belongs to a different release-disc, or this disc already has a different id; a pending change was filed for review, DB untouched.</summary>
     Conflict,
 
     /// <summary>No disc in the database matched the submitted content-hash / identity.</summary>
@@ -113,7 +113,7 @@ public sealed class DiscIdBackfillService(
                 if (altDisc?.Disc is null)
                 {
                     // Not the target, and not otherwise known -> genuine mismatch.
-                    return BuildResult(AttachDiscIdOutcome.Mismatch, contentHash, targetDisc, globalDiscId, targetDisc.Disc.GlobalDiscId);
+                    return BuildResult(AttachDiscIdOutcome.Mismatch, contentHash, targetDisc, globalDiscId, targetDisc.GlobalDiscId);
                 }
 
                 releaseDisc = altDisc;
@@ -137,8 +137,10 @@ public sealed class DiscIdBackfillService(
         return await ApplyAsync(userId, contentHash, globalDiscId, releaseDisc, matchedDifferentDisc, cancellationToken);
     }
 
-    // Applies the Disc ID to a resolved disc: idempotent no-op when already recorded, a pending
-    // (un-applied) change on conflict, or an auto-approved change + immediate write on a clean add.
+    // Applies the Disc ID to a resolved release-disc: idempotent no-op when it already carries the
+    // id; a pending (un-applied) conflict change when the id belongs to a *different* release-disc
+    // (cross-pressing) or this disc already carries a *different* id (same-release re-press);
+    // otherwise an auto-approved change + immediate write.
     private async Task<AttachDiscIdResult> ApplyAsync(
         string userId,
         string contentHash,
@@ -159,35 +161,48 @@ public sealed class DiscIdBackfillService(
             parentMediaSlug, parentBoxsetSlug, parentMediaType, parentReleaseSlug, snapshot.DiscSlug, snapshot.DiscIndex,
             globalDiscId, existingGlobalDiscId, matchedDifferentDisc);
 
-        var current = releaseDisc.Disc!.GlobalDiscId;
-
-        // Already carries this exact Disc ID -> idempotent no-op.
-        if (string.Equals(current, globalDiscId, StringComparison.OrdinalIgnoreCase))
-        {
-            return Result(AttachDiscIdOutcome.AlreadyRecorded, current);
-        }
-
-        // Only GlobalDiscId changes (all other fields equal the snapshot, so add-only applies just the id).
         var proposed = snapshot with { GlobalDiscId = globalDiscId };
         var proposedJson = JsonSerializer.Serialize(proposed, JsonOptions);
         var snapshotJson = JsonSerializer.Serialize(snapshot, JsonOptions);
 
-        // Conflict: a different Disc ID already exists -> file a pending change with a note, do NOT touch the DB.
-        if (!string.IsNullOrEmpty(current))
+        // Who (if anyone) already stores this exact id? The id is unique across release-discs.
+        var owner = await database.Set<ReleaseDisc>()
+            .Where(rd => rd.GlobalDiscId == globalDiscId)
+            .Select(rd => new { rd.Id, rd.DiscId })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (owner is not null)
         {
-            var note = $"Disc ID conflict: submitted {globalDiscId} but the disc already has {current}. Possible re-press/variant — needs review.";
-            var conflictSuggestion = await editSuggestionService.SubmitAsync(
-                userId,
-                EditSuggestionSource.GraphQL,
-                note,
-                new List<SubmitChangeInput> { new(DiscFieldsUpdate.Key, proposedJson, snapshotJson) },
-                cancellationToken);
+            // Stored on this release-disc, or on a sibling sharing the same canonical disc (same
+            // content = same pressing): already recorded — the read-time fallback surfaces it, and
+            // storing it again would violate the unique index. Nothing to do.
+            if (owner.DiscId == releaseDisc.DiscId)
+            {
+                return Result(AttachDiscIdOutcome.AlreadyRecorded, globalDiscId);
+            }
 
-            var conflictChange = conflictSuggestion.Changes.First();
-            conflictChange.ConflictReason = note;
-            await database.SaveChangesAsync(cancellationToken);
+            // Stored on a release-disc of a *different* canonical disc → the same id maps to two
+            // different contents; needs review.
+            var crossNote = $"Disc ID conflict: submitted {globalDiscId} is already assigned to a different disc (different content). Needs review.";
+            await FileConflictAsync(userId, crossNote, proposedJson, snapshotJson, cancellationToken);
+            return Result(AttachDiscIdOutcome.Conflict, globalDiscId);
+        }
 
-            return Result(AttachDiscIdOutcome.Conflict, current);
+        // The id isn't stored anywhere yet. Determine this pressing's effective id (its own, or the
+        // single id shared by siblings of the same canonical disc).
+        var siblingIds = await database.Set<ReleaseDisc>()
+            .Where(rd => rd.DiscId == releaseDisc.DiscId)
+            .Select(rd => rd.GlobalDiscId)
+            .ToListAsync(cancellationToken);
+        var effective = ReleaseDiscExtensions.EffectiveGlobalDiscId(siblingIds);
+
+        // Divergence: this pressing already resolves to a different id (its own or a shared sibling
+        // id). A different submission is a possible re-press / mis-scan → review, DB untouched.
+        if (!string.IsNullOrEmpty(effective))
+        {
+            var note = $"Disc ID conflict: this disc already has {effective} but {globalDiscId} was submitted. Possible re-press/variant — needs review.";
+            await FileConflictAsync(userId, note, proposedJson, snapshotJson, cancellationToken);
+            return Result(AttachDiscIdOutcome.Conflict, effective);
         }
 
         // Clean add: submit + auto-approve so the DB is written now and the change is Applied for /data sync.
@@ -202,12 +217,11 @@ public sealed class DiscIdBackfillService(
         var appliedChange = await reviewService.ApproveChangeAsync(
             suggestion.Id, changeId, userId, adminNote: "Auto-approved add-only Disc ID backfill", cancellationToken);
 
-        // Confirm the Disc ID actually persisted before reporting success. ReleaseDisc.GlobalDiscId
-        // is a passthrough to the canonical Disc; if that navigation wasn't loaded during apply the
-        // write would silently no-op, so we verify against the database rather than trust the status.
+        // Confirm the id persisted (the natural-key resolution during apply must have hit this
+        // release-disc) before reporting success.
         var persisted = await database.Set<ReleaseDisc>()
             .Where(rd => rd.Id == releaseDisc.Id)
-            .Select(rd => rd.Disc!.GlobalDiscId)
+            .Select(rd => rd.GlobalDiscId)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (appliedChange?.Status != EditSuggestionChangeStatus.Applied
@@ -218,6 +232,23 @@ public sealed class DiscIdBackfillService(
         }
 
         return Result(AttachDiscIdOutcome.Applied, null);
+    }
+
+    // Files a pending (un-applied) change carrying the conflict note for admin review, leaving the
+    // database untouched.
+    private async Task FileConflictAsync(
+        string userId, string note, string proposedJson, string snapshotJson, CancellationToken cancellationToken)
+    {
+        var conflictSuggestion = await editSuggestionService.SubmitAsync(
+            userId,
+            EditSuggestionSource.GraphQL,
+            note,
+            new List<SubmitChangeInput> { new(DiscFieldsUpdate.Key, proposedJson, snapshotJson) },
+            cancellationToken);
+
+        var conflictChange = conflictSuggestion.Changes.First();
+        conflictChange.ConflictReason = note;
+        await database.SaveChangesAsync(cancellationToken);
     }
 
     // Builds a terminal (non-applying) result carrying the given disc's identity for display.
@@ -242,7 +273,7 @@ public sealed class DiscIdBackfillService(
 
     private IQueryable<ReleaseDisc> BaseQuery()
         => database.Set<ReleaseDisc>()
-            .Include(rd => rd.Disc)
+            .Include(rd => rd.Disc!)
             .Include(rd => rd.Release!).ThenInclude(r => r.MediaItem)
             .Include(rd => rd.Release!).ThenInclude(r => r.Boxset);
 

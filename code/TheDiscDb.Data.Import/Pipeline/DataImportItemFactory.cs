@@ -494,7 +494,16 @@ public class DataImportItemFactory
         }
 
         var referencedJson = await this.fileSystem.File.ReadAllText(referencedDiscPath, cancellationToken);
-        return JsonSerializer.Deserialize<Disc>(referencedJson, DataImporter.JsonOptions);
+        var referencedDisc = JsonSerializer.Deserialize<Disc>(referencedJson, DataImporter.JsonOptions);
+        if (referencedDisc is not null)
+        {
+            // The referenced disc.json carries the *referenced* release's pressing id. This .ref
+            // represents a different physical pressing (same content), so its id is the .ref's own
+            // globalDiscId — never inherit the referenced release's id.
+            referencedDisc.GlobalDiscId = reference.GlobalDiscId;
+        }
+
+        return referencedDisc;
     }
 
     private ReleaseDisc ToReleaseDisc(Disc disc)
@@ -504,6 +513,7 @@ public class DataImportItemFactory
             Index = disc.Index,
             Name = disc.Name,
             Slug = disc.Slug,
+            GlobalDiscId = disc.GlobalDiscId,
             Disc = disc
         };
     }

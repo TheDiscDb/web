@@ -47,11 +47,13 @@ public class SqlServerDataContext : DbContext
         disc.HasMany(x => x.Titles).WithOne(x => x.Disc);
         disc.HasMany(x => x.ReleaseDiscs).WithOne(x => x.Disc);
         disc.HasIndex(x => new { x.Format, x.ContentHash }).IsUnique();
-        disc.HasIndex(x => x.GlobalDiscId).HasFilter("[GlobalDiscId] IS NOT NULL");
         disc.Ignore(x => x.Index);
         disc.Ignore(x => x.Slug);
         disc.Ignore(x => x.Name);
         disc.Ignore(x => x.Release);
+        // GlobalDiscId is a transient carrier read from disc*.json and moved onto ReleaseDisc at
+        // import; it is not a column on the shared canonical disc.
+        disc.Ignore(x => x.GlobalDiscId);
 
         var releaseDisc = modelBuilder.Entity<ReleaseDisc>();
         releaseDisc.HasKey(x => x.Id);
@@ -65,8 +67,10 @@ public class SqlServerDataContext : DbContext
             .OnDelete(DeleteBehavior.Restrict);
         releaseDisc.Ignore(x => x.Format);
         releaseDisc.Ignore(x => x.ContentHash);
-        releaseDisc.Ignore(x => x.GlobalDiscId);
         releaseDisc.Ignore(x => x.Titles);
+        releaseDisc.Property(x => x.GlobalDiscId).HasMaxLength(450);
+        // A given Disc ID identifies one physical pressing: globally unique across release-discs.
+        releaseDisc.HasIndex(x => x.GlobalDiscId).IsUnique().HasFilter("[GlobalDiscId] IS NOT NULL");
         releaseDisc.HasIndex(x => new { x.ReleaseId, x.Slug }).IsUnique().HasFilter("[Slug] IS NOT NULL");
         releaseDisc.HasIndex(x => new { x.ReleaseId, x.Index }).IsUnique();
 

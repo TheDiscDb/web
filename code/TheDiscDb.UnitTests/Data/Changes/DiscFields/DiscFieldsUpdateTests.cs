@@ -1,5 +1,6 @@
 namespace TheDiscDb.UnitTests.Data.Changes.DiscFields;
 
+using System.Linq;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Data.Changes;
@@ -336,7 +337,7 @@ public class DiscFieldsUpdateTests
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
         var snapshot = JsonSerializer.Serialize(
-            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            DiscFieldsUpdate.SnapshotFrom(seed.ReleaseDisc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
             JsonOptions);
 
         const string newDiscId = "A734E4BEE726B8943F2E8817E3956EFC5F786C8B";
@@ -349,19 +350,20 @@ public class DiscFieldsUpdateTests
     }
 
     [Test]
-    public async Task ApplyAsync_DoesNotOverwriteGlobalDiscId_WhenAlreadyPresent()
+    public async Task ApplyAsync_IsIdempotent_WhenGlobalDiscIdAlreadyPresent()
     {
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
         const string existing = "A734E4BEE726B8943F2E8817E3956EFC5F786C8B";
-        seed.Disc.GlobalDiscId = existing;
+        seed.ReleaseDisc.GlobalDiscId = existing;
         await db.SaveChangesAsync();
 
         var snapshot = JsonSerializer.Serialize(
-            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            DiscFieldsUpdate.SnapshotFrom(seed.ReleaseDisc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
             JsonOptions);
 
-        var change = new DiscFieldsUpdate(MakeProposed(globalDiscId: "91C2EB717C4323D8807C01BA79011A6B"));
+        // Proposing the same id again is a no-op.
+        var change = new DiscFieldsUpdate(MakeProposed(globalDiscId: existing));
         await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
         await db.SaveChangesAsync();
 
@@ -370,23 +372,58 @@ public class DiscFieldsUpdateTests
     }
 
     [Test]
-    public async Task ValidateAsync_ReturnsConflict_WhenGlobalDiscIdDrifts()
+    public async Task ValidateAsync_ReturnsConflict_WhenDiscAlreadyHasDifferentId()
     {
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
-        seed.Disc.GlobalDiscId = "A734E4BEE726B8943F2E8817E3956EFC5F786C8B";
+        const string existing = "A734E4BEE726B8943F2E8817E3956EFC5F786C8B";
+        seed.ReleaseDisc.GlobalDiscId = existing;
         await db.SaveChangesAsync();
 
-        // Snapshot taken when the disc had no Disc ID; the DB now has one -> drift.
-        var staleSnapshot = JsonSerializer.Serialize(
-            DiscFieldsUpdate.SnapshotFrom(seed.Disc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug) with { GlobalDiscId = null },
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.ReleaseDisc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
             JsonOptions);
 
-        var change = new DiscFieldsUpdate(MakeProposed(globalDiscId: "91C2EB717C4323D8807C01BA79011A6B"));
+        // This release-disc already carries an id; a different one is a conflict (re-press/mis-scan),
+        // never a silent overwrite.
+        const string second = "91C2EB717C4323D8807C01BA79011A6B";
+        var change = new DiscFieldsUpdate(MakeProposed(globalDiscId: second));
 
-        var result = await change.ValidateAsync(db, staleSnapshot, CancellationToken.None);
+        var result = await change.ValidateAsync(db, snapshot, CancellationToken.None);
 
         await Assert.That(result.IsConflict).IsTrue();
-        await Assert.That(result.ConflictReason).Contains("GlobalDiscId");
+        await Assert.That(result.ConflictReason).Contains("Disc ID");
+    }
+
+    [Test]
+    public async Task ValidateAsync_ReturnsConflict_WhenGlobalDiscIdOwnedByDifferentReleaseDisc()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+
+        // A different release-disc already owns the proposed id.
+        const string ownedId = "91C2EB717C4323D8807C01BA79011A6B";
+        var otherDisc = new TheDiscDb.InputModels.Disc
+        {
+            Slug = "disc-two",
+            Index = 1,
+            Name = "Disc Two",
+            Format = "Blu-ray",
+            ContentHash = "9999888877776666555544443333EEEE",
+        };
+        seed.Release.Discs.Add(new TheDiscDb.InputModels.ReleaseDisc { Slug = "disc-two", Index = 1, Name = "Disc Two", GlobalDiscId = ownedId, Disc = otherDisc });
+        await db.SaveChangesAsync();
+
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.ReleaseDisc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            JsonOptions);
+
+        // Target is the seed disc, but the id belongs to disc-two -> conflict.
+        var change = new DiscFieldsUpdate(MakeProposed(globalDiscId: ownedId));
+
+        var result = await change.ValidateAsync(db, snapshot, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsTrue();
+        await Assert.That(result.ConflictReason).Contains("Disc ID");
     }
 }

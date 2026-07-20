@@ -81,7 +81,8 @@ public sealed class ContributionDiscService(
         }
 
         return new ContributionDiscResult(
-            contribution.Id, disc.Id, encodedContributionId, encodedDiscId, disc.LogsUploaded, disc.LogUploadError);
+            contribution.Id, disc.Id, encodedContributionId, encodedDiscId, disc.LogsUploaded, disc.LogUploadError,
+            await IsGlobalDiscIdInUseElsewhereAsync(request.GlobalDiscId, cancellationToken));
     }
 
     public async Task<ContributionDiscResult?> AddDiscToContributionAsync(
@@ -158,7 +159,21 @@ public sealed class ContributionDiscService(
         }
 
         return new ContributionDiscResult(
-            contribution.Id, disc.Id, encodedContribution, encodedDiscId, disc.LogsUploaded, disc.LogUploadError);
+            contribution.Id, disc.Id, encodedContribution, encodedDiscId, disc.LogsUploaded, disc.LogUploadError,
+            await IsGlobalDiscIdInUseElsewhereAsync(request.GlobalDiscId, cancellationToken));
+    }
+
+    // A Disc ID identifies one physical pressing. Flag (do not block) when the submitted id is
+    // already assigned to a catalogue release-disc, so the contribution UI/admin can review whether
+    // it's the same pressing recorded twice or a mis-scan.
+    private async Task<bool> IsGlobalDiscIdInUseElsewhereAsync(string? globalDiscId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(globalDiscId))
+        {
+            return false;
+        }
+
+        return await database.ReleaseDiscs.AnyAsync(rd => rd.GlobalDiscId == globalDiscId, cancellationToken);
     }
 
     // Mirrors the web SaveDiscLogsInternal: normalize to CRLF, validate as MakeMKV, then store at

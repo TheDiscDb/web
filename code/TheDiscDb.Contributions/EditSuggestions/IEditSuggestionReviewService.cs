@@ -54,4 +54,47 @@ public interface IEditSuggestionReviewService
         string adminUserId,
         string resolution,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Builds the context for resolving a conflicted <c>disc.fields.update</c> Disc ID change:
+    /// the submitted id, the target disc's current id, and the release-discs sharing the same
+    /// content hash (candidate destinations). Returns null when the change isn't a Disc ID
+    /// conflict.
+    /// </summary>
+    Task<DiscIdConflictContext?> GetDiscIdConflictContextAsync(
+        int suggestionId,
+        int changeId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves a Disc ID conflict by attributing the submitted Disc ID to a specific release-disc
+    /// (the correct edition/pressing — often a re-pressed sibling that currently has no id). The
+    /// conflicted change is retargeted to that release-disc and applied, so it also syncs to
+    /// <c>/data</c>. Returns the updated change; if the destination still can't accept the id
+    /// (already has a different one, or the id is taken elsewhere) the change stays
+    /// <see cref="EditSuggestionChangeStatus.Conflicted"/> with the reason.
+    /// </summary>
+    Task<EditSuggestionChange?> AttributeDiscIdAsync(
+        int suggestionId,
+        int changeId,
+        int destinationReleaseDiscId,
+        string adminUserId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves a Disc ID conflict by <b>swapping</b>: the submitted id is assigned to the conflict
+    /// target (the release-disc that already carries an id), and that target's displaced id is moved
+    /// to a chosen empty sibling. Use when the original assignment was mis-attributed — the new id is
+    /// the target's true id and the old id really belongs to the sibling. Overwrites the target's id
+    /// (the only resolution that does), and records both reassignments as applied changes so they
+    /// sync to <c>/data</c>. Returns the updated (primary) change; stays
+    /// <see cref="EditSuggestionChangeStatus.Conflicted"/> with a reason if the swap isn't valid
+    /// (sibling occupied, is a boxset, different disc, or the submitted id is taken elsewhere).
+    /// </summary>
+    Task<EditSuggestionChange?> SwapDiscIdAsync(
+        int suggestionId,
+        int changeId,
+        int secondaryReleaseDiscId,
+        string adminUserId,
+        CancellationToken cancellationToken = default);
 }

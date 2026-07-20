@@ -86,18 +86,38 @@ DB-first then batch-synced to `/data`).
 - **Surfacing/progress**: show the Disc ID (or a "help add it" CTA) on the disc detail page; a
   backfill view listing/counting discs still missing a Disc ID; a progress metric. Optional tie-in
   to Badges/leaderboard to drive participation.
-- **Guardrails**: add-only (never overwrite); if the content-hash matches but a *different* Disc ID
-  is submitted, flag for review (possible re-press/variant) rather than silently accepting.
+- **Guardrails**: add-only per pressing (never overwrite an existing id). The Disc ID lives on the
+  **`ReleaseDisc`** (the pressing), so two releases whose discs share a content hash each carry
+  their own id and never fight over one slot. A submission is a **conflict** (filed as a pending
+  change for admin review, DB untouched) when the id already belongs to a *different* release-disc,
+  or the target release-disc already resolves to a *different* id. When the release is known
+  (contribute flow / disc-detail CTA) the id is attributed to that release; a hash-only match with
+  no release context defaults to the primary/canonical `disc.json`'s release.
+- **Shared pressings & read-time fallback**: the same physical pressing is often sold in several
+  products (a standalone release + a boxset that references it via `.ref`). Those share one content
+  hash → one canonical `Disc` → the **same** Disc ID, but the id is **stored once** (on the
+  release-disc whose `disc.json` records it; a `.ref` only carries its own `globalDiscId` when it is
+  a *different* pressing/re-press). Read paths **derive** the id: a release-disc's *effective* Disc
+  ID is its own stored value, else the single distinct id shared by the other release-discs of the
+  same canonical disc (`ReleaseDiscExtensions.EffectiveGlobalDiscId`), else none when siblings
+  disagree (a re-press collision). This drives display (the GraphQL `globalDiscId` output field, the
+  disc-detail id + "help add it" CTA), coverage stats, and the backfill "already recorded" check —
+  so a shared-pressing sibling counts as filled without duplicating the id or tripping the unique
+  index.
 
 ### Phase 4 — Ecosystem (future)
 
 - **Lookup by Disc ID** → disc + item/mpls mapping (the #388 use cases: submit disc details
   without a release, MakeMKV/Jellyfin naming, re-extraction lookup).
-  - **REST** — shipped: anonymous `GET /api/disc-id/{globalDiscId}` (`DiscLookupEndpoints`)
-    returns the disc's titles and their item mapping.
+  - **REST** — shipped: anonymous `GET /api/disc-id/{globalDiscId}` (`DiscLookupEndpoints`).
+    Returns an **array** of every release that carries the id — the storing release-disc plus any
+    shared-pressing siblings (release-discs of the same canonical disc that store no id), excluding
+    re-presses that store a different id. So a query for one id finds *all* products containing that
+    pressing. The traversal is two indexed seeks (unique id index → FK `DiscId` index), tiny
+    cardinality — no scans.
   - **GraphQL** — a dedicated `discsByGlobalDiscId` resolver was **cut** (not deferred): the
-    built-in HotChocolate filter already exposes `globalDiscId` (`ReleaseDiscFilterType`), and
-    the root `mediaItems` / `boxsets` queries reach it through `releases → discs`. Clients use
+    built-in HotChocolate filter already exposes the stored `globalDiscId` (`ReleaseDiscFilterType`),
+    and the root `mediaItems` / `boxsets` queries reach it through `releases → discs`. Clients use
     the built-in nested filter instead of a bespoke resolver, e.g.:
 
     ```graphql
@@ -109,7 +129,15 @@ DB-first then batch-synced to `/data`).
     }
     ```
 
-    (`boxsets` supports the same nested path.)
+    Note the **filter** matches the *stored* id only (the release-disc that records it), whereas the
+    `globalDiscId` **output** returns the effective value (a shared-pressing sibling shows the id
+    even though it stores none) — so a disc's output `globalDiscId` can be non-null yet not be
+    matched by an equality filter on it. Use the REST endpoint when you need every release carrying a
+    shared id.
+
+
+    (`boxsets` supports the same nested path.) `ReleaseDisc.globalDiscId` and the REST response are
+    scalar (one pressing = one id).
 - `keydb.cfg` / fvonline-db cross-referencing (same Disc ID).
 - **DVD** `DVDDiscID` investigation (separate algorithm).
 - Disc-without-release **staging** (overlaps Partial Contributions / Engram).
@@ -118,8 +146,15 @@ DB-first then batch-synced to `/data`).
 ## Open questions
 
 - Field naming: `AacsDiscId` (BD/UHD-specific) vs a generic `DiscId` + `DiscIdType` (room for DVD).
-- Conflict policy when content-hash matches but Disc IDs differ (re-press variants) — review vs
-  reject vs allow-multiple.
+- ~~Conflict policy when content-hash matches but Disc IDs differ (re-press variants) — review vs
+  reject vs allow-multiple.~~ **Resolved: the Disc ID is a property of the pressing, stored as a
+  scalar `ReleaseDisc.GlobalDiscId`** (globally unique across release-discs). A canonical `Disc`
+  (keyed by `Format` + size-based `ContentHash`) represents shared *content*; distinct pressings
+  that share it are separate `ReleaseDisc` rows (a full `disc.json` and one or more `.ref`s), each
+  carrying its own id. A different id for the same content is attributed to the pressing/release it
+  belongs to (via contribute/CTA context, else the primary `disc.json`); a genuine collision (id on
+  a different pressing, or a different id on the same pressing) is filed as a conflicted change for
+  review.
 - Whether the Disc ID eventually augments/replaces the size-hash as the dedup/canonical key.
 - Manual-search fallback for backfill when no content-hash match exists (deferred for now).
 

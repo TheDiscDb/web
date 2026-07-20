@@ -1,6 +1,5 @@
 namespace TheDiscDb.Services.DiscLookup;
 
-using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,81 +31,111 @@ public static partial class DiscLookupQuery
         => !string.IsNullOrEmpty(discHash) && DiscHashPattern().IsMatch(discHash);
 
     /// <summary>
-    /// Returns the disc (with its titles/item mapping) whose Disc ID equals <paramref name="globalDiscId"/>
-    /// (case-insensitive), or <c>null</c> when no disc matches.
+    /// Returns <b>every</b> release-disc that carries the given Disc ID — its own stored value or,
+    /// for release-discs of the same canonical disc that don't store an id, via the shared-pressing
+    /// fallback. Ordered so the release-disc that stores the id comes first. Empty when none match.
+    /// </summary>
+    public static async Task<IReadOnlyList<DiscLookupResult>> LookupAllAsync(SqlServerDataContext database, string globalDiscId, CancellationToken cancellationToken = default)
+    {
+        var normalized = globalDiscId.ToUpperInvariant();
+
+        // Hop 1: the canonical disc(s) this id identifies (unique index seek).
+        var canonicalDiscIds = await database.ReleaseDiscs
+            .AsNoTracking()
+            .Where(rd => rd.GlobalDiscId == normalized)
+            .Select(rd => rd.DiscId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        if (canonicalDiscIds.Count == 0)
+        {
+            return [];
+        }
+
+        // Hop 2: every release-disc of those canonical discs that stores this id or nothing
+        // (FK index seek). A sibling storing a *different* id is a re-press — excluded.
+        var releaseDiscs = await BaseReleaseDiscQuery(database)
+            .Where(rd => canonicalDiscIds.Contains(rd.DiscId)
+                && (rd.GlobalDiscId == normalized || rd.GlobalDiscId == null)
+                && rd.Release != null && (rd.Release.MediaItem != null || rd.Release.Boxset != null))
+            .OrderByDescending(rd => rd.GlobalDiscId != null) // the storing release-disc first
+            .ThenBy(rd => rd.Id)
+            .ToListAsync(cancellationToken);
+
+        var results = new List<DiscLookupResult>(releaseDiscs.Count);
+        foreach (var releaseDisc in releaseDiscs)
+        {
+            if (releaseDisc.Disc is not null)
+            {
+                results.Add(await BuildResultAsync(database, releaseDisc, normalized, cancellationToken));
+            }
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// Returns the first release-disc carrying <paramref name="globalDiscId"/> (see
+    /// <see cref="LookupAllAsync"/>), or <c>null</c> when none matches.
     /// </summary>
     public static async Task<DiscLookupResult?> LookupAsync(SqlServerDataContext database, string globalDiscId, CancellationToken cancellationToken = default)
     {
-        var normalized = globalDiscId.ToUpperInvariant();
-        var disc = await LoadDiscAsync(
-            database,
-            d => d.GlobalDiscId == normalized,
-            cancellationToken);
-
-        return disc is null
-            ? null
-            : await BuildResultAsync(database, disc, cancellationToken);
+        var all = await LookupAllAsync(database, globalDiscId, cancellationToken);
+        return all.Count == 0 ? null : all[0];
     }
 
     public static async Task<DiscLookupResult?> LookupByDiscHashAsync(SqlServerDataContext database, string discHash, CancellationToken cancellationToken = default)
     {
         var normalized = discHash.ToUpperInvariant();
-        var disc = await LoadDiscAsync(
-            database,
-            d => d.ContentHash == normalized,
-            cancellationToken);
+        var releaseDisc = await BaseReleaseDiscQuery(database)
+            .Where(rd => rd.Disc != null && rd.Disc.ContentHash == normalized)
+            .Where(rd => rd.Release != null && (rd.Release.MediaItem != null || rd.Release.Boxset != null))
+            .OrderBy(rd => rd.Id)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        return disc is null
+        return releaseDisc?.Disc is null
             ? null
-            : await BuildResultAsync(database, disc, cancellationToken);
+            : await BuildResultAsync(database, releaseDisc, releaseDisc.EffectiveGlobalDiscId(), cancellationToken);
     }
 
-    private static Task<Disc?> LoadDiscAsync(
-        SqlServerDataContext database,
-        Expression<Func<Disc, bool>> predicate,
-        CancellationToken cancellationToken)
+    private static IQueryable<ReleaseDisc> BaseReleaseDiscQuery(SqlServerDataContext database)
     {
-        return database.Discs
+        return database.ReleaseDiscs
             .AsNoTracking()
             .AsSplitQuery()
-            .Include(d => d.Titles)
-                .ThenInclude(t => t.Item)
-                    .ThenInclude(i => i!.Chapters)
-            .Include(d => d.Titles)
-                .ThenInclude(t => t.Tracks)
-            .Include(d => d.ReleaseDiscs)
-                .ThenInclude(rd => rd.Release!)
-                    .ThenInclude(r => r.MediaItem!)
-                        .ThenInclude(m => m.Externalids)
-            .Include(d => d.ReleaseDiscs)
-                .ThenInclude(rd => rd.Release!)
-                    .ThenInclude(r => r.Boxset)
-            .Where(predicate)
-            .OrderBy(d => d.Id)
-            .FirstOrDefaultAsync(cancellationToken);
+            .Include(rd => rd.Disc!)
+                .ThenInclude(d => d.Titles)
+                    .ThenInclude(t => t.Item)
+                        .ThenInclude(i => i!.Chapters)
+            .Include(rd => rd.Disc!)
+                .ThenInclude(d => d.Titles)
+                    .ThenInclude(t => t.Tracks)
+            .Include(rd => rd.Release!)
+                .ThenInclude(r => r.MediaItem!)
+                    .ThenInclude(m => m.Externalids)
+            .Include(rd => rd.Release!)
+                .ThenInclude(r => r.Boxset);
     }
 
     private static async Task<DiscLookupResult> BuildResultAsync(
         SqlServerDataContext database,
-        Disc disc,
+        ReleaseDisc releaseDisc,
+        string? effectiveGlobalDiscId,
         CancellationToken cancellationToken)
     {
-        var releaseDisc = disc.ReleaseDiscs
-            .Where(rd => rd.Release?.MediaItem is not null || rd.Release?.Boxset is not null)
-            .OrderBy(rd => rd.Id)
-            .FirstOrDefault();
-        var release = releaseDisc?.Release;
+        var disc = releaseDisc.Disc!;
+        var release = releaseDisc.Release;
 
-        disc.Slug = releaseDisc?.Slug;
-        disc.Name = releaseDisc?.Name;
-        disc.Index = releaseDisc?.Index ?? 0;
+        disc.Slug = releaseDisc.Slug;
+        disc.Name = releaseDisc.Name;
+        disc.Index = releaseDisc.Index;
 
         var sourceRelease = release?.Boxset is null
             ? null
             : await FindSourceReleaseForBoxsetDiscAsync(
                 database,
                 release.Slug,
-                releaseDisc?.Slug,
+                releaseDisc.Slug,
                 cancellationToken);
 
         var fileNameResolver = new FileNameTemplateResolver();
@@ -117,7 +146,7 @@ public static partial class DiscLookupQuery
         var media = release?.MediaItem ?? sourceRelease?.MediaItem;
 
         return new DiscLookupResult(
-            disc.GlobalDiscId,
+            effectiveGlobalDiscId,
             disc.Format,
             disc.ContentHash,
             media is null
@@ -140,12 +169,10 @@ public static partial class DiscLookupQuery
                     release.RegionCode,
                     release.Locale,
                     release.Upc),
-            releaseDisc is null
-                ? null
-                : new DiscLookupDisc(
-                    releaseDisc.Slug,
-                    releaseDisc.Name,
-                    releaseDisc.Index),
+            new DiscLookupDisc(
+                releaseDisc.Slug,
+                releaseDisc.Name,
+                releaseDisc.Index),
             titles);
     }
 

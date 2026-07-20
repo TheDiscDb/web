@@ -115,14 +115,66 @@ else
             }
             @if (CanReview && change.Status == EditSuggestionChangeStatus.Conflicted)
             {
-                <div class="card-footer d-flex gap-2 align-items-center">
-                    <input class="form-control form-control-sm" style="max-width: 300px;"
-                           placeholder="Resolution note" @bind="conflictResolution" />
-                    <button class="btn btn-sm btn-warning" disabled="@isProcessing"
-                            @onclick="() => ResolveConflict(change.Id)">
-                        Resolve &amp; Apply
-                    </button>
-                </div>
+                @if (discIdConflicts.TryGetValue(change.Id, out var discConflict))
+                {
+                    <div class="card-footer">
+                        <p class="mb-2">
+                            Submitted Disc ID <code>@discConflict.SubmittedGlobalDiscId</code>;
+                            the target disc currently has
+                            @if (string.IsNullOrEmpty(discConflict.TargetCurrentGlobalDiscId))
+                            {
+                                <span>no id</span>
+                            }
+                            else
+                            {
+                                <code>@discConflict.TargetCurrentGlobalDiscId</code>
+                            }.
+                            Attribute the submitted id to the correct edition (a re-pressed sibling
+                            usually has no id yet). Or <strong>swap</strong> — assign the submitted id
+                            to this disc and move its current id to the selected sibling — when the
+                            existing id was mis-attributed:
+                        </p>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <select class="form-select form-select-sm w-auto"
+                                    value="@(selectedDestination.GetValueOrDefault(change.Id))"
+                                    @onchange="e => SetDestination(change.Id, e)">
+                                @foreach (var candidate in discConflict.Candidates)
+                                {
+                                    <option value="@candidate.ReleaseDiscId">@CandidateLabel(candidate)</option>
+                                }
+                            </select>
+                            <button class="btn btn-sm btn-success" disabled="@isProcessing"
+                                    @onclick="() => AttributeDiscId(change.Id)">
+                                Attribute Disc ID
+                            </button>
+                            @if (!string.IsNullOrEmpty(discConflict.TargetCurrentGlobalDiscId))
+                            {
+                                <button class="btn btn-sm btn-primary" disabled="@isProcessing"
+                                        @onclick="() => SwapDiscId(change.Id)">
+                                    Swap (assign here, move current to sibling)
+                                </button>
+                            }
+                            <input class="form-control form-control-sm w-auto"
+                                   placeholder="Rejection reason"
+                                   @bind="rejectionReasons[change.Id]" />
+                            <button class="btn btn-sm btn-danger" disabled="@isProcessing"
+                                    @onclick="() => RejectConflictedChange(change.Id)">
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="card-footer d-flex gap-2 align-items-center">
+                        <input class="form-control form-control-sm w-auto"
+                               placeholder="Resolution note" @bind="conflictResolution" />
+                        <button class="btn btn-sm btn-warning" disabled="@isProcessing"
+                                @onclick="() => ResolveConflict(change.Id)">
+                            Resolve &amp; Apply
+                        </button>
+                    </div>
+                }
             }
         </div>
     }

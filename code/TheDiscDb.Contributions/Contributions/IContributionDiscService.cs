@@ -50,7 +50,8 @@ public sealed record ContributionDiscResult(
     string EncodedContributionId,
     string EncodedDiscId,
     bool LogsUploaded,
-    string? LogUploadError);
+    string? LogUploadError,
+    bool GlobalDiscIdCollision = false);
 
 public interface IContributionDiscService
 {

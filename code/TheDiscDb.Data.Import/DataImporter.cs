@@ -1335,7 +1335,16 @@
             }
 
             var referencedJson = await this.fileSystem.File.ReadAllText(referencedDiscPath, cancellationToken);
-            return JsonSerializer.Deserialize<Disc>(referencedJson, JsonOptions);
+            var referencedDisc = JsonSerializer.Deserialize<Disc>(referencedJson, JsonOptions);
+            if (referencedDisc is not null)
+            {
+                // This .ref is a different physical pressing (same content) than the referenced
+                // release, so its pressing id is the .ref's own globalDiscId — never inherit the
+                // referenced release's id.
+                referencedDisc.GlobalDiscId = reference.GlobalDiscId;
+            }
+
+            return referencedDisc;
         }
 
         private async Task<string> ResolveReferencedReleasePath(string dataRoot, string releasePath, CancellationToken cancellationToken)
@@ -1405,6 +1414,7 @@
                 Index = disc.Index,
                 Name = disc.Name,
                 Slug = disc.Slug,
+                GlobalDiscId = disc.GlobalDiscId,
                 Disc = canonicalDisc
             };
         }

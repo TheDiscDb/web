@@ -1,5 +1,6 @@
 namespace TheDiscDb.UnitTests.Services.DiscId;
 
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Data.Changes;
 using TheDiscDb.Data.Changes.DiscFields;
@@ -29,8 +30,8 @@ public class DiscIdBackfillServiceTests
 
     private static async Task<string?> ReloadDiscIdAsync(SqlServerDataContext db)
     {
-        var rd = await db.Set<ReleaseDisc>().Include(x => x.Disc).FirstAsync(x => x.Slug == ChangeTestSeed.DiscSlug);
-        return rd.Disc!.GlobalDiscId;
+        var rd = await db.Set<ReleaseDisc>().FirstAsync(x => x.Slug == ChangeTestSeed.DiscSlug);
+        return rd.GlobalDiscId;
     }
 
     [Test]
@@ -58,7 +59,7 @@ public class DiscIdBackfillServiceTests
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
         seed.Disc.ContentHash = ContentHash;
-        seed.Disc.GlobalDiscId = DiscId;
+        seed.ReleaseDisc.GlobalDiscId = DiscId;
         await db.SaveChangesAsync();
 
         var result = await CreateService(db).AttachAsync("user-1", ContentHash, DiscId, target: null);
@@ -68,21 +69,48 @@ public class DiscIdBackfillServiceTests
     }
 
     [Test]
-    public async Task AttachAsync_DifferentExistingDiscId_ConflictsWithoutTouchingDb()
+    public async Task AttachAsync_DifferentIdOnSameDisc_Conflicts()
     {
         using var db = ChangeTestSeed.CreateDbContext();
         var seed = ChangeTestSeed.Seed(db);
         seed.Disc.ContentHash = ContentHash;
-        seed.Disc.GlobalDiscId = OtherDiscId;
+        seed.ReleaseDisc.GlobalDiscId = OtherDiscId;
         await db.SaveChangesAsync();
 
+        // This release-disc already has an id; a different one needs review (re-press or mis-scan),
+        // not a silent overwrite.
         var result = await CreateService(db).AttachAsync("user-1", ContentHash, DiscId, target: null);
 
         await Assert.That(result.Outcome).IsEqualTo(AttachDiscIdOutcome.Conflict);
-        await Assert.That(result.ExistingGlobalDiscId).IsEqualTo(OtherDiscId);
 
-        // DB unchanged.
+        // DB untouched (still the original id).
         await Assert.That(await ReloadDiscIdAsync(db)).IsEqualTo(OtherDiscId);
+
+        var change = await db.Set<EditSuggestionChange>().FirstAsync();
+        await Assert.That(change.Status).IsEqualTo(EditSuggestionChangeStatus.Pending);
+        await Assert.That(change.ConflictReason).IsNotNull();
+    }
+
+    [Test]
+    public async Task AttachAsync_IdOwnedByDifferentReleaseDisc_ConflictsWithoutTouchingDb()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+
+        // A different release-disc already owns DiscId.
+        const string otherHash = "9999888877776666555544443333EEEE";
+        var otherDisc = new Disc { Slug = "disc-two", Index = 1, Name = "Disc Two", Format = "Blu-ray", ContentHash = otherHash };
+        seed.Release.Discs.Add(new ReleaseDisc { Slug = "disc-two", Index = 1, Name = "Disc Two", GlobalDiscId = DiscId, Disc = otherDisc });
+        await db.SaveChangesAsync();
+
+        // Submitting DiscId for the first disc (matched by its content hash) collides across pressings.
+        var result = await CreateService(db).AttachAsync("user-1", ContentHash, DiscId, target: null);
+
+        await Assert.That(result.Outcome).IsEqualTo(AttachDiscIdOutcome.Conflict);
+
+        // First disc untouched (still has no id).
+        await Assert.That(await ReloadDiscIdAsync(db)).IsNull();
 
         // A pending change with a conflict note is filed for review (not applied).
         var change = await db.Set<EditSuggestionChange>().FirstAsync();
@@ -174,8 +202,8 @@ public class DiscIdBackfillServiceTests
         await Assert.That(result.DiscSlug).IsEqualTo("disc-two");
 
         // disc-two received the id; the CTA target disc-one is untouched.
-        var applied = await db.Set<ReleaseDisc>().Include(x => x.Disc).FirstAsync(x => x.Slug == "disc-two");
-        await Assert.That(applied.Disc!.GlobalDiscId).IsEqualTo(DiscId);
+        var applied = await db.Set<ReleaseDisc>().FirstAsync(x => x.Slug == "disc-two");
+        await Assert.That(applied.GlobalDiscId).IsEqualTo(DiscId);
         await Assert.That(await ReloadDiscIdAsync(db)).IsNull();
     }
 }
