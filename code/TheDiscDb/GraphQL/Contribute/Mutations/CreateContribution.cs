@@ -5,6 +5,7 @@ using TheDiscDb.Data.Import;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.GraphQL.Contribute.Models;
 using TheDiscDb.Services;
+using TheDiscDb.Services.Contributions;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.GraphQL.Contribute.Mutations;
@@ -16,6 +17,7 @@ public partial class ContributionMutations
     [Error(typeof(InvalidIdException))]
     [Error(typeof(InvalidOwnershipException))]
     [Error(typeof(InvalidBoxsetStatusException))]
+    [Error(typeof(UnsupportedExternalProviderException))]
     [Authorize]
     public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, TheMovieDbClient tmdb, IContributionHistoryService historyService, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
     {
@@ -26,6 +28,8 @@ public partial class ContributionMutations
         {
             throw new AuthenticationException("UserId not found");
         }
+
+        string externalProvider = NormalizeExternalProvider(input.ExternalProvider);
 
         // If a boxset id was provided, verify ownership + that it can still be edited before
         // we persist any FK on the new contribution.
@@ -46,7 +50,7 @@ public partial class ContributionMutations
             Created = DateTimeOffset.UtcNow,
             Asin = input.Asin,
             ExternalId = input.ExternalId,
-            ExternalProvider = input.ExternalProvider,
+            ExternalProvider = externalProvider,
             MediaType = input.MediaType,
             ReleaseDate = input.ReleaseDate,
             Status = UserContributionStatus.Pending,
@@ -97,6 +101,16 @@ public partial class ContributionMutations
 
             return name.Slugify();
         }
+    }
+
+    private static string NormalizeExternalProvider(string? provider)
+    {
+        if (string.IsNullOrWhiteSpace(provider) || string.Equals(provider, "TMDB", StringComparison.OrdinalIgnoreCase))
+        {
+            return "TMDB";
+        }
+
+        throw new UnsupportedExternalProviderException(provider);
     }
 
     private async Task MoveImages(SqlServerDataContext dbContext, UserContribution contribution, string currentImageUrl, string name, Action<UserContribution, string> updateUrl, CancellationToken cancellationToken)

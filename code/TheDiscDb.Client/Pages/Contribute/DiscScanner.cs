@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using KristofferStrube.Blazor.FileAPI;
 using KristofferStrube.Blazor.FileSystem;
 using TheDiscDb.Core.DiscHash;
+using TheDiscDb.InputModels;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -40,14 +41,14 @@ public static class DiscScanner
 
             var hashFiles = await GetHashItems(stream, i => i.Name.EndsWith("m2ts", StringComparison.OrdinalIgnoreCase));
             var globalDiscId = await TryComputeAacsDiscId(rootItems);
-            return new DiscScanResult("Blu-ray", globalDiscId, hashFiles, null);
+            return new DiscScanResult(DiscFormatConstants.BluRay, globalDiscId, hashFiles, null);
         }
 
         if (videoTs is not null)
         {
             var hashFiles = await GetHashItems(videoTs, filter: null);
             var globalDiscId = await TryComputeDvdDiscId(videoTs);
-            return new DiscScanResult("DVD", globalDiscId, hashFiles, null);
+            return new DiscScanResult(DiscFormatConstants.Dvd, globalDiscId, hashFiles, null);
         }
 
         return new DiscScanResult(null, null, Array.Empty<FileHashInfo>(),

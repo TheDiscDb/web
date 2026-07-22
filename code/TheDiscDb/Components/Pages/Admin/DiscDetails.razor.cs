@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client.Pages.Contribute;
+using TheDiscDb.InputModels;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
@@ -29,7 +30,7 @@ public partial class DiscDetails : ComponentBase, IAsyncDisposable
     private IQueryable<UserContributionDiscItem>? Items { get; set; }
     private TheDiscDbUser? User { get; set; }
 
-    readonly string[] formats = ["4K", "Blu-ray", "DVD"]; // TODO: Centralize this somewhere
+    readonly string[] formats = [.. DiscFormatConstants.ContributionFormats];
 
     protected override async Task OnInitializedAsync()
     {

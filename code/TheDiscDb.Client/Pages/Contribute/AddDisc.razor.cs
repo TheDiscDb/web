@@ -13,6 +13,7 @@ using Syncfusion.Blazor.Popups;
 using TheDiscDb.Client.Contributions;
 using TheDiscDb.Client.Controls;
 using TheDiscDb.Core.DiscHash;
+using TheDiscDb.InputModels;
 using TheDiscDb.Services;
 using TheDiscDb.Web.Data;
 
@@ -73,10 +74,10 @@ public partial class AddDisc : CancellableComponentBase
 
     private readonly SaveDiscRequest request = new SaveDiscRequest
     {
-        Format = "Blu-ray"
+        Format = DiscFormatConstants.BluRay
     };
 
-    readonly string[] formats = [ "4K", "Blu-ray", "DVD" ];
+    readonly string[] formats = [.. DiscFormatConstants.ContributionFormats];
 
     protected override async Task OnInitializedAsync()
     {
@@ -142,7 +143,7 @@ public partial class AddDisc : CancellableComponentBase
         }
         else if (videoTs != default && videoTs is FileSystemDirectoryHandleInProcess videoTsDirectory)
         {
-            request.Format = "DVD";
+            request.Format = DiscFormatConstants.Dvd;
             // DVD: compute the libdvdread DVDDiscID from the IFO files.
             this.request.GlobalDiscId = await TryComputeDvdDiscId(videoTsDirectory);
             hashItems = await GetHashItems(videoTsDirectory);
@@ -371,15 +372,27 @@ public partial class AddDisc : CancellableComponentBase
     {
         if (string.IsNullOrWhiteSpace(format))
         {
-            return "Blu-ray";
+            return DiscFormatConstants.BluRay;
         }
 
-        if (format.Equals("UHD", StringComparison.OrdinalIgnoreCase))
+        var normalized = format.Trim();
+        if (normalized.Contains(DiscFormatConstants.FourK, StringComparison.OrdinalIgnoreCase) ||
+            normalized.Contains(DiscFormatConstants.Uhd, StringComparison.OrdinalIgnoreCase))
         {
-            return "4K";
+            return DiscFormatConstants.FourK;
         }
 
-        return format;
+        if (normalized.Contains(DiscFormatConstants.Dvd, StringComparison.OrdinalIgnoreCase))
+        {
+            return DiscFormatConstants.Dvd;
+        }
+
+        if (normalized.Contains(DiscFormatConstants.BluRay, StringComparison.OrdinalIgnoreCase))
+        {
+            return DiscFormatConstants.BluRay;
+        }
+
+        return normalized;
     }
 
     private async Task DiscTitleChanged(ChangeEventArgs args)
@@ -449,11 +462,15 @@ public partial class AddDisc : CancellableComponentBase
         this.request.Name = sourceDisc.Name!;
         this.request.Format = NormalizeFormat(sourceDisc.Format);
         this.request.ContentHash = discHash;
+        var discKey = !string.IsNullOrWhiteSpace(sourceDisc.Slug)
+            ? sourceDisc.Slug
+            : sourceDisc.Index.ToString();
+
         this.request.ExistingDiscPath = UserContributionDisc.GenerateDiscPath(
             source.Type!,
             source.Externalids.Tmdb!,
             sourceRelease.Slug!,
-            sourceDisc.Slug!);
+            discKey);
 
         var createInput = new CreateDiscInput
         {

@@ -9,6 +9,7 @@ using TheDiscDb.Data.Import;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.GraphQL.Contribute.Models;
 using TheDiscDb.Web.Data;
+using TheDiscDb.Services.Contributions;
 
 namespace TheDiscDb.GraphQL.Contribute.Mutations;
 
@@ -16,8 +17,11 @@ public partial class ContributionMutations
 {
     [Error(typeof(ContributionNotFoundException))]
     [Error(typeof(ExternalDataNotFoundException))]
+    [Error(typeof(UnsupportedExternalProviderException))]
     public async Task<ExternalMetadata> GetExternalData(string externalId, string mediaType, string provider, SqlServerDataContext database, TheMovieDbClient tmdb, CancellationToken cancellationToken = default)
     {
+        _ = NormalizeExternalProvider(provider);
+
         int? year = null;
         ExternalMetadata? metadata = null;
         if (mediaType.Equals("series", StringComparison.OrdinalIgnoreCase))

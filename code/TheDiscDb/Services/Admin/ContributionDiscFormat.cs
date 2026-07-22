@@ -1,12 +1,14 @@
 namespace TheDiscDb.Services.Admin;
 
+using TheDiscDb.InputModels;
+
 /// <summary>
 /// Shared helpers for contribution disc format values.
 /// </summary>
 internal static class ContributionDiscFormat
 {
     /// <summary>
-    /// Maps a contribution disc format string (e.g. "4K", "Blu-ray", "DVD")
+    /// Maps a contribution disc format string (e.g. "4K", "UHD", "Blu-ray", "DVD")
     /// to a friendly resolution string (e.g. "2160p").
     /// </summary>
     internal static string ResolveResolution(string? format)
@@ -16,12 +18,13 @@ internal static class ContributionDiscFormat
             return "1080p";
         }
 
-        if (format.Equals("4K", StringComparison.OrdinalIgnoreCase))
+        if (format.Equals(DiscFormatConstants.FourK, StringComparison.OrdinalIgnoreCase) ||
+            format.Equals(DiscFormatConstants.Uhd, StringComparison.OrdinalIgnoreCase))
         {
             return "2160p";
         }
 
-        if (format.Equals("DVD", StringComparison.OrdinalIgnoreCase))
+        if (format.Equals(DiscFormatConstants.Dvd, StringComparison.OrdinalIgnoreCase))
         {
             return "720p";
         }

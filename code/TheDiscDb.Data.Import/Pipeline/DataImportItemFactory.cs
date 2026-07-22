@@ -497,13 +497,22 @@ public class DataImportItemFactory
         var referencedDisc = JsonSerializer.Deserialize<Disc>(referencedJson, DataImporter.JsonOptions);
         if (referencedDisc is not null)
         {
-            // The referenced disc.json carries the *referenced* release's pressing id. This .ref
-            // represents a different physical pressing (same content), so its id is the .ref's own
-            // globalDiscId — never inherit the referenced release's id.
-            referencedDisc.GlobalDiscId = reference.GlobalDiscId;
+            ApplyReferenceOverrides(referencedDisc, reference);
         }
 
         return referencedDisc;
+    }
+
+    internal static void ApplyReferenceOverrides(Disc referencedDisc, DiscReferenceFile reference)
+    {
+        if (!string.IsNullOrEmpty(reference.Name))
+        {
+            referencedDisc.Name = reference.Name;
+        }
+
+        // The referenced disc.json carries the referenced release's pressing id. This .ref represents
+        // a different physical pressing, so never inherit that id.
+        referencedDisc.GlobalDiscId = reference.GlobalDiscId;
     }
 
     private ReleaseDisc ToReleaseDisc(Disc disc)

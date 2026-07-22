@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using StrawberryShake;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.InputModels;
 using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
@@ -25,7 +26,7 @@ public partial class EditDisc : CancellableComponentBase
     public NavigationManager Navigation { get; set; } = default!;
 
     private readonly SaveDiscRequest request = new();
-    private readonly string[] formats = ["4K", "Blu-ray", "DVD"];
+    private readonly string[] formats = [.. DiscFormatConstants.ContributionFormats];
 
     private string? globalDiscId;
 

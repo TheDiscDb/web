@@ -1,5 +1,6 @@
 @page "/{type}/{slug}/releases/{releaseSlug}/discs/{slugOrIndex}/edit"
 @page "/boxset/{slug}/discs/{slugOrIndex}/edit"
+@using TheDiscDb.InputModels
 
 @rendermode InteractiveServer
 @inherits TheDiscDb.Components.AuthenticatedComponentBase
@@ -41,9 +42,9 @@ else
                     <div class="col-md-3">
                         <label class="form-label">Format</label>
                         <select class="form-select" @bind="editFormat">
-                            <option value="UHD">4K</option>
-                            <option value="Blu-ray">Blu-ray</option>
-                            <option value="DVD">DVD</option>
+                            <option value="@DiscFormatConstants.Uhd">@DiscFormatConstants.FourK</option>
+                            <option value="@DiscFormatConstants.BluRay">@DiscFormatConstants.BluRay</option>
+                            <option value="@DiscFormatConstants.Dvd">@DiscFormatConstants.Dvd</option>
                         </select>
                     </div>
                     <div class="col-md-3">

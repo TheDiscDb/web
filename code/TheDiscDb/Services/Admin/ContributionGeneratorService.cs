@@ -83,6 +83,8 @@ public class ContributionGeneratorService
         Action<string> log,
         CancellationToken cancellationToken)
     {
+        string externalId = GetTmdbExternalId(contribution);
+
         ImportItemType itemType = contribution.MediaType.ToLower() switch
         {
             "movie" => ImportItemType.Movie,
@@ -95,11 +97,11 @@ public class ContributionGeneratorService
 
         if (itemType == ImportItemType.Series)
         {
-            importItem.Series = await this.tmdb.GetSeries(contribution.ExternalId, cancellationToken: cancellationToken);
+            importItem.Series = await this.tmdb.GetSeries(externalId, cancellationToken: cancellationToken);
         }
         else
         {
-            importItem.Movie = await this.tmdb.GetMovie(contribution.ExternalId, cancellationToken: cancellationToken);
+            importItem.Movie = await this.tmdb.GetMovie(externalId, cancellationToken: cancellationToken);
         }
 
         int year = importItem.TryGetYear();
@@ -110,7 +112,7 @@ public class ContributionGeneratorService
             year,
             itemType);
 
-        string folderName = $"{this.fileSystem.CleanPath(metadata!.Title!)} ({year})";
+        string folderName = BuildContributionFolderName(contribution, metadata, year);
         string subFolderName = itemType == ImportItemType.Series ? "series" : "movie";
 
         string basePath = this.fileSystem.Path.Combine(workspace.DataRepositoryPath, subFolderName, folderName);
@@ -248,9 +250,9 @@ public class ContributionGeneratorService
 
             string resolution = ContributionDiscFormat.ResolveResolution(disc.Format);
             string discFormat = disc.Format;
-            if (disc.Format.Equals("4K", StringComparison.OrdinalIgnoreCase))
+            if (disc.Format.Equals(DiscFormatConstants.FourK, StringComparison.OrdinalIgnoreCase))
             {
-                discFormat = "UHD";
+                discFormat = DiscFormatConstants.Uhd;
             }
 
             if (!string.IsNullOrEmpty(disc.ExistingDiscPath))
@@ -330,6 +332,48 @@ public class ContributionGeneratorService
         }
 
         return false;
+    }
+
+    private string BuildContributionFolderName(UserContribution contribution, MetadataFile? metadata, int year)
+    {
+        string? mediaTitle = metadata?.Title;
+        if (string.IsNullOrWhiteSpace(mediaTitle))
+        {
+            mediaTitle = contribution.Title;
+        }
+
+        if (string.IsNullOrWhiteSpace(mediaTitle))
+        {
+            mediaTitle = contribution.ReleaseTitle;
+        }
+
+        if (string.IsNullOrWhiteSpace(mediaTitle))
+        {
+            string encodedContributionId = this.idEncoder.Encode(contribution.Id);
+            throw new InvalidOperationException($"Unable to determine media title for contribution '{encodedContributionId}'.");
+        }
+
+        return $"{this.fileSystem.CleanPath(mediaTitle)} ({year})";
+    }
+
+    private string GetTmdbExternalId(UserContribution contribution)
+    {
+        if (!string.IsNullOrWhiteSpace(contribution.ExternalProvider)
+            && !string.Equals(contribution.ExternalProvider, "tmdb", StringComparison.OrdinalIgnoreCase))
+        {
+            string encodedContributionId = this.idEncoder.Encode(contribution.Id);
+            throw new InvalidOperationException(
+                $"Contribution '{encodedContributionId}' has unsupported external provider '{contribution.ExternalProvider}'. TMDB is required; update ExternalProvider to 'TMDB' and set ExternalId to the TMDB id before generating.");
+        }
+
+        if (string.IsNullOrWhiteSpace(contribution.ExternalId))
+        {
+            string encodedContributionId = this.idEncoder.Encode(contribution.Id);
+            throw new InvalidOperationException(
+                $"Contribution '{encodedContributionId}' has no external id. A TMDB id is required before generating.");
+        }
+
+        return contribution.ExternalId;
     }
 
     private async Task CopyExistingDisc(

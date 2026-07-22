@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client;
 using TheDiscDb.Data.Import;
+using TheDiscDb.InputModels;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Validation;
@@ -179,10 +180,10 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
     {
         return contentType?.ToLowerInvariant() switch
         {
-            "blu-ray" => "Blu-ray",
-            "dvd" => "DVD",
-            "4k" => "4K",
-            _ => "Blu-ray"
+            "blu-ray" => DiscFormatConstants.BluRay,
+            "dvd" => DiscFormatConstants.Dvd,
+            "4k" => DiscFormatConstants.FourK,
+            _ => DiscFormatConstants.BluRay
         };
     }
 

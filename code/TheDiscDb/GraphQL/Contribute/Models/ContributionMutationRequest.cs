@@ -9,7 +9,7 @@ public class ContributionMutationRequest
     [Required]
     public string MediaType { get; set; } = string.Empty;
     public string ExternalId { get; set; } = string.Empty;
-    public string ExternalProvider { get; set; } = string.Empty;
+    public string ExternalProvider { get; set; } = "TMDB";
     [Required]
     public DateTimeOffset ReleaseDate { get; set; }
     [Required]

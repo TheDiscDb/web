@@ -18,4 +18,8 @@
         <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="TheDiscDb.UnitTests" />
+    </ItemGroup>
+
 </Project>

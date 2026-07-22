@@ -103,6 +103,41 @@ public class ContributionDiscServiceTests
     }
 
     [Test]
+    public async Task CreatePendingDiscContribution_BlankProvider_DefaultsToTmdb()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var (service, _, _) = CreateService(db);
+
+        var result = await service.CreatePendingDiscContributionAsync("user-1", new ContributionDiscRequest
+        {
+            ContentHash = ContentHash,
+            Format = "Blu-ray",
+            Name = "Disc 1",
+            Slug = "disc-1",
+            ExternalProvider = string.Empty,
+        });
+
+        var contribution = await db.UserContributions.FindAsync(result.ContributionId);
+        await Assert.That(contribution!.ExternalProvider).IsEqualTo("TMDB");
+    }
+
+    [Test]
+    public async Task CreatePendingDiscContribution_ImdbProvider_Throws()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var (service, _, _) = CreateService(db);
+
+        await Assert.That(async () => await service.CreatePendingDiscContributionAsync("user-1", new ContributionDiscRequest
+        {
+            ContentHash = ContentHash,
+            Format = "Blu-ray",
+            Name = "Disc 1",
+            Slug = "disc-1",
+            ExternalProvider = "IMDB",
+        })).Throws<UnsupportedExternalProviderException>();
+    }
+
+    [Test]
     public async Task CreatePendingDiscContribution_InvalidLogs_FlagsErrorWithoutUpload()
     {
         using var db = ChangeTestSeed.CreateDbContext();

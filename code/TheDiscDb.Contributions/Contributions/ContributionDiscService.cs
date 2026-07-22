@@ -51,7 +51,7 @@ public sealed class ContributionDiscService(
             Status = UserContributionStatus.Pending,
             MediaType = request.MediaType,
             ExternalId = request.ExternalId,
-            ExternalProvider = request.ExternalProvider,
+            ExternalProvider = NormalizeExternalProvider(request.ExternalProvider),
             Asin = request.Asin,
             Upc = request.Upc,
             ReleaseTitle = request.ReleaseTitle,
@@ -83,6 +83,21 @@ public sealed class ContributionDiscService(
         return new ContributionDiscResult(
             contribution.Id, disc.Id, encodedContributionId, encodedDiscId, disc.LogsUploaded, disc.LogUploadError,
             await IsGlobalDiscIdInUseElsewhereAsync(request.GlobalDiscId, cancellationToken));
+    }
+
+    private static string NormalizeExternalProvider(string? provider)
+    {
+        if (string.IsNullOrWhiteSpace(provider))
+        {
+            return "TMDB";
+        }
+
+        if (string.Equals(provider, "TMDB", StringComparison.OrdinalIgnoreCase))
+        {
+            return "TMDB";
+        }
+
+        throw new UnsupportedExternalProviderException(provider);
     }
 
     public async Task<ContributionDiscResult?> AddDiscToContributionAsync(

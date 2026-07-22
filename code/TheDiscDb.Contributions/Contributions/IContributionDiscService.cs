@@ -40,7 +40,7 @@ public sealed record ContributionDiscRequest
     public string Upc { get; init; } = string.Empty;
     public string Asin { get; init; } = string.Empty;
     public string ExternalId { get; init; } = string.Empty;
-    public string ExternalProvider { get; init; } = string.Empty;
+    public string ExternalProvider { get; init; } = "TMDB";
 }
 
 /// <summary>Result of creating a pending disc contribution.</summary>

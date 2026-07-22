@@ -1,3 +1,5 @@
+using TheDiscDb.ImportModels;
+using TheDiscDb.InputModels;
 using TheDiscDb.Data.Import.Pipeline;
 
 namespace TheDiscDb.UnitTests.DataImport;
@@ -83,5 +85,41 @@ public class DataImportItemFactoryTests
         var result = DataImportItemFactory.HasInvalidChars("café");
 
         await Assert.That(result).IsFalse();
+    }
+
+    [Test]
+    public async Task ApplyReferenceOverrides_UsesReleaseLocalNameAndDiscId()
+    {
+        var disc = new Disc
+        {
+            Name = "Source Disc",
+            GlobalDiscId = "SOURCE-ID",
+        };
+        var reference = new DiscReferenceFile
+        {
+            Name = "Referenced Release Disc",
+            GlobalDiscId = "REFERENCE-ID",
+        };
+
+        DataImportItemFactory.ApplyReferenceOverrides(disc, reference);
+
+        await Assert.That(disc.Name).IsEqualTo("Referenced Release Disc");
+        await Assert.That(disc.GlobalDiscId).IsEqualTo("REFERENCE-ID");
+    }
+
+    [Test]
+    public async Task ApplyReferenceOverrides_InheritsNameWhenOverrideMissing()
+    {
+        var disc = new Disc
+        {
+            Name = "Source Disc",
+            GlobalDiscId = "SOURCE-ID",
+        };
+        var reference = new DiscReferenceFile();
+
+        DataImportItemFactory.ApplyReferenceOverrides(disc, reference);
+
+        await Assert.That(disc.Name).IsEqualTo("Source Disc");
+        await Assert.That(disc.GlobalDiscId).IsNull();
     }
 }

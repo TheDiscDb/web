@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using StrawberryShake;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.InputModels;
 using TheDiscDb.Naming;
 
 namespace TheDiscDb.Client.Pages.Settings;
@@ -22,7 +23,7 @@ public partial class FileNameTemplates : ComponentBase
         Year = "2024",
         FullTitle = "Sample Movie (2024)",
         Edition = "Extended",
-        Format = "Blu-ray",
+        Format = DiscFormatConstants.BluRay,
         Resolution = "1080p",
         TmdbId = "12345",
         ImdbId = "tt7654321",

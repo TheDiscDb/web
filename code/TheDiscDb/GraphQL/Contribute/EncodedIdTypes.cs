@@ -134,16 +134,9 @@ public class ContributionDiscItemTypeExtension : EncodedIdTypeExtension<UserCont
         string? title = string.IsNullOrWhiteSpace(contribution.Title) ? null : contribution.Title;
         string? year = string.IsNullOrWhiteSpace(contribution.Year) ? null : contribution.Year;
 
-        string? tmdbId = null;
-        string? imdbId = null;
-        if (string.Equals(contribution.ExternalProvider, "tmdb", StringComparison.OrdinalIgnoreCase))
-        {
-            tmdbId = contribution.ExternalId;
-        }
-        else if (string.Equals(contribution.ExternalProvider, "imdb", StringComparison.OrdinalIgnoreCase))
-        {
-            imdbId = contribution.ExternalId;
-        }
+        string? tmdbId = string.Equals(contribution.ExternalProvider, "tmdb", StringComparison.OrdinalIgnoreCase)
+            ? contribution.ExternalId
+            : null;
 
         return new NamingContext
         {
@@ -154,7 +147,7 @@ public class ContributionDiscItemTypeExtension : EncodedIdTypeExtension<UserCont
             Format = disc.Format,
             Resolution = ContributionDiscFormat.ResolveResolution(disc.Format),
             TmdbId = tmdbId,
-            ImdbId = imdbId,
+            ImdbId = null,
             SeasonNumber = PadNumber(item.Season),
             EpisodeNumber = PadNumber(item.Episode),
             EpisodeName = string.Equals(item.Type, "Episode", StringComparison.OrdinalIgnoreCase) ? item.Name : null,
