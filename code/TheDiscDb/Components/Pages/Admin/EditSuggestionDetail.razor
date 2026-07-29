@@ -129,10 +129,18 @@ else
                             {
                                 <code>@discConflict.TargetCurrentGlobalDiscId</code>
                             }.
-                            Attribute the submitted id to the correct edition (a re-pressed sibling
-                            usually has no id yet). Or <strong>swap</strong> — assign the submitted id
-                            to this disc and move its current id to the selected sibling — when the
-                            existing id was mis-attributed:
+                            Select a sibling release below and <strong>attribute</strong> the submitted id
+                            to it (use when the sibling has no id yet), or <strong>swap</strong> —
+                            assign the submitted id to this disc and move its current id to the selected
+                            sibling — when the existing id was mis-attributed.
+                            @if (!string.IsNullOrEmpty(discConflict.TargetCurrentGlobalDiscId)
+                                 && !discConflict.Candidates.Any(c => string.IsNullOrEmpty(c.CurrentGlobalDiscId)))
+                            {
+                                <strong class="text-danger d-block mt-1">
+                                    All sibling release-discs already have a Disc ID — swap is unavailable.
+                                    Reject this change or handle it manually.
+                                </strong>
+                            }
                         </p>
                         <div class="d-flex flex-wrap gap-2 align-items-center">
                             <select class="form-select form-select-sm w-auto"
@@ -147,7 +155,8 @@ else
                                     @onclick="() => AttributeDiscId(change.Id)">
                                 Attribute Disc ID
                             </button>
-                            @if (!string.IsNullOrEmpty(discConflict.TargetCurrentGlobalDiscId))
+                            @if (!string.IsNullOrEmpty(discConflict.TargetCurrentGlobalDiscId)
+                                 && discConflict.Candidates.Any(c => string.IsNullOrEmpty(c.CurrentGlobalDiscId)))
                             {
                                 <button class="btn btn-sm btn-primary" disabled="@isProcessing"
                                         @onclick="() => SwapDiscId(change.Id)">

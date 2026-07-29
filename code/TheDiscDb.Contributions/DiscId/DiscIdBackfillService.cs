@@ -20,7 +20,7 @@ public enum AttachDiscIdOutcome
     /// <summary>The disc already carried this exact Disc ID; nothing to do.</summary>
     AlreadyRecorded,
 
-    /// <summary>The Disc ID belongs to a different release-disc, or this disc already has a different id; a pending change was filed for review, DB untouched.</summary>
+    /// <summary>The Disc ID belongs to a different release-disc, or this disc already has a different id; a conflicted change was filed for review, DB untouched.</summary>
     Conflict,
 
     /// <summary>No disc in the database matched the submitted content-hash / identity.</summary>
@@ -74,7 +74,7 @@ public interface IDiscIdBackfillService
 /// Backfills a globally-stable Disc ID onto an existing disc matched by content-hash.
 /// Clean adds are written immediately and recorded as an approved (applied) change so the
 /// <c>/data</c> batch import picks them up; a submission that conflicts with an existing,
-/// different Disc ID leaves the database untouched and files a pending change (with a note)
+/// different Disc ID leaves the database untouched and files a conflicted change (with a note)
 /// for admin review.
 /// </summary>
 public sealed class DiscIdBackfillService(
@@ -138,7 +138,7 @@ public sealed class DiscIdBackfillService(
     }
 
     // Applies the Disc ID to a resolved release-disc: idempotent no-op when it already carries the
-    // id; a pending (un-applied) conflict change when the id belongs to a *different* release-disc
+    // id; a conflicted (un-applied) change when the id belongs to a *different* release-disc
     // (cross-pressing) or this disc already carries a *different* id (same-release re-press);
     // otherwise an auto-approved change + immediate write.
     private async Task<AttachDiscIdResult> ApplyAsync(
@@ -234,7 +234,7 @@ public sealed class DiscIdBackfillService(
         return Result(AttachDiscIdOutcome.Applied, null);
     }
 
-    // Files a pending (un-applied) change carrying the conflict note for admin review, leaving the
+    // Files a conflicted (un-applied) change carrying the conflict note for admin review, leaving the
     // database untouched.
     private async Task FileConflictAsync(
         string userId, string note, string proposedJson, string snapshotJson, CancellationToken cancellationToken)
@@ -247,6 +247,7 @@ public sealed class DiscIdBackfillService(
             cancellationToken);
 
         var conflictChange = conflictSuggestion.Changes.First();
+        conflictChange.Status = EditSuggestionChangeStatus.Conflicted;
         conflictChange.ConflictReason = note;
         await database.SaveChangesAsync(cancellationToken);
     }

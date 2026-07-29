@@ -87,7 +87,7 @@ public class DiscIdBackfillServiceTests
         await Assert.That(await ReloadDiscIdAsync(db)).IsEqualTo(OtherDiscId);
 
         var change = await db.Set<EditSuggestionChange>().FirstAsync();
-        await Assert.That(change.Status).IsEqualTo(EditSuggestionChangeStatus.Pending);
+        await Assert.That(change.Status).IsEqualTo(EditSuggestionChangeStatus.Conflicted);
         await Assert.That(change.ConflictReason).IsNotNull();
     }
 
@@ -112,9 +112,9 @@ public class DiscIdBackfillServiceTests
         // First disc untouched (still has no id).
         await Assert.That(await ReloadDiscIdAsync(db)).IsNull();
 
-        // A pending change with a conflict note is filed for review (not applied).
+        // A conflicted change with a conflict note is filed for review (not applied).
         var change = await db.Set<EditSuggestionChange>().FirstAsync();
-        await Assert.That(change.Status).IsEqualTo(EditSuggestionChangeStatus.Pending);
+        await Assert.That(change.Status).IsEqualTo(EditSuggestionChangeStatus.Conflicted);
         await Assert.That(change.ConflictReason).IsNotNull();
     }
 
