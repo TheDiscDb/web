@@ -663,7 +663,7 @@ union AddItemToDiscError = ContributionNotFoundError | DiscNotFoundError | Authe
 
 union CreateContributionError = AuthenticationError | BoxsetNotFoundError | InvalidIdError | InvalidOwnershipError | InvalidBoxsetStatusError
 
-union CreateDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError
+union CreateDiscError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidDiscPathError
 
 union AttachGlobalDiscIdError = AuthenticationError
 
