@@ -261,6 +261,31 @@ public class EditSuggestionNotificationTests
     }
 
     [Test]
+    public async Task Resolution_DoesNotSendSecondNotification_WhenAppliedStatusIsCorrectedToRejected()
+    {
+        using var db = CreateDb();
+        SeedRelease(db);
+        var factory = CreateFactory();
+        var history = new EditSuggestionHistoryService(db);
+        var notifications = new RecordingNotificationService();
+        var resolver = UserResolver();
+        var submit = new EditSuggestionService(db, factory, history, notifications, resolver);
+        var review = new EditSuggestionReviewService(db, factory, history, notifications, resolver);
+
+        var proposed = JsonSerializer.Serialize(MakeProposed(), JsonOptions);
+        var snapshot = JsonSerializer.Serialize(MakeSnapshot(), JsonOptions);
+        var suggestion = await submit.SubmitAsync("user-1", EditSuggestionSource.Web, null,
+            new List<SubmitChangeInput> { new(ReleaseFieldsUpdate.Key, proposed, snapshot) }, CT);
+        var change = suggestion.Changes.First();
+
+        await review.ApproveChangeAsync(suggestion.Id, change.Id, "admin-1", null, CT);
+        await review.RejectChangeAsync(suggestion.Id, change.Id, "admin-2", "Approved in error", CT);
+
+        await Assert.That(notifications.Resolved.Count).IsEqualTo(1);
+        await Assert.That(notifications.Resolved[0].Status).IsEqualTo(EditSuggestionStatus.Approved);
+    }
+
+    [Test]
     public async Task Resolution_FiresResolvedOnce_OnPartiallyApproved()
     {
         using var db = CreateDb();

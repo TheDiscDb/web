@@ -24,7 +24,10 @@ else
     <section class="info-grid single-column mb-4">
         <dl class="row">
             <dt class="col-sm-3">Status</dt>
-            <dd class="col-sm-9"><span class="badge @GetStatusBadge(suggestion.Status)">@suggestion.Status</span></dd>
+            <dd class="col-sm-9">
+                <span class="badge @GetStatusBadge(suggestion.Status)">@suggestion.Status</span>
+                <span class="text-muted ms-2">Calculated from the individual change statuses.</span>
+            </dd>
 
             <dt class="col-sm-3">Target</dt>
             <dd class="col-sm-9">@suggestion.TargetEntityType — <code>@suggestion.TargetEntityKey</code></dd>
@@ -49,7 +52,8 @@ else
     @if (!CanReview)
     {
         <div class="alert alert-secondary">
-            This suggestion is <strong>@suggestion.Status</strong> and can no longer be reviewed.
+            This suggestion is <strong>@suggestion.Status</strong> and standard review is complete.
+            Administrators can still reject an approved change below to correct its status.
         </div>
     }
 
@@ -57,6 +61,31 @@ else
     {
         <div class="mb-3">
             <button class="btn btn-success" @onclick="ApproveAll" disabled="@isProcessing">Approve All Pending</button>
+        </div>
+    }
+
+    @if (CanRejectSuggestion)
+    {
+        <div class="card border-danger mb-3">
+            <div class="card-body">
+                <h2 class="h5 card-title">Reject suggestion</h2>
+                @if (suggestion.Changes.Any(c => CanCorrectToRejected(c.Status)))
+                {
+                    <p class="card-text text-danger">
+                        This changes the suggestion and change statuses only. Data already applied or synced is not undone.
+                    </p>
+                }
+                <div class="d-flex gap-2 align-items-center">
+                    <input class="form-control form-control-sm rejection-reason"
+                           placeholder="Reason for rejection (required)"
+                           @bind="suggestionRejectionReason" />
+                    <button class="btn btn-sm btn-danger"
+                            disabled="@(isProcessing || string.IsNullOrWhiteSpace(suggestionRejectionReason))"
+                            @onclick="RejectSuggestion">
+                        Reject Suggestion
+                    </button>
+                </div>
+            </div>
         </div>
     }
 
@@ -103,7 +132,7 @@ else
                                 @onclick="() => ApproveChange(change.Id)">
                             Approve
                         </button>
-                        <input class="form-control form-control-sm" style="max-width: 300px;"
+                        <input class="form-control form-control-sm rejection-reason"
                                placeholder="Rejection reason (required to reject)"
                                @bind="rejectionReasons[change.Id]" />
                         <button class="btn btn-sm btn-danger" disabled="@(isProcessing || !HasRejectionReason(change.Id))"
@@ -175,6 +204,25 @@ else
                         </button>
                     </div>
                 }
+            }
+            @if (CanCorrectToRejected(change.Status))
+            {
+                <div class="card-footer">
+                    <div class="alert alert-warning py-2">
+                        Rejecting this change corrects its status and the suggestion rollup.
+                        It does not undo data that was already applied or synced.
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input class="form-control form-control-sm rejection-reason"
+                               placeholder="Reason for status correction (required)"
+                               @bind="rejectionReasons[change.Id]" />
+                        <button class="btn btn-sm btn-danger"
+                                disabled="@(isProcessing || !HasRejectionReason(change.Id))"
+                                @onclick="() => RejectChange(change.Id)">
+                            Reject Change
+                        </button>
+                    </div>
+                </div>
             }
         </div>
     }

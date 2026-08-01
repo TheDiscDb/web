@@ -98,18 +98,27 @@ public sealed class EditSuggestionReviewService(
 
         var (suggestion, change) = loaded;
 
-        if (!suggestion.Status.IsReviewable())
+        if (suggestion.Status is EditSuggestionStatus.Draft or EditSuggestionStatus.Withdrawn)
         {
             return null;
         }
 
         if (change.Status is not EditSuggestionChangeStatus.Pending
-            and not EditSuggestionChangeStatus.Conflicted)
+            and not EditSuggestionChangeStatus.Approved
+            and not EditSuggestionChangeStatus.Conflicted
+            and not EditSuggestionChangeStatus.Applied)
         {
             return null;
         }
 
         var oldStatus = change.Status;
+        var isStatusCorrection = oldStatus is EditSuggestionChangeStatus.Approved
+            or EditSuggestionChangeStatus.Applied;
+        if (isStatusCorrection && string.IsNullOrWhiteSpace(adminNote))
+        {
+            return null;
+        }
+
         change.Status = EditSuggestionChangeStatus.Rejected;
         change.AdminNote = adminNote;
         await database.SaveChangesAsync(cancellationToken);
@@ -117,8 +126,73 @@ public sealed class EditSuggestionReviewService(
         await historyService.RecordChangeStatusChangedAsync(
             suggestionId, changeId, adminUserId, oldStatus, change.Status, adminNote, cancellationToken);
 
-        await RefreshBundleStatusAsync(suggestion, adminUserId, cancellationToken);
+        await RefreshBundleStatusAsync(
+            suggestion,
+            adminUserId,
+            cancellationToken,
+            notifyResolution: !isStatusCorrection);
         return change;
+    }
+
+    public async Task<EditSuggestion?> RejectAllChangesAsync(
+        int suggestionId,
+        string adminUserId,
+        string adminNote,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(adminNote))
+        {
+            return null;
+        }
+
+        var suggestion = await database.EditSuggestions
+            .Include(s => s.Changes.OrderBy(c => c.Ordinal))
+            .FirstOrDefaultAsync(s => s.Id == suggestionId, cancellationToken);
+
+        if (suggestion is null ||
+            suggestion.Status is EditSuggestionStatus.Draft or EditSuggestionStatus.Withdrawn)
+        {
+            return null;
+        }
+
+        var eligibleChanges = suggestion.Changes
+            .Where(c => c.Status is EditSuggestionChangeStatus.Pending
+                or EditSuggestionChangeStatus.Approved
+                or EditSuggestionChangeStatus.Conflicted
+                or EditSuggestionChangeStatus.Applied)
+            .ToList();
+
+        if (eligibleChanges.Count == 0)
+        {
+            return null;
+        }
+
+        var isStatusCorrection = eligibleChanges.Any(c =>
+            c.Status is EditSuggestionChangeStatus.Approved or EditSuggestionChangeStatus.Applied);
+
+        foreach (var change in eligibleChanges)
+        {
+            var oldStatus = change.Status;
+            change.Status = EditSuggestionChangeStatus.Rejected;
+            change.AdminNote = adminNote;
+
+            await historyService.RecordChangeStatusChangedAsync(
+                suggestionId,
+                change.Id,
+                adminUserId,
+                oldStatus,
+                change.Status,
+                adminNote,
+                cancellationToken);
+        }
+
+        await database.SaveChangesAsync(cancellationToken);
+        await RefreshBundleStatusAsync(
+            suggestion,
+            adminUserId,
+            cancellationToken,
+            notifyResolution: !isStatusCorrection);
+        return suggestion;
     }
 
     public async Task<EditSuggestion?> ApproveAllPendingAsync(
@@ -577,7 +651,8 @@ public sealed class EditSuggestionReviewService(
     private async Task RefreshBundleStatusAsync(
         EditSuggestion suggestion,
         string adminUserId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool notifyResolution = true)
     {
         var changes = suggestion.Changes;
         var oldStatus = suggestion.Status;
@@ -622,7 +697,8 @@ public sealed class EditSuggestionReviewService(
 
             // One summary email per resolution. Conflicted is admin-facing only
             // (it surfaces in the admin queue), so we don't email the user on it.
-            if (notifications is not null &&
+            if (notifyResolution &&
+                notifications is not null &&
                 newStatus is EditSuggestionStatus.Approved or EditSuggestionStatus.Rejected or EditSuggestionStatus.PartiallyApproved)
             {
                 var recipient = recipients is null

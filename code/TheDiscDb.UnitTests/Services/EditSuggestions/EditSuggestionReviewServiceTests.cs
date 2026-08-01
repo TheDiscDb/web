@@ -165,6 +165,48 @@ public class EditSuggestionReviewServiceTests
     }
 
     [Test]
+    public async Task RejectChangeAsync_TransitionsAppliedToRejectedWithoutUndoingMutation()
+    {
+        var (db, reviewService, suggestion) = await SetupAsync();
+        var change = suggestion.Changes.First();
+
+        await reviewService.ApproveChangeAsync(suggestion.Id, change.Id, "admin-1", null, CT);
+        var result = await reviewService.RejectChangeAsync(
+            suggestion.Id, change.Id, "admin-2", "Approved in error", CT);
+
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.Status).IsEqualTo(EditSuggestionChangeStatus.Rejected);
+        await Assert.That(result.AdminNote).IsEqualTo("Approved in error");
+        await Assert.That(result.AppliedAt).IsNotNull();
+        await Assert.That(result.AppliedByUserId).IsEqualTo("admin-1");
+
+        var release = await db.Releases.FirstAsync(r => r.Slug == "the-release");
+        await Assert.That(release.Title).IsEqualTo("Updated Title");
+
+        var reloaded = await db.EditSuggestions.FirstAsync(s => s.Id == suggestion.Id);
+        await Assert.That(reloaded.Status).IsEqualTo(EditSuggestionStatus.Rejected);
+        await Assert.That(reloaded.ReviewedByUserId).IsEqualTo("admin-2");
+    }
+
+    [Test]
+    public async Task RejectAllChangesAsync_TransitionsAppliedBundleToRejectedWithoutUndoingMutation()
+    {
+        var (db, reviewService, suggestion) = await SetupAsync();
+        var change = suggestion.Changes.First();
+
+        await reviewService.ApproveChangeAsync(suggestion.Id, change.Id, "admin-1", null, CT);
+        var result = await reviewService.RejectAllChangesAsync(
+            suggestion.Id, "admin-2", "Suggestion approved in error", CT);
+
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.Status).IsEqualTo(EditSuggestionStatus.Rejected);
+        await Assert.That(result.Changes.All(c => c.Status == EditSuggestionChangeStatus.Rejected)).IsTrue();
+
+        var release = await db.Releases.FirstAsync(r => r.Slug == "the-release");
+        await Assert.That(release.Title).IsEqualTo("Updated Title");
+    }
+
+    [Test]
     public async Task BundleStatusRollup_PartiallyApproved_WhenMixed()
     {
         var db = CreateDb();

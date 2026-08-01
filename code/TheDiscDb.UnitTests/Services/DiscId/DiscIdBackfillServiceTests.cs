@@ -1,6 +1,7 @@
 namespace TheDiscDb.UnitTests.Services.DiscId;
 
 using System.Linq;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Data.Changes;
 using TheDiscDb.Data.Changes.DiscFields;
@@ -12,6 +13,8 @@ using TheDiscDb.Web.Data;
 
 public class DiscIdBackfillServiceTests
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     private const string ContentHash = "AAAA1111BBBB2222CCCC3333DDDD4444";
     private const string DiscId = "A734E4BEE726B8943F2E8817E3956EFC5F786C8B";
     private const string OtherDiscId = "91C2EB717C4323D8807C01BA79011A6B";
@@ -32,6 +35,208 @@ public class DiscIdBackfillServiceTests
     {
         var rd = await db.Set<ReleaseDisc>().FirstAsync(x => x.Slug == ChangeTestSeed.DiscSlug);
         return rd.GlobalDiscId;
+    }
+
+    private static ReleaseDisc AddMediaRelease(
+        MediaItem mediaItem,
+        Disc disc,
+        string releaseSlug,
+        string releaseTitle,
+        int releaseYear,
+        string discSlug,
+        int discIndex,
+        string discName,
+        string? globalDiscId = null)
+    {
+        var release = new Release
+        {
+            Slug = releaseSlug,
+            Title = releaseTitle,
+            Year = releaseYear,
+            MediaItem = mediaItem,
+        };
+        var releaseDisc = new ReleaseDisc
+        {
+            Slug = discSlug,
+            Index = discIndex,
+            Name = discName,
+            Disc = disc,
+            GlobalDiscId = globalDiscId,
+        };
+        release.Discs.Add(releaseDisc);
+        mediaItem.Releases.Add(release);
+        return releaseDisc;
+    }
+
+    [Test]
+    public async Task GetTargetsByContentHashAsync_ReturnsAllMatchingItemReleaseDiscs()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        AddMediaRelease(
+            seed.MediaItem,
+            seed.Disc,
+            "second-release",
+            "Second Release",
+            2021,
+            "disc-two",
+            1,
+            "Disc Two",
+            OtherDiscId);
+        await db.SaveChangesAsync();
+
+        var targets = await CreateService(db).GetTargetsByContentHashAsync(ContentHash);
+
+        await Assert.That(targets.Count).IsEqualTo(2);
+        await Assert.That(targets.Any(t => t.ReleaseSlug == ChangeTestSeed.ReleaseSlug)).IsTrue();
+        var second = targets.Single(t => t.ReleaseSlug == "second-release");
+        await Assert.That(second.Target).IsEqualTo(
+            new DiscTargetIdentity(ChangeTestSeed.MediaItemSlug, null, "second-release", "disc-two", 1));
+        await Assert.That(second.MediaTitle).IsEqualTo("The Movie");
+        await Assert.That(second.MediaItemSlug).IsEqualTo(ChangeTestSeed.MediaItemSlug);
+        await Assert.That(second.ReleaseTitle).IsEqualTo("Second Release");
+        await Assert.That(second.DiscName).IsEqualTo("Disc Two");
+        await Assert.That(second.CurrentGlobalDiscId).IsEqualTo(OtherDiscId);
+    }
+
+    [Test]
+    public async Task GetTargetsByContentHashAsync_ExcludesBoxsetReleaseDisc()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+
+        var boxset = new Boxset { Slug = "the-boxset", Title = "The Boxset" };
+        var boxsetRelease = new Release
+        {
+            Slug = "boxset-release",
+            Title = "Boxset Release",
+            Year = 2022,
+            Boxset = boxset,
+        };
+        boxset.Release = boxsetRelease;
+        boxsetRelease.Discs.Add(new ReleaseDisc
+        {
+            Slug = "boxset-disc",
+            Index = 0,
+            Name = "Boxset Disc",
+            Disc = seed.Disc,
+        });
+        db.Add(boxset);
+        await db.SaveChangesAsync();
+
+        var targets = await CreateService(db).GetTargetsByContentHashAsync(ContentHash);
+
+        await Assert.That(targets.Count).IsEqualTo(1);
+        await Assert.That(targets[0].ReleaseSlug).IsEqualTo(ChangeTestSeed.ReleaseSlug);
+        await Assert.That(targets.Any(t => t.ReleaseSlug == "boxset-release")).IsFalse();
+    }
+
+    [Test]
+    public async Task GetTargetsByContentHashAsync_ReturnsDeterministicUserFriendlyOrder()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var disc = new Disc { Format = "Blu-ray", ContentHash = ContentHash };
+        var beta = new MediaItem { Slug = "beta", Title = "Beta Movie", Type = "movie" };
+        var alpha = new MediaItem { Slug = "alpha", Title = "Alpha Movie", Type = "movie" };
+
+        AddMediaRelease(beta, disc, "beta-release", "Standard Edition", 2020, "disc-1", 0, "Disc 1");
+        AddMediaRelease(alpha, disc, "standard", "Standard Edition", 2019, "disc-1", 0, "Disc 1");
+        AddMediaRelease(alpha, disc, "collectors", "Collectors Edition", 2021, "disc-2", 1, "Disc 2");
+        alpha.Releases.Single(r => r.Slug == "collectors").Discs.Add(new ReleaseDisc
+        {
+            Slug = "disc-1",
+            Index = 0,
+            Name = "Disc 1",
+            Disc = disc,
+        });
+        db.AddRange(beta, alpha);
+        await db.SaveChangesAsync();
+
+        var targets = await CreateService(db).GetTargetsByContentHashAsync(ContentHash);
+
+        await Assert.That(targets.Count).IsEqualTo(4);
+        await Assert.That((targets[0].MediaItemSlug, targets[0].ReleaseSlug, targets[0].DiscIndex))
+            .IsEqualTo(("alpha", "collectors", 0));
+        await Assert.That((targets[1].MediaItemSlug, targets[1].ReleaseSlug, targets[1].DiscIndex))
+            .IsEqualTo(("alpha", "collectors", 1));
+        await Assert.That((targets[2].MediaItemSlug, targets[2].ReleaseSlug, targets[2].DiscIndex))
+            .IsEqualTo(("alpha", "standard", 0));
+        await Assert.That((targets[3].MediaItemSlug, targets[3].ReleaseSlug, targets[3].DiscIndex))
+            .IsEqualTo(("beta", "beta-release", 0));
+    }
+
+    [Test]
+    public async Task AttachAsync_ExplicitTarget_AppliesCleanIdOnlyToChosenSibling()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        var selected = AddMediaRelease(
+            seed.MediaItem,
+            seed.Disc,
+            "selected-release",
+            "Selected Release",
+            2021,
+            ChangeTestSeed.DiscSlug,
+            ChangeTestSeed.DiscIndex,
+            "Selected Disc");
+        await db.SaveChangesAsync();
+
+        var target = new DiscTargetIdentity(
+            ChangeTestSeed.MediaItemSlug,
+            null,
+            "selected-release",
+            ChangeTestSeed.DiscSlug,
+            ChangeTestSeed.DiscIndex);
+        var result = await CreateService(db).AttachAsync("user-1", ContentHash, DiscId, target);
+
+        await Assert.That(result.Outcome).IsEqualTo(AttachDiscIdOutcome.Applied);
+        await Assert.That(selected.GlobalDiscId).IsEqualTo(DiscId);
+        await Assert.That(seed.ReleaseDisc.GlobalDiscId).IsNull();
+    }
+
+    [Test]
+    public async Task AttachAsync_ExplicitTargetWithDifferentEffectiveId_FilesConflictForSelectedRelease()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        seed.ReleaseDisc.GlobalDiscId = OtherDiscId;
+        var selected = AddMediaRelease(
+            seed.MediaItem,
+            seed.Disc,
+            "selected-release",
+            "Selected Release",
+            2021,
+            ChangeTestSeed.DiscSlug,
+            ChangeTestSeed.DiscIndex,
+            "Selected Disc");
+        await db.SaveChangesAsync();
+
+        var target = new DiscTargetIdentity(
+            ChangeTestSeed.MediaItemSlug,
+            null,
+            "selected-release",
+            ChangeTestSeed.DiscSlug,
+            ChangeTestSeed.DiscIndex);
+        var result = await CreateService(db).AttachAsync("user-1", ContentHash, DiscId, target);
+
+        await Assert.That(result.Outcome).IsEqualTo(AttachDiscIdOutcome.Conflict);
+        await Assert.That(result.ExistingGlobalDiscId).IsEqualTo(OtherDiscId);
+        await Assert.That(selected.GlobalDiscId).IsNull();
+        await Assert.That(seed.ReleaseDisc.GlobalDiscId).IsEqualTo(OtherDiscId);
+
+        var change = await db.Set<EditSuggestionChange>().SingleAsync();
+        var proposed = JsonSerializer.Deserialize<DiscFieldsDetails>(change.ProposedJson, JsonOptions);
+        await Assert.That(proposed).IsNotNull();
+        await Assert.That(proposed!.MediaItemSlug).IsEqualTo(ChangeTestSeed.MediaItemSlug);
+        await Assert.That(proposed.BoxsetSlug).IsNull();
+        await Assert.That(proposed.ReleaseSlug).IsEqualTo("selected-release");
+        await Assert.That(proposed.DiscSlug).IsEqualTo(ChangeTestSeed.DiscSlug);
+        await Assert.That(proposed.DiscIndex).IsEqualTo(ChangeTestSeed.DiscIndex);
+        await Assert.That(proposed.GlobalDiscId).IsEqualTo(DiscId);
     }
 
     [Test]

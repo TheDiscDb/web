@@ -60,8 +60,27 @@ public sealed record DiscTargetIdentity(
     string? DiscSlug,
     int? DiscIndex);
 
+/// <summary>
+/// A media-item release-disc matching a submitted content hash. The target uses only stable
+/// natural keys; the remaining fields provide user-friendly labels for release selection.
+/// </summary>
+public sealed record DiscIdTargetCandidate(
+    DiscTargetIdentity Target,
+    string? MediaTitle,
+    string MediaItemSlug,
+    string? ReleaseTitle,
+    string ReleaseSlug,
+    string? DiscName,
+    string? DiscSlug,
+    int DiscIndex,
+    string? CurrentGlobalDiscId);
+
 public interface IDiscIdBackfillService
 {
+    Task<IReadOnlyList<DiscIdTargetCandidate>> GetTargetsByContentHashAsync(
+        string contentHash,
+        CancellationToken cancellationToken = default);
+
     Task<AttachDiscIdResult> AttachAsync(
         string userId,
         string contentHash,
@@ -83,6 +102,38 @@ public sealed class DiscIdBackfillService(
     IEditSuggestionReviewService reviewService) : IDiscIdBackfillService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    public async Task<IReadOnlyList<DiscIdTargetCandidate>> GetTargetsByContentHashAsync(
+        string contentHash,
+        CancellationToken cancellationToken = default)
+        => await database.Set<ReleaseDisc>()
+            .AsNoTracking()
+            .Where(rd => rd.Disc != null && rd.Disc.ContentHash == contentHash)
+            .Where(rd => rd.Release != null && rd.Release.MediaItem != null && rd.Release.Boxset == null)
+            .Where(rd => rd.Release!.MediaItem!.Slug != null && rd.Release.Slug != null)
+            .OrderBy(rd => rd.Release!.MediaItem!.Title)
+            .ThenBy(rd => rd.Release!.MediaItem!.Slug)
+            .ThenBy(rd => rd.Release!.Title)
+            .ThenBy(rd => rd.Release!.Year)
+            .ThenBy(rd => rd.Release!.Slug)
+            .ThenBy(rd => rd.Index)
+            .ThenBy(rd => rd.Slug)
+            .Select(rd => new DiscIdTargetCandidate(
+                new DiscTargetIdentity(
+                    rd.Release!.MediaItem!.Slug!,
+                    null,
+                    rd.Release.Slug!,
+                    rd.Slug,
+                    rd.Index),
+                rd.Release.MediaItem.Title,
+                rd.Release.MediaItem.Slug!,
+                rd.Release.Title,
+                rd.Release.Slug!,
+                rd.Name,
+                rd.Slug,
+                rd.Index,
+                rd.GlobalDiscId))
+            .ToListAsync(cancellationToken);
 
     public async Task<AttachDiscIdResult> AttachAsync(
         string userId,

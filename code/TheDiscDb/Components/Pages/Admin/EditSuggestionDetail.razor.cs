@@ -36,6 +36,7 @@ public partial class EditSuggestionDetail : ComponentBase
     private bool actionSuccess;
     private bool isProcessing;
     private string conflictResolution = string.Empty;
+    private string suggestionRejectionReason = string.Empty;
     private Dictionary<int, string> rejectionReasons = [];
 
     // Disc ID conflict resolution context + the admin's chosen destination release-disc per change.
@@ -146,7 +147,7 @@ public partial class EditSuggestionDetail : ComponentBase
             var result = await ReviewService.RejectChangeAsync(SuggestionId, changeId, userId, reason);
             if (result == null)
             {
-                actionMessage = "Change not found or not in a pending state.";
+                actionMessage = "Change not found or not eligible for rejection.";
                 actionSuccess = false;
             }
             else
@@ -368,6 +369,52 @@ public partial class EditSuggestionDetail : ComponentBase
         }
     }
 
+    private async Task RejectSuggestion()
+    {
+        if (string.IsNullOrWhiteSpace(suggestionRejectionReason))
+        {
+            actionMessage = "Please provide a reason for rejecting the suggestion.";
+            actionSuccess = false;
+            return;
+        }
+
+        isProcessing = true;
+        actionMessage = null;
+
+        try
+        {
+            var userId = await GetAdminUserId();
+            var result = await ReviewService.RejectAllChangesAsync(
+                SuggestionId,
+                userId,
+                suggestionRejectionReason);
+
+            if (result is null)
+            {
+                actionMessage = "Suggestion not found or not eligible for rejection.";
+                actionSuccess = false;
+            }
+            else
+            {
+                actionMessage = "Suggestion rejected.";
+                actionSuccess = true;
+                suggestionRejectionReason = string.Empty;
+            }
+
+            await LoadSuggestion();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to reject suggestion {SuggestionId}", SuggestionId);
+            actionMessage = "An error occurred while rejecting the suggestion.";
+            actionSuccess = false;
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
     private async Task<string> GetAdminUserId()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -377,6 +424,13 @@ public partial class EditSuggestionDetail : ComponentBase
 
     private bool HasRejectionReason(int changeId) =>
         rejectionReasons.TryGetValue(changeId, out var reason) && !string.IsNullOrWhiteSpace(reason);
+
+    private static bool CanCorrectToRejected(EditSuggestionChangeStatus status) =>
+        status is EditSuggestionChangeStatus.Approved or EditSuggestionChangeStatus.Applied;
+
+    private bool CanRejectSuggestion =>
+        suggestion?.Changes.Any(c => c.Status is not EditSuggestionChangeStatus.Rejected) == true &&
+        suggestion.Status is not EditSuggestionStatus.Draft and not EditSuggestionStatus.Withdrawn;
 
     private void SetDestination(int changeId, Microsoft.AspNetCore.Components.ChangeEventArgs e)
     {

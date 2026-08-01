@@ -25,12 +25,24 @@ public interface IEditSuggestionReviewService
 
     /// <summary>
     /// Marks a change as <see cref="EditSuggestionChangeStatus.Rejected"/>.
+    /// Administrators may also reject an already applied change as a status correction.
+    /// This does not reverse the data mutation that was previously applied.
     /// </summary>
     Task<EditSuggestionChange?> RejectChangeAsync(
         int suggestionId,
         int changeId,
         string adminUserId,
         string? adminNote = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Marks every eligible change in a suggestion as <see cref="EditSuggestionChangeStatus.Rejected"/>.
+    /// Previously applied data is not reversed.
+    /// </summary>
+    Task<EditSuggestion?> RejectAllChangesAsync(
+        int suggestionId,
+        string adminUserId,
+        string adminNote,
         CancellationToken cancellationToken = default);
 
     /// <summary>
