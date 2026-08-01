@@ -416,7 +416,7 @@ public class ContributionGeneratorService
         {
             string discFileContents = await this.fileSystem.File.ReadAllText(existingDiscFile, cancellationToken);
             var discJson = JsonSerializer.Deserialize<Disc>(discFileContents, JsonHelper.JsonOptions);
-            if (discJson != null && discJson.Slug == existingDisc.DiscSlug)
+            if (discJson != null && discJson.SlugOrIndex() == existingDisc.DiscSlug)
             {
                 matchedDisc = true;
                 string newDiscFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.json");

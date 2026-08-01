@@ -361,6 +361,7 @@ public partial class AddDisc : CancellableComponentBase
                 ICreateDisc_CreateDisc_Errors_AuthenticationError e => e.Message,
                 ICreateDisc_CreateDisc_Errors_InvalidIdError e => e.Message,
                 ICreateDisc_CreateDisc_Errors_InvalidOwnershipError e => e.Message,
+                ICreateDisc_CreateDisc_Errors_InvalidDiscPathError e => e.Message,
                 _ => $"Could not save disc ({payloadError.Code})."
             };
         }
@@ -458,13 +459,14 @@ public partial class AddDisc : CancellableComponentBase
             return false;
         }
 
-        this.request.Slug = sourceDisc.Slug!;
-        this.request.Name = sourceDisc.Name!;
-        this.request.Format = NormalizeFormat(sourceDisc.Format);
-        this.request.ContentHash = discHash;
         var discKey = !string.IsNullOrWhiteSpace(sourceDisc.Slug)
             ? sourceDisc.Slug
             : sourceDisc.Index.ToString();
+
+        this.request.Slug = discKey;
+        this.request.Name = sourceDisc.Name!;
+        this.request.Format = NormalizeFormat(sourceDisc.Format);
+        this.request.ContentHash = discHash;
 
         this.request.ExistingDiscPath = UserContributionDisc.GenerateDiscPath(
             source.Type!,
