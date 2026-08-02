@@ -1,0 +1,18 @@
+.contribution-naming-suggestion {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+}
+
+.contribution-naming-suggestion .btn {
+    flex: 0 0 auto;
+}
+
+@media (max-width: 575.98px) {
+    .contribution-naming-suggestion {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

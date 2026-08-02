@@ -108,13 +108,21 @@ else if (Contribution is not null)
                 </div>
                 <div class="mb-3">
                     <label>Release Title<span class="required">*</span></label>
-                    <InputText class="form-control" @bind-Value="request.ReleaseTitle" />
+                    <InputText class="form-control" @bind-Value="request.ReleaseTitle" @oninput="ReleaseTitleChanged" />
                     <ValidationMessage For="@(() => request.ReleaseTitle)" />
                 </div>
                 <div class="mb-3">
                     <label>Release Slug<span class="required">*</span></label>
                     <SlugInput @ref="slugInput" class="form-control" @bind-Value="request.ReleaseSlug" CheckAvailability="CheckReleaseSlugAvailability" />
                     <ValidationMessage For="@(() => request.ReleaseSlug)" />
+                    @if (ReleaseNamingSuggestion is { } suggestion)
+                    {
+                        <ContributionNamingSuggestion EntityName="release"
+                                                      NameLabel="title"
+                                                      SuggestedName="@suggestion.SuggestedName"
+                                                      SuggestedSlug="@suggestion.SuggestedSlug"
+                                                      OnApply="ApplyReleaseNamingSuggestion" />
+                    }
                 </div>
                 <div class="mb-3">
                     <label>Locale</label>

@@ -1138,7 +1138,33 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         this.NavigationManager.NavigateTo($"/contribution/{this.ContributionId}");
     }
 
-    private void TrySetEpisodeTitle(ChangeEventArgs args)
+    private void SeasonChanged(ChangeEventArgs args)
+    {
+        if (this.currentItem?.Episode == null)
+        {
+            return;
+        }
+
+        this.currentItem.Episode.Season = ContributionInputGuard.NormalizeNumber(
+            args.Value?.ToString(),
+            allowRange: false);
+        this.TrySetEpisodeTitle();
+    }
+
+    private void EpisodeChanged(ChangeEventArgs args)
+    {
+        if (this.currentItem?.Episode == null)
+        {
+            return;
+        }
+
+        this.currentItem.Episode.Episode = ContributionInputGuard.NormalizeNumber(
+            args.Value?.ToString(),
+            allowRange: true);
+        this.TrySetEpisodeTitle();
+    }
+
+    private void TrySetEpisodeTitle()
     {
         if (this.episodeNames == null || 
             this.currentItem == null ||

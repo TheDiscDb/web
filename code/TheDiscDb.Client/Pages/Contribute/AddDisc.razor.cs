@@ -69,6 +69,12 @@ public partial class AddDisc : CancellableComponentBase
     string manualHash = string.Empty;
     SlugInput? slugInput;
     string? copyFlowError;
+    private ContributionNamingSuggestion? DiscNamingSuggestion =>
+        ContributionInputGuard.GetNamingSuggestion(
+            this.contribution?.Title,
+            this.request.Name,
+            this.request.Slug,
+            title => title.Slugify());
 
     bool IsDevelopmentMode=> HostEnvironment.Environment == "Development";
 
@@ -401,6 +407,7 @@ public partial class AddDisc : CancellableComponentBase
         if (args?.Value != null)
         {
             string title = args.Value.ToString()!;
+            this.request.Name = title;
 
             if (!string.IsNullOrEmpty(title))
             {
@@ -410,6 +417,22 @@ public partial class AddDisc : CancellableComponentBase
                     await this.slugInput.RecheckAvailability(this.request.Slug);
                 }
             }
+        }
+    }
+
+    private async Task ApplyDiscNamingSuggestion()
+    {
+        var suggestion = this.DiscNamingSuggestion;
+        if (suggestion?.CanApply != true)
+        {
+            return;
+        }
+
+        this.request.Name = suggestion.SuggestedName!;
+        this.request.Slug = suggestion.SuggestedSlug!;
+        if (this.slugInput != null)
+        {
+            await this.slugInput.RecheckAvailability(this.request.Slug);
         }
     }
 

@@ -50,6 +50,14 @@ else if (discFound)
             <label>Disc Slug</label>
             <InputText class="form-control" @bind-Value="request.Slug" />
             <ValidationMessage For="@(() => request.Slug)" />
+            @if (DiscNamingSuggestion is { } suggestion)
+            {
+                <ContributionNamingSuggestion EntityName="disc"
+                                              NameLabel="title"
+                                              SuggestedName="@suggestion.SuggestedName"
+                                              SuggestedSlug="@suggestion.SuggestedSlug"
+                                              OnApply="ApplyDiscNamingSuggestion" />
+            }
         </div>
 
         <button type="submit" class="btn btn-primary">Save</button>

@@ -46,6 +46,12 @@ public partial class EditContribution : CancellableComponentBase
 
     private SlugInput? slugInput;
     private string? externalId;
+    private ContributionNamingSuggestion? ReleaseNamingSuggestion =>
+        ContributionInputGuard.GetNamingSuggestion(
+            this.Contribution?.Title,
+            this.request.ReleaseTitle,
+            this.request.ReleaseSlug,
+            title => CreateReleaseSlug(title, this.request.ReleaseDate));
 
     private string frontImageUploadUrl => $"/api/contribute/{ContributionId}/images/front/upload";
     private string backImageUploadUrl => $"/api/contribute/{ContributionId}/images/back/upload";
@@ -201,6 +207,41 @@ public partial class EditContribution : CancellableComponentBase
         }
 
         return true;
+    }
+
+    private async Task ReleaseTitleChanged(ChangeEventArgs args)
+    {
+        string title = args.Value?.ToString() ?? string.Empty;
+        this.request.ReleaseTitle = title;
+        this.request.ReleaseSlug = CreateReleaseSlug(title, this.request.ReleaseDate);
+        if (this.slugInput != null)
+        {
+            await this.slugInput.RecheckAvailability(this.request.ReleaseSlug);
+        }
+    }
+
+    private async Task ApplyReleaseNamingSuggestion()
+    {
+        var suggestion = this.ReleaseNamingSuggestion;
+        if (suggestion?.CanApply != true)
+        {
+            return;
+        }
+
+        this.request.ReleaseTitle = suggestion.SuggestedName!;
+        this.request.ReleaseSlug = suggestion.SuggestedSlug!;
+        if (this.slugInput != null)
+        {
+            await this.slugInput.RecheckAvailability(this.request.ReleaseSlug);
+        }
+    }
+
+    private static string CreateReleaseSlug(string title, DateTimeOffset releaseDate)
+    {
+        string slug = title.Slugify();
+        return releaseDate.Year > 1980 && !title.Contains(releaseDate.Year.ToString(), StringComparison.Ordinal)
+            ? $"{releaseDate.Year}-{slug}"
+            : slug;
     }
 }
 

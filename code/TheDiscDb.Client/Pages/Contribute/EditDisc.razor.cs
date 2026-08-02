@@ -29,6 +29,13 @@ public partial class EditDisc : CancellableComponentBase
     private readonly string[] formats = [.. DiscFormatConstants.ContributionFormats];
 
     private string? globalDiscId;
+    private string? mediaTitle;
+    private ContributionNamingSuggestion? DiscNamingSuggestion =>
+        ContributionInputGuard.GetNamingSuggestion(
+            this.mediaTitle,
+            this.request.Name,
+            this.request.Slug,
+            title => title.Slugify());
 
     private bool isLoading = true;
     private bool discFound;
@@ -42,6 +49,7 @@ public partial class EditDisc : CancellableComponentBase
             var contribution = result.Data.MyContributions.Nodes.FirstOrDefault();
             if (contribution != null)
             {
+                this.mediaTitle = contribution.Title;
                 var disc = contribution.Discs.FirstOrDefault();
                 if (disc != null)
                 {
@@ -88,11 +96,24 @@ public partial class EditDisc : CancellableComponentBase
         if (args?.Value != null)
         {
             string title = args.Value.ToString()!;
+            this.request.Name = title;
 
             if (!string.IsNullOrEmpty(title))
             {
                 this.request.Slug = title.Slugify();
             }
         }
+    }
+
+    private void ApplyDiscNamingSuggestion()
+    {
+        var suggestion = this.DiscNamingSuggestion;
+        if (suggestion?.CanApply != true)
+        {
+            return;
+        }
+
+        this.request.Name = suggestion.SuggestedName!;
+        this.request.Slug = suggestion.SuggestedSlug!;
     }
 }
