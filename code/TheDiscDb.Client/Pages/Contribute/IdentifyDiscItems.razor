@@ -284,11 +284,11 @@
             <EditForm Model="@currentItem" OnValidSubmit="@HandleValidEpisodeSubmit">
                 <DataAnnotationsValidator></DataAnnotationsValidator>
                 <div class="field-container name-container">
-                    <SfTextBox CssClass="season-number e-field" Placeholder="Season Number" OnChange="TrySetEpisodeTitle" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.Episode!.Season"></SfTextBox>
+                    <SfTextBox CssClass="season-number e-field" Placeholder="Season Number" OnChange="SeasonChanged" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.Episode!.Season"></SfTextBox>
                     <ValidationMessage For="@(() => currentItem!.Episode!.Season)" />
                 </div>
                 <div class="field-container name-container">
-                    <SfTextBox CssClass="episode-number e-field" Placeholder="Episode Number" OnChange="TrySetEpisodeTitle" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Episode.Episode"></SfTextBox>
+                    <SfTextBox CssClass="episode-number e-field" Placeholder="Episode Number" OnChange="EpisodeChanged" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Episode.Episode"></SfTextBox>
                     <ValidationMessage For="@(() => currentItem.Episode.Episode)" />
                 </div>
                 <div class="field-container name-container">
@@ -324,11 +324,11 @@
                 @if (this.mediaType != null && this.mediaType.Equals("series", StringComparison.InvariantCultureIgnoreCase))
                 {
                     <div class="field-container name-container">
-                        <SfTextBox CssClass="season-number e-field" Placeholder="Season Number (optional)" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.Episode!.Season"></SfTextBox>
+                        <SfTextBox CssClass="season-number e-field" Placeholder="Season Number (optional)" OnChange="SeasonChanged" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem!.Episode!.Season"></SfTextBox>
                         <ValidationMessage For="@(() => currentItem!.Episode!.Season)" />
                     </div>
                     <div class="field-container name-container">
-                        <SfTextBox CssClass="episode-number e-field" Placeholder="Episode Number (optional)" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Episode.Episode"></SfTextBox>
+                        <SfTextBox CssClass="episode-number e-field" Placeholder="Episode Number (optional)" OnChange="EpisodeChanged" FloatLabelType="@FloatLabelType.Always" @bind-Value="@currentItem.Episode.Episode"></SfTextBox>
                         <ValidationMessage For="@(() => currentItem.Episode.Episode)" />
                     </div>
                 }

@@ -60,6 +60,12 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     string backImagePreviewUrl = "";
     private string? boxsetTitle;
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
+    private ContributionNamingSuggestion? ReleaseNamingSuggestion =>
+        ContributionInputGuard.GetNamingSuggestion(
+            this.externalData?.Title,
+            this.form?.ReleaseTitle,
+            this.form?.ReleaseSlug,
+            title => HttpUtility.UrlEncode(CreateSlug(title, GetReleaseSlugYear(title))));
     private static readonly System.Text.RegularExpressions.Regex AsinRegex = new(@"^\w{10}$", System.Text.RegularExpressions.RegexOptions.Compiled);
     private bool ImportFromAmazonDisabled => !AsinRegex.IsMatch(this.request.Asin ?? string.Empty) || IsAmazonImportInProgress;
     private bool IsAmazonImportInProgress = false;
@@ -292,18 +298,38 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         if (args?.Value != null)
         {
             string title = args.Value.ToString()!;
-            int? year = null;
-            if (this.request.ReleaseDate.Year > 1980 && !title.Contains(this.request.ReleaseDate.Year.ToString()))
-            {
-                year = this.request.ReleaseDate.Year;
-            }
+            this.form!.ReleaseTitle = title;
 
-            this.request.ReleaseSlug = HttpUtility.UrlEncode(CreateSlug(title, year));
+            this.request.ReleaseSlug = HttpUtility.UrlEncode(CreateSlug(title, GetReleaseSlugYear(title)));
             if (this.slugInput != null)
             {
                 await this.slugInput.RecheckAvailability(this.request.ReleaseSlug);
             }
         }
+    }
+
+    private async Task ApplyReleaseNamingSuggestion()
+    {
+        var suggestion = this.ReleaseNamingSuggestion;
+        if (suggestion?.CanApply != true)
+        {
+            return;
+        }
+
+        this.form!.ReleaseTitle = suggestion.SuggestedName;
+        this.form.ReleaseSlug = suggestion.SuggestedSlug;
+        if (this.slugInput != null)
+        {
+            await this.slugInput.RecheckAvailability(this.form.ReleaseSlug);
+        }
+    }
+
+    private int? GetReleaseSlugYear(string title)
+    {
+        int releaseYear = this.request.ReleaseDate.Year;
+        return releaseYear > 1980 && !title.Contains(releaseYear.ToString(), StringComparison.Ordinal)
+            ? releaseYear
+            : null;
     }
 
     private async Task ReleaseDateChanged(ChangeEventArgs args)

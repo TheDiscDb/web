@@ -91,6 +91,14 @@
         <label>Release Slug<span class="required">*</span></label>
         <SlugInput @ref="slugInput" class="form-control" @bind-Value="form!.ReleaseSlug" CheckAvailability="CheckReleaseSlugAvailability" />
         <ValidationMessage For="@(() => form!.ReleaseSlug)" />
+        @if (ReleaseNamingSuggestion is { } suggestion)
+        {
+            <ContributionNamingSuggestion EntityName="release"
+                                          NameLabel="title"
+                                          SuggestedName="@suggestion.SuggestedName"
+                                          SuggestedSlug="@suggestion.SuggestedSlug"
+                                          OnApply="ApplyReleaseNamingSuggestion" />
+        }
     </div>
     <div class="mb-3">
         <label>Locale</label>

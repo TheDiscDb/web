@@ -66,6 +66,14 @@
                             <label>Disc Slug</label>
                             <SlugInput @ref="slugInput" class="form-control" @bind-Value="request.Slug" CheckAvailability="CheckDiscSlugAvailability" />
                             <ValidationMessage For="@(() => request.Slug)" />
+                            @if (DiscNamingSuggestion is { } suggestion)
+                            {
+                                <ContributionNamingSuggestion EntityName="disc"
+                                                              NameLabel="title"
+                                                              SuggestedName="@suggestion.SuggestedName"
+                                                              SuggestedSlug="@suggestion.SuggestedSlug"
+                                                              OnApply="ApplyDiscNamingSuggestion" />
+                            }
                         </div>
                     </div>
 

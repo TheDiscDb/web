@@ -1,0 +1,23 @@
+<div class="contribution-naming-suggestion alert alert-warning" role="status">
+    <div>
+        <strong>Keep the @EntityName name focused on this specific @EntityName.</strong>
+        The movie or show title is already displayed elsewhere and should be left out.
+        @if (HasSuggestion)
+        {
+            <span>
+                Suggested @NameLabel: <strong>@SuggestedName</strong>.
+                Suggested slug: <strong>@SuggestedSlug</strong>.
+            </span>
+        }
+        else
+        {
+            <span>Use an edition, packaging, format, or disc-specific name instead.</span>
+        }
+    </div>
+    @if (HasSuggestion)
+    {
+        <button type="button" class="btn btn-sm btn-outline-dark" @onclick="OnApply">
+            Apply suggestion
+        </button>
+    }
+</div>
