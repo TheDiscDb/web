@@ -134,6 +134,29 @@ else if (Contribution is not null)
                     <InputText class="form-control" @bind-Value="request.RegionCode" />
                     <ValidationMessage For="@(() => request.RegionCode)" />
                 </div>
+                <section class="partial-declaration">
+                    <div class="form-check">
+                        <InputCheckbox id="missing-discs" class="form-check-input" @bind-Value="partialForm.IsPartial" disabled="@(!IsEditable)" />
+                        <label class="form-check-label" for="missing-discs">This release is missing one or more discs</label>
+                    </div>
+                    @if (partialForm.IsPartial)
+                    {
+                        <div class="mt-2">
+                            <label for="missing-discs-reason">Why are discs missing?</label>
+                            <InputSelect id="missing-discs-reason" class="form-select" @bind-Value="partialForm.Reason" disabled="@(!IsEditable)">
+                                <option value="@PartialStateReason.Unknown">Choose a reason</option>
+                                <option value="@PartialStateReason.OnlyOwnsSomeDiscs">I only own some of the discs</option>
+                                <option value="@PartialStateReason.DiscMissing">A disc is missing</option>
+                                <option value="@PartialStateReason.DiscDamagedOrUnreadable">A disc is damaged or unreadable</option>
+                                <option value="@PartialStateReason.Other">Other</option>
+                            </InputSelect>
+                        </div>
+                        <div class="mt-2">
+                            <label for="missing-discs-note">What is missing? @(partialForm.Reason == PartialStateReason.Other ? "(required)" : "(optional)")</label>
+                            <InputTextArea id="missing-discs-note" class="form-control" @bind-Value="partialForm.Note" disabled="@(!IsEditable)" />
+                        </div>
+                    }
+                </section>
 
                 <div class="cta-row split">
                     <a class="btn btn-secondary" href="/contribution/@ContributionId">Cancel</a>

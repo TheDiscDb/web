@@ -232,6 +232,12 @@ public static class DiscFileFinalizer
             disc.GlobalDiscId = discFile.GlobalDiscId;
         }
 
+        if (discFile.Partial is not null)
+        {
+            discFile.Partial.Validate(PartialStateTarget.Disc);
+            disc.Partial = discFile.Partial;
+        }
+
         disc.Titles = logDisc.Titles.Select(mapper.Map).ToList();
 
         if (discFile.Unknown.Any())

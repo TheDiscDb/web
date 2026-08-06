@@ -41,6 +41,18 @@ else
                         </a>
                     </div>
                     <div>Released @string.Format("{0:d}", @Release?.ReleaseDate)</div>
+                    @if (HasPartialState)
+                    {
+                        <aside class="partial-status" title="@PartialNote">
+                            <span class="partial-badge">@PartialLabel</span>
+                            <span class="partial-reason">@PartialReason</span>
+                            @if (!string.IsNullOrWhiteSpace(PartialNote))
+                            {
+                                <span class="partial-note">@PartialNote</span>
+                            }
+                            <a class="partial-cta" href="@PartialCtaUrl">Help complete this release</a>
+                        </aside>
+                    }
                     @if (!string.IsNullOrEmpty(Release?.Upc))
                     {
                         <div class="upc-line">

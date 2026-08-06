@@ -28,6 +28,13 @@ public partial class ReleaseDetail : ComponentBase
 
     private MediaItem? Item { get; set; }
     private Release? Release { get; set; }
+    private bool HasPartialState => this.Release?.Partial is not null;
+    private string PartialLabel => this.Release?.Partial?.Type == PartialStateType.MissingDiscs
+        ? "Missing discs"
+        : "Incomplete release";
+    private string PartialReason => FormatPartialReason(this.Release?.Partial?.Reason);
+    private string? PartialNote => this.Release?.Partial?.Note;
+    private string PartialCtaUrl => "/contribute";
 
     private List<Group> AllGroups
     {
@@ -43,6 +50,7 @@ public partial class ReleaseDetail : ComponentBase
                     {
                         groups.TryAdd(mig.Group.Slug, mig.Group);
                     }
+
                 }
             }
 
@@ -85,5 +93,15 @@ public partial class ReleaseDetail : ComponentBase
                 HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
             }
         }
+
     }
+
+    private static string FormatPartialReason(PartialStateReason? reason) => reason switch
+    {
+        PartialStateReason.OnlyOwnsSomeDiscs => "Contributor only owns some discs",
+        PartialStateReason.DiscMissing => "A disc is missing",
+        PartialStateReason.DiscDamagedOrUnreadable => "A disc is damaged or unreadable",
+        PartialStateReason.Other => "Other",
+        _ => "More data is needed",
+    };
 }

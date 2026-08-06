@@ -1,6 +1,7 @@
 ﻿namespace TheDiscDb.ImportModels
 {
     using System;
+    using TheDiscDb;
 
     public class ReleaseFile
     {
@@ -19,6 +20,7 @@
         public string? BackImageUrl { get; set; }
         public DateTimeOffset ReleaseDate { get; set; }
         public DateTimeOffset DateAdded { get; set; }
+        public PartialState? Partial { get; set; }
         public ICollection<Contributor> Contributors { get; set; } = new HashSet<Contributor>();
         public ICollection<string> Groups { get; set; } = new List<string>();
     }

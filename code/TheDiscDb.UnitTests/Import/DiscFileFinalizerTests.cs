@@ -83,4 +83,23 @@ public class DiscFileFinalizerTests
         await Assert.That(() => DiscFileFinalizer.Map(disc, discFile, discInfo))
             .Throws<Exception>();
     }
+
+    [Test]
+    public async Task Map_PartialState_CopiesToDisc()
+    {
+        var discInfo = BuildDiscInfoWithTwoSubtitles();
+        var partial = new PartialState
+        {
+            Type = PartialStateType.PartiallyIdentified,
+            Reason = PartialStateReason.OnlyIdentifyingMainFeature,
+            Source = PartialStateSource.Declared,
+        };
+        var discFile = new DiscFile { Index = 1, Partial = partial };
+        discFile.MainMovies.Add(BuildMainMovieItem());
+        var disc = new TheDiscDb.InputModels.Disc();
+
+        DiscFileFinalizer.Map(disc, discFile, discInfo);
+
+        await Assert.That(disc.Partial).IsSameReferenceAs(partial);
+    }
 }

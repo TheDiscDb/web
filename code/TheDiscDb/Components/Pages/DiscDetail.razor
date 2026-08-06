@@ -44,6 +44,18 @@ else
         <a href="@GetDiscEditUrl()" class="icon-btn" title="Suggest edits to this disc"><i class="e-icons e-edit"></i></a>
     </div>
     <h2 class="fs-5 fs-md-2">@DiscRelease.Title</h2>
+    @if (HasPartialState)
+    {
+        <aside class="partial-status" title="@PartialNote">
+            <span class="partial-badge">@PartialLabel</span>
+            <span class="partial-reason">@PartialReason</span>
+            @if (!string.IsNullOrWhiteSpace(PartialNote))
+            {
+                <span class="partial-note">@PartialNote</span>
+            }
+            <a class="partial-cta" href="@PartialCtaUrl">Help identify this disc</a>
+        </aside>
+    }
 
     <TheDiscDb.Client.Pages.DiscDetail
         Type="@Type"

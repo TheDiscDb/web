@@ -18,6 +18,16 @@
         {
             <div>Disc ID: @Disc.GlobalDiscId</div>
         }
+        @if (Disc.Partial is { } partial)
+        {
+            <div class="alert alert-warning">
+                <strong>Partial:</strong> @partial.Type · @partial.Reason
+                @if (!string.IsNullOrWhiteSpace(partial.Note))
+                {
+                    <div>@partial.Note</div>
+                }
+            </div>
+        }
         <EditForm Model="@Disc" OnValidSubmit="HandleValidSubmit">
             <DataAnnotationsValidator />
             <ValidationSummary />

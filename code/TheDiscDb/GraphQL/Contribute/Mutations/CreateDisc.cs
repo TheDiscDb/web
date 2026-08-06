@@ -24,7 +24,7 @@ public partial class ContributionMutations
             Format = format,
             Name = name,
             Slug = slug,
-            ExistingDiscPath = existingDiscPath ?? ""
+            ExistingDiscPath = existingDiscPath ?? "",
         };
 
         var decodedContributionId = this.idEncoder.Decode(contributionId);

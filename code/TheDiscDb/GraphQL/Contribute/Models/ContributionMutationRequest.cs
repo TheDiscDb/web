@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using TheDiscDb.Validation;
 using TheDiscDb.Web.Data;
+using TheDiscDb;
 
 namespace TheDiscDb.GraphQL.Contribute.Models;
 
@@ -34,6 +35,7 @@ public class ContributionMutationRequest
     public string Year { get; set; } = string.Empty;
     public Guid StorageId { get; set; } = Guid.Empty;
     public UserContributionStatus Status { get; set; } = UserContributionStatus.Pending;
+    public PartialState? Partial { get; set; }
 
     /// <summary>
     /// Optional encoded boxset id. When provided, the new contribution will be linked to the
@@ -60,5 +62,6 @@ public class ContributionMutationRequest
         this.Title = contribution.Title ?? string.Empty;
         this.Year = contribution.Year ?? string.Empty;
         this.Status = contribution.Status;
+        this.Partial = contribution.Partial;
     }
 }

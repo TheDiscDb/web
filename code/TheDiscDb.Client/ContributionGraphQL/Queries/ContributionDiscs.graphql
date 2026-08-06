@@ -23,6 +23,12 @@ query ContributionDiscs($contribtionId: EncodedIdFilter) {
       backImageUrl
       created
       locale
+      partial {
+        type
+        reason
+        source
+        note
+      }
       boxset {
         encodedId
         title
@@ -35,6 +41,12 @@ query ContributionDiscs($contribtionId: EncodedIdFilter) {
         logsUploaded
         format
         slug
+        partial {
+          type
+          reason
+          source
+          note
+        }
       }
     }
   }

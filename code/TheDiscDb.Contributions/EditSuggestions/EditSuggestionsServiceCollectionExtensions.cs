@@ -4,8 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using TheDiscDb.Data.Changes;
 using TheDiscDb.Data.Changes.Chapter;
 using TheDiscDb.Data.Changes.DiscFields;
+using TheDiscDb.Data.Changes.DiscPartial;
 using TheDiscDb.Data.Changes.DiscItemFields;
 using TheDiscDb.Data.Changes.ReleaseFields;
+using TheDiscDb.Data.Changes.ReleasePartial;
 using TheDiscDb.Data.Changes.Track;
 
 /// <summary>
@@ -26,6 +28,12 @@ public static class EditSuggestionsServiceCollectionExtensions
         services.AddSingleton<IChangeBuilder>(new ChangeBuilder<DiscFieldsDetails>(
             DiscFieldsUpdate.Key,
             (d, opts) => new DiscFieldsUpdate(d, opts)));
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<ReleasePartialDetails>(
+            ReleasePartialUpdate.Key,
+            (d, opts) => new ReleasePartialUpdate(d, opts)));
+        services.AddSingleton<IChangeBuilder>(new ChangeBuilder<DiscPartialDetails>(
+            DiscPartialUpdate.Key,
+            (d, opts) => new DiscPartialUpdate(d, opts)));
         services.AddSingleton<IChangeBuilder>(new ChangeBuilder<DiscItemFieldsDetails>(
             DiscItemFieldsUpdate.Key,
             (d, opts) => new DiscItemFieldsUpdate(d, opts)));

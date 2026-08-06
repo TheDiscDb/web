@@ -207,7 +207,8 @@ public class DataImportItemFactory
                         Year = file.Year,
                         RegionCode = file.RegionCode,
                         ReleaseDate = file.ReleaseDate,
-                        DateAdded = DateTimeOffset.UtcNow
+                        DateAdded = DateTimeOffset.UtcNow,
+                        Partial = ValidatePartial(file.Partial, PartialStateTarget.Release),
                     }
                 };
 
@@ -367,6 +368,7 @@ public class DataImportItemFactory
         release.ImageUrl = releaseFile.ImageUrl;
         release.ReleaseDate = releaseFile.ReleaseDate;
         release.DateAdded = releaseFile.DateAdded;
+        release.Partial = ValidatePartial(releaseFile.Partial, PartialStateTarget.Release);
 
         foreach (var contributor in releaseFile.Contributors)
         {
@@ -471,7 +473,13 @@ public class DataImportItemFactory
         if (extension.Equals(".json", StringComparison.OrdinalIgnoreCase))
         {
             var json = await this.fileSystem.File.ReadAllText(path, cancellationToken);
-            return JsonSerializer.Deserialize<Disc>(json, DataImporter.JsonOptions);
+            var disc = JsonSerializer.Deserialize<Disc>(json, DataImporter.JsonOptions);
+            if (disc is not null)
+            {
+                ValidatePartial(disc.Partial, PartialStateTarget.Disc);
+            }
+
+            return disc;
         }
 
         if (!extension.Equals(".ref", StringComparison.OrdinalIgnoreCase))
@@ -497,10 +505,17 @@ public class DataImportItemFactory
         var referencedDisc = JsonSerializer.Deserialize<Disc>(referencedJson, DataImporter.JsonOptions);
         if (referencedDisc is not null)
         {
+            ValidatePartial(referencedDisc.Partial, PartialStateTarget.Disc);
             ApplyReferenceOverrides(referencedDisc, reference);
         }
 
         return referencedDisc;
+    }
+
+    internal static PartialState? ValidatePartial(PartialState? partial, PartialStateTarget target)
+    {
+        partial?.Validate(target);
+        return partial;
     }
 
     internal static void ApplyReferenceOverrides(Disc referencedDisc, DiscReferenceFile reference)

@@ -57,6 +57,8 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
         await using var workspace = await this.workspaceFactory.CreateAsync(cancellationToken);
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         var contribution = await dbContext.UserContributions
+            .Include(c => c.Discs)
+                .ThenInclude(d => d.Items)
             .FirstOrDefaultAsync(c => c.Id == contributionId, cancellationToken)
             ?? throw new InvalidOperationException($"Contribution {contributionId} not found.");
 
@@ -141,6 +143,10 @@ public class ContributionImportOrchestrator : IContributionImportOrchestrator
     {
         var oldStatus = contribution.Status;
         contribution.Status = newStatus;
+        if (newStatus is UserContributionStatus.Approved or UserContributionStatus.Imported)
+        {
+            PartialStateLifecycle.ClearAutomaticUnidentified(contribution.Discs);
+        }
         await dbContext.SaveChangesAsync(cancellationToken);
         await this.historyService.RecordStatusChangedAsync(contribution.Id, contribution.UserId, oldStatus, newStatus, cancellationToken);
         log($"Contribution status updated: {newStatus}");

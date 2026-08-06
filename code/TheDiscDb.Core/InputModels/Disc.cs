@@ -25,6 +25,7 @@ namespace TheDiscDb.InputModels
         public string? Name { get; set; }
         public string? Format { get; set; }
         public string? ContentHash { get; set; }
+        public PartialState? Partial { get; set; }
 
         /// <summary>
         /// Transient carrier for the pressing's globally-stable Disc ID as read from a

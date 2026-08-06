@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Fantastic.FileSystem;
 using Fantastic.TheMovieDb;
 using MakeMkv;
@@ -113,7 +114,12 @@ public class ContributionGeneratorService
             itemType);
 
         string folderName = BuildContributionFolderName(contribution, metadata, year);
-        string subFolderName = itemType == ImportItemType.Series ? "series" : "movie";
+        string subFolderName = itemType switch
+        {
+            ImportItemType.Series => "series",
+            ImportItemType.Boxset => "sets",
+            _ => "movie",
+        };
 
         string basePath = this.fileSystem.Path.Combine(workspace.DataRepositoryPath, subFolderName, folderName);
         log($"Importing into {basePath}");
@@ -177,7 +183,9 @@ public class ContributionGeneratorService
             generatedFiles.Add(metadataPath);
         }
 
-        string releaseFolder = this.fileSystem.Path.Combine(basePath, contribution.ReleaseSlug ?? string.Empty);
+        string releaseFolder = itemType == ImportItemType.Boxset
+            ? basePath
+            : this.fileSystem.Path.Combine(basePath, contribution.ReleaseSlug ?? string.Empty);
 
         bool justCreatedReleaseFolder = false;
         if (!await this.fileSystem.Directory.Exists(releaseFolder))
@@ -190,7 +198,10 @@ public class ContributionGeneratorService
         {
             await DownloadReleaseImages(contribution, releaseFolder, overwrite, generatedFiles, log, cancellationToken);
 
-            string releaseFile = this.fileSystem.Path.Combine(releaseFolder, ReleaseFile.Filename);
+            string releaseFileName = itemType == ImportItemType.Boxset
+                ? BoxSetReleaseFile.Filename
+                : ReleaseFile.Filename;
+            string releaseFile = this.fileSystem.Path.Combine(releaseFolder, releaseFileName);
             if (!await this.fileSystem.File.Exists(releaseFile) || overwrite)
             {
                 var release = new ReleaseFile
@@ -204,7 +215,8 @@ public class ContributionGeneratorService
                     RegionCode = contribution.RegionCode ?? "1",
                     Asin = contribution.Asin,
                     ReleaseDate = contribution.ReleaseDate,
-                    DateAdded = DateTime.UtcNow.Date
+                    DateAdded = DateTime.UtcNow.Date,
+                    Partial = contribution.Partial,
                 };
 
                 var user = await this.userManager.FindByIdAsync(contribution.UserId);
@@ -238,7 +250,8 @@ public class ContributionGeneratorService
                     }
                 }
 
-                await this.fileSystem.File.WriteAllText(releaseFile, JsonSerializer.Serialize(release, JsonHelper.JsonOptions));
+                object releaseOutput = CreateReleaseOutput(release, itemType);
+                await this.fileSystem.File.WriteAllText(releaseFile, JsonSerializer.Serialize(releaseOutput, JsonHelper.JsonOptions));
                 generatedFiles.Add(releaseFile);
             }
         }
@@ -421,6 +434,17 @@ public class ContributionGeneratorService
                 matchedDisc = true;
                 string newDiscFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.json");
                 await this.fileSystem.File.Copy(existingDiscFile, newDiscFilePath, overwrite, cancellationToken: cancellationToken);
+                var copiedDiscJson = JsonNode.Parse(discFileContents)?.AsObject()
+                    ?? throw new InvalidOperationException($"Copied disc source '{existingDiscFile}' contains invalid JSON.");
+                if (disc.Partial is null)
+                {
+                    copiedDiscJson.Remove(nameof(Disc.Partial));
+                }
+                else
+                {
+                    copiedDiscJson[nameof(Disc.Partial)] = JsonSerializer.SerializeToNode(disc.Partial, JsonHelper.JsonOptions);
+                }
+                await this.fileSystem.File.WriteAllText(newDiscFilePath, copiedDiscJson.ToJsonString(JsonHelper.JsonOptions));
                 generatedFiles.Add(newDiscFilePath);
 
                 string existingDir = this.fileSystem.Path.GetDirectoryName(existingDiscFile)!;
@@ -523,14 +547,7 @@ public class ContributionGeneratorService
 
             string discJsonFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.json");
 
-            var discJsonFile = new Disc
-            {
-                Index = discName.Index,
-                Slug = disc.Slug,
-                Name = disc.Name,
-                Format = discFormat,
-                ContentHash = disc.ContentHash
-            };
+            var discJsonFile = CreateDiscOutput(disc, discName.Index, discFormat);
 
             summaryFileMemoryStream.Position = 0;
             string summaryContents = await new StreamReader(summaryFileMemoryStream).ReadToEndAsync(cancellationToken);
@@ -579,6 +596,38 @@ public class ContributionGeneratorService
         await this.fileSystem.File.WriteAllLines(logFile, result, cancellationToken);
         generatedFiles.Add(logFile);
     }
+
+    internal static object CreateReleaseOutput(ReleaseFile release, ImportItemType itemType) =>
+        itemType == ImportItemType.Boxset
+            ? new BoxSetReleaseFile
+            {
+                Slug = release.Slug,
+                Asin = release.Asin,
+                Upc = release.Upc,
+                Year = release.Year,
+                Locale = release.Locale,
+                RegionCode = release.RegionCode,
+                Title = release.Title,
+                SortTitle = release.SortTitle,
+                Isbn = release.Isbn,
+                ImageUrl = release.ImageUrl,
+                BackImageUrl = release.BackImageUrl,
+                ReleaseDate = release.ReleaseDate,
+                DateAdded = release.DateAdded,
+                Partial = release.Partial,
+            }
+            : release;
+
+    internal static Disc CreateDiscOutput(UserContributionDisc disc, int discIndex, string discFormat) =>
+        new()
+        {
+            Index = discIndex,
+            Slug = disc.Slug,
+            Name = disc.Name,
+            Format = discFormat,
+            ContentHash = disc.ContentHash,
+            Partial = disc.Partial,
+        };
 
     private async Task<(string Title, string Year, string Slug)> GetItemMetadata(string externalId, string mediaType)
     {

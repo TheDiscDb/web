@@ -19,6 +19,7 @@
         public string? BackImageUrl { get; set; }
         public DateTimeOffset ReleaseDate { get; set; }
         public DateTimeOffset DateAdded { get; set; }
+        public PartialState? Partial { get; set; }
 
         [System.Text.Json.Serialization.JsonIgnore]
         public string FullTitle => $"{Title} ({Year})";

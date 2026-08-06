@@ -1238,6 +1238,362 @@ namespace TheDiscDb.Web.Migrations
                     b.ToTable("EngramTitles");
                 });
 
+            modelBuilder.Entity("TheDiscDb.Web.Data.IntakeDisc", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Format", "ContentHash")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "ReceivedAt");
+
+                    b.ToTable("IntakeDiscs");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.IntakeDiscEvidence", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("EvidenceSetId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("GlobalDiscId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("IntakeDiscId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset>("RecordedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("SourceEvidenceId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IntakeDiscId", "EvidenceSetId", "RecordedAt");
+
+                    b.HasIndex("IntakeDiscId", "GlobalDiscId", "EvidenceSetId")
+                        .HasFilter("[GlobalDiscId] IS NOT NULL");
+
+                    b.HasIndex("Source", "SourceEvidenceId", "Type")
+                        .IsUnique();
+
+                    b.ToTable("IntakeDiscEvidence");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.IntakePromotion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BoxsetSlug")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DiscContentHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("DiscFormat")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("DiscGlobalId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("EvidenceSetId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("IntakeDiscId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IntakeReleaseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MediaItemSlug")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ReleaseSlug")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("RequestedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int?>("UserContributionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IntakeDiscId");
+
+                    b.HasIndex("IntakeReleaseId");
+
+                    b.HasIndex("UserContributionId");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.HasIndex("UserContributionId", "IntakeDiscId", "Target", "Status")
+                        .IsUnique()
+                        .HasFilter("[Target] = 'Disc' AND [Status] = 'Completed' AND [UserContributionId] IS NOT NULL");
+
+                    b.HasIndex("UserContributionId", "IntakeReleaseId", "Target", "Status")
+                        .IsUnique()
+                        .HasFilter("[Target] = 'Release' AND [Status] = 'Completed' AND [UserContributionId] IS NOT NULL");
+
+                    b.ToTable("IntakePromotions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_IntakePromotions_OneOwner", "([Target] = 'Release' AND [IntakeReleaseId] IS NOT NULL AND [IntakeDiscId] IS NULL) OR ([Target] = 'Disc' AND [IntakeReleaseId] IS NULL AND [IntakeDiscId] IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.IntakeRelease", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Asin")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("BoxsetSlug")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("ExternalProvider")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("FrontImageLocation")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Locale")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("MediaItemSlug")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("RegionCode")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTimeOffset?>("ReleaseDate")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ReleaseSlug")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ReleaseTitle")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("SourceReleaseId")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Upc")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoxsetSlug", "ReleaseSlug");
+
+                    b.HasIndex("MediaItemSlug", "ReleaseSlug");
+
+                    b.HasIndex("Source", "SourceReleaseId")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "ReceivedAt");
+
+                    b.HasIndex("ExternalProvider", "ExternalId", "Upc");
+
+                    b.ToTable("IntakeReleases", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_IntakeReleases_OneParentSlug", "[MediaItemSlug] IS NULL OR [BoxsetSlug] IS NULL");
+                        });
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.IntakeReleaseDisc", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("AddedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("GlobalDiscId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("Index")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IntakeDiscId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IntakeReleaseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Slug")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SourceDiscId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GlobalDiscId")
+                        .HasFilter("[GlobalDiscId] IS NOT NULL");
+
+                    b.HasIndex("IntakeDiscId");
+
+                    b.HasIndex("IntakeReleaseId", "Index")
+                        .IsUnique()
+                        .HasFilter("[Index] IS NOT NULL");
+
+                    b.HasIndex("IntakeReleaseId", "IntakeDiscId")
+                        .IsUnique();
+
+                    b.HasIndex("IntakeReleaseId", "SourceDiscId")
+                        .IsUnique()
+                        .HasFilter("[SourceDiscId] IS NOT NULL");
+
+                    b.ToTable("IntakeReleaseDiscs");
+                });
+
             modelBuilder.Entity("TheDiscDb.Web.Data.TheDiscDbUser", b =>
                 {
                     b.Property<string>("Id")
@@ -1540,14 +1896,14 @@ namespace TheDiscDb.Web.Migrations
 
                     b.Property<string>("ContentHash")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("ExistingDiscPath")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Format")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("GlobalDiscId")
                         .HasColumnType("nvarchar(max)");
@@ -1574,7 +1930,8 @@ namespace TheDiscDb.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserContributionId");
+                    b.HasIndex("UserContributionId", "Format", "ContentHash")
+                        .IsUnique();
 
                     b.ToTable("UserContributionDiscs");
                 });
@@ -1861,6 +2218,45 @@ namespace TheDiscDb.Web.Migrations
                         .HasForeignKey("DiscItemReferenceId");
                 });
 
+            modelBuilder.Entity("TheDiscDb.InputModels.Disc", b =>
+                {
+                    b.OwnsOne("TheDiscDb.PartialState", "Partial", b1 =>
+                        {
+                            b1.Property<int>("DiscId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Note")
+                                .HasMaxLength(1000)
+                                .HasColumnType("nvarchar(1000)");
+
+                            b1.Property<string>("Reason")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("nvarchar(64)");
+
+                            b1.Property<string>("Source")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("nvarchar(32)");
+
+                            b1.Property<string>("Type")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("nvarchar(32)");
+
+                            b1.HasKey("DiscId");
+
+                            b1.HasIndex("Type", "Reason");
+
+                            b1.ToTable("DiscPartialStates", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("DiscId");
+                        });
+
+                    b.Navigation("Partial");
+                });
+
             modelBuilder.Entity("TheDiscDb.InputModels.MediaItem", b =>
                 {
                     b.HasOne("TheDiscDb.InputModels.ExternalIds", "Externalids")
@@ -1897,7 +2293,43 @@ namespace TheDiscDb.Web.Migrations
                         .WithMany("Releases")
                         .HasForeignKey("MediaItemId");
 
+                    b.OwnsOne("TheDiscDb.PartialState", "Partial", b1 =>
+                        {
+                            b1.Property<int>("ReleaseId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Note")
+                                .HasMaxLength(1000)
+                                .HasColumnType("nvarchar(1000)");
+
+                            b1.Property<string>("Reason")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("nvarchar(64)");
+
+                            b1.Property<string>("Source")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("nvarchar(32)");
+
+                            b1.Property<string>("Type")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("nvarchar(32)");
+
+                            b1.HasKey("ReleaseId");
+
+                            b1.HasIndex("Type", "Reason");
+
+                            b1.ToTable("ReleasePartialStates", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("ReleaseId");
+                        });
+
                     b.Navigation("MediaItem");
+
+                    b.Navigation("Partial");
                 });
 
             modelBuilder.Entity("TheDiscDb.InputModels.ReleaseDisc", b =>
@@ -2040,6 +2472,60 @@ namespace TheDiscDb.Web.Migrations
                     b.Navigation("Disc");
                 });
 
+            modelBuilder.Entity("TheDiscDb.Web.Data.IntakeDiscEvidence", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.IntakeDisc", "Disc")
+                        .WithMany("Evidence")
+                        .HasForeignKey("IntakeDiscId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Disc");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.IntakePromotion", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.IntakeDisc", "Disc")
+                        .WithMany("Promotions")
+                        .HasForeignKey("IntakeDiscId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("TheDiscDb.Web.Data.IntakeRelease", "Release")
+                        .WithMany("Promotions")
+                        .HasForeignKey("IntakeReleaseId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("TheDiscDb.Web.Data.UserContribution", "UserContribution")
+                        .WithMany()
+                        .HasForeignKey("UserContributionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Disc");
+
+                    b.Navigation("Release");
+
+                    b.Navigation("UserContribution");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.IntakeReleaseDisc", b =>
+                {
+                    b.HasOne("TheDiscDb.Web.Data.IntakeDisc", "Disc")
+                        .WithMany("Releases")
+                        .HasForeignKey("IntakeDiscId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TheDiscDb.Web.Data.IntakeRelease", "Release")
+                        .WithMany("Discs")
+                        .HasForeignKey("IntakeReleaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Disc");
+
+                    b.Navigation("Release");
+                });
+
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContribution", b =>
                 {
                     b.HasOne("TheDiscDb.Web.Data.UserContributionBoxset", "Boxset")
@@ -2047,7 +2533,43 @@ namespace TheDiscDb.Web.Migrations
                         .HasForeignKey("BoxsetId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.OwnsOne("TheDiscDb.PartialState", "Partial", b1 =>
+                        {
+                            b1.Property<int>("UserContributionId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Note")
+                                .HasMaxLength(1000)
+                                .HasColumnType("nvarchar(1000)");
+
+                            b1.Property<string>("Reason")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("nvarchar(64)");
+
+                            b1.Property<string>("Source")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("nvarchar(32)");
+
+                            b1.Property<string>("Type")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("nvarchar(32)");
+
+                            b1.HasKey("UserContributionId");
+
+                            b1.HasIndex("Type", "Reason");
+
+                            b1.ToTable("UserContributionPartialStates", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserContributionId");
+                        });
+
                     b.Navigation("Boxset");
+
+                    b.Navigation("Partial");
                 });
 
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContributionAudioTrack", b =>
@@ -2097,6 +2619,42 @@ namespace TheDiscDb.Web.Migrations
                         .HasForeignKey("UserContributionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsOne("TheDiscDb.PartialState", "Partial", b1 =>
+                        {
+                            b1.Property<int>("UserContributionDiscId")
+                                .HasColumnType("int");
+
+                            b1.Property<string>("Note")
+                                .HasMaxLength(1000)
+                                .HasColumnType("nvarchar(1000)");
+
+                            b1.Property<string>("Reason")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("nvarchar(64)");
+
+                            b1.Property<string>("Source")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("nvarchar(32)");
+
+                            b1.Property<string>("Type")
+                                .IsRequired()
+                                .HasMaxLength(32)
+                                .HasColumnType("nvarchar(32)");
+
+                            b1.HasKey("UserContributionDiscId");
+
+                            b1.HasIndex("Type", "Reason");
+
+                            b1.ToTable("UserContributionDiscPartialStates", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserContributionDiscId");
+                        });
+
+                    b.Navigation("Partial");
 
                     b.Navigation("UserContribution");
                 });
@@ -2216,6 +2774,22 @@ namespace TheDiscDb.Web.Migrations
             modelBuilder.Entity("TheDiscDb.Web.Data.EngramRelease", b =>
                 {
                     b.Navigation("Discs");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.IntakeDisc", b =>
+                {
+                    b.Navigation("Evidence");
+
+                    b.Navigation("Promotions");
+
+                    b.Navigation("Releases");
+                });
+
+            modelBuilder.Entity("TheDiscDb.Web.Data.IntakeRelease", b =>
+                {
+                    b.Navigation("Discs");
+
+                    b.Navigation("Promotions");
                 });
 
             modelBuilder.Entity("TheDiscDb.Web.Data.UserContribution", b =>

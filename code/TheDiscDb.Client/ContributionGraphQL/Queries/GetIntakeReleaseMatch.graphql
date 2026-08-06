@@ -1,0 +1,16 @@
+query GetIntakeReleaseMatch($externalProvider: String!, $externalId: String!, $upc: String!) {
+  intakeReleaseMatch(
+    externalProvider: $externalProvider
+    externalId: $externalId
+    upc: $upc
+  ) {
+    asin
+    upc
+    releaseDate
+    releaseTitle
+    releaseSlug
+    locale
+    regionCode
+    frontImageUrl
+  }
+}

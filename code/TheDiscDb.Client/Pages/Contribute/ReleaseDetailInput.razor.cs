@@ -47,6 +47,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     // All properties pass through to `request`, so existing read/write sites are
     // unaffected.
     private ReleaseDetailFormBindings? form;
+    private readonly ContributionPartialStateForm partialForm = new();
 
     private string releaseDate = string.Empty;
     private string releaseDateValidationMessage = string.Empty;
@@ -59,6 +60,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     string frontImagePreviewUrl = "";
     string backImagePreviewUrl = "";
     private string? boxsetTitle;
+    private string? intakePrefillMessage;
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
     private ContributionNamingSuggestion? ReleaseNamingSuggestion =>
         ContributionInputGuard.GetNamingSuggestion(
@@ -211,6 +213,99 @@ public partial class ReleaseDetailInput : CancellableComponentBase
 
     private string? submitErrorMessage;
 
+    private async Task TryApplyIntakeReleaseMatchAsync()
+    {
+        this.intakePrefillMessage = null;
+        var normalizedUpc = string.Concat((this.form?.Upc ?? string.Empty).Where(char.IsAsciiDigit));
+        if (normalizedUpc.Length is not (12 or 13) ||
+            string.IsNullOrWhiteSpace(this.request.ExternalId))
+        {
+            return;
+        }
+
+        var response = await this.ContributionClient.GetIntakeReleaseMatch.ExecuteAsync(
+            this.request.ExternalProvider,
+            this.request.ExternalId,
+            normalizedUpc,
+            this.CancellationToken);
+        var match = response.Data?.IntakeReleaseMatch;
+        if (!response.IsSuccessResult() || match is null)
+        {
+            return;
+        }
+
+        var applied = false;
+        if (string.IsNullOrWhiteSpace(this.form!.Asin) && !string.IsNullOrWhiteSpace(match.Asin))
+        {
+            this.form.Asin = match.Asin;
+            applied = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.form.ReleaseTitle) && !string.IsNullOrWhiteSpace(match.ReleaseTitle))
+        {
+            this.form.ReleaseTitle = match.ReleaseTitle;
+            applied = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.form.ReleaseSlug) && !string.IsNullOrWhiteSpace(match.ReleaseSlug))
+        {
+            this.form.ReleaseSlug = match.ReleaseSlug;
+            applied = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.form.Locale) && !string.IsNullOrWhiteSpace(match.Locale))
+        {
+            this.form.Locale = match.Locale;
+            applied = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.form.RegionCode) && !string.IsNullOrWhiteSpace(match.RegionCode))
+        {
+            this.form.RegionCode = match.RegionCode;
+            applied = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.releaseDate) && match.ReleaseDate.HasValue)
+        {
+            this.request.ReleaseDate = match.ReleaseDate.Value;
+            this.releaseDate = match.ReleaseDate.Value.ToString("MM-dd-yyyy");
+            applied = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.request.FrontImageUrl) &&
+            !string.IsNullOrWhiteSpace(match.FrontImageUrl))
+        {
+            try
+            {
+                this.request.FrontImageUrl = await UploadImage(
+                    this.id.ToString(),
+                    match.FrontImageUrl,
+                    this.frontImageUploadUrl,
+                    "front",
+                    this.frontImageUploader) ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(this.request.FrontImageUrl))
+                {
+                    this.frontImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/front.jpg";
+                    applied = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to copy intake front image: {ex.Message}");
+            }
+        }
+
+        if (this.slugInput != null && !string.IsNullOrWhiteSpace(this.form.ReleaseSlug))
+        {
+            await this.slugInput.RecheckAvailability(this.form.ReleaseSlug);
+        }
+
+        if (applied)
+        {
+            this.intakePrefillMessage = "Available release details were filled from matching intake evidence. Your entries were preserved.";
+        }
+    }
+
     async Task HandleValidSubmit()
     {
         this.submitErrorMessage = null;
@@ -232,6 +327,14 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         {
             this.request.ReleaseDate = date;
         }
+
+        if (this.partialForm.IsPartial
+            && !this.partialForm.IsValidFor(PartialStateType.MissingDiscs))
+        {
+            this.submitErrorMessage = "Choose why discs are missing and add a note when using Other.";
+            return;
+        }
+        this.request.Partial = this.partialForm.BuildInput(PartialStateType.MissingDiscs);
         
         var result = await this.ContributionClient.CreateContribution.ExecuteAsync(new CreateContributionInput
         {

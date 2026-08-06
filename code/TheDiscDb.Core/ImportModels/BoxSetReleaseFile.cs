@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using TheDiscDb;
 
     public class BoxSetReleaseFile
     {
@@ -21,6 +22,7 @@
         public string? BackImageUrl { get; set; }
         public DateTimeOffset ReleaseDate { get; set; }
         public DateTimeOffset DateAdded { get; set; }
+        public PartialState? Partial { get; set; }
         public ICollection<BoxSetDisc> Discs { get; set; } = new HashSet<BoxSetDisc>();
     }
 }

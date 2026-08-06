@@ -12,6 +12,7 @@ public static class ContributionsServiceCollectionExtensions
     public static IServiceCollection AddContributionDiscServices(this IServiceCollection services)
     {
         services.AddScoped<IContributionDiscService, ContributionDiscService>();
+        services.AddScoped<IIntakeMatchingService, IntakeMatchingService>();
         return services;
     }
 }

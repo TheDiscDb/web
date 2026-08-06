@@ -18,6 +18,12 @@ query GetDisc($contrubtionId: EncodedIdFilter!, $discId: EncodedIdFilter!) {
         slug
         existingDiscPath
         logsUploaded
+        partial {
+          type
+          reason
+          source
+          note
+        }
       }
     }
   }

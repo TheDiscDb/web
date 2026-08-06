@@ -188,7 +188,16 @@ public partial class IdentifyDiscItems : CancellableComponentBase
 #pragma warning restore IDE0044 // Add readonly modifier
     private IGetExternalDataForContribution_ExternalDataForContribution_ExternalMetadata? ExternalMetadata = null;
     private IGetDiscLogs_DiscLogs_DiscLogs_Contribution? contribution;
-    private bool IsDoneButtonDisabled => identifiedTitles == null || identifiedTitles.Count == 0;
+    private readonly ContributionPartialStateForm partialForm = new();
+    private bool hadDeclaredPartial;
+    private PartialStateType CompletionPartialType =>
+        identifiedTitles.Count == 0 ? PartialStateType.Unidentified : PartialStateType.PartiallyIdentified;
+    private bool IsDoneButtonDisabled =>
+        callInProgress
+        || (identifiedTitles.Count == 0 && !partialForm.IsValidFor(PartialStateType.Unidentified))
+        || (identifiedTitles.Count > 0
+            && partialForm.IsPartial
+            && !partialForm.IsValidFor(PartialStateType.PartiallyIdentified));
 
     // A hacky way to prevent multiple network calls at once
     private bool callInProgress = false;
@@ -249,6 +258,19 @@ public partial class IdentifyDiscItems : CancellableComponentBase
 
             this.disc = discLogs.Disc;
             this.contribution = discLogs.Contribution;
+            if (this.disc is null)
+            {
+                this.loadError = "This disc could not be loaded.";
+                return;
+            }
+            this.hadDeclaredPartial = this.disc.Partial?.Source.ToString() == nameof(PartialStateSource.Declared);
+            if (this.hadDeclaredPartial)
+            {
+                this.partialForm.Load(
+                    this.disc.Partial?.Type.ToString(),
+                    this.disc.Partial?.Reason.ToString(),
+                    this.disc.Partial?.Note);
+            }
 
             if (discLogs.Info != null)
             {
@@ -1133,8 +1155,37 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         await this.episodeDialog!.HideAsync();
     }
 
-    private void SubmitIdentifications(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    private async Task SubmitIdentifications(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
+        if (this.disc is null || this.IsDoneButtonDisabled)
+        {
+            return;
+        }
+
+        var shouldUpdatePartial = identifiedTitles.Count == 0
+            || partialForm.IsPartial
+            || hadDeclaredPartial;
+        this.callInProgress = true;
+        var response = await this.ContributionClient.UpdateDisc.ExecuteAsync(new UpdateDiscInput
+        {
+            ContributionId = this.ContributionId!,
+            DiscId = this.DiscId!,
+            Format = this.disc.Format,
+            Name = this.disc.Name,
+            Slug = this.disc.Slug,
+            Partial = partialForm.BuildInput(this.CompletionPartialType),
+            UpdatePartial = shouldUpdatePartial,
+        });
+        this.callInProgress = false;
+
+        if (!response.IsSuccessResult() || response.Data?.UpdateDisc?.Errors is { Count: > 0 })
+        {
+            this.toastContent = response.Errors.FirstOrDefault()?.Message
+                ?? "Unable to save the disc identification status.";
+            await this.toast!.ShowAsync();
+            return;
+        }
+
         this.NavigationManager.NavigateTo($"/contribution/{this.ContributionId}");
     }
 

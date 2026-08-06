@@ -112,6 +112,7 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
         {
             var oldStatus = this.Contribution.Status;
             this.Contribution.Status = UserContributionStatus.Approved;
+            PartialStateLifecycle.ClearAutomaticUnidentified(this.Contribution.Discs);
             await this.database.SaveChangesAsync();
             await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.Approved);
         }
@@ -130,6 +131,7 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
         {
             var oldStatus = this.Contribution.Status;
             this.Contribution.Status = UserContributionStatus.Imported;
+            PartialStateLifecycle.ClearAutomaticUnidentified(this.Contribution.Discs);
             await this.database.SaveChangesAsync();
             await HistoryService.RecordStatusChangedAsync(this.Contribution.Id, this.Contribution.UserId, oldStatus, UserContributionStatus.Imported);
 

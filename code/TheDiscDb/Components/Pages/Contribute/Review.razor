@@ -46,6 +46,35 @@
             </section>
         }
 
+        @if (Contribution.Partial is not null
+            || Contribution.Discs.Any(d => d.Partial is not null))
+        {
+            <section class="info-card">
+                <h2>Declared incomplete data</h2>
+                @if (Contribution.Partial is { } releasePartial)
+                {
+                    <p>
+                        <strong>Release:</strong> @releasePartial.Type · @releasePartial.Reason
+                        @if (!string.IsNullOrWhiteSpace(releasePartial.Note))
+                        {
+                            <span> — @releasePartial.Note</span>
+                        }
+                    </p>
+                }
+                @foreach (var disc in Contribution.Discs.Where(d => d.Partial is not null))
+                {
+                    var partial = disc.Partial!;
+                    <p>
+                        <strong>@disc.Name:</strong> @partial.Type · @partial.Reason
+                        @if (!string.IsNullOrWhiteSpace(partial.Note))
+                        {
+                            <span> — @partial.Note</span>
+                        }
+                    </p>
+                }
+            </section>
+        }
+
         <div class="cta-row split">
             <a class="btn btn-secondary" href="/contribution/@Contribution.EncodedId">Back to Contribution</a>
             @if (Contribution.Boxset is not null)

@@ -324,6 +324,11 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
                     AddItemsFromEngramTitles(disc, submission.Titles);
                 }
 
+                if (disc.Items.Count == 0)
+                {
+                    disc.Partial = PartialStateLifecycle.CreateAutomaticUnidentified();
+                }
+
                 await db.SaveChangesAsync();
 
                 // Copy the scan log to its final contribution location (best-effort).

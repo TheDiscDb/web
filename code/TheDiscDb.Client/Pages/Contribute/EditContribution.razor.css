@@ -36,3 +36,10 @@
     margin-top: 0.75rem;
     font-size: 0.875rem;
 }
+.partial-declaration {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid #d8dee8;
+    border-radius: .5rem;
+    background: #f8fafc;
+}

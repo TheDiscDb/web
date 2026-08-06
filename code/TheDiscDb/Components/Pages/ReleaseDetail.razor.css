@@ -175,3 +175,37 @@
     color: #666;
     font-family: monospace;
 }
+.partial-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin: .75rem 0;
+    padding: .65rem .75rem;
+    border: 1px solid #e5b94b;
+    border-radius: .5rem;
+    background: #fff8df;
+}
+
+.partial-badge {
+    padding: .2rem .55rem;
+    border-radius: 999px;
+    background: #9a6700;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.partial-reason {
+    font-weight: 600;
+}
+
+.partial-note {
+    flex-basis: 100%;
+    color: #5f4b20;
+}
+
+.partial-cta {
+    margin-left: auto;
+    font-weight: 600;
+}

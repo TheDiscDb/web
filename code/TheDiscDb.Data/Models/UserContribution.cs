@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using HotChocolate;
+using TheDiscDb;
 
 public class UserContribution : IHasId, IContributionDisplay
 {
@@ -40,6 +41,7 @@ public class UserContribution : IHasId, IContributionDisplay
     public string? ReleaseSlug { get; set; } = string.Empty;
     public string Locale { get; set; } = string.Empty;
     public string RegionCode { get; set; } = string.Empty;
+    public PartialState? Partial { get; set; }
 
     // These are mostly used for display and lookup but are redundant data
     public string? Title { get; set; } = string.Empty;

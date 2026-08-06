@@ -40,6 +40,7 @@ public class DiscItemHandler : ItemHandler<Disc>
         fromDatabase.Index = newValue.Index;
         fromDatabase.Name = newValue.Name;
         fromDatabase.Slug = newValue.Slug;
+        fromDatabase.Partial = DataImportItemFactory.ValidatePartial(newValue.Partial, PartialStateTarget.Disc);
 
         this.HandleList(fromDatabase.Titles, newValue.Titles, this.titleItemHandler);
     }

@@ -65,6 +65,18 @@
                         <dt>Status</dt>
                         <dd>@this.Contribution.Status</dd>
 
+                        @if (Contribution.Partial is { } releasePartial)
+                        {
+                            <dt>Partial release</dt>
+                            <dd>
+                                @releasePartial.Type · @releasePartial.Reason
+                                @if (!string.IsNullOrWhiteSpace(releasePartial.Note))
+                                {
+                                    <div>@releasePartial.Note</div>
+                                }
+                            </dd>
+                        }
+
                         @if (this.User != null)
                         {
                             <dt>User</dt>
@@ -88,6 +100,7 @@
                         <th>Name</th>
                         <th>Format</th>
                         <th>Logs</th>
+                        <th>Partial</th>
                         <th class="drag-col"></th>
                     </tr>
                 </thead>
@@ -114,6 +127,12 @@
                                 else
                                 {
                                     <span>@(disc.LogsUploaded ? "Uploaded" : "Pending")</span>
+                                }
+                            </td>
+                            <td>
+                                @if (disc.Partial is { } discPartial)
+                                {
+                                    <span class="badge bg-warning text-dark" title="@discPartial.Note">@discPartial.Type · @discPartial.Reason</span>
                                 }
                             </td>
                             <td class="drag-handle" title="Drag to reorder">⋮</td>

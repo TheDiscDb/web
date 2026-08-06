@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using HotChocolate;
+using TheDiscDb;
 
 public class UserContributionDisc : IHasId
 {
@@ -24,6 +25,7 @@ public class UserContributionDisc : IHasId
     public string? LogUploadError { get; set; }
     public int? Index { get; set; }
     public string? ExistingDiscPath { get; set; } = default!;
+    public PartialState? Partial { get; set; }
 
     public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();
 

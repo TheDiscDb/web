@@ -79,7 +79,8 @@ public partial class EditDisc : CancellableComponentBase
             DiscId = this.DiscId!,
             Format = request.Format,
             Name = request.Name,
-            Slug = request.Slug
+            Slug = request.Slug,
+            UpdatePartial = false,
         });
 
         if (response.IsSuccessResult())

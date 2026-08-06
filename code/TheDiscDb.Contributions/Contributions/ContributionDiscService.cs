@@ -42,6 +42,7 @@ public sealed class ContributionDiscService(
             Slug = request.Slug,
             Index = 1,
             ExistingDiscPath = string.Empty,
+            Partial = PartialStateLifecycle.CreateAutomaticUnidentified(),
         };
 
         var contribution = new UserContribution
@@ -151,6 +152,7 @@ public sealed class ContributionDiscService(
                 Slug = request.Slug,
                 Index = maxIndex + 1,
                 ExistingDiscPath = string.Empty,
+                Partial = PartialStateLifecycle.CreateAutomaticUnidentified(),
             };
             contribution.Discs.Add(disc);
         }

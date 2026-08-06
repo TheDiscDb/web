@@ -268,6 +268,55 @@
             </TemplateColumn>
         </QuickGrid>
 
+        <section class="partial-completion">
+            @if (identifiedTitles.Count == 0)
+            {
+                <h2>Finish without identifying items</h2>
+                <p>You can finish this disc with no identified items if you declare why.</p>
+                <div class="form-check">
+                    <InputCheckbox id="declare-unidentified" class="form-check-input" @bind-Value="partialForm.IsPartial" />
+                    <label class="form-check-label" for="declare-unidentified">Leave this disc for someone else to identify</label>
+                </div>
+                @if (partialForm.IsPartial)
+                {
+                    <div class="mt-2">
+                        <label for="unidentified-reason">Reason</label>
+                        <InputSelect id="unidentified-reason" class="form-select" @bind-Value="partialForm.Reason">
+                            <option value="@PartialStateReason.Unknown">Choose a reason</option>
+                            <option value="@PartialStateReason.LogsOnlyForOthersToComplete">I am contributing logs for others to complete</option>
+                            <option value="@PartialStateReason.Other">Other</option>
+                        </InputSelect>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="form-check">
+                    <InputCheckbox id="declare-partial-identification" class="form-check-input" @bind-Value="partialForm.IsPartial" />
+                    <label class="form-check-label" for="declare-partial-identification">Some useful items still need to be identified</label>
+                </div>
+                @if (partialForm.IsPartial)
+                {
+                    <div class="mt-2">
+                        <label for="partial-identification-reason">Reason</label>
+                        <InputSelect id="partial-identification-reason" class="form-select" @bind-Value="partialForm.Reason">
+                            <option value="@PartialStateReason.Unknown">Choose a reason</option>
+                            <option value="@PartialStateReason.OnlyIdentifyingMainFeature">I am only identifying the main feature</option>
+                            <option value="@PartialStateReason.ExtrasOutOfScope">Extras are out of scope for me</option>
+                            <option value="@PartialStateReason.Other">Other</option>
+                        </InputSelect>
+                    </div>
+                }
+            }
+            @if (partialForm.IsPartial)
+            {
+                <div class="mt-2">
+                    <label for="partial-identification-note">Note @(partialForm.Reason == PartialStateReason.Other ? "(required)" : "(optional)")</label>
+                    <InputTextArea id="partial-identification-note" class="form-control" @bind-Value="partialForm.Note" />
+                </div>
+            }
+        </section>
+
         <div class="cta-row split">
             <a class="e-btn e-outline" href="/contribution/@ContributionId/discs/@DiscId/naming?popup=1" target="_blank" rel="noopener noreferrer">Open Naming Helper</a>
             <button class="e-btn e-primary" @onclick="SubmitIdentifications" disabled="@IsDoneButtonDisabled">Done Identifying</button>

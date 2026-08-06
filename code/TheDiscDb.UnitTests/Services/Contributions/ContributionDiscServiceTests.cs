@@ -70,6 +70,8 @@ public class ContributionDiscServiceTests
         var disc = await db.UserContributionDiscs.FindAsync(result.DiscId);
         await Assert.That(disc!.GlobalDiscId).IsEqualTo(DiscId);
         await Assert.That(disc.ContentHash).IsEqualTo(ContentHash);
+        await Assert.That(disc.Partial)
+            .IsEqualTo(PartialStateLifecycle.CreateAutomaticUnidentified());
 
         var contribution = await db.UserContributions.FindAsync(result.ContributionId);
         await Assert.That(contribution!.Status).IsEqualTo(UserContributionStatus.Pending);

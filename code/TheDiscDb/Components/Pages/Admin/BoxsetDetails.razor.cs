@@ -56,6 +56,8 @@ public partial class BoxsetDetails : ComponentBase
             .Include(b => b.Members)
                 .ThenInclude(m => m.Disc!)
                     .ThenInclude(d => d.UserContribution)
+                        .ThenInclude(c => c.Discs)
+                            .ThenInclude(d => d.Items)
             .FirstOrDefaultAsync(b => b.Id == decodedId);
     }
 
@@ -68,6 +70,8 @@ public partial class BoxsetDetails : ComponentBase
             .Include(b => b.Members)
                 .ThenInclude(m => m.Disc!)
                     .ThenInclude(d => d.UserContribution)
+                        .ThenInclude(c => c.Discs)
+                            .ThenInclude(d => d.Items)
             .FirstOrDefaultAsync(b => b.Id == Boxset.Id);
 
         if (boxset == null) return;
@@ -78,6 +82,7 @@ public partial class BoxsetDetails : ComponentBase
             if (member.Disc?.UserContribution != null)
             {
                 member.Disc.UserContribution.Status = UserContributionStatus.Approved;
+                PartialStateLifecycle.ClearAutomaticUnidentified(member.Disc.UserContribution.Discs);
             }
         }
 
@@ -95,6 +100,8 @@ public partial class BoxsetDetails : ComponentBase
             .Include(b => b.Members)
                 .ThenInclude(m => m.Disc!)
                     .ThenInclude(d => d.UserContribution)
+                        .ThenInclude(c => c.Discs)
+                            .ThenInclude(d => d.Items)
             .FirstOrDefaultAsync(b => b.Id == Boxset.Id);
 
         if (boxset == null) return;
@@ -105,6 +112,7 @@ public partial class BoxsetDetails : ComponentBase
             if (member.Disc?.UserContribution != null)
             {
                 member.Disc.UserContribution.Status = UserContributionStatus.Imported;
+                PartialStateLifecycle.ClearAutomaticUnidentified(member.Disc.UserContribution.Discs);
             }
         }
 

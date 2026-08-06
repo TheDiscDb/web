@@ -12,13 +12,14 @@ captured with a **canned reason + optional free-text note**. One case is auto-de
 backstop: discs that arrive with **zero identified items** (notably every **Engram**/API
 submission) are auto-flagged as "needs identification."
 
-Marker changes follow the existing edit-suggestion **sync pattern**: the database is updated
-immediately for live display, and an *applied-but-unsynced* change is filed for the batch
-file-sync tool (ContributionBuddy) to write back into `/data` via a PR.
+Marker changes follow the existing edit-suggestion **sync pattern**: reviewed
+`release.partial.update` and `disc.partial.update` changes update the database immediately and
+remain applied-but-unsynced for the batch file-sync tool to write back into `/data`.
 
 ## 2. Status
 
-🔵 **Proposed** — no implementation started.
+🟢 **Phase 1 implemented** — declaration, staging, generated-file persistence, reviewed
+existing-record updates, automatic unidentified backstop, and detail-page indicators.
 
 | Phase | Scope |
 |-------|-------|
@@ -65,28 +66,42 @@ free-text note**, with an **"Other"** code (free-text expected). Canned codes dr
 and pick the right resolution flow; free-text captures specifics. Starter lists (finalize during
 build):
 
-- **Missing disc**: `OnlyOwnThisFormat`, `MissingDisc`, `DiscDamagedOrUnreadable`, `Other`.
+- **Missing disc**: `OnlyOwnsSomeDiscs`, `DiscMissing`, `DiscDamagedOrUnreadable`, `Other`.
 - **Partial / empty disc**: `OnlyIdentifyingMainFeature`, `ExtrasOutOfScope`,
   `LogsOnlyForOthersToComplete`, `Other`.
 
 ### 5.2 Persistence in `/data`
-- **Disc-level** — add an optional object to `disc*.json`:
+- **Disc-level** — add an optional PascalCase object to `disc*.json`:
   ```json
-  "partial": { "reason": "OnlyIdentifyingMainFeature", "note": "12 extras still need doing" }
+  "Partial": {
+    "Type": "PartiallyIdentified",
+    "Reason": "OnlyIdentifyingMainFeature",
+    "Source": "Declared",
+    "Note": "12 extras still need doing"
+  }
   ```
   Because discs dedup via `disc*.ref`, a disc-level marker is naturally shared by every release
   referencing that canonical disc — consistent with the canonical model.
 - **Release / boxset-level (missing discs)** — add a **release-level marker** to
-  `release.json` (and `boxset.json`): a single `partial { reason, note }` where `note` is
-  free-text describing what's missing. **No structured per-disc "slots."**
+  `release.json` (and `boxset.json`):
+  ```json
+  "Partial": {
+    "Type": "MissingDiscs",
+    "Reason": "OnlyOwnsSomeDiscs",
+    "Source": "Declared",
+    "Note": "Bonus disc is not available"
+  }
+  ```
+  There are no structured per-disc slots.
 
 ### 5.3 Database & import
 - Import reads the `partial` objects and materializes queryable state so the hub and badges can
   filter without reparsing files:
   - Disc-level partial → on the **canonical `Disc`** (shared identification state).
   - Release-level partial → on **`Release`** (and boxset as applicable).
-- **Open question**: whether the disc-level marker attaches to `Disc` vs `ReleaseDisc` given
-  canonical sharing — confirm at implementation (§8).
+- Disc-level state is stored on canonical `Disc`; release-level state is stored on `Release`.
+- Contribution-stage state is stored in owner-specific related tables for `UserContribution`
+  and `UserContributionDisc`, then copied into generated files.
 
 ### 5.4 Declaration UX
 - **Identification page**: add an **"I don't intend to identify this disc"** action that bypasses
@@ -107,9 +122,11 @@ build):
   items via edit suggestions; approving those fills in the identification.
 
 ### 5.6 Lifecycle & sync
-- **Auto-clear where possible + manual clear otherwise**: adding the missing disc clears the
-  release marker; identifying the outstanding items (via an approved edit / retargeted
-  contribution) clears the disc marker; admins/contributors can also **clear manually**.
+- **Phase 1 lifecycle**: only an `Automatic` / `NeedsIdentification` / `Unidentified` disc marker
+  is automatically cleared, and only when its first identified item is approved or its staged
+  contribution is approved/imported. Contributor-declared markers are never automatically
+  cleared. Set and clear operations for existing records use reviewed
+  `release.partial.update` / `disc.partial.update` changes with natural-key snapshots.
 - **Sync pattern** (mirror `IEditSuggestionSyncService`): setting or clearing a marker updates the
   **DB immediately** (live site reflection) and files an **applied-but-unsynced** change; the
   batch tool (ContributionBuddy) writes the `partial` object into `/data` via a PR and marks it
@@ -128,8 +145,8 @@ build):
 - Auto/pending (Engram) empty discs are visually distinct from deliberate "don't intend to
   identify" discs.
 - Disc-level markers are **shared** across releases that reference the same canonical disc.
-- Markers persist until **resolved** (auto-clear) or **manually cleared** — declared partials
-  never self-clear on their own.
+- Declared markers persist until an explicit reviewed clear. They never self-clear.
+- Automatic unidentified markers clear when the first identified item is approved/imported.
 - All marker writes go **DB-first**, then batch-synced to `/data`; the `/data` repo remains the
   source of truth.
 
@@ -147,15 +164,14 @@ build):
 - **Auditing** (per project preference to consider auditing on state-changing features): partial
   declarations and clears are state changes worth auditing — see §10.
 
-## 8. Open questions
+## 8. Decisions
 
-- DB placement of the disc-level marker: `Disc` (canonical, shared) vs `ReleaseDisc` (per-release).
-  Canonical sharing argues for `Disc`; confirm at implementation.
-- Boxset missing-disc: store on `boxset.json` vs on the member release's `release.json`.
-- Final reason-code taxonomy per context (starter lists in §5.1).
-- Badge treatment distinguishing auto/pending empty discs from deliberate "don't intend to
-  identify" discs.
-- Should completing a partial disc **notify** the original contributor? (Phase 3.)
+- Disc state is canonical and stored on `Disc`.
+- Boxset missing-disc state is stored in `boxset.json`; normal releases use `release.json`.
+- The schema is `Partial { Type, Reason, Source, Note }` with PascalCase property names.
+- `Source` is `Declared` for contributor choices and `Automatic` only with
+  `Reason = NeedsIdentification`.
+- Automatic and declared unidentified markers use distinct reason/source combinations.
 
 ## 9. Rollout / phases
 

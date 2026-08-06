@@ -1,0 +1,21 @@
+query GetIntakeDiscMatch(
+  $contributionId: String!
+  $contentHash: String!
+  $format: String
+  $globalDiscId: String
+) {
+  intakeDiscMatch(
+    contributionId: $contributionId
+    contentHash: $contentHash
+    format: $format
+    globalDiscId: $globalDiscId
+  ) {
+    contentHash
+    format
+    name
+    slug
+    evidenceGlobalDiscId
+    globalDiscIdMismatch
+    hasScanLog
+  }
+}

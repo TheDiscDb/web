@@ -34,6 +34,7 @@ public class ReleaseItemHandler : ItemHandler<Release>
         fromDatabase.RegionCode = newValue.RegionCode;
         fromDatabase.Upc = newValue.Upc;
         fromDatabase.Year = newValue.Year;
+        fromDatabase.Partial = DataImportItemFactory.ValidatePartial(newValue.Partial, PartialStateTarget.Release);
 
         HandleList(fromDatabase.Discs, newValue.Discs, this.discItemHandler);
     }

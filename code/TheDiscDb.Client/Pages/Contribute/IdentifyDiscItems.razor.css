@@ -10,3 +10,14 @@
 .action-buttons ::deep .e-btn {
     margin: 0;
 }
+.partial-completion {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid #d8dee8;
+    border-radius: .5rem;
+    background: #f8fafc;
+}
+
+.partial-completion h2 {
+    font-size: 1.1rem;
+}

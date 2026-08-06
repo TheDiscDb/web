@@ -34,6 +34,7 @@ public partial class ContributionMutations
         string? frontImageUrl,
         string? backImageUrl,
         bool deleteBackImage,
+        PartialState? partial,
         UserManager<TheDiscDbUser> userManager,
         CancellationToken cancellationToken = default)
     {
@@ -55,6 +56,7 @@ public partial class ContributionMutations
         contribution.ReleaseSlug = releaseSlug;
         contribution.Locale = locale;
         contribution.RegionCode = regionCode;
+        contribution.Partial = ValidateDeclaredPartial(partial, PartialStateTarget.Release);
 
         if (!string.IsNullOrEmpty(frontImageUrl))
         {

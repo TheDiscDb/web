@@ -34,6 +34,16 @@ public partial class DiscDetail : ComponentBase
     private Boxset? BoxsetItem { get; set; }
     private Release? DiscRelease { get; set; }
     private ReleaseDisc? Disc { get; set; }
+    private bool HasPartialState => this.Disc?.Disc?.Partial is not null;
+    private string PartialLabel => this.Disc?.Disc?.Partial?.Type switch
+    {
+        PartialStateType.Unidentified => "Unidentified disc",
+        PartialStateType.PartiallyIdentified => "Partially identified",
+        _ => "Incomplete disc",
+    };
+    private string PartialReason => FormatPartialReason(this.Disc?.Disc?.Partial);
+    private string? PartialNote => this.Disc?.Disc?.Partial?.Note;
+    private string PartialCtaUrl => this.GetDiscEditUrl();
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,4 +112,14 @@ public partial class DiscDetail : ComponentBase
 
         return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndexString}/edit";
     }
+
+    private static string FormatPartialReason(PartialState? partial) => partial?.Reason switch
+    {
+        PartialStateReason.OnlyIdentifyingMainFeature => "Only the main feature was identified",
+        PartialStateReason.ExtrasOutOfScope => "Extras still need identification",
+        PartialStateReason.LogsOnlyForOthersToComplete => "Logs were contributed for others to identify",
+        PartialStateReason.NeedsIdentification when partial.Source == PartialStateSource.Automatic => "Awaiting its first identified item",
+        PartialStateReason.Other => "Other",
+        _ => "More identification is needed",
+    };
 }

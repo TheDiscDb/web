@@ -1,0 +1,20 @@
+mutation PromoteIntakeDisc($input: PromoteIntakeDiscInput!) {
+  promoteIntakeDisc(input: $input) {
+    intakeDiscPromotionResult {
+      disc {
+        encodedId
+      }
+      promoted
+      logsCopied
+      evidenceGlobalDiscId
+      globalDiscIdMismatch
+      mainDatabaseMatch
+    }
+    errors {
+      code: __typename
+      ... on Error {
+        message
+      }
+    }
+  }
+}

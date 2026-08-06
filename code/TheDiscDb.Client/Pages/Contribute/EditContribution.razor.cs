@@ -30,6 +30,7 @@ public partial class EditContribution : CancellableComponentBase
     private IContributionDiscs_MyContributions_Nodes? Contribution { get; set; }
 
     private readonly EditContributionRequest request = new();
+    private readonly ContributionPartialStateForm partialForm = new();
 
     private bool isLoading = true;
     private string? errorMessage;
@@ -81,6 +82,10 @@ public partial class EditContribution : CancellableComponentBase
 
                 currentFrontImageUrl = Contribution.FrontImageUrl;
                 currentBackImageUrl = Contribution.BackImageUrl;
+                partialForm.Load(
+                    Contribution.Partial?.Type.ToString(),
+                    Contribution.Partial?.Reason.ToString(),
+                    Contribution.Partial?.Note);
             }
             else
             {
@@ -99,6 +104,11 @@ public partial class EditContribution : CancellableComponentBase
     {
         errorMessage = null;
         successMessage = null;
+        if (partialForm.IsPartial && !partialForm.IsValidFor(PartialStateType.MissingDiscs))
+        {
+            errorMessage = "Choose why discs are missing and add a note when using Other.";
+            return;
+        }
 
         var response = await ContributionClient.UpdateContribution.ExecuteAsync(new UpdateContributionInput
         {
@@ -112,7 +122,8 @@ public partial class EditContribution : CancellableComponentBase
             RegionCode = request.RegionCode,
             FrontImageUrl = currentFrontImageUrl,
             BackImageUrl = backImageDeleted ? null : currentBackImageUrl,
-            DeleteBackImage = backImageDeleted
+            DeleteBackImage = backImageDeleted,
+            Partial = partialForm.BuildInput(PartialStateType.MissingDiscs),
         });
 
         if (response.IsSuccessResult() && response.Data?.UpdateContribution?.Errors is not { Count: > 0 })

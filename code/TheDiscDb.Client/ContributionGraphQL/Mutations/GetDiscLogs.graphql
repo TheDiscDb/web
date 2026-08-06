@@ -27,6 +27,12 @@ mutation GetDiscLogs($input: DiscLogsInput!) {
         logsUploaded
         existingDiscPath
         encodedId
+        partial {
+          type
+          reason
+          source
+          note
+        }
         items {
           description
           filename

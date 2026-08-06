@@ -17,7 +17,7 @@
             <p>Ensure the disc you would like to add is in your optical drive.</p>
         </section>
 
-        @if (handler is null && !manualHashMode)
+        @if (!scanComplete)
         {
             <section class="info-card">
                 <p>
@@ -25,16 +25,9 @@
                     in the database. Your browser may request file-system access.
                 </p>
                 <button class="btn btn-primary" @onclick="OpenFolderAsync">Select Disc Root Folder</button>
-                @if (IsDevelopmentMode)
+                @if (!string.IsNullOrEmpty(copyFlowError))
                 {
-                    <div class="manual-hash-section">
-                        <p class="manual-hash-divider">— or —</p>
-                        <p>Enter a disc content hash manually <strong>(development only)</strong>.</p>
-                        <div class="manual-hash-input-row">
-                            <input type="text" class="form-control" @bind="manualHash" @bind:event="oninput" placeholder="Enter content hash" />
-                            <button type="button" class="btn btn-secondary" @onclick="SubmitManualHash" disabled="@string.IsNullOrWhiteSpace(manualHash)">Use Manual Hash</button>
-                        </div>
-                    </div>
+                    <div class="alert alert-warning mt-3">@copyFlowError</div>
                 }
             </section>
         }
@@ -44,6 +37,18 @@
                 @if (!string.IsNullOrEmpty(copyFlowError))
                 {
                     <div class="alert alert-warning">@copyFlowError</div>
+                }
+                @if (intakeDiscMatch is not null)
+                {
+                    <div class="alert alert-info">
+                        Matching intake scan evidence was found. Its stored scan log will be copied into this contribution when you save.
+                    </div>
+                    @if (intakeDiscMatch.GlobalDiscIdMismatch)
+                    {
+                        <div class="alert alert-warning">
+                            No exact stored evidence set matched the Disc ID from your current physical scan. The latest matching-content scan set was used, and your newly scanned Disc ID will be kept for review.
+                        </div>
+                    }
                 }
                 <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
                     <DataAnnotationsValidator />

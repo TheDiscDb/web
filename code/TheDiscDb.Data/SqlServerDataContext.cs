@@ -6,6 +6,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using HotChocolate;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using TheDiscDb;
 using TheDiscDb.InputModels;
 
 public class SqlServerDataContext : DbContext
@@ -13,6 +15,128 @@ public class SqlServerDataContext : DbContext
     public SqlServerDataContext(DbContextOptions<SqlServerDataContext> options)
         : base(options)
     {
+    }
+
+    private static void ConfigureIntakeModel(ModelBuilder modelBuilder)
+    {
+        var intakeRelease = modelBuilder.Entity<IntakeRelease>();
+        intakeRelease.HasKey(x => x.Id);
+        intakeRelease.Property(x => x.Source).HasConversion<string>().HasMaxLength(32);
+        intakeRelease.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+        intakeRelease.Property(x => x.SourceReleaseId).IsRequired().HasMaxLength(256);
+        intakeRelease.Property(x => x.MediaItemSlug).HasMaxLength(200);
+        intakeRelease.Property(x => x.BoxsetSlug).HasMaxLength(200);
+        intakeRelease.Property(x => x.ReleaseSlug).HasMaxLength(200);
+        intakeRelease.Property(x => x.ExternalProvider).IsRequired().HasMaxLength(32);
+        intakeRelease.Property(x => x.ExternalId).IsRequired().HasMaxLength(64);
+        intakeRelease.Property(x => x.Upc).IsRequired().HasMaxLength(32);
+        intakeRelease.Property(x => x.Asin).HasMaxLength(32);
+        intakeRelease.Property(x => x.ReleaseTitle).HasMaxLength(300);
+        intakeRelease.Property(x => x.Locale).HasMaxLength(32);
+        intakeRelease.Property(x => x.RegionCode).HasMaxLength(32);
+        intakeRelease.Property(x => x.FrontImageLocation).HasMaxLength(1000);
+        intakeRelease.HasIndex(x => new { x.Source, x.SourceReleaseId }).IsUnique();
+        intakeRelease.HasIndex(x => new { x.Status, x.ReceivedAt });
+        intakeRelease.HasIndex(x => new { x.ExternalProvider, x.ExternalId, x.Upc });
+        intakeRelease.HasIndex(x => new { x.MediaItemSlug, x.ReleaseSlug });
+        intakeRelease.HasIndex(x => new { x.BoxsetSlug, x.ReleaseSlug });
+        intakeRelease.ToTable("IntakeReleases", table =>
+            table.HasCheckConstraint(
+                "CK_IntakeReleases_OneParentSlug",
+                "[MediaItemSlug] IS NULL OR [BoxsetSlug] IS NULL"));
+
+        var intakeDisc = modelBuilder.Entity<IntakeDisc>();
+        intakeDisc.HasKey(x => x.Id);
+        intakeDisc.Property(x => x.Format).IsRequired().HasMaxLength(64);
+        intakeDisc.Property(x => x.ContentHash).IsRequired().HasMaxLength(128);
+        intakeDisc.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+        intakeDisc.HasIndex(x => new { x.Format, x.ContentHash }).IsUnique();
+        intakeDisc.HasIndex(x => new { x.Status, x.ReceivedAt });
+
+        var intakeReleaseDisc = modelBuilder.Entity<IntakeReleaseDisc>();
+        intakeReleaseDisc.HasKey(x => x.Id);
+        intakeReleaseDisc.Property(x => x.SourceDiscId).HasMaxLength(256);
+        intakeReleaseDisc.Property(x => x.GlobalDiscId).HasMaxLength(450);
+        intakeReleaseDisc.Property(x => x.Slug).HasMaxLength(200);
+        intakeReleaseDisc.Property(x => x.Name).HasMaxLength(300);
+        intakeReleaseDisc.HasOne(x => x.Release)
+            .WithMany(x => x.Discs)
+            .HasForeignKey(x => x.IntakeReleaseId)
+            .OnDelete(DeleteBehavior.Cascade);
+        intakeReleaseDisc.HasOne(x => x.Disc)
+            .WithMany(x => x.Releases)
+            .HasForeignKey(x => x.IntakeDiscId)
+            .OnDelete(DeleteBehavior.Cascade);
+        intakeReleaseDisc.HasIndex(x => new { x.IntakeReleaseId, x.IntakeDiscId }).IsUnique();
+        intakeReleaseDisc.HasIndex(x => new { x.IntakeReleaseId, x.SourceDiscId })
+            .IsUnique()
+            .HasFilter("[SourceDiscId] IS NOT NULL");
+        intakeReleaseDisc.HasIndex(x => new { x.IntakeReleaseId, x.Index })
+            .IsUnique()
+            .HasFilter("[Index] IS NOT NULL");
+        intakeReleaseDisc.HasIndex(x => x.GlobalDiscId)
+            .HasFilter("[GlobalDiscId] IS NOT NULL");
+
+        var intakeEvidence = modelBuilder.Entity<IntakeDiscEvidence>();
+        intakeEvidence.HasKey(x => x.Id);
+        intakeEvidence.Property(x => x.Source).HasConversion<string>().HasMaxLength(32);
+        intakeEvidence.Property(x => x.Type).HasConversion<string>().HasMaxLength(32);
+        intakeEvidence.Property(x => x.SourceEvidenceId).IsRequired().HasMaxLength(256);
+        intakeEvidence.Property(x => x.EvidenceSetId).IsRequired().HasMaxLength(256);
+        intakeEvidence.Property(x => x.GlobalDiscId).HasMaxLength(450);
+        intakeEvidence.Property(x => x.Location).IsRequired().HasMaxLength(1000);
+        intakeEvidence.Property(x => x.ContentType).HasMaxLength(128);
+        intakeEvidence.Property(x => x.Sha256).HasMaxLength(64);
+        intakeEvidence.HasOne(x => x.Disc)
+            .WithMany(x => x.Evidence)
+            .HasForeignKey(x => x.IntakeDiscId)
+            .OnDelete(DeleteBehavior.Cascade);
+        intakeEvidence.HasIndex(x => new { x.Source, x.SourceEvidenceId, x.Type }).IsUnique();
+        intakeEvidence.HasIndex(x => new { x.IntakeDiscId, x.EvidenceSetId, x.RecordedAt });
+        intakeEvidence.HasIndex(x => new { x.IntakeDiscId, x.GlobalDiscId, x.EvidenceSetId })
+            .HasFilter("[GlobalDiscId] IS NOT NULL");
+
+        var intakePromotion = modelBuilder.Entity<IntakePromotion>();
+        intakePromotion.HasKey(x => x.Id);
+        intakePromotion.Property(x => x.Target).HasConversion<string>().HasMaxLength(32);
+        intakePromotion.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+        intakePromotion.Property(x => x.Source).HasConversion<string>().HasMaxLength(32);
+        intakePromotion.Property(x => x.RequestedByUserId).HasMaxLength(450);
+        intakePromotion.Property(x => x.FailureReason).HasMaxLength(1000);
+        intakePromotion.Property(x => x.MediaItemSlug).HasMaxLength(200);
+        intakePromotion.Property(x => x.BoxsetSlug).HasMaxLength(200);
+        intakePromotion.Property(x => x.ReleaseSlug).HasMaxLength(200);
+        intakePromotion.Property(x => x.DiscFormat).HasMaxLength(64);
+        intakePromotion.Property(x => x.DiscContentHash).HasMaxLength(128);
+        intakePromotion.Property(x => x.DiscGlobalId).HasMaxLength(450);
+        intakePromotion.Property(x => x.EvidenceSetId).HasMaxLength(256);
+        intakePromotion.HasOne(x => x.Release)
+            .WithMany(x => x.Promotions)
+            .HasForeignKey(x => x.IntakeReleaseId)
+            .OnDelete(DeleteBehavior.Cascade);
+        intakePromotion.HasOne(x => x.Disc)
+            .WithMany(x => x.Promotions)
+            .HasForeignKey(x => x.IntakeDiscId)
+            .OnDelete(DeleteBehavior.Cascade);
+        intakePromotion.HasOne(x => x.UserContribution)
+            .WithMany()
+            .HasForeignKey(x => x.UserContributionId)
+            .OnDelete(DeleteBehavior.SetNull);
+        intakePromotion.HasIndex(x => new { x.Status, x.CreatedAt });
+        intakePromotion.HasIndex(x => x.IntakeReleaseId);
+        intakePromotion.HasIndex(x => x.IntakeDiscId);
+        intakePromotion.HasIndex(x => x.UserContributionId);
+        intakePromotion.HasIndex(x => new { x.UserContributionId, x.IntakeDiscId, x.Target, x.Status })
+            .IsUnique()
+            .HasFilter("[Target] = 'Disc' AND [Status] = 'Completed' AND [UserContributionId] IS NOT NULL");
+        intakePromotion.HasIndex(x => new { x.UserContributionId, x.IntakeReleaseId, x.Target, x.Status })
+            .IsUnique()
+            .HasFilter("[Target] = 'Release' AND [Status] = 'Completed' AND [UserContributionId] IS NOT NULL");
+        intakePromotion.ToTable("IntakePromotions", table =>
+            table.HasCheckConstraint(
+                "CK_IntakePromotions_OneOwner",
+                "([Target] = 'Release' AND [IntakeReleaseId] IS NOT NULL AND [IntakeDiscId] IS NULL) " +
+                "OR ([Target] = 'Disc' AND [IntakeReleaseId] IS NULL AND [IntakeDiscId] IS NOT NULL)"));
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -29,6 +153,15 @@ public class SqlServerDataContext : DbContext
         var release = modelBuilder.Entity<Release>();
         release.HasMany(x => x.Discs).WithOne(x => x.Release);
         release.HasMany(x => x.ReleaseGroups).WithOne(x => x.Release);
+        var releasePartial = release.OwnsOne(x => x.Partial);
+        releasePartial.ToTable("ReleasePartialStates");
+        releasePartial.WithOwner().HasForeignKey("ReleaseId");
+        releasePartial.HasKey("ReleaseId");
+        releasePartial.Property(x => x.Type).HasConversion<string>().HasMaxLength(32);
+        releasePartial.Property(x => x.Reason).HasConversion<string>().HasMaxLength(64);
+        releasePartial.Property(x => x.Source).HasConversion<string>().HasMaxLength(32);
+        releasePartial.Property(x => x.Note).HasMaxLength(1000);
+        releasePartial.HasIndex(x => new { x.Type, x.Reason });
         release.HasMany(x => x.Contributors)
             .WithMany(x => x.Releases)
             .UsingEntity(j => j.ToTable("ReleaseContributor"));
@@ -47,6 +180,15 @@ public class SqlServerDataContext : DbContext
         disc.HasMany(x => x.Titles).WithOne(x => x.Disc);
         disc.HasMany(x => x.ReleaseDiscs).WithOne(x => x.Disc);
         disc.HasIndex(x => new { x.Format, x.ContentHash }).IsUnique();
+        var discPartial = disc.OwnsOne(x => x.Partial);
+        discPartial.ToTable("DiscPartialStates");
+        discPartial.WithOwner().HasForeignKey("DiscId");
+        discPartial.HasKey("DiscId");
+        discPartial.Property(x => x.Type).HasConversion<string>().HasMaxLength(32);
+        discPartial.Property(x => x.Reason).HasConversion<string>().HasMaxLength(64);
+        discPartial.Property(x => x.Source).HasConversion<string>().HasMaxLength(32);
+        discPartial.Property(x => x.Note).HasMaxLength(1000);
+        discPartial.HasIndex(x => new { x.Type, x.Reason });
         disc.Ignore(x => x.Index);
         disc.Ignore(x => x.Slug);
         disc.Ignore(x => x.Name);
@@ -148,12 +290,23 @@ public class SqlServerDataContext : DbContext
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
         userContribution.HasIndex(x => x.BoxsetId);
+        ConfigurePartialState(
+            userContribution.OwnsOne(x => x.Partial),
+            "UserContributionPartialStates",
+            "UserContributionId");
 
         var userDiscContribution = modelBuilder.Entity<UserContributionDisc>();
         userDiscContribution.HasKey(x => x.Id);
         userDiscContribution.HasMany(x => x.Items)
             .WithOne(x => x.Disc)
             .OnDelete(DeleteBehavior.Cascade);
+        userDiscContribution
+            .HasIndex("UserContributionId", nameof(UserContributionDisc.Format), nameof(UserContributionDisc.ContentHash))
+            .IsUnique();
+        ConfigurePartialState(
+            userDiscContribution.OwnsOne(x => x.Partial),
+            "UserContributionDiscPartialStates",
+            "UserContributionDiscId");
 
         var userContributionDiscHashItem = modelBuilder.Entity<UserContributionDiscHashItem>();
         userContributionDiscHashItem.HasKey(x => x.Id);
@@ -264,9 +417,26 @@ public class SqlServerDataContext : DbContext
         userFileNameTemplate.Property(x => x.Template).IsRequired().HasMaxLength(512);
         userFileNameTemplate.HasIndex(x => new { x.UserId, x.ItemType }).IsUnique();
 
+        ConfigureIntakeModel(modelBuilder);
         ConfigureEditSuggestionModel(modelBuilder);
 
         IdentityModelConfiguration.ConfigureIdentityModel(modelBuilder);
+    }
+
+    private static void ConfigurePartialState<TOwner>(
+        OwnedNavigationBuilder<TOwner, PartialState> partial,
+        string tableName,
+        string ownerKey)
+        where TOwner : class
+    {
+        partial.ToTable(tableName);
+        partial.WithOwner().HasForeignKey(ownerKey);
+        partial.HasKey(ownerKey);
+        partial.Property(x => x.Type).HasConversion<string>().HasMaxLength(32);
+        partial.Property(x => x.Reason).HasConversion<string>().HasMaxLength(64);
+        partial.Property(x => x.Source).HasConversion<string>().HasMaxLength(32);
+        partial.Property(x => x.Note).HasMaxLength(1000);
+        partial.HasIndex(x => new { x.Type, x.Reason });
     }
 
     private static void ConfigureEditSuggestionModel(ModelBuilder modelBuilder)
@@ -375,6 +545,11 @@ public class SqlServerDataContext : DbContext
     public DbSet<EngramDisc> EngramDiscs { get; set; } = null!;
     public DbSet<EngramTitle> EngramTitles { get; set; } = null!;
     public DbSet<EngramRelease> EngramReleases { get; set; } = null!;
+    public DbSet<IntakeRelease> IntakeReleases { get; set; } = null!;
+    public DbSet<IntakeDisc> IntakeDiscs { get; set; } = null!;
+    public DbSet<IntakeReleaseDisc> IntakeReleaseDiscs { get; set; } = null!;
+    public DbSet<IntakeDiscEvidence> IntakeDiscEvidence { get; set; } = null!;
+    public DbSet<IntakePromotion> IntakePromotions { get; set; } = null!;
     public DbSet<UserFileNameTemplate> UserFileNameTemplates { get; set; } = null!;
     public DbSet<ReleaseAffiliateLink> ReleaseAffiliateLinks { get; set; } = null!;
     public DbSet<EditSuggestion> EditSuggestions { get; set; } = null!;

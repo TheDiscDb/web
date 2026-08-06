@@ -1,6 +1,7 @@
 ﻿namespace TheDiscDb.ImportModels
 {
     using System.Collections.Generic;
+    using TheDiscDb;
 
     public class DiscFile
     {
@@ -10,6 +11,7 @@
         public string? Name { get; set; }
         public string? ContentHash { get; set; }
         public string? GlobalDiscId { get; set; }
+        public PartialState? Partial { get; set; }
 
         public ICollection<DiscFileItem> Episodes { get; set; } = new HashSet<DiscFileItem>();
         public ICollection<DiscFileItem> Extras { get; set; } = new HashSet<DiscFileItem>();

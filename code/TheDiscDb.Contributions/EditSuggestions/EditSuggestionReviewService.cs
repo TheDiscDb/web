@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Data.Changes;
+using TheDiscDb.Data.Changes.DiscItemFields;
+using TheDiscDb.Data.Changes.DiscPartial;
 using TheDiscDb.Data.Changes.DiscFields;
 using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
@@ -69,6 +71,7 @@ public sealed class EditSuggestionReviewService(
         // Apply the mutation (does NOT call SaveChangesAsync itself).
         var applyContext = new ChangeApplyContext(adminUserId, suggestionId, changeId, change.OriginalSnapshotJson);
         await changeInstance.ApplyAsync(database, applyContext, cancellationToken);
+        await AddAutomaticPartialClearAsync(suggestion, change, adminUserId, cancellationToken);
 
         change.Status = EditSuggestionChangeStatus.Applied;
         change.AppliedAt = DateTimeOffset.UtcNow;
@@ -81,6 +84,72 @@ public sealed class EditSuggestionReviewService(
 
         await RefreshBundleStatusAsync(suggestion, adminUserId, cancellationToken);
         return change;
+    }
+
+    private async Task AddAutomaticPartialClearAsync(
+        EditSuggestion suggestion,
+        EditSuggestionChange approvedChange,
+        string adminUserId,
+        CancellationToken cancellationToken)
+    {
+        if (approvedChange.Type is not DiscItemAdd.Key and not DiscItemFieldsUpdate.Key)
+        {
+            return;
+        }
+
+        var item = JsonSerializer.Deserialize<DiscItemFieldsDetails>(approvedChange.ProposedJson, JsonOptions);
+        if (item is null
+            || (!item.HasItem
+                && item.ItemTitle is null
+                && item.ItemType is null
+                && item.ItemDescription is null
+                && item.ItemSeason is null
+                && item.ItemEpisode is null))
+        {
+            return;
+        }
+
+        var partialIdentity = new DiscPartialDetails(
+            item.MediaItemSlug,
+            item.BoxsetSlug,
+            item.ReleaseSlug,
+            item.DiscSlug,
+            DiscIndex: 0,
+            Partial: null);
+        var releaseDisc = await DiscPartialUpdate.ResolveDiscAsync(database, partialIdentity, cancellationToken);
+        if (releaseDisc?.Disc is null
+            || !PartialStateLifecycle.IsAutomaticUnidentified(releaseDisc.Disc.Partial)
+            || releaseDisc.Disc.Titles.Count(t => t.Item != null) != 1)
+        {
+            return;
+        }
+
+        var original = DiscPartialUpdate.SnapshotFrom(
+            releaseDisc,
+            item.MediaItemSlug,
+            item.BoxsetSlug,
+            item.ReleaseSlug);
+        var proposed = original with { Partial = null };
+        releaseDisc.Disc.Partial = null;
+
+        var nextOrdinal = suggestion.Changes.Count == 0
+            ? 0
+            : suggestion.Changes.Max(c => c.Ordinal) + 1;
+        var clearChange = new EditSuggestionChange
+        {
+            SuggestionId = suggestion.Id,
+            Suggestion = suggestion,
+            Ordinal = nextOrdinal,
+            Type = DiscPartialUpdate.Key,
+            OriginalSnapshotJson = JsonSerializer.Serialize(original, JsonOptions),
+            ProposedJson = JsonSerializer.Serialize(proposed, JsonOptions),
+            Status = EditSuggestionChangeStatus.Applied,
+            AppliedAt = DateTimeOffset.UtcNow,
+            AppliedByUserId = adminUserId,
+            AdminNote = "Automatically cleared the needs-identification marker when the first identified item was approved.",
+        };
+        suggestion.Changes.Add(clearChange);
+        database.EditSuggestionChanges.Add(clearChange);
     }
 
     public async Task<EditSuggestionChange?> RejectChangeAsync(

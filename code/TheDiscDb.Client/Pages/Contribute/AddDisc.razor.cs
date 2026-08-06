@@ -6,7 +6,6 @@ using KristofferStrube.Blazor.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.Popups;
@@ -57,26 +56,21 @@ public partial class AddDisc : CancellableComponentBase
     [Inject]
     public SfDialogService DialogService { get; set; } = default!;
 
-    [Inject]
-    public IWebAssemblyHostEnvironment HostEnvironment { get; set; } = default!;
-
     FileSystemDirectoryHandleInProcess? handler;
     IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
     string hash = string.Empty;
     List<FileHashInfo>? hashItems = null;
     IContributionDiscs_MyContributions_Nodes? contribution = null;
-    bool manualHashMode;
-    string manualHash = string.Empty;
+    bool scanComplete;
     SlugInput? slugInput;
     string? copyFlowError;
+    IGetIntakeDiscMatch_IntakeDiscMatch? intakeDiscMatch;
     private ContributionNamingSuggestion? DiscNamingSuggestion =>
         ContributionInputGuard.GetNamingSuggestion(
             this.contribution?.Title,
             this.request.Name,
             this.request.Slug,
             title => title.Slugify());
-
-    bool IsDevelopmentMode=> HostEnvironment.Environment == "Development";
 
     private readonly SaveDiscRequest request = new SaveDiscRequest
     {
@@ -112,6 +106,9 @@ public partial class AddDisc : CancellableComponentBase
     {
         try
         {
+            this.scanComplete = false;
+            this.copyFlowError = null;
+            this.intakeDiscMatch = null;
             handler = await FileSystemAccessService.ShowDirectoryPickerAsync(new DirectoryPickerOptionsStartInFileSystemHandle()
             {
                 Mode = FileSystemPermissionMode.Read,
@@ -122,13 +119,19 @@ public partial class AddDisc : CancellableComponentBase
         catch (Exception ex)
         {
             Console.WriteLine(ex);
+            this.copyFlowError = "The disc root folder could not be read. Select the physical disc root and try again.";
         }
     }
 
     async Task TryCalculateHash()
     {
         this.copyFlowError = null;
+        this.scanComplete = false;
+        this.intakeDiscMatch = null;
         this.request.GlobalDiscId = null;
+        this.request.ContentHash = string.Empty;
+        this.request.ExistingDiscPath = null;
+        this.hashItems = null;
         var rootItems = await handler!.ValuesAsync();
 
         var bdmv = rootItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("BDMV", StringComparison.OrdinalIgnoreCase));
@@ -156,8 +159,8 @@ public partial class AddDisc : CancellableComponentBase
         }
         else
         {
-            // TODO: Show error to user
-            Console.WriteLine("No BDMV or VIDEO_TS folder found.");
+            this.copyFlowError = "No BDMV or VIDEO_TS folder was found. Select the root of the currently inserted physical disc.";
+            return;
         }
 
         if (hashItems != null)
@@ -179,13 +182,23 @@ public partial class AddDisc : CancellableComponentBase
             {
                 hash = response.Data!.HashDisc!.DiscHash!.Hash;
                 this.request.ContentHash = hash;
+                this.scanComplete = true;
 
-                var copiedExistingDisc = await TryCopyFromExistingDisc(hash);
-                if (copiedExistingDisc)
+                var existingDiscResult = await TryCopyFromExistingDisc(hash);
+                if (existingDiscResult.Copied)
                 {
                     return;
                 }
+
+                if (!existingDiscResult.Found)
+                {
+                    await TryApplyIntakeDiscMatchAsync(hash);
+                }
             }
+        }
+        else
+        {
+            this.copyFlowError = "The selected disc did not contain files that could be hashed. Select the root of the currently inserted physical disc.";
         }
     }
 
@@ -319,6 +332,18 @@ public partial class AddDisc : CancellableComponentBase
     async Task HandleValidSubmit()
     {
         this.copyFlowError = null;
+        if (!this.scanComplete || string.IsNullOrWhiteSpace(this.request.ContentHash))
+        {
+            this.copyFlowError = "Scan the currently inserted physical disc before saving.";
+            return;
+        }
+
+        if (this.intakeDiscMatch is not null)
+        {
+            await PromoteIntakeDiscAsync();
+            return;
+        }
+
         var input = new CreateDiscInput
         {
             ContributionId = this.ContributionId!,
@@ -436,42 +461,29 @@ public partial class AddDisc : CancellableComponentBase
         }
     }
 
-    private async Task SubmitManualHash()
-    {
-        if (!string.IsNullOrWhiteSpace(manualHash))
-        {
-            this.copyFlowError = null;
-            request.ContentHash = manualHash.Trim();
-            request.ExistingDiscPath = null;
-            manualHashMode = true;
-
-            await TryCopyFromExistingDisc(request.ContentHash);
-        }
-    }
-
-    private async Task<bool> TryCopyFromExistingDisc(string discHash)
+    private async Task<ExistingDiscCopyResult> TryCopyFromExistingDisc(string discHash)
     {
         if (string.IsNullOrWhiteSpace(discHash))
         {
-            return false;
+            return new ExistingDiscCopyResult(false, false);
         }
 
         var result = await Query!.ExecuteAsync(discHash, templates: null, cancellationToken: this.CancellationToken);
         if (result.Data?.MediaItems?.Nodes == null || result.Data.MediaItems.Nodes.Count == 0)
         {
-            return false;
+            return new ExistingDiscCopyResult(false, false);
         }
 
         bool copyDisc = await DialogService.ConfirmAsync("This disc is already found in another release. Would you like to copy that disc into this contribution?", "Copy Existing Disc");
         if (!copyDisc)
         {
-            return false;
+            return new ExistingDiscCopyResult(true, false);
         }
 
         var source = result.Data.MediaItems.Nodes.First();
         if (source == null)
         {
-            return false;
+            return new ExistingDiscCopyResult(true, false);
         }
 
         var sourceRelease = source.Releases
@@ -479,7 +491,7 @@ public partial class AddDisc : CancellableComponentBase
         var sourceDisc = sourceRelease?.Discs.FirstOrDefault(disc => disc.ContentHash == discHash);
         if (sourceRelease == null || sourceDisc == null)
         {
-            return false;
+            return new ExistingDiscCopyResult(true, false);
         }
 
         var discKey = !string.IsNullOrWhiteSpace(sourceDisc.Slug)
@@ -512,14 +524,14 @@ public partial class AddDisc : CancellableComponentBase
         {
             this.copyFlowError = GetCreateDiscErrorMessage(createDiscResponse)
                 ?? "Could not auto-copy this disc. You can still save it manually below.";
-            return false;
+            return new ExistingDiscCopyResult(true, false);
         }
 
         if (createDiscResponse.Data?.CreateDisc?.Errors is { Count: > 0 })
         {
             this.copyFlowError = GetCreateDiscErrorMessage(createDiscResponse)
                 ?? "Could not auto-copy this disc. You can still save it manually below.";
-            return false;
+            return new ExistingDiscCopyResult(true, false);
         }
 
         var createdDiscId = createDiscResponse.Data?.CreateDisc?.UserContributionDisc?.EncodedId;
@@ -532,8 +544,99 @@ public partial class AddDisc : CancellableComponentBase
             this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}");
         }
 
-        return true;
+        return new ExistingDiscCopyResult(true, true);
     }
+
+    private async Task TryApplyIntakeDiscMatchAsync(string discHash)
+    {
+        var response = await this.ContributionClient.GetIntakeDiscMatch.ExecuteAsync(
+            this.ContributionId!,
+            discHash,
+            this.request.Format,
+            this.request.GlobalDiscId,
+            this.CancellationToken);
+        if (!response.IsSuccessResult() || response.Data?.IntakeDiscMatch is not { } match)
+        {
+            return;
+        }
+
+        this.intakeDiscMatch = match;
+        if (!string.IsNullOrWhiteSpace(match.Format))
+        {
+            this.request.Format = NormalizeFormat(match.Format);
+        }
+        if (string.IsNullOrWhiteSpace(this.request.Name) && !string.IsNullOrWhiteSpace(match.Name))
+        {
+            this.request.Name = match.Name;
+        }
+        if (string.IsNullOrWhiteSpace(this.request.Slug) && !string.IsNullOrWhiteSpace(match.Slug))
+        {
+            this.request.Slug = match.Slug;
+            if (this.slugInput != null)
+            {
+                await this.slugInput.RecheckAvailability(this.request.Slug);
+            }
+        }
+    }
+
+    private async Task PromoteIntakeDiscAsync()
+    {
+        var response = await this.ContributionClient.PromoteIntakeDisc.ExecuteAsync(
+            new PromoteIntakeDiscInput
+            {
+                ContributionId = this.ContributionId!,
+                ContentHash = this.request.ContentHash,
+                Format = this.request.Format,
+                Name = this.request.Name,
+                Slug = this.request.Slug,
+                GlobalDiscId = this.request.GlobalDiscId,
+            },
+            this.CancellationToken);
+
+        var payload = response.Data?.PromoteIntakeDisc;
+        if (!response.IsSuccessResult() || payload?.Errors is { Count: > 0 })
+        {
+            this.copyFlowError = GetPromoteIntakeDiscErrorMessage(payload?.Errors?.FirstOrDefault())
+                ?? response.Errors?.FirstOrDefault()?.Message
+                ?? "Could not promote the matching intake disc.";
+            return;
+        }
+
+        var result = payload?.IntakeDiscPromotionResult;
+        if (result?.MainDatabaseMatch == true)
+        {
+            var existingDiscResult = await TryCopyFromExistingDisc(this.request.ContentHash);
+            if (!existingDiscResult.Copied)
+            {
+                this.copyFlowError = "This disc is now available in the database. Use the existing-disc copy option to continue.";
+            }
+            return;
+        }
+
+        var createdDiscId = result?.Disc.EncodedId;
+        if (string.IsNullOrWhiteSpace(createdDiscId))
+        {
+            this.copyFlowError = "The intake disc could not be added to this contribution.";
+            return;
+        }
+
+        var target = result!.LogsCopied
+            ? $"/contribution/{this.ContributionId}/discs/{createdDiscId}/identify"
+            : $"/contribution/{this.ContributionId}/discs/{createdDiscId}";
+        this.Navigation.NavigateTo(target);
+    }
+
+    private static string? GetPromoteIntakeDiscErrorMessage(
+        IPromoteIntakeDisc_PromoteIntakeDisc_Errors? error) =>
+        error switch
+        {
+            IPromoteIntakeDisc_PromoteIntakeDisc_Errors_ContributionNotFoundError e => e.Message,
+            IPromoteIntakeDisc_PromoteIntakeDisc_Errors_AuthenticationError e => e.Message,
+            IPromoteIntakeDisc_PromoteIntakeDisc_Errors_InvalidIdError e => e.Message,
+            IPromoteIntakeDisc_PromoteIntakeDisc_Errors_InvalidOwnershipError e => e.Message,
+            IPromoteIntakeDisc_PromoteIntakeDisc_Errors_IntakeDiscMatchNotFoundError e => e.Message,
+            _ => null,
+        };
 
     private Task<bool> CheckDiscSlugAvailability(string slug, CancellationToken cancellationToken)
     {
@@ -548,4 +651,6 @@ public partial class AddDisc : CancellableComponentBase
 
         return Task.FromResult(!taken);
     }
+
+    private sealed record ExistingDiscCopyResult(bool Found, bool Copied);
 }

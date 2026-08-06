@@ -60,6 +60,7 @@
             release.ImageUrl = releaseFile.ImageUrl;
             release.BackImageUrl = releaseFile.BackImageUrl;
             release.ReleaseDate = releaseFile.ReleaseDate;
+            release.Partial = ValidatePartial(releaseFile.Partial, PartialStateTarget.Release);
 
             if (releaseFile.Contributors != null && releaseFile.Contributors.Count > 0)
             {
@@ -220,7 +221,8 @@
                         Year = file.Year,
                         RegionCode = file.RegionCode,
                         ReleaseDate = file.ReleaseDate,
-                        DateAdded = DateTimeOffset.UtcNow
+                        DateAdded = DateTimeOffset.UtcNow,
+                        Partial = ValidatePartial(file.Partial, PartialStateTarget.Release),
                     }
                 };
 
@@ -235,6 +237,8 @@
                     boxset.Release.Discs.Clear();
                 }
             }
+
+            boxset.Release.Partial = ValidatePartial(file.Partial, PartialStateTarget.Release);
 
             string imagePath = this.fileSystem.Path.Combine(boxSetDirectory, "front.jpg");
             if (await this.fileSystem.File.Exists(imagePath, cancellationToken))
@@ -1312,7 +1316,13 @@
             if (extension.Equals(".json", StringComparison.OrdinalIgnoreCase))
             {
                 var json = await this.fileSystem.File.ReadAllText(path, cancellationToken);
-                return JsonSerializer.Deserialize<Disc>(json, JsonOptions);
+                var disc = JsonSerializer.Deserialize<Disc>(json, JsonOptions);
+                if (disc is not null)
+                {
+                    ValidatePartial(disc.Partial, PartialStateTarget.Disc);
+                }
+
+                return disc;
             }
 
             if (!extension.Equals(".ref", StringComparison.OrdinalIgnoreCase))
@@ -1338,6 +1348,7 @@
             var referencedDisc = JsonSerializer.Deserialize<Disc>(referencedJson, JsonOptions);
             if (referencedDisc is not null)
             {
+                ValidatePartial(referencedDisc.Partial, PartialStateTarget.Disc);
                 // This .ref is a different physical pressing (same content) than the referenced
                 // release, so its pressing id is the .ref's own globalDiscId — never inherit the
                 // referenced release's id.
@@ -1345,6 +1356,12 @@
             }
 
             return referencedDisc;
+        }
+
+        private static PartialState? ValidatePartial(PartialState? partial, PartialStateTarget target)
+        {
+            partial?.Validate(target);
+            return partial;
         }
 
         private async Task<string> ResolveReferencedReleasePath(string dataRoot, string releasePath, CancellationToken cancellationToken)
@@ -1398,15 +1415,21 @@
             Disc canonicalDisc = disc;
             if (!string.IsNullOrWhiteSpace(disc.ContentHash) && !string.IsNullOrWhiteSpace(disc.Format))
             {
-                canonicalDisc = this.dbContext.Discs.Local
+                var existingDisc = this.dbContext.Discs.Local
                     .FirstOrDefault(d =>
                         d.ContentHash == disc.ContentHash &&
                         d.Format == disc.Format);
 
-                canonicalDisc ??= await this.dbContext.Discs
+                existingDisc ??= await this.dbContext.Discs
                     .FirstOrDefaultAsync(d =>
                         d.ContentHash == disc.ContentHash &&
                         d.Format == disc.Format, cancellationToken);
+
+                if (existingDisc is not null)
+                {
+                    existingDisc.Partial = ValidatePartial(disc.Partial, PartialStateTarget.Disc);
+                    canonicalDisc = existingDisc;
+                }
             }
 
             return new ReleaseDisc
