@@ -1,17 +1,13 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
-using KristofferStrube.Blazor.FileAPI;
-using KristofferStrube.Blazor.FileSystem;
-using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb.Client.Contributions;
 using TheDiscDb.Client.Controls;
+using TheDiscDb.Client.Interop;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.InputModels;
 using TheDiscDb.Services;
@@ -40,10 +36,7 @@ public partial class AddDisc : CancellableComponentBase
     public string? ContributionId { get; set; }
 
     [Inject]
-    public IFileSystemAccessServiceInProcess FileSystemAccessService { get; set; } = default!;
-
-    [Inject]
-    public IJSRuntime Js { get; set; } = default!;
+    public DiscDirectoryPicker DiscDirectoryPicker { get; set; } = default!;
 
     [Inject]
     public IContributionClient ContributionClient { get; set; } = default!;
@@ -60,11 +53,10 @@ public partial class AddDisc : CancellableComponentBase
     [Inject]
     public IWebAssemblyHostEnvironment HostEnvironment { get; set; } = default!;
 
-    FileSystemDirectoryHandleInProcess? handler;
-    IFileSystemHandleInProcess[] items = Array.Empty<IFileSystemHandleInProcess>();
     string hash = string.Empty;
-    List<FileHashInfo>? hashItems = null;
     IContributionDiscs_MyContributions_Nodes? contribution = null;
+    bool discSelected;
+    bool isScanning;
     bool manualHashMode;
     string manualHash = string.Empty;
     SlugInput? slugInput;
@@ -110,210 +102,82 @@ public partial class AddDisc : CancellableComponentBase
 
     async Task OpenFolderAsync()
     {
+        this.copyFlowError = null;
         try
         {
-            handler = await FileSystemAccessService.ShowDirectoryPickerAsync(new DirectoryPickerOptionsStartInFileSystemHandle()
+            await using var selection = await this.DiscDirectoryPicker.PickAsync(this.CancellationToken);
+            if (selection is null)
             {
-                Mode = FileSystemPermissionMode.Read,
-            });
+                return;
+            }
 
-            await TryCalculateHash();
+            this.isScanning = true;
+            await TryCalculateHash(selection.Files);
+        }
+        catch (OperationCanceledException) when (this.CancellationToken.IsCancellationRequested)
+        {
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
+            this.copyFlowError = $"Could not read the selected disc folder: {ex.Message}";
+        }
+        finally
+        {
+            this.isScanning = false;
         }
     }
 
-    async Task TryCalculateHash()
+    async Task TryCalculateHash(IReadOnlyList<DiscScanFile> files)
     {
         this.copyFlowError = null;
         this.request.GlobalDiscId = null;
-        var rootItems = await handler!.ValuesAsync();
-
-        var bdmv = rootItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("BDMV", StringComparison.OrdinalIgnoreCase));
-        var videoTs = rootItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase));
-
-        if (bdmv != default && bdmv is FileSystemDirectoryHandleInProcess bdmvDirectory)
+        var scan = await DiscScanner.ScanAsync(files, this.CancellationToken);
+        if (!string.IsNullOrEmpty(scan.Error))
         {
-            // Blu-ray / UHD: compute the AACS Disc ID from the sibling AACS folder.
-            // Optional — absent on MKV-only rips, in which case this stays null.
-            this.request.GlobalDiscId = await TryComputeAacsDiscId(rootItems);
-
-            var bdmvItems = await bdmvDirectory.ValuesAsync();
-            var stream = bdmvItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("STREAM", StringComparison.OrdinalIgnoreCase));
-            if (stream != default && stream is FileSystemDirectoryHandleInProcess streamDirectory)
-            {
-                hashItems = await GetHashItems(streamDirectory, i => i.Name.EndsWith("m2ts", StringComparison.OrdinalIgnoreCase));
-            }
-        }
-        else if (videoTs != default && videoTs is FileSystemDirectoryHandleInProcess videoTsDirectory)
-        {
-            request.Format = DiscFormatConstants.Dvd;
-            // DVD: compute the libdvdread DVDDiscID from the IFO files.
-            this.request.GlobalDiscId = await TryComputeDvdDiscId(videoTsDirectory);
-            hashItems = await GetHashItems(videoTsDirectory);
-        }
-        else
-        {
-            // TODO: Show error to user
-            Console.WriteLine("No BDMV or VIDEO_TS folder found.");
+            this.copyFlowError = scan.Error;
+            return;
         }
 
-        if (hashItems != null)
+        if (scan.HashFiles.Count == 0)
         {
-            var hashInput = new HashDiscInput
-            {
-                ContributionId = this.ContributionId!,
-                Files = hashItems.Select(i => new FileHashInfoInput
-                {
-                    Index = i.Index,
-                    Name = i.Name,
-                    Size = i.Size,
-                    CreationTime = i.CreationTime
-                }).ToList()
-            };
-            var response = await this.ContributionClient.HashDisc.ExecuteAsync(hashInput, this.CancellationToken);
-
-            if (response != null && response.IsSuccessResult() && response.Data != null)
-            {
-                hash = response.Data!.HashDisc!.DiscHash!.Hash;
-                this.request.ContentHash = hash;
-
-                var copiedExistingDisc = await TryCopyFromExistingDisc(hash);
-                if (copiedExistingDisc)
-                {
-                    return;
-                }
-            }
-        }
-    }
-
-    async Task<List<FileHashInfo>> GetHashItems(FileSystemDirectoryHandleInProcess root, Predicate<FileInProcess>? filter = null)
-    {
-        List<FileHashInfo> results = new();
-
-        items = await root.ValuesAsync();
-        int index = 0;
-        foreach (var item in items.Where(i => i.Kind == FileSystemHandleKind.File))
-        {
-            var file = item as FileSystemFileHandleInProcess;
-            if (file != null)
-            {
-                var fileData = await file.GetFileAsync();
-                if (filter != null && !filter(fileData))
-                {
-                    continue;
-                }
-
-                results.Add(new FileHashInfo
-                {
-                    Index = index++,
-                    Name = file.Name,
-                    Size = (long)fileData.Size,
-                    CreationTime = fileData.LastModified
-                });
-            }
+            this.copyFlowError = "No hashable files were found on this disc.";
+            return;
         }
 
-        return results.ToList();
-    }
-
-    private static readonly Regex VtsIfoPattern =
-        new(@"^VTS_(\d{2})_0\.IFO$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-    // Computes the AACS Disc ID (SHA-1 of AACS/Unit_Key_RO.inf) for Blu-ray/UHD discs.
-    // Best-effort: returns null (and never throws) when the AACS folder or file is absent.
-    async Task<string?> TryComputeAacsDiscId(IFileSystemHandleInProcess[] rootItems)
-    {
-        try
+        this.request.Format = scan.Format ?? DiscFormatConstants.BluRay;
+        this.request.GlobalDiscId = scan.GlobalDiscId;
+        var hashInput = new HashDiscInput
         {
-            var aacs = rootItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("AACS", StringComparison.OrdinalIgnoreCase)) as FileSystemDirectoryHandleInProcess;
-            if (aacs is null)
+            ContributionId = this.ContributionId!,
+            Files = scan.HashFiles.Select(item => new FileHashInfoInput
             {
-                return null;
-            }
+                Index = item.Index,
+                Name = item.Name,
+                Size = item.Size,
+                CreationTime = item.CreationTime
+            }).ToList()
+        };
+        var response = await this.ContributionClient.HashDisc.ExecuteAsync(
+            hashInput,
+            this.CancellationToken);
 
-            var aacsItems = await aacs.ValuesAsync();
-            var unitKey = FindFileHandle(aacsItems, "Unit_Key_RO.inf");
-
-            // libaacs falls back to AACS/DUPLICATE/Unit_Key_RO.inf.
-            if (unitKey is null)
-            {
-                var duplicate = aacsItems.FirstOrDefault(i => i.Kind == FileSystemHandleKind.Directory && i.Name.Equals("DUPLICATE", StringComparison.OrdinalIgnoreCase)) as FileSystemDirectoryHandleInProcess;
-                if (duplicate is not null)
-                {
-                    unitKey = FindFileHandle(await duplicate.ValuesAsync(), "Unit_Key_RO.inf");
-                }
-            }
-
-            if (unitKey is null)
-            {
-                return null;
-            }
-
-            return AacsDiscId.Compute(await ReadHandleBytes(unitKey));
-        }
-        catch (Exception ex)
+        if (!response.IsSuccessResult() || response.Data?.HashDisc?.DiscHash is null)
         {
-            Console.WriteLine($"AACS Disc ID computation skipped: {ex.Message}");
-            return null;
+            this.copyFlowError = response.Errors?.FirstOrDefault()?.Message
+                ?? "Could not identify this disc. Please try again.";
+            return;
         }
-    }
 
-    // Computes the DVD Disc ID (libdvdread DVDDiscID = MD5 of the IFO files).
-    // Best-effort: returns null (and never throws) when VIDEO_TS.IFO is absent.
-    async Task<string?> TryComputeDvdDiscId(FileSystemDirectoryHandleInProcess videoTsDirectory)
-    {
-        try
+        hash = response.Data.HashDisc.DiscHash.Hash;
+        this.request.ContentHash = hash;
+        this.discSelected = true;
+
+        var copiedExistingDisc = await TryCopyFromExistingDisc(hash);
+        if (copiedExistingDisc)
         {
-            var ifoItems = await videoTsDirectory.ValuesAsync();
-            var videoTsIfoHandle = FindFileHandle(ifoItems, "VIDEO_TS.IFO");
-            if (videoTsIfoHandle is null)
-            {
-                return null;
-            }
-
-            var videoTsIfo = await ReadHandleBytes(videoTsIfoHandle);
-
-            var vtsByNumber = new SortedDictionary<int, byte[]>();
-            foreach (var item in ifoItems)
-            {
-                if (item.Kind != FileSystemHandleKind.File)
-                {
-                    continue;
-                }
-
-                var match = VtsIfoPattern.Match(item.Name);
-                if (match.Success && item is FileSystemFileHandleInProcess fileHandle)
-                {
-                    vtsByNumber[int.Parse(match.Groups[1].Value)] = await ReadHandleBytes(fileHandle);
-                }
-            }
-
-            int maxNumber = vtsByNumber.Count > 0 ? vtsByNumber.Keys.Max() : 0;
-            var vtsIfos = new byte[]?[maxNumber];
-            foreach (var kvp in vtsByNumber)
-            {
-                vtsIfos[kvp.Key - 1] = kvp.Value;
-            }
-
-            return DvdDiscId.Compute(videoTsIfo, vtsIfos);
+            return;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"DVD Disc ID computation skipped: {ex.Message}");
-            return null;
-        }
-    }
-
-    private static FileSystemFileHandleInProcess? FindFileHandle(IEnumerable<IFileSystemHandleInProcess> items, string name)
-        => items.FirstOrDefault(i => i.Kind == FileSystemHandleKind.File && string.Equals(i.Name, name, StringComparison.OrdinalIgnoreCase)) as FileSystemFileHandleInProcess;
-
-    private static async Task<byte[]> ReadHandleBytes(FileSystemFileHandleInProcess handle)
-    {
-        var file = await handle.GetFileAsync();
-        return await file.ArrayBufferAsync();
     }
 
     async Task HandleValidSubmit()

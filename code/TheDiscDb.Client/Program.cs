@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb.Client;
+using TheDiscDb.Client.Interop;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Client;
 
@@ -45,6 +46,7 @@ builder.Services
 
 builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
+builder.Services.AddScoped<DiscDirectoryPicker>();
 
 builder.Services.AddScoped<IExternalSearchService, ExternalSearchService>();
 

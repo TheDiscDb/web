@@ -14,7 +14,10 @@
     </section>
 
     <section class="pick">
-        <p>Insert the disc, then choose its root folder (the one containing <code>BDMV</code>/<code>AACS</code> or <code>VIDEO_TS</code>).</p>
+        <p>
+            Insert the disc, then choose its root folder (the one containing <code>BDMV</code>/<code>AACS</code> or <code>VIDEO_TS</code>).
+            Firefox and Safari will use their folder selection fallback.
+        </p>
         <button class="btn" @onclick="OpenFolderAsync" disabled="@isBusy">Choose disc folder</button>
     </section>
 
