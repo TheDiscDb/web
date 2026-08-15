@@ -17,14 +17,20 @@
             <p>Ensure the disc you would like to add is in your optical drive.</p>
         </section>
 
-        @if (handler is null && !manualHashMode)
+        @if (!discSelected && !manualHashMode)
         {
             <section class="info-card">
                 <p>
                     Insert the disc you want to add, then select its root folder (usually the drive letter). We’ll hash it to see if it already exists
-                    in the database. Your browser may request file-system access.
+                    in the database. Chrome and Edge use direct file-system access; Firefox and Safari use a folder selection fallback.
                 </p>
-                <button class="btn btn-primary" @onclick="OpenFolderAsync">Select Disc Root Folder</button>
+                @if (!string.IsNullOrEmpty(copyFlowError))
+                {
+                    <div class="alert alert-warning">@copyFlowError</div>
+                }
+                <button class="btn btn-primary" @onclick="OpenFolderAsync" disabled="@isScanning">
+                    @(isScanning ? "Reading Disc..." : "Select Disc Root Folder")
+                </button>
                 @if (IsDevelopmentMode)
                 {
                     <div class="manual-hash-section">

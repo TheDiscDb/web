@@ -1,9 +1,8 @@
-using KristofferStrube.Blazor.FileSystem;
-using KristofferStrube.Blazor.FileSystemAccess;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using StrawberryShake;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.Client.Interop;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -11,7 +10,7 @@ namespace TheDiscDb.Client.Pages.Contribute;
 public partial class AddDiscId : CancellableComponentBase
 {
     [Inject]
-    public IFileSystemAccessServiceInProcess FileSystemAccessService { get; set; } = default!;
+    public DiscDirectoryPicker DiscDirectoryPicker { get; set; } = default!;
 
     [Inject]
     public IContributionClient ContributionClient { get; set; } = default!;
@@ -49,25 +48,17 @@ public partial class AddDiscId : CancellableComponentBase
     private async Task OpenFolderAsync()
     {
         Reset();
-        isBusy = true;
         try
         {
-            FileSystemDirectoryHandleInProcess handle;
-            try
+            await using var selection = await this.DiscDirectoryPicker.PickAsync(
+                this.CancellationToken);
+            if (selection is null)
             {
-                handle = await FileSystemAccessService.ShowDirectoryPickerAsync(
-                    new DirectoryPickerOptionsStartInFileSystemHandle
-                    {
-                        Mode = FileSystemPermissionMode.Read,
-                    });
-            }
-            catch (Exception)
-            {
-                // User cancelled the picker.
                 return;
             }
 
-            var scan = await DiscScanner.ScanAsync(handle);
+            isBusy = true;
+            var scan = await DiscScanner.ScanAsync(selection.Files, this.CancellationToken);
             if (!string.IsNullOrEmpty(scan.Error))
             {
                 SetResult("error", scan.Error);
@@ -89,6 +80,9 @@ public partial class AddDiscId : CancellableComponentBase
             }
 
             await SubmitAsync(scan);
+        }
+        catch (OperationCanceledException) when (this.CancellationToken.IsCancellationRequested)
+        {
         }
         catch (Exception ex)
         {
