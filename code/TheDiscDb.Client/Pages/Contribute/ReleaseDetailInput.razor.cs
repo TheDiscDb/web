@@ -59,6 +59,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     string frontImagePreviewUrl = "";
     string backImagePreviewUrl = "";
     private string? boxsetTitle;
+    private string? intakePrefillMessage;
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
     private ContributionNamingSuggestion? ReleaseNamingSuggestion =>
         ContributionInputGuard.GetNamingSuggestion(
@@ -210,6 +211,125 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     }
 
     private string? submitErrorMessage;
+
+    private async Task TryApplyIntakeReleaseMatchAsync()
+    {
+        this.intakePrefillMessage = null;
+        var normalizedUpc = string.Concat((this.form?.Upc ?? string.Empty).Where(char.IsAsciiDigit));
+        if (normalizedUpc.Length is not (12 or 13) ||
+            string.IsNullOrWhiteSpace(this.request.ExternalId))
+        {
+            return;
+        }
+
+        var response = await this.ContributionClient.GetIntakeReleaseMatch.ExecuteAsync(
+            this.request.ExternalProvider,
+            this.request.ExternalId,
+            normalizedUpc,
+            this.CancellationToken);
+        var match = response.Data?.IntakeReleaseMatch;
+        if (!response.IsSuccessResult() || match is null)
+        {
+            return;
+        }
+
+        var applied = false;
+        if (string.IsNullOrWhiteSpace(this.form!.Asin) && !string.IsNullOrWhiteSpace(match.Asin))
+        {
+            this.form.Asin = match.Asin;
+            applied = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.form.ReleaseTitle) && !string.IsNullOrWhiteSpace(match.ReleaseTitle))
+        {
+            this.form.ReleaseTitle = match.ReleaseTitle;
+            applied = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.form.ReleaseSlug) && !string.IsNullOrWhiteSpace(match.ReleaseSlug))
+        {
+            this.form.ReleaseSlug = match.ReleaseSlug;
+            applied = true;
+        }
+
+        if ((string.IsNullOrWhiteSpace(this.form.Locale) ||
+                this.form.Locale.Equals("en-us", StringComparison.OrdinalIgnoreCase)) &&
+            !string.IsNullOrWhiteSpace(match.Locale))
+        {
+            this.form.Locale = match.Locale;
+            applied = true;
+        }
+
+        if ((string.IsNullOrWhiteSpace(this.form.RegionCode) || this.form.RegionCode == "1") &&
+            !string.IsNullOrWhiteSpace(match.RegionCode))
+        {
+            this.form.RegionCode = match.RegionCode;
+            applied = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.releaseDate) && match.ReleaseDate.HasValue)
+        {
+            this.request.ReleaseDate = match.ReleaseDate.Value;
+            this.releaseDate = match.ReleaseDate.Value.ToString("MM-dd-yyyy");
+            applied = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(this.request.FrontImageUrl) &&
+            !string.IsNullOrWhiteSpace(match.FrontImageUrl))
+        {
+            try
+            {
+                this.request.FrontImageUrl = await UploadImage(
+                    this.id.ToString(),
+                    match.FrontImageUrl,
+                    this.frontImageUploadUrl,
+                    "front",
+                    this.frontImageUploader) ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(this.request.FrontImageUrl))
+                {
+                    this.frontImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/front.jpg";
+                    applied = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to copy intake front image: {ex.Message}");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(this.request.BackImageUrl) &&
+            !string.IsNullOrWhiteSpace(match.BackImageUrl))
+        {
+            try
+            {
+                this.request.BackImageUrl = await UploadImage(
+                    this.id.ToString(),
+                    match.BackImageUrl,
+                    this.backImageUploadUrl,
+                    "back",
+                    this.backImageUploader);
+                if (!string.IsNullOrWhiteSpace(this.request.BackImageUrl))
+                {
+                    this.backImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/back.jpg";
+                    applied = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to copy intake back image: {ex.Message}");
+            }
+        }
+
+        if (this.slugInput != null && !string.IsNullOrWhiteSpace(this.form.ReleaseSlug))
+        {
+            await this.slugInput.RecheckAvailability(this.form.ReleaseSlug);
+        }
+
+        if (applied)
+        {
+            this.intakePrefillMessage = "Available release details were filled from matching intake evidence. Your entries were preserved.";
+        }
+    }
 
     async Task HandleValidSubmit()
     {
@@ -508,10 +628,23 @@ public partial class ReleaseDetailInput : CancellableComponentBase
 
     private async Task<string?> UploadImage(string id, string url, string uploadUrl, string name, SfUploader? uploader)
     {
-        var data = await this.HttpClient.GetByteArrayAsync(url);
+        using var downloadResponse = await this.HttpClient.GetAsync(url);
+        downloadResponse.EnsureSuccessStatusCode();
+        var data = await downloadResponse.Content.ReadAsByteArrayAsync();
+        var contentType = downloadResponse.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
+        var extension = contentType.ToLowerInvariant() switch
+        {
+            "image/png" => ".png",
+            "image/webp" => ".webp",
+            _ => ".jpg",
+        };
+        var fileName = $"{name}{extension}";
+        var imageContent = new ByteArrayContent(data);
+        imageContent.Headers.ContentType =
+            System.Net.Http.Headers.MediaTypeHeaderValue.Parse(contentType);
         var content = new MultipartFormDataContent
         {
-            { new ByteArrayContent(data), name, $"{name}.jpg" }
+            { imageContent, name, fileName }
         };
 
         var uploadResponse = await this.HttpClient.PostAsync(uploadUrl, content);
@@ -524,9 +657,9 @@ public partial class ReleaseDetailInput : CancellableComponentBase
                     new Syncfusion.Blazor.Inputs.FileInfo
                     {
                         Id = id,
-                        Name = $"{name}.jpg",
+                        Name = fileName,
                         Size = data.Length,
-                        Type = "image/jpeg",
+                        Type = contentType,
                         StatusCode = "Uploaded",
                         Status = "File uploaded successfully",
                         LastModifiedDate = DateTime.UtcNow

@@ -51,6 +51,18 @@
                 {
                     <div class="alert alert-warning">@copyFlowError</div>
                 }
+                @if (intakeDiscMatch is not null)
+                {
+                    <div class="alert alert-info">
+                        Matching intake scan evidence was found. Its stored scan log will be copied into this contribution when you save.
+                    </div>
+                    @if (intakeDiscMatch.GlobalDiscIdMismatch)
+                    {
+                        <div class="alert alert-warning">
+                            No exact stored evidence set matched the Disc ID from your current physical scan. The latest matching-content scan set was used, and your newly scanned Disc ID will be kept for review.
+                        </div>
+                    }
+                }
                 <EditForm Model="@request" OnValidSubmit="HandleValidSubmit">
                     <DataAnnotationsValidator />
                     <ValidationSummary />

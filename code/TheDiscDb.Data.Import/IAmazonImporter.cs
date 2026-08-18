@@ -1,4 +1,8 @@
-﻿namespace TheDiscDb.Services;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace TheDiscDb.Services;
 
 public interface IAmazonImporter
 {
@@ -9,6 +13,7 @@ public class AmazonProductMetadata
 {
     public string? Asin { get; set; }
     public string? Title { get; set; }
+    public string? MediaTitle { get; set; }
     public string? Upc { get; set; }
     public string? FrontImageUrl { get; set; }
     public string? BackImageUrl { get; set; }

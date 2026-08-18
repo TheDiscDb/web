@@ -1,6 +1,13 @@
-﻿using System.Text.Json;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using HtmlAgilityPack;
 using ScrapySharp.Extensions;
 using ScrapySharp.Network;
@@ -48,19 +55,27 @@ public class AmazonImporter : IAmazonImporter
 
     public async Task<AmazonProductMetadata?> GetProductMetadataAsync(string asin, CancellationToken cancellationToken = default)
     {
+        string normalizedAsin = asin.Trim().ToUpperInvariant();
         try
         {
+            AmazonProductMetadata? cached = await GetCachedMetadataAsync(normalizedAsin, cancellationToken);
+            if (cached is not null)
+            {
+                cached.MediaTitle ??= ExtractMediaTitle(cached.Title);
+                return cached;
+            }
+
             AmazonProductMetadata result = new AmazonProductMetadata();
-            WebPage html = await browser.NavigateToPageAsync(GetUrl(asin));
+            WebPage html = await browser.NavigateToPageAsync(GetUrl(normalizedAsin));
 
             if (html.RawResponse.StatusCode < 200 || html.RawResponse.StatusCode > 299)
             {
-                throw new AmazonImportException($"Failed to retrieve Amazon page for ASIN {asin}. Status code: {html.RawResponse.StatusCode}");
+                throw new AmazonImportException($"Failed to retrieve Amazon page for ASIN {normalizedAsin}. Status code: {html.RawResponse.StatusCode}");
             }
 
             if (string.IsNullOrEmpty(html.Content))
             {
-                throw new AmazonImportException($"Could not retrieve Amazon page for ASIN {asin}. Empty content.");
+                throw new AmazonImportException($"Could not retrieve Amazon page for ASIN {normalizedAsin}. Empty content.");
             }
 
             var nodes = html.Html.CssSelect("div#detailBullets_feature_div");
@@ -76,16 +91,20 @@ public class AmazonImporter : IAmazonImporter
             }
             else
             {
-                string logPath = $"logs/{asin}-{Guid.NewGuid()}.html";
+                string logPath = $"logs/{normalizedAsin}-{Guid.NewGuid()}.html";
                 await SaveResponse(html.RawResponse.ToString(), logPath, cancellationToken);
                 throw new AmazonImportException("Could not find detail bullets on Amazon page. " + logPath);
             }
+
+            result.Asin ??= normalizedAsin;
+            result.Title = GetProductTitle(html) ?? result.Title;
+            result.MediaTitle = ExtractMediaTitle(result.Title);
 
             var imageData = GetImageData(html.RawResponse.ToString());
 
             if (imageData == null)
             {
-                string logPath = $"logs/{asin}-{Guid.NewGuid()}.html";
+                string logPath = $"logs/{normalizedAsin}-{Guid.NewGuid()}.html";
                 await SaveResponse(html.RawResponse.ToString(), logPath, cancellationToken);
                 throw new AmazonImportException("Could not find image data on Amazon page. " + logPath);
             }
@@ -110,13 +129,102 @@ public class AmazonImporter : IAmazonImporter
                 result.BackImageUrl = back.HiRes;
             }
 
+            await SaveCachedMetadataAsync(normalizedAsin, result, cancellationToken);
             return result;
         }
         catch (Exception ex)
         {
-            throw new AmazonImportException($"An error occurred while retrieving Amazon product metadata for ASIN {asin}: {ex.Message}", ex);
+            throw new AmazonImportException($"An error occurred while retrieving Amazon product metadata for ASIN {normalizedAsin}: {ex.Message}", ex);
         }
     }
+
+    private async Task<AmazonProductMetadata?> GetCachedMetadataAsync(
+        string asin,
+        CancellationToken cancellationToken)
+    {
+        string cachePath = GetCachePath(asin);
+        if (!await this.assets.Exists(cachePath, cancellationToken))
+        {
+            return null;
+        }
+
+        BinaryData data = await this.assets.Download(cachePath, cancellationToken);
+        try
+        {
+            return JsonSerializer.Deserialize<AmazonProductMetadata>(data);
+        }
+        catch (JsonException)
+        {
+            await this.assets.Delete(cachePath, cancellationToken);
+            return null;
+        }
+    }
+
+    private async Task SaveCachedMetadataAsync(
+        string asin,
+        AmazonProductMetadata metadata,
+        CancellationToken cancellationToken)
+    {
+        byte[] json = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(metadata));
+        using var stream = new MemoryStream(json);
+        await this.assets.Save(
+            stream,
+            GetCachePath(asin),
+            ContentTypes.JsonContentType,
+            cancellationToken);
+    }
+
+    private static string GetCachePath(string asin) => $"cache/amazon/{asin}.json";
+
+    private static string? GetProductTitle(WebPage html)
+    {
+        HtmlNode? title = html.Html.CssSelect("#productTitle").FirstOrDefault();
+        if (title is null)
+        {
+            return null;
+        }
+
+        string value = System.Net.WebUtility.HtmlDecode(title.InnerText);
+        value = Regex.Replace(value, @"\s+", " ").Trim();
+        return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
+
+    private static string? ExtractMediaTitle(string? productTitle)
+    {
+        if (string.IsNullOrWhiteSpace(productTitle))
+        {
+            return null;
+        }
+
+        string title = Regex.Replace(productTitle, @"\s+", " ").Trim();
+        foreach (string separator in new[] { " - ", " \u2013 ", " \u2014 " })
+        {
+            int separatorIndex = title.LastIndexOf(separator, StringComparison.Ordinal);
+            if (separatorIndex > 0 &&
+                IsFormatDescription(title[(separatorIndex + separator.Length)..]))
+            {
+                return title[..separatorIndex].Trim();
+            }
+        }
+
+        title = Regex.Replace(
+            title,
+            @"\s*[\(\[][^)\]]*\b(?:4K|UHD|Ultra HD|Blu-?ray|DVD|Digital|Steelbook)\b[^)\]]*[\)\]]\s*$",
+            string.Empty,
+            RegexOptions.IgnoreCase);
+        title = Regex.Replace(
+            title,
+            @"\s+(?:4K(?:\s+(?:Ultra\s+HD|UHD))?|UHD|Ultra\s+HD|Blu-?ray|DVD)(?:\s*\+\s*(?:Blu-?ray|DVD|Digital))*\s*$",
+            string.Empty,
+            RegexOptions.IgnoreCase);
+        return title.Trim().TrimEnd('-', '\u2013', '\u2014', ':').Trim();
+    }
+
+    private static bool IsFormatDescription(string value) =>
+        Regex.IsMatch(
+            value,
+            @"\b(?:4K|UHD|Ultra HD|Blu-?ray|DVD|Digital|Steelbook)\b",
+            RegexOptions.IgnoreCase);
 
     private AmazonColorImages? GetImageData(string html)
     {
@@ -140,6 +248,10 @@ public class AmazonImporter : IAmazonImporter
         if (details.TryGetValue("ASIN", out string? asin))
         {
             metadata.Asin = asin;
+        }
+        if (details.TryGetValue("UPC", out string? upc))
+        {
+            metadata.Upc = Regex.Replace(upc, @"\D", "");
         }
         if (details.TryGetValue("Aspect Ratio", out var aspectRatio))
         {
@@ -274,4 +386,3 @@ public class AmazonImageVariant
     [JsonPropertyName("feedbackMetadata")]
     public object? FeedbackMetadata { get; set; }
 }
-

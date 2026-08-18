@@ -19,7 +19,7 @@ public partial class ContributionMutations
     [Error(typeof(InvalidBoxsetStatusException))]
     [Error(typeof(UnsupportedExternalProviderException))]
     [Authorize]
-    public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, TheMovieDbClient tmdb, IContributionHistoryService historyService, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
+    public async Task<UserContribution> CreateContribution(ContributionMutationRequest input, SqlServerDataContext database, TheMovieDbClient tmdb, IContributionHistoryService historyService, IIntakeMatchingService intakeMatchingService, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
     {
         var user = principal.Principal ?? throw new AuthenticationException("No user principal available.");
         var userId = userManager.GetUserId(user);
@@ -88,6 +88,10 @@ public partial class ContributionMutations
         //Now move the uploaded assets from temp storage to the contribution folder
         await MoveImages(database, contribution, input.FrontImageUrl ?? string.Empty, "front", (c, url) => c.FrontImageUrl = url, cancellationToken);
         await MoveImages(database, contribution, input.BackImageUrl ?? string.Empty, "back", (c, url) => c.BackImageUrl = url, cancellationToken);
+        await intakeMatchingService.RecordReleasePromotionAsync(
+            contribution.Id,
+            userId,
+            cancellationToken);
 
         idEncoder.EncodeInPlace(contribution);
         return contribution;

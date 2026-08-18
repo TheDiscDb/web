@@ -39,8 +39,12 @@
     </div>
     <div class="mb-3">
         <label>UPC/EAN<span class="required">*</span></label>
-        <InputText class="form-control" @bind-Value="form!.Upc" />
+        <InputText class="form-control" @bind-Value="form!.Upc" @onblur="TryApplyIntakeReleaseMatchAsync" />
         <ValidationMessage For="@(() => form!.Upc)" />
+        @if (!string.IsNullOrEmpty(intakePrefillMessage))
+        {
+            <div class="form-text">@intakePrefillMessage</div>
+        }
     </div>
     <div class="mb-3">
         <label>Release Date<span class="required">*</span></label>

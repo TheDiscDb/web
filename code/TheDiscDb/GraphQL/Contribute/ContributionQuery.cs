@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Services;
+using TheDiscDb.Services.Contributions;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 using HotChocolate.Authorization;
@@ -293,5 +294,53 @@ public class ContributionQuery(IdEncoder idEncoder)
             logger.LogWarning(ex, "Amazon import failed for ASIN {Asin}", asin);
             return null;
         }
+    }
+
+    [Authorize]
+    public Task<IntakeReleaseMatch?> GetIntakeReleaseMatch(
+        string externalProvider,
+        string externalId,
+        string upc,
+        IIntakeMatchingService intakeMatchingService,
+        CancellationToken cancellationToken) =>
+        intakeMatchingService.FindReleaseMatchAsync(
+            externalProvider,
+            externalId,
+            upc,
+            cancellationToken);
+
+    [Authorize]
+    public async Task<IntakeDiscMatch?> GetIntakeDiscMatch(
+        string contributionId,
+        string contentHash,
+        string? format,
+        string? globalDiscId,
+        ClaimsPrincipal user,
+        IIntakeMatchingService intakeMatchingService,
+        CancellationToken cancellationToken)
+    {
+        var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return null;
+        }
+
+        int decodedContributionId;
+        try
+        {
+            decodedContributionId = idEncoder.Decode(contributionId);
+        }
+        catch
+        {
+            return null;
+        }
+
+        return await intakeMatchingService.FindDiscMatchAsync(
+            decodedContributionId,
+            userId,
+            contentHash,
+            format,
+            globalDiscId,
+            cancellationToken);
     }
 }
