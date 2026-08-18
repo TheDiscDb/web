@@ -15,6 +15,7 @@
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.Options;
     using Spectre.Console;
+    using TheDiscDb.Data.Import.Pipeline;
     using TheDiscDb.ImportModels;
     using TheDiscDb.InputModels;
     using TheDiscDb.Web.Data;
@@ -269,9 +270,7 @@
                 var foundDisc = await this.FindBoxsetDisc(baseDirectory, file, discInfo, cancellationToken);
                 if (foundDisc != null)
                 {
-                    foundDisc.Index = discInfo.Index;
-                    foundDisc.Name = discInfo.Name;
-                    foundDisc.Slug = discInfo.Slug;
+                    DataImportItemFactory.ApplyBoxsetOverrides(foundDisc, discInfo);
                     boxset.Release.Discs.Add(await this.ToReleaseDisc(foundDisc, cancellationToken));
                 }
                 else

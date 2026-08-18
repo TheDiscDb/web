@@ -122,4 +122,29 @@ public class DataImportItemFactoryTests
         await Assert.That(disc.Name).IsEqualTo("Source Disc");
         await Assert.That(disc.GlobalDiscId).IsNull();
     }
+
+    [Test]
+    public async Task ApplyBoxsetOverrides_DoesNotCopyMemberReleaseDiscId()
+    {
+        var disc = new Disc
+        {
+            Index = 1,
+            Slug = "source-disc",
+            Name = "Source Disc",
+            GlobalDiscId = "SOURCE-ID",
+        };
+        var boxsetDisc = new BoxSetDisc
+        {
+            Index = 4,
+            Slug = "bonus-features",
+            Name = "Bonus Features",
+        };
+
+        DataImportItemFactory.ApplyBoxsetOverrides(disc, boxsetDisc);
+
+        await Assert.That(disc.Index).IsEqualTo(4);
+        await Assert.That(disc.Slug).IsEqualTo("bonus-features");
+        await Assert.That(disc.Name).IsEqualTo("Bonus Features");
+        await Assert.That(disc.GlobalDiscId).IsNull();
+    }
 }

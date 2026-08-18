@@ -143,7 +143,7 @@ public class ContributionDiscItemTypeExtension : EncodedIdTypeExtension<UserCont
             Title = title,
             Year = year,
             FullTitle = BuildFullTitle(title, year),
-            Description = string.IsNullOrWhiteSpace(item.Description) ? disc.Name : item.Description,
+            Description = ResolveDescription(item, disc),
             Format = disc.Format,
             Resolution = ContributionDiscFormat.ResolveResolution(disc.Format),
             TmdbId = tmdbId,
@@ -153,6 +153,16 @@ public class ContributionDiscItemTypeExtension : EncodedIdTypeExtension<UserCont
             EpisodeName = string.Equals(item.Type, "Episode", StringComparison.OrdinalIgnoreCase) ? item.Name : null,
             ExtraType = item.Type,
         };
+    }
+
+    private static string? ResolveDescription(UserContributionDiscItem item, UserContributionDisc disc)
+    {
+        if (!string.IsNullOrWhiteSpace(item.Description))
+        {
+            return item.Description;
+        }
+
+        return !string.IsNullOrWhiteSpace(item.Name) ? item.Name : disc.Name;
     }
 
     private static string? BuildFullTitle(string? title, string? year)

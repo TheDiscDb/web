@@ -216,9 +216,7 @@ public class DataImportItemFactory
                     var foundDisc = await this.FindBoxsetDisc(mediaLibraryRoot, file, discInfo, cancellationToken);
                     if (foundDisc != null)
                     {
-                        foundDisc.Index = discInfo.Index;
-                        foundDisc.Name = discInfo.Name;
-                        foundDisc.Slug = discInfo.Slug;
+                        ApplyBoxsetOverrides(foundDisc, discInfo);
                         boxset.Release.Discs.Add(this.ToReleaseDisc(foundDisc));
                     }
                     else
@@ -513,6 +511,17 @@ public class DataImportItemFactory
         // The referenced disc.json carries the referenced release's pressing id. This .ref represents
         // a different physical pressing, so never inherit that id.
         referencedDisc.GlobalDiscId = reference.GlobalDiscId;
+    }
+
+    internal static void ApplyBoxsetOverrides(Disc referencedDisc, BoxSetDisc boxsetDisc)
+    {
+        referencedDisc.Index = boxsetDisc.Index;
+        referencedDisc.Name = boxsetDisc.Name;
+        referencedDisc.Slug = boxsetDisc.Slug;
+
+        // A box-set row aggregates the member release's disc; it is not another physical pressing.
+        // Leave its id empty so EffectiveGlobalDiscId can resolve it from the canonical disc.
+        referencedDisc.GlobalDiscId = null;
     }
 
     private ReleaseDisc ToReleaseDisc(Disc disc)
