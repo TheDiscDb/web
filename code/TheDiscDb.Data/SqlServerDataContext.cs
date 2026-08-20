@@ -57,6 +57,7 @@ public class SqlServerDataContext : DbContext
         intakeReleaseDisc.Property(x => x.GlobalDiscId).HasMaxLength(450);
         intakeReleaseDisc.Property(x => x.Slug).HasMaxLength(200);
         intakeReleaseDisc.Property(x => x.Name).HasMaxLength(300);
+        intakeReleaseDisc.Property(x => x.FailureReason).HasMaxLength(1000);
         intakeReleaseDisc.HasOne(x => x.Release)
             .WithMany(x => x.Discs)
             .HasForeignKey(x => x.IntakeReleaseId)

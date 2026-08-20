@@ -37,6 +37,27 @@ public class IntakeAdminServiceTests
     }
 
     [Test]
+    public async Task GetRelease_IncludesIncompleteDiscCaptureReason()
+    {
+        using var database = ChangeTestSeed.CreateDbContext();
+        var release = CreateRelease("partial-release", "123456789012", "Partial");
+        var link = CreateLink("A1", "disc-one", "Disc One", 1);
+        link.IsPlaceholder = true;
+        link.FailureReason = "MakeMKV log extraction failed: drive read error";
+        release.Discs.Add(link);
+        database.Add(release);
+        await database.SaveChangesAsync();
+
+        IntakeReleaseDetails? details = await CreateService(database).Service.GetReleaseAsync(release.Id);
+
+        await Assert.That(details).IsNotNull();
+        IntakeDiscLinkDetails disc = details!.Discs.Single();
+        await Assert.That(disc.IsPlaceholder).IsTrue();
+        await Assert.That(disc.FailureReason).IsEqualTo("MakeMKV log extraction failed: drive read error");
+        await Assert.That(disc.ContentHash).IsEqualTo("A1");
+    }
+
+    [Test]
     public async Task UpdateRelease_ValidatesIdentityAndPreservesSourceReleaseId()
     {
         using var database = ChangeTestSeed.CreateDbContext();
@@ -853,6 +874,8 @@ public class IntakeAdminServiceTests
                 "Index" INTEGER NULL,
                 "Slug" TEXT NULL,
                 "Name" TEXT NULL,
+                "IsPlaceholder" INTEGER NOT NULL DEFAULT 0,
+                "FailureReason" TEXT NULL,
                 "AddedAt" TEXT NOT NULL
             );
             CREATE UNIQUE INDEX "IX_IntakeReleaseDiscs_IntakeReleaseId_Index"

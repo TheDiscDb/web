@@ -34,10 +34,6 @@
 <QuickGrid TGridItem="IntakeReleaseListItem" @ref="grid" ItemsProvider="LoadReleasesAsync" Pagination="pagination" Class="striped-grid">
     <TemplateColumn Title="Release">
         <a href="/admin/intake/@context.Id">@(context.ReleaseTitle ?? context.ReleaseSlug ?? "Untitled release")</a>
-        @if (!string.IsNullOrEmpty(context.ReleaseSlug))
-        {
-            <div class="small text-muted">@context.ReleaseSlug</div>
-        }
     </TemplateColumn>
     <TemplateColumn Title="Parent">
         @(context.MediaItemSlug ?? context.BoxsetSlug ?? "Unassigned")

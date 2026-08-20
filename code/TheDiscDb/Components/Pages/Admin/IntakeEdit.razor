@@ -222,6 +222,11 @@ else
                                 <td class="intake-immutable">
                                     <div>Hash: @detail?.ContentHash</div>
                                     <div>Disc ID: @detail?.GlobalDiscId</div>
+                                    @if (detail?.IsPlaceholder == true)
+                                    {
+                                        <span class="badge bg-warning text-dark">Incomplete capture</span>
+                                        <div class="small text-warning-emphasis">@detail.FailureReason</div>
+                                    }
                                 </td>
                             </tr>
                         }

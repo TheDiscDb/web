@@ -15,5 +15,7 @@ public class IntakeReleaseDisc
     public int? Index { get; set; }
     public string? Slug { get; set; }
     public string? Name { get; set; }
+    public bool IsPlaceholder { get; set; }
+    public string? FailureReason { get; set; }
     public DateTimeOffset AddedAt { get; set; }
 }

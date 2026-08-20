@@ -136,6 +136,11 @@ else
                                 <td>
                                     <strong>@disc.Name</strong>
                                     <div class="small text-muted">@disc.Slug</div>
+                                    @if (disc.IsPlaceholder)
+                                    {
+                                        <span class="badge bg-warning text-dark">Incomplete capture</span>
+                                        <div class="small text-warning-emphasis">@disc.FailureReason</div>
+                                    }
                                     @if (disc.ReleaseCount > 1)
                                     {
                                         <span class="badge bg-warning text-dark">Shared by @disc.ReleaseCount releases</span>

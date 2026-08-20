@@ -15,6 +15,7 @@ public enum IntakeStatus
     ReadyForReview,
     Promoted,
     Rejected,
+    Partial,
 }
 
 public enum IntakeDiscEvidenceType
