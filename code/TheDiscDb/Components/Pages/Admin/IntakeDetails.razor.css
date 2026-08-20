@@ -1,0 +1,16 @@
+.intake-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.intake-image {
+    display: block;
+    max-height: 260px;
+    max-width: 180px;
+}
+
+.intake-identity {
+    font-family: var(--bs-font-monospace);
+    overflow-wrap: anywhere;
+}

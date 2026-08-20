@@ -1,0 +1,57 @@
+@page "/admin/intake"
+@using TheDiscDb.Services.Admin
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Intake</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink()]" PrimaryText="Intake" />
+
+<h1>Intake</h1>
+<p class="text-muted">Review and manage staged releases before they are promoted to the database.</p>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-6">
+        <label for="intake-search" class="form-label">Search</label>
+        <input id="intake-search" class="form-control" @bind="searchText"
+               placeholder="Title, UPC, ASIN, external ID, source release, disc name, hash, or Disc ID" />
+    </div>
+    <div class="col-md-3">
+        <label for="intake-status" class="form-label">Status</label>
+        <select id="intake-status" class="form-select" @bind="selectedStatus">
+            <option value="">All statuses</option>
+            @foreach (var status in statuses)
+            {
+                <option value="@status">@status</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3 intake-filter-actions">
+        <button type="button" class="btn btn-primary" @onclick="ApplySearchAsync">Apply filters</button>
+    </div>
+</div>
+
+<QuickGrid TGridItem="IntakeReleaseListItem" @ref="grid" ItemsProvider="LoadReleasesAsync" Pagination="pagination" Class="striped-grid">
+    <TemplateColumn Title="Release">
+        <a href="/admin/intake/@context.Id">@(context.ReleaseTitle ?? context.ReleaseSlug ?? "Untitled release")</a>
+        @if (!string.IsNullOrEmpty(context.ReleaseSlug))
+        {
+            <div class="small text-muted">@context.ReleaseSlug</div>
+        }
+    </TemplateColumn>
+    <TemplateColumn Title="Parent">
+        @(context.MediaItemSlug ?? context.BoxsetSlug ?? "Unassigned")
+    </TemplateColumn>
+    <TemplateColumn Title="External identity">
+        @context.ExternalProvider @context.ExternalId
+    </TemplateColumn>
+    <PropertyColumn Property="@(release => release.Upc)" Title="UPC" />
+    <PropertyColumn Property="@(release => release.Status)" Title="Status" />
+    <PropertyColumn Property="@(release => release.DiscCount)" Title="Discs" />
+    <PropertyColumn Property="@(release => release.ReceivedAt)" Title="Received" Format="yyyy-MM-dd" />
+    <TemplateColumn Title="Actions">
+        <a href="/admin/intake/@context.Id/edit" title="Edit intake release"><i class="e-icons e-edit"></i></a>
+    </TemplateColumn>
+</QuickGrid>
+
+<Paginator State="pagination" />

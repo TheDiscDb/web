@@ -299,6 +299,7 @@ builder.Services.AddKeyedSingleton<IStaticAssetStore>(KeyedServiceNames.ImagesAs
         ContainerName = blobContainerName
     }));
 });
+builder.Services.AddScoped<IIntakeAdminService, IntakeAdminService>();
 
 var searchApiKey = builder.Configuration["Search:ApiKey"];
 bool searchEnabled = !string.IsNullOrEmpty(searchApiKey);

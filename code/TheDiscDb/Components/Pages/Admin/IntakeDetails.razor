@@ -1,0 +1,213 @@
+@page "/admin/intake/{Id:int}"
+@using TheDiscDb.Services.Admin
+@using Syncfusion.Blazor.Popups
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Intake Details</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink(), GetIntakeLink()]" PrimaryText="Details" />
+
+@if (deleteMessages.Count != 0)
+{
+    <div class="alert @(deleteHasError ? "alert-danger" : "alert-success")">
+        @foreach (var item in deleteMessages)
+        {
+            <div>@item</div>
+        }
+    </div>
+}
+
+@if (deleteWarnings.Count != 0)
+{
+    <div class="alert alert-warning">
+        @foreach (var warning in deleteWarnings)
+        {
+            <div>@warning</div>
+        }
+    </div>
+}
+
+@if (releaseDeleted)
+{
+    <div class="mb-3">
+        <h1 class="fs-3">Deleted @(Details?.ReleaseTitle ?? Details?.ReleaseSlug ?? "intake release")</h1>
+        <p class="text-muted">The intake release has been removed from the database.</p>
+        <a class="btn btn-primary" href="/admin/intake">Back to intake list</a>
+    </div>
+}
+else if (Details == null)
+{
+    <div class="alert alert-warning">Intake release not found.</div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+        <div>
+            <h1>@(Details.ReleaseTitle ?? Details.ReleaseSlug ?? "Untitled intake release")</h1>
+            <p class="text-muted">Status: <strong>@Details.Status</strong> · Received @Details.ReceivedAt.ToString("u")</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary" href="/admin/intake/@Details.Id/edit"><i class="e-icons e-edit"></i> Edit</a>
+            @if (Details.Status != IntakeStatus.Promoted)
+            {
+                <button type="button" class="btn btn-outline-danger" @onclick="ShowDeleteDialog">
+                    <i class="e-icons e-trash"></i> Delete
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (Details.Status == IntakeStatus.Promoted)
+    {
+        <div class="alert alert-warning">Promoted releases are protected and cannot be deleted.</div>
+    }
+
+    <section class="info-card mb-3">
+        <h2>Release metadata</h2>
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Parent</dt>
+            <dd class="col-sm-9">@(Details.MediaItemSlug ?? Details.BoxsetSlug ?? "Unassigned")</dd>
+            <dt class="col-sm-3">Release slug</dt>
+            <dd class="col-sm-9">@Details.ReleaseSlug</dd>
+            <dt class="col-sm-3">External identity</dt>
+            <dd class="col-sm-9">@Details.ExternalProvider @Details.ExternalId</dd>
+            <dt class="col-sm-3">UPC / ASIN</dt>
+            <dd class="col-sm-9">@Details.Upc@(string.IsNullOrEmpty(Details.Asin) ? string.Empty : $" / {Details.Asin}")</dd>
+            <dt class="col-sm-3">Release date</dt>
+            <dd class="col-sm-9">@(Details.ReleaseDate is { } releaseDate ? releaseDate.ToString("yyyy-MM-dd") : "Not supplied")</dd>
+            <dt class="col-sm-3">Locale / region</dt>
+            <dd class="col-sm-9">@Details.Locale / @Details.RegionCode</dd>
+            <dt class="col-sm-3">Source</dt>
+            <dd class="col-sm-9">@Details.Source</dd>
+        </dl>
+    </section>
+
+    <section class="info-card mb-3">
+        <h2>Images</h2>
+        <div class="intake-images">
+            @if (!string.IsNullOrEmpty(Details.FrontImageLocation))
+            {
+                <figure>
+                    <img src="@GetImageUrl(Details.FrontImageLocation)" alt="Front cover" class="intake-image" />
+                    <figcaption>Front</figcaption>
+                </figure>
+            }
+            @foreach (var image in Details.ReleaseImages.Where(image => image.Type == IntakeDiscEvidenceType.BackImage))
+            {
+                <figure>
+                    <img src="@GetImageUrl(image.Location)" alt="Back cover" class="intake-image" />
+                    <figcaption>Back</figcaption>
+                </figure>
+            }
+            @if (string.IsNullOrEmpty(Details.FrontImageLocation) && !Details.ReleaseImages.Any())
+            {
+                <p class="text-muted mb-0">No images have been uploaded.</p>
+            }
+        </div>
+    </section>
+
+    <section class="info-card mb-3">
+        <h2>Discs (@Details.Discs.Count)</h2>
+        @if (Details.Discs.Count == 0)
+        {
+            <p class="text-muted mb-0">No discs are linked to this release.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Index</th>
+                            <th>Name</th>
+                            <th>Format</th>
+                            <th>Content hash</th>
+                            <th>Global Disc ID</th>
+                            <th>Evidence</th>
+                            <th>Promotions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var disc in Details.Discs)
+                        {
+                            <tr>
+                                <td>@disc.Index</td>
+                                <td>
+                                    <strong>@disc.Name</strong>
+                                    <div class="small text-muted">@disc.Slug</div>
+                                    @if (disc.ReleaseCount > 1)
+                                    {
+                                        <span class="badge bg-warning text-dark">Shared by @disc.ReleaseCount releases</span>
+                                    }
+                                </td>
+                                <td>@disc.Format</td>
+                                <td class="intake-identity">@disc.ContentHash</td>
+                                <td class="intake-identity">@disc.GlobalDiscId</td>
+                                <td>
+                                    @foreach (var evidence in disc.Evidence)
+                                    {
+                                        <div class="small">
+                                            <strong>@evidence.Type</strong>: @evidence.Location
+                                        </div>
+                                    }
+                                </td>
+                                <td>@disc.Promotions.Count</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <section class="info-card">
+        <h2>Release promotion history</h2>
+        @if (Details.Promotions.Count == 0)
+        {
+            <p class="text-muted mb-0">No release promotions have been recorded.</p>
+        }
+        else
+        {
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Completed</th>
+                        <th>Failure reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var promotion in Details.Promotions)
+                    {
+                        <tr>
+                            <td>@promotion.Status</td>
+                            <td>@promotion.CreatedAt.ToString("u")</td>
+                            <td>@promotion.CompletedAt?.ToString("u")</td>
+                            <td>@promotion.FailureReason</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}
+
+@if (showDeleteDialog && Details != null)
+{
+    <SfDialog Target="body" Width="460px" @bind-Visible="showDeleteDialog" IsModal="true" ShowCloseIcon="true" Header="Delete Intake Release">
+        <DialogTemplates>
+            <Content>
+                <p>Delete <strong>@(Details.ReleaseTitle ?? Details.ReleaseSlug ?? "this intake release")</strong> and its @Details.Discs.Count disc link(s)?</p>
+                <p class="text-danger mb-0">This removes the release from the database. Shared canonical discs are retained.</p>
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Cancel" CssClass="e-flat" OnClick="HideDeleteDialog" />
+            <DialogButton Content="Delete" CssClass="e-danger" IsPrimary="true" OnClick="DeleteAsync" />
+        </DialogButtons>
+    </SfDialog>
+}
+
+<SfDialogProvider />

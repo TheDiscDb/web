@@ -6,6 +6,7 @@ namespace TheDiscDb.Tools.MakeMkv
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Fantastic.FileSystem;
@@ -55,14 +56,13 @@ namespace TheDiscDb.Tools.MakeMkv
 
         public async Task CleanLogs(int driveIndex, string path, CancellationToken cancellationToken = default)
         {
-            var lines = await this.fileSystem.File.ReadAllLines(path, cancellationToken);
+            var lines = await this.fileSystem.File.ReadAllLines(
+                path,
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false),
+                cancellationToken);
 
-            var output = LogParser.CleanLogs(lines, out bool fileChanged);
-
-            if (fileChanged)
-            {
-                await this.fileSystem.File.WriteAllLines(path, output, cancellationToken);
-            }
+            var output = LogParser.CleanLogs(lines, out _);
+            await this.fileSystem.File.WriteAllLines(path, output, Encoding.UTF8, cancellationToken);
         }
 
         private static Task<int> RunProcessAsync(ProcessStartInfo info)

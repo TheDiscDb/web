@@ -1,0 +1,33 @@
+.intake-image-editor {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+}
+
+.intake-edit-image {
+    display: block;
+    margin-bottom: 0.5rem;
+    max-height: 260px;
+    max-width: 180px;
+}
+
+.intake-image-delete {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.intake-drag-column {
+    width: 2.5rem;
+}
+
+.intake-drag-handle {
+    cursor: grab;
+    text-align: center;
+    user-select: none;
+}
+
+.intake-immutable {
+    font-family: var(--bs-font-monospace);
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}

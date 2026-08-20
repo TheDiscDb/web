@@ -1,0 +1,234 @@
+@page "/admin/intake/{Id:int}/edit"
+@using TheDiscDb.Client.Interop
+@using TheDiscDb.Services.Admin
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Edit Intake Release</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink(), GetIntakeLink(), GetDetailsLink()]" PrimaryText="Edit" />
+
+@if (Details == null)
+{
+    <div class="alert alert-warning">Intake release not found.</div>
+}
+else
+{
+    <h1>Edit @(Details.ReleaseTitle ?? Details.ReleaseSlug ?? "Intake Release")</h1>
+
+    @if (operationMessages.Count != 0)
+    {
+        <div class="alert @(operationHasError ? "alert-danger" : "alert-success")">
+            @foreach (var item in operationMessages)
+            {
+                <div>@item</div>
+            }
+        </div>
+    }
+
+    @if (operationWarnings.Count != 0)
+    {
+        <div class="alert alert-warning">
+            @foreach (var warning in operationWarnings)
+            {
+                <div>@warning</div>
+            }
+        </div>
+    }
+
+    <section class="info-card mb-3">
+        <h2>Release metadata</h2>
+        <EditForm Model="releaseRequest" OnValidSubmit="SaveReleaseAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Status</label>
+                    <InputSelect class="form-select" @bind-Value="releaseRequest.Status">
+                        @foreach (var status in statuses)
+                        {
+                            <option value="@status">@status</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">External provider</label>
+                    <InputSelect class="form-select" @bind-Value="releaseRequest.ExternalProvider">
+                        <option value="TMDB">TMDB</option>
+                        <option value="NONE">NONE</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => releaseRequest.ExternalProvider)" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">External ID</label>
+                    <InputText class="form-control" @bind-Value="releaseRequest.ExternalId" />
+                    <ValidationMessage For="@(() => releaseRequest.ExternalId)" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">UPC / EAN</label>
+                    <InputText class="form-control" @bind-Value="releaseRequest.Upc" />
+                    <ValidationMessage For="@(() => releaseRequest.Upc)" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">ASIN <span class="text-muted">(optional)</span></label>
+                    <InputText class="form-control" @bind-Value="releaseRequest.Asin" />
+                    <ValidationMessage For="@(() => releaseRequest.Asin)" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Release title</label>
+                    <InputText class="form-control" @bind-Value="releaseRequest.ReleaseTitle" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Release date</label>
+                    <InputText type="date" class="form-control" @bind-Value="releaseDateText" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Release slug</label>
+                    <InputText class="form-control" @bind-Value="releaseRequest.ReleaseSlug" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Media item slug</label>
+                    <InputText class="form-control" @bind-Value="releaseRequest.MediaItemSlug" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Box set slug</label>
+                    <InputText class="form-control" @bind-Value="releaseRequest.BoxsetSlug" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Locale</label>
+                    <InputText class="form-control" @bind-Value="releaseRequest.Locale" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Region</label>
+                    <InputText class="form-control" @bind-Value="releaseRequest.RegionCode" />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save release metadata</button>
+            <a class="btn btn-outline-secondary ms-2" href="/admin/intake/@Details.Id">Cancel</a>
+        </EditForm>
+    </section>
+
+    <section class="info-card mb-3">
+        <h2>Images</h2>
+        <div class="intake-image-editor">
+            <div>
+                <h3>Front cover</h3>
+                @if (!string.IsNullOrEmpty(Details.FrontImageLocation))
+                {
+                    <img src="@GetImageUrl(Details.FrontImageLocation)" alt="Front cover" class="intake-edit-image" />
+                    <button type="button" class="btn btn-sm btn-outline-danger intake-image-delete" @onclick="@(() => DeleteImageAsync(IntakeImageSide.Front))">
+                        <i class="e-icons e-trash"></i> Delete front image
+                    </button>
+                }
+                <InputFile OnChange="OnFrontImageSelected"
+                           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="form-control" />
+            </div>
+            <div>
+                <h3>Back cover</h3>
+                @if (GetBackImage() is { } backImage)
+                {
+                    <img src="@GetImageUrl(backImage.Location)" alt="Back cover" class="intake-edit-image" />
+                    <button type="button" class="btn btn-sm btn-outline-danger intake-image-delete" @onclick="@(() => DeleteImageAsync(IntakeImageSide.Back))">
+                        <i class="e-icons e-trash"></i> Delete back image
+                    </button>
+                }
+                <InputFile OnChange="OnBackImageSelected"
+                           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="form-control" />
+            </div>
+        </div>
+        <p class="small text-muted mb-0">JPG, PNG, and WebP images up to 10 MB are accepted.</p>
+    </section>
+
+    <section class="info-card">
+        <h2>Disc metadata</h2>
+        @if (Details.Discs.Any(disc => disc.ReleaseCount > 1))
+        {
+            <div class="alert alert-warning">
+                A canonical format is shared by more than one release. Changing its format affects every linked release.
+                Confirm that change before saving.
+            </div>
+            <div class="form-check mb-3">
+                <InputCheckbox class="form-check-input" @bind-Value="confirmSharedFormatChange" />
+                <label class="form-check-label">I confirm shared canonical format changes.</label>
+            </div>
+        }
+
+        @if (discRequests.Count == 0)
+        {
+            <p class="text-muted mb-0">No discs are linked to this release.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th class="intake-drag-column"></th>
+                            <th>Index</th>
+                            <th>Name</th>
+                            <th>Slug</th>
+                            <th>Format</th>
+                            <th>Immutable identity</th>
+                        </tr>
+                    </thead>
+                    <tbody @ref="tableBodyRef">
+                        @for (var rowIndex = 0; rowIndex < discRequests.Count; rowIndex++)
+                        {
+                            var disc = discRequests[rowIndex];
+                            var row = rowIndex;
+                            var detail = GetDiscDetails(disc.LinkId);
+                            <tr @key="disc.LinkId"
+                                class="@GetRowClass(disc)"
+                                data-row-index="@row"
+                                @ondragenter="@(() => OnDragEnter(disc))"
+                                @ondragover:preventDefault="true">
+                                <td class="intake-drag-handle" data-drag-handle title="Drag to reorder"
+                                    draggable="true"
+                                    @ondragstart="@(() => OnDragStart(disc))"
+                                    @ondragend="OnDragEnd">
+                                    ⋮
+                                </td>
+                                <td>
+                                    <InputNumber class="form-control form-control-sm" @bind-Value="disc.Index" />
+                                </td>
+                                <td>
+                                    <InputText class="form-control form-control-sm" @bind-Value="disc.Name" />
+                                </td>
+                                <td>
+                                    <InputText class="form-control form-control-sm" @bind-Value="disc.Slug" />
+                                </td>
+                                <td>
+                                    <InputSelect class="form-select form-select-sm" @bind-Value="disc.Format">
+                                        @foreach (var format in formats)
+                                        {
+                                            <option value="@format">@format</option>
+                                        }
+                                    </InputSelect>
+                                </td>
+                                <td class="intake-immutable">
+                                    <div>Hash: @detail?.ContentHash</div>
+                                    <div>Disc ID: @detail?.GlobalDiscId</div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="btn btn-primary" @onclick="SaveDiscsAsync">Save disc metadata</button>
+        }
+    </section>
+}
