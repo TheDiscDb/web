@@ -260,11 +260,23 @@ public partial class IdentifyDiscItems : CancellableComponentBase
 
                 if (allTitles != null && disc?.Items != null)
                 {
+                    var matchedTitles = new HashSet<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>();
                     foreach (IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item in disc.Items)
                     {
-                        IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles? title = this.allTitles.FirstOrDefault(t => t.SegmentMap == item.SegmentMap && t.ChapterCount == item.ChapterCount && t.DisplaySize == item.Size);
+                        IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles? title = ContributionDiscTitleMatcher.FindMatch(
+                            this.allTitles,
+                            matchedTitles,
+                            item.Source,
+                            item.SegmentMap,
+                            item.ChapterCount,
+                            item.Size,
+                            t => t.Playlist,
+                            t => t.SegmentMap,
+                            t => t.ChapterCount,
+                            t => t.DisplaySize);
                         if (title != null)
                         {
+                            matchedTitles.Add(title);
                             var existingItem = new ItemIdentification
                             {
                                 DatabaseId = item.EncodedId,
@@ -287,7 +299,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
                             InitializeAudioTracks(item, existingItem, title);
                             InitializeSubtitleTracks(item, existingItem, title);
 
-                            identifiedTitles[title] = existingItem;
+                            identifiedTitles.Add(title, existingItem);
                         }
                     }
                 }

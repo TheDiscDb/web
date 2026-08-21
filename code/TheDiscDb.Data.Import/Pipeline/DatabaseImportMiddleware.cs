@@ -108,6 +108,9 @@ namespace TheDiscDb.Data.Import.Pipeline
                     this.GetDbContext().MediaItems.Add(item.MediaItem);
                 }
 
+                await this.NormalizeReleaseDiscGlobalIds(
+                    item.MediaItem.Releases.SelectMany(release => release.Discs),
+                    cancellationToken);
                 await this.SaveChangesAsync();
             }
             else if (item.Boxset != null)
@@ -146,6 +149,13 @@ namespace TheDiscDb.Data.Import.Pipeline
                         }
                     }
                     this.GetDbContext().BoxSets.Add(item.Boxset);
+                }
+
+                if (item.Boxset.Release != null)
+                {
+                    await this.NormalizeReleaseDiscGlobalIds(
+                        item.Boxset.Release.Discs,
+                        cancellationToken);
                 }
 
                 await this.SaveChangesAsync();
@@ -249,6 +259,74 @@ namespace TheDiscDb.Data.Import.Pipeline
 
                 canonicalByHashAndFormat[key] = inputDisc;
             }
+        }
+
+        private async Task NormalizeReleaseDiscGlobalIds(
+            IEnumerable<ReleaseDisc> releaseDiscs,
+            CancellationToken cancellationToken)
+        {
+            var claimedIds = new Dictionary<string, ReleaseDisc>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var releaseDisc in releaseDiscs)
+            {
+                if (releaseDisc.Disc == null || string.IsNullOrWhiteSpace(releaseDisc.GlobalDiscId))
+                {
+                    continue;
+                }
+
+                string globalDiscId = releaseDisc.GlobalDiscId.Trim();
+                releaseDisc.GlobalDiscId = globalDiscId;
+
+                if (claimedIds.TryGetValue(globalDiscId, out var claimed))
+                {
+                    ResolveDuplicateGlobalDiscId(releaseDisc, claimed, globalDiscId);
+                    continue;
+                }
+
+                var existing = await this.GetDbContext().ReleaseDiscs
+                    .AsNoTracking()
+                    .Include(item => item.Disc)
+                    .FirstOrDefaultAsync(
+                        item => item.GlobalDiscId == globalDiscId &&
+                            item.Id != releaseDisc.Id,
+                        cancellationToken);
+                if (existing != null)
+                {
+                    ResolveDuplicateGlobalDiscId(releaseDisc, existing, globalDiscId);
+                    continue;
+                }
+
+                claimedIds.Add(globalDiscId, releaseDisc);
+            }
+        }
+
+        private static void ResolveDuplicateGlobalDiscId(
+            ReleaseDisc releaseDisc,
+            ReleaseDisc existing,
+            string globalDiscId)
+        {
+            if (!RepresentsSameCanonicalDisc(releaseDisc, existing))
+            {
+                throw new InvalidOperationException(
+                    $"Global Disc ID '{globalDiscId}' is already assigned to a different canonical disc.");
+            }
+
+            // Multi-title physical discs create one release link per member title. Keep the
+            // pressing ID on the first link; siblings resolve it through EffectiveGlobalDiscId.
+            releaseDisc.GlobalDiscId = null;
+        }
+
+        private static bool RepresentsSameCanonicalDisc(ReleaseDisc left, ReleaseDisc right)
+        {
+            if (left.DiscId != 0 && right.DiscId != 0)
+            {
+                return left.DiscId == right.DiscId;
+            }
+
+            return left.Disc != null &&
+                right.Disc != null &&
+                string.Equals(left.Disc.Format?.Trim(), right.Disc.Format?.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(left.Disc.ContentHash?.Trim(), right.Disc.ContentHash?.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
 
