@@ -4,6 +4,7 @@ on:
 env:
   AZURE_WEBAPP_NAME: thediscdb
   DOTNET_CORE_VERSION: 10.0.x
+  RestoreConfigFile: ${{ github.workspace }}/nuget.ci.config
 permissions:
   id-token: write
   contents: read

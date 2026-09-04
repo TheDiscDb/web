@@ -15,7 +15,13 @@ public partial class ContributionMutations
     [Error(typeof(InvalidIdException))]
     [Error(typeof(InvalidOwnershipException))]
     [Authorize]
-    public async Task<DiscHash> HashDisc(string contributionId, List<FileHashInfo> files, SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken = default)
+    public async Task<DiscHash> HashDisc(
+        string contributionId,
+        List<FileHashInfo> files,
+        List<DiscFingerprintFile> fingerprintFiles,
+        SqlServerDataContext database,
+        UserManager<TheDiscDbUser> userManager,
+        CancellationToken cancellationToken = default)
     {
         int id = this.idEncoder.Decode(contributionId);
         var contribution = await database.UserContributions
@@ -25,6 +31,7 @@ public partial class ContributionMutations
         await EnsureOwnership(userManager, contribution, contributionId, cancellationToken: cancellationToken);
 
         var hash = files.OrderBy(f => f.Name).CalculateHash();
+        var fingerprint = DiscFingerprint.Calculate(fingerprintFiles);
         var existingItems= contribution!.HashItems?.Where(i => i.DiscHash == hash).ToList();
         foreach (var existing in existingItems ?? Enumerable.Empty<UserContributionDiscHashItem>())
         {
@@ -46,7 +53,7 @@ public partial class ContributionMutations
 
         await database.SaveChangesAsync(cancellationToken);
 
-        var response = new DiscHash(hash);
+        var response = new DiscHash(hash, fingerprint);
         return response;
     }
 }

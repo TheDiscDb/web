@@ -1341,6 +1341,7 @@
                 // release, so its pressing id is the .ref's own globalDiscId — never inherit the
                 // referenced release's id.
                 referencedDisc.GlobalDiscId = reference.GlobalDiscId;
+                referencedDisc.Fingerprint = reference.Fingerprint;
             }
 
             return referencedDisc;
@@ -1414,6 +1415,7 @@
                 Name = disc.Name,
                 Slug = disc.Slug,
                 GlobalDiscId = disc.GlobalDiscId,
+                Fingerprint = disc.Fingerprint,
                 Disc = canonicalDisc
             };
         }

@@ -66,12 +66,6 @@ public partial class AddDiscId : CancellableComponentBase
             }
 
             computedDiscId = scan.GlobalDiscId;
-            if (string.IsNullOrEmpty(scan.GlobalDiscId))
-            {
-                SetResult("warn",
-                    "This disc/backup has no AACS or DVD Disc ID (for example an MKV-only rip). There's nothing to submit.");
-                return;
-            }
 
             if (scan.HashFiles.Count == 0)
             {
@@ -96,9 +90,9 @@ public partial class AddDiscId : CancellableComponentBase
 
     private async Task SubmitAsync(DiscScanResult scan)
     {
-        var input = new AttachGlobalDiscIdInput
+        var input = new AttachDiscIdentifiersInput
         {
-            GlobalDiscId = scan.GlobalDiscId!,
+            GlobalDiscId = scan.GlobalDiscId,
             Files = scan.HashFiles
                 .Select(f => new FileHashInfoInput
                 {
@@ -106,6 +100,13 @@ public partial class AddDiscId : CancellableComponentBase
                     Name = f.Name,
                     Size = f.Size,
                     CreationTime = f.CreationTime,
+                })
+                .ToList(),
+            FingerprintFiles = scan.FingerprintFiles
+                .Select(file => new DiscFingerprintFileInput
+                {
+                    Path = file.Path,
+                    Size = file.Size,
                 })
                 .ToList(),
         };
@@ -120,16 +121,27 @@ public partial class AddDiscId : CancellableComponentBase
             input.DiscIndex = DiscIndex;
         }
 
-        var response = await ContributionClient.AttachGlobalDiscId.ExecuteAsync(input, this.CancellationToken);
+        var response = await ContributionClient.AttachDiscIdentifiers.ExecuteAsync(
+            input,
+            this.CancellationToken);
 
-        if (!response.IsSuccessResult() || response.Data?.AttachGlobalDiscId?.AttachDiscIdResult is null)
+        if (!response.IsSuccessResult()
+            || response.Data?.AttachDiscIdentifiers?.AttachDiscIdentifiersResult is null)
         {
-            SetResult("error", "We couldn't submit the Disc ID. Please try again.");
+            SetResult("error", "We couldn't submit the disc identifiers. Please try again.");
             return;
         }
 
-        var result = response.Data.AttachGlobalDiscId.AttachDiscIdResult;
-        existingDiscId = result.ExistingGlobalDiscId;
+        var combined = response.Data.AttachDiscIdentifiers.AttachDiscIdentifiersResult;
+        var result = combined.Fingerprint;
+        existingDiscId = combined.GlobalDiscId?.ExistingGlobalDiscId;
+        string discIdMessage = combined.GlobalDiscId?.Outcome switch
+        {
+            AttachDiscIdOutcome.Applied => " The Disc ID was also added.",
+            AttachDiscIdOutcome.AlreadyRecorded => " The Disc ID was already recorded.",
+            AttachDiscIdOutcome.Conflict => " The Disc ID needs manual review.",
+            _ => string.Empty,
+        };
 
         switch (result.Outcome)
         {
@@ -138,38 +150,38 @@ public partial class AddDiscId : CancellableComponentBase
                 returnDiscUrl = ValidReturnUrl();
                 SetResult("success",
                     "The disc you inserted isn't the disc you started from, but it matched another disc in our "
-                    + "database that needed a Disc ID — so we've added it. You can view that disc below, insert "
-                    + "the correct disc to continue, or go back to the disc you started from.");
+                    + "database that needed a fingerprint, so we've added it. You can view that disc below, insert "
+                    + "the correct disc to continue, or go back to the disc you started from." + discIdMessage);
                 break;
             case AttachDiscIdOutcome.AlreadyRecorded when result.MatchedDifferentDisc:
                 matchedDiscUrl = BuildDiscUrl(result.MediaItemSlug, result.BoxsetSlug, result.MediaItemType, result.ReleaseSlug, result.DiscSlug, result.DiscIndex);
                 returnDiscUrl = ValidReturnUrl();
                 SetResult("warn",
-                    "Heads up: the disc you inserted isn't the disc you started from — and it already has a Disc ID "
+                    "Heads up: the disc you inserted isn't the disc you started from, and its fingerprint was already "
                     + "recorded in our database, so there's nothing to add. Insert the correct disc to continue, or "
-                    + "go back to the disc you started from.");
+                    + "go back to the disc you started from." + discIdMessage);
                 break;
             case AttachDiscIdOutcome.Conflict when result.MatchedDifferentDisc:
                 matchedDiscUrl = BuildDiscUrl(result.MediaItemSlug, result.BoxsetSlug, result.MediaItemType, result.ReleaseSlug, result.DiscSlug, result.DiscIndex);
                 returnDiscUrl = ValidReturnUrl();
                 SetResult("warn",
                     "Heads up: the disc you inserted isn't the disc you started from — and it already has a "
-                    + "different Disc ID in our database. Your submission has been flagged for review. Insert the "
-                    + "correct disc to continue, or go back to the disc you started from.");
+                    + "different fingerprint in our database. Your submission has been flagged for review. Insert the "
+                    + "correct disc to continue, or go back to the disc you started from." + discIdMessage);
                 break;
             case AttachDiscIdOutcome.Applied:
                 returnDiscUrl = ValidReturnUrl();
                 SetResult("success",
-                    "Thank you! You've added this disc's Disc ID to the database — it'll show on the disc page now.");
+                    "Thank you! The fingerprint was added to this disc." + discIdMessage);
                 break;
             case AttachDiscIdOutcome.AlreadyRecorded:
                 returnDiscUrl = ValidReturnUrl();
-                SetResult("success", "This disc already has this Disc ID recorded — no change needed. Thanks for checking!");
+                SetResult("success", "This disc already has a fingerprint recorded." + discIdMessage);
                 break;
             case AttachDiscIdOutcome.Conflict:
                 SetResult("warn",
-                    "The matching disc already has a different Disc ID (possibly a re-press or variant). "
-                    + "Your submission has been flagged for review.");
+                    "The matching disc already has a different fingerprint. "
+                    + "Your submission has been flagged for review." + discIdMessage);
                 break;
             case AttachDiscIdOutcome.Mismatch:
                 SetResult("warn",

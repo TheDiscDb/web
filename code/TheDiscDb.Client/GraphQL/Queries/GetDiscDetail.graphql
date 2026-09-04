@@ -28,6 +28,7 @@ query GetDiscDetail($slug: String, $releaseSlug: String, $discNumber: Int, $disc
             format
             slug
             globalDiscId
+            fingerprint
             contentHash
             titles (order: { index: ASC }) {
               index

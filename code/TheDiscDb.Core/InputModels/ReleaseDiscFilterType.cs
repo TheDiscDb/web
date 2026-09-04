@@ -19,5 +19,6 @@ public class ReleaseDiscFilterType : FilterInputType<ReleaseDisc>
         descriptor.Field(d => d.Disc!.Format).Name("format");
         descriptor.Field(d => d.Disc!.ContentHash).Name("contentHash");
         descriptor.Field(d => d.GlobalDiscId).Name("globalDiscId");
+        descriptor.Field(d => d.Fingerprint).Name("fingerprint");
     }
 }

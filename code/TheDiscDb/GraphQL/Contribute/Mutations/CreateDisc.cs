@@ -2,6 +2,7 @@
 using HotChocolate.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Core.DiscHash;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.Web.Data;
 
@@ -15,12 +16,34 @@ public partial class ContributionMutations
     [Error(typeof(InvalidOwnershipException))]
     [Error(typeof(InvalidDiscPathException))]
     [Authorize]
-    public async Task<UserContributionDisc> CreateDisc(string contributionId, string contentHash, string format, string name, string slug, [Service] SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, string? existingDiscPath = null, string? globalDiscId = null, CancellationToken cancellationToken = default)
+    public async Task<UserContributionDisc> CreateDisc(
+        string contributionId,
+        string contentHash,
+        string format,
+        string name,
+        string slug,
+        [Service] SqlServerDataContext database,
+        UserManager<TheDiscDbUser> userManager,
+        string? existingDiscPath = null,
+        string? globalDiscId = null,
+        string? fingerprint = null,
+        CancellationToken cancellationToken = default)
     {
+        var normalizedFingerprint = string.IsNullOrWhiteSpace(fingerprint)
+            ? null
+            : fingerprint.Trim().ToLowerInvariant();
+        if (normalizedFingerprint is not null && !DiscFingerprint.IsValidFingerprint(normalizedFingerprint))
+        {
+            throw new ArgumentException(
+                "Fingerprint must be a 64-character lowercase hexadecimal string.",
+                nameof(fingerprint));
+        }
+
         var disc = new UserContributionDisc
         {
             ContentHash = contentHash,
             GlobalDiscId = globalDiscId,
+            Fingerprint = normalizedFingerprint,
             Format = format,
             Name = name,
             Slug = slug,
@@ -49,6 +72,7 @@ public partial class ContributionMutations
             existingDisc.Slug = slug;
             existingDisc.ExistingDiscPath = existingDiscPath ?? "";
             existingDisc.GlobalDiscId ??= globalDiscId;
+            existingDisc.Fingerprint ??= normalizedFingerprint;
             await database.SaveChangesAsync(cancellationToken);
             return existingDisc;
         }

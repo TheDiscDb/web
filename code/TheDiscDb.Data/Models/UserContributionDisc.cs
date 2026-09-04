@@ -17,6 +17,8 @@ public class UserContributionDisc : IHasId
     public UserContribution UserContribution { get; set; } = default!;
     public string ContentHash { get; set; } = string.Empty;
     public string? GlobalDiscId { get; set; }
+    [HotChocolate.GraphQLIgnore]
+    public string? Fingerprint { get; set; }
     public string Format { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;

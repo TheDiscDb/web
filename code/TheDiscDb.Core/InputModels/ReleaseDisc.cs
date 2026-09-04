@@ -61,6 +61,8 @@ public class ReleaseDisc : IDisc
     /// </summary>
     public string? GlobalDiscId { get; set; }
 
+    public string? Fingerprint { get; set; }
+
     [HotChocolate.Data.UseFiltering]
     [HotChocolate.Data.UseSorting]
     [NotMapped]
@@ -120,6 +122,46 @@ public static class ReleaseDiscExtensions
             else if (!string.Equals(found, id, StringComparison.OrdinalIgnoreCase))
             {
                 return null; // siblings disagree — ambiguous
+            }
+        }
+
+        return found;
+    }
+
+    public static string? EffectiveFingerprint(this ReleaseDisc releaseDisc)
+    {
+        if (releaseDisc is null)
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrEmpty(releaseDisc.Fingerprint))
+        {
+            return releaseDisc.Fingerprint;
+        }
+
+        return releaseDisc.Disc?.ReleaseDiscs is { } siblings
+            ? EffectiveFingerprint(siblings.Select(sibling => sibling.Fingerprint))
+            : null;
+    }
+
+    public static string? EffectiveFingerprint(IEnumerable<string?> candidateValues)
+    {
+        string? found = null;
+        foreach (var value in candidateValues)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                continue;
+            }
+
+            if (found is null)
+            {
+                found = value;
+            }
+            else if (!string.Equals(found, value, StringComparison.Ordinal))
+            {
+                return null;
             }
         }
 

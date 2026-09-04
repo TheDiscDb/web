@@ -10,7 +10,7 @@ public class DiscFieldsUpdateTests
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    private static DiscFieldsDetails MakeProposed(string? name = "Original Disc Name", string? format = "Blu-ray", string? discSlug = ChangeTestSeed.DiscSlug, int discIndex = ChangeTestSeed.DiscIndex, string? contentHash = null, string? globalDiscId = null)
+    private static DiscFieldsDetails MakeProposed(string? name = "Original Disc Name", string? format = "Blu-ray", string? discSlug = ChangeTestSeed.DiscSlug, int discIndex = ChangeTestSeed.DiscIndex, string? contentHash = null, string? globalDiscId = null, string? fingerprint = null)
         => new(
             MediaItemSlug: ChangeTestSeed.MediaItemSlug,
             BoxsetSlug: null,
@@ -20,7 +20,8 @@ public class DiscFieldsUpdateTests
             Name: name,
             Format: format,
             ContentHash: contentHash,
-            GlobalDiscId: globalDiscId);
+            GlobalDiscId: globalDiscId,
+            Fingerprint: fingerprint);
 
     private sealed record TestApplyContext(string ApprovingUserId, int SuggestionId, int ChangeId, string? OriginalSnapshotJson = null) : IChangeApplyContext;
 
@@ -425,5 +426,65 @@ public class DiscFieldsUpdateTests
 
         await Assert.That(result.IsConflict).IsTrue();
         await Assert.That(result.ConflictReason).Contains("Disc ID");
+    }
+
+    [Test]
+    public async Task ApplyAsync_AddsFingerprintWithoutDiscId()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.ReleaseDisc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            JsonOptions);
+        const string fingerprint = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+        var change = new DiscFieldsUpdate(MakeProposed(fingerprint: fingerprint));
+        await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        await Assert.That(seed.ReleaseDisc.Fingerprint).IsEqualTo(fingerprint);
+    }
+
+    [Test]
+    public async Task ValidateAsync_ReturnsConflict_ForInvalidFingerprintWithoutDiscId()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.ReleaseDisc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            JsonOptions);
+
+        var result = await new DiscFieldsUpdate(MakeProposed(fingerprint: "INVALID"))
+            .ValidateAsync(db, snapshot, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsTrue();
+        await Assert.That(result.ConflictReason).Contains("Fingerprint");
+    }
+
+    [Test]
+    public async Task ValidateAsync_ReturnsConflict_WhenCanonicalSiblingHasDifferentFingerprint()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        const string existing = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        const string proposed = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        seed.Release.Discs.Add(new TheDiscDb.InputModels.ReleaseDisc
+        {
+            Slug = "sibling",
+            Index = 1,
+            Name = "Sibling",
+            Disc = seed.Disc,
+            Fingerprint = existing,
+        });
+        await db.SaveChangesAsync();
+        var snapshot = JsonSerializer.Serialize(
+            DiscFieldsUpdate.SnapshotFrom(seed.ReleaseDisc, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug),
+            JsonOptions);
+
+        var result = await new DiscFieldsUpdate(MakeProposed(fingerprint: proposed))
+            .ValidateAsync(db, snapshot, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsTrue();
+        await Assert.That(result.ConflictReason).Contains(existing);
     }
 }

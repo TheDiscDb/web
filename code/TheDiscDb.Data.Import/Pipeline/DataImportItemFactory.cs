@@ -511,6 +511,7 @@ public class DataImportItemFactory
         // The referenced disc.json carries the referenced release's pressing id. This .ref represents
         // a different physical pressing, so never inherit that id.
         referencedDisc.GlobalDiscId = reference.GlobalDiscId;
+        referencedDisc.Fingerprint = reference.Fingerprint;
     }
 
     internal static void ApplyBoxsetOverrides(Disc referencedDisc, BoxSetDisc boxsetDisc)
@@ -522,6 +523,7 @@ public class DataImportItemFactory
         // A box-set row aggregates the member release's disc; it is not another physical pressing.
         // Leave its id empty so EffectiveGlobalDiscId can resolve it from the canonical disc.
         referencedDisc.GlobalDiscId = null;
+        referencedDisc.Fingerprint = null;
     }
 
     private ReleaseDisc ToReleaseDisc(Disc disc)
@@ -532,6 +534,7 @@ public class DataImportItemFactory
             Name = disc.Name,
             Slug = disc.Slug,
             GlobalDiscId = disc.GlobalDiscId,
+            Fingerprint = disc.Fingerprint,
             Disc = disc
         };
     }

@@ -99,11 +99,26 @@
     outline: none;
 }
 
+.disc-identifiers {
+    margin-bottom: 0.75rem;
+}
+
+.disc-identifiers summary {
+    width: fit-content;
+    color: #374151;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.disc-identifiers[open] summary {
+    margin-bottom: 0.4rem;
+}
+
 .disc-ids {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    margin-bottom: 0.75rem;
 }
 
 .disc-id-line {

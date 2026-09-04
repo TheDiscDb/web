@@ -36,6 +36,7 @@ public class DiscItemHandler : ItemHandler<Disc>
     {
         fromDatabase.ContentHash = newValue.ContentHash;
         fromDatabase.GlobalDiscId = newValue.GlobalDiscId;
+        fromDatabase.Fingerprint = newValue.Fingerprint;
         fromDatabase.Format = newValue.Format;
         fromDatabase.Index = newValue.Index;
         fromDatabase.Name = newValue.Name;

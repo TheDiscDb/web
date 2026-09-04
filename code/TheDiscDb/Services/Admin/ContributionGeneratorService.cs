@@ -420,7 +420,12 @@ public class ContributionGeneratorService
             {
                 matchedDisc = true;
                 string newDiscFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.json");
-                await this.fileSystem.File.Copy(existingDiscFile, newDiscFilePath, overwrite, cancellationToken: cancellationToken);
+                discJson.GlobalDiscId = disc.GlobalDiscId;
+                discJson.Fingerprint = disc.Fingerprint;
+                await this.fileSystem.File.WriteAllText(
+                    newDiscFilePath,
+                    JsonSerializer.Serialize(discJson, JsonHelper.JsonOptions),
+                    cancellationToken);
                 generatedFiles.Add(newDiscFilePath);
 
                 string existingDir = this.fileSystem.Path.GetDirectoryName(existingDiscFile)!;
@@ -529,7 +534,9 @@ public class ContributionGeneratorService
                 Slug = disc.Slug,
                 Name = disc.Name,
                 Format = discFormat,
-                ContentHash = disc.ContentHash
+                ContentHash = disc.ContentHash,
+                GlobalDiscId = disc.GlobalDiscId,
+                Fingerprint = disc.Fingerprint,
             };
 
             summaryFileMemoryStream.Position = 0;

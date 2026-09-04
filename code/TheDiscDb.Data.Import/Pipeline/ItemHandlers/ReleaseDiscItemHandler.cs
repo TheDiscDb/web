@@ -33,6 +33,7 @@ public class ReleaseDiscItemHandler : ItemHandler<ReleaseDisc>
         fromDatabase.Name = newValue.Name;
         fromDatabase.Slug = newValue.Slug;
         fromDatabase.GlobalDiscId = newValue.GlobalDiscId;
+        fromDatabase.Fingerprint = newValue.Fingerprint;
 
         if (newValue.Disc == null)
         {

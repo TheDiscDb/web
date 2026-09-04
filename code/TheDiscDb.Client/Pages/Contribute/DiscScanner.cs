@@ -8,6 +8,7 @@ public sealed record DiscScanResult(
     string? Format,
     string? GlobalDiscId,
     IReadOnlyList<FileHashInfo> HashFiles,
+    IReadOnlyList<DiscFingerprintFile> FingerprintFiles,
     string? Error);
 
 public static partial class DiscScanner
@@ -24,6 +25,9 @@ public static partial class DiscScanner
         var normalized = files.Select(file => new NormalizedDiscFile(
             file,
             file.Path.Replace('\\', '/').Trim('/'))).ToArray();
+        var fingerprintFiles = normalized
+            .Select(item => new DiscFingerprintFile(item.Path, item.File.Size))
+            .ToArray();
 
         var bluRayFiles = normalized
             .Where(item => IsDirectChild(item.Path, "BDMV/STREAM")
@@ -38,6 +42,7 @@ public static partial class DiscScanner
                 DiscFormatConstants.BluRay,
                 globalDiscId,
                 CreateHashFiles(bluRayFiles),
+                fingerprintFiles,
                 null);
         }
 
@@ -48,6 +53,7 @@ public static partial class DiscScanner
                 null,
                 null,
                 Array.Empty<FileHashInfo>(),
+                Array.Empty<DiscFingerprintFile>(),
                 "No BDMV/STREAM files were found.");
         }
 
@@ -63,6 +69,7 @@ public static partial class DiscScanner
                 DiscFormatConstants.Dvd,
                 globalDiscId,
                 CreateHashFiles(dvdFiles),
+                fingerprintFiles,
                 null);
         }
 
@@ -70,6 +77,7 @@ public static partial class DiscScanner
             null,
             null,
             Array.Empty<FileHashInfo>(),
+            Array.Empty<DiscFingerprintFile>(),
             "No BDMV or VIDEO_TS folder found. Pick the disc root (the folder containing BDMV/AACS or VIDEO_TS).");
     }
 

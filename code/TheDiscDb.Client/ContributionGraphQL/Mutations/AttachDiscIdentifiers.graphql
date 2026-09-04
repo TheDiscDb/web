@@ -1,0 +1,28 @@
+mutation AttachDiscIdentifiers($input: AttachDiscIdentifiersInput!) {
+  attachDiscIdentifiers(input: $input) {
+    attachDiscIdentifiersResult {
+      globalDiscId {
+        outcome
+        existingGlobalDiscId
+      }
+      fingerprint {
+        outcome
+        contentHash
+        mediaItemSlug
+        boxsetSlug
+        mediaItemType
+        releaseSlug
+        discSlug
+        discIndex
+        fingerprint
+        existingFingerprint
+        matchedDifferentDisc
+      }
+    }
+    errors {
+      ... on Error {
+        message
+      }
+    }
+  }
+}

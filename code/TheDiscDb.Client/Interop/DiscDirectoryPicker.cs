@@ -91,46 +91,45 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
         => exception.Message.Contains("AbortError", StringComparison.OrdinalIgnoreCase)
             || exception.Message.Contains("cancel", StringComparison.OrdinalIgnoreCase);
 
-    private static async Task<IReadOnlyList<DiscScanFile>> GetHandleFilesAsync(FileSystemDirectoryHandleInProcess root)
+    private static async Task<IReadOnlyList<DiscScanFile>> GetHandleFilesAsync(
+        FileSystemDirectoryHandleInProcess root)
     {
         var files = new List<DiscScanFile>();
-        var rootItems = await root.ValuesAsync();
-
-        if (FindDirectory(rootItems, "BDMV") is { } bdmv
-            && FindDirectory(await bdmv.ValuesAsync(), "STREAM") is { } stream)
-        {
-            await AddFilesAsync(files, stream, "BDMV/STREAM");
-        }
-
-        if (FindDirectory(rootItems, "AACS") is { } aacs)
-        {
-            await AddFilesAsync(files, aacs, "AACS");
-            if (FindDirectory(await aacs.ValuesAsync(), "DUPLICATE") is { } duplicate)
-            {
-                await AddFilesAsync(files, duplicate, "AACS/DUPLICATE");
-            }
-        }
-
-        if (FindDirectory(rootItems, "VIDEO_TS") is { } videoTs)
-        {
-            await AddFilesAsync(files, videoTs, "VIDEO_TS");
-        }
-
+        await AddFilesAsync(files, root, string.Empty);
         return files;
     }
 
-    private static async Task AddFilesAsync(ICollection<DiscScanFile> destination, FileSystemDirectoryHandleInProcess directory, string path)
+    private static async Task AddFilesAsync(
+        ICollection<DiscScanFile> destination,
+        FileSystemDirectoryHandleInProcess directory,
+        string path)
     {
         foreach (var handle in await directory.ValuesAsync())
         {
+            string relativePath = string.IsNullOrEmpty(path)
+                ? handle.Name
+                : $"{path}/{handle.Name}";
+
+            if (handle is FileSystemDirectoryHandleInProcess childDirectory)
+            {
+                await AddFilesAsync(destination, childDirectory, relativePath);
+                continue;
+            }
+
             if (handle is not FileSystemFileHandleInProcess fileHandle)
             {
                 continue;
             }
 
+            if (destination.Count >= MaxFileCount)
+            {
+                throw new InvalidDataException(
+                    $"The selected directory contains more than {MaxFileCount} files.");
+            }
+
             var file = await fileHandle.GetFileAsync();
             destination.Add(new DiscScanFile(
-                $"{path}/{fileHandle.Name}",
+                relativePath,
                 fileHandle.Name,
                 (long)file.Size,
                 file.LastModified,
@@ -147,14 +146,6 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
                 }));
         }
     }
-
-    private static FileSystemDirectoryHandleInProcess? FindDirectory(
-        IEnumerable<IFileSystemHandleInProcess> items,
-        string name)
-        => items.FirstOrDefault(item =>
-            item.Kind == FileSystemHandleKind.Directory
-            && string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase))
-            as FileSystemDirectoryHandleInProcess;
 
     private sealed record DirectorySelectionResult(
         string SelectionId,
@@ -180,15 +171,10 @@ public static class DiscPath
                 $"The selected directory returned an invalid file path: {relativePath}");
         }
 
-        int discRootIndex = Array.FindIndex(
-            segments,
-            segment => segment.Equals("BDMV", StringComparison.OrdinalIgnoreCase)
-                || segment.Equals("AACS", StringComparison.OrdinalIgnoreCase)
-                || segment.Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase));
-
-        int startIndex = discRootIndex >= 0
-            ? discRootIndex
-            : segments.Length > 1 ? 1 : 0;
+        bool startsAtDiscRoot = segments[0].Equals("BDMV", StringComparison.OrdinalIgnoreCase)
+            || segments[0].Equals("AACS", StringComparison.OrdinalIgnoreCase)
+            || segments[0].Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase);
+        int startIndex = startsAtDiscRoot || segments.Length == 1 ? 0 : 1;
         return string.Join('/', segments.Skip(startIndex));
     }
 }
