@@ -2,6 +2,7 @@ mutation HashDisc($input: HashDiscInput!) {
   hashDisc(input: $input) {
     discHash {
       hash
+      fingerprint
     }
     errors {
       ... on ContributionNotFoundError {

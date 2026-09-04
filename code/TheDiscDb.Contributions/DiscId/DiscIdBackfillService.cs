@@ -52,6 +52,23 @@ public sealed record AttachDiscIdResult(
     /// </summary>
     bool MatchedDifferentDisc = false);
 
+public sealed record AttachFingerprintResult(
+    AttachDiscIdOutcome Outcome,
+    string ContentHash,
+    string? MediaItemSlug,
+    string? BoxsetSlug,
+    string? MediaItemType,
+    string? ReleaseSlug,
+    string? DiscSlug,
+    int? DiscIndex,
+    string Fingerprint,
+    string? ExistingFingerprint,
+    bool MatchedDifferentDisc = false);
+
+public sealed record AttachDiscIdentifiersResult(
+    AttachDiscIdResult? GlobalDiscId,
+    AttachFingerprintResult Fingerprint);
+
 /// <summary>Optional target disc identity (supplied by the disc-detail CTA flow).</summary>
 public sealed record DiscTargetIdentity(
     string? MediaItemSlug,
@@ -85,6 +102,13 @@ public interface IDiscIdBackfillService
         string userId,
         string contentHash,
         string globalDiscId,
+        DiscTargetIdentity? target,
+        CancellationToken cancellationToken = default);
+
+    Task<AttachFingerprintResult> AttachFingerprintAsync(
+        string userId,
+        string contentHash,
+        string fingerprint,
         DiscTargetIdentity? target,
         CancellationToken cancellationToken = default);
 }
@@ -186,6 +210,173 @@ public sealed class DiscIdBackfillService(
         }
 
         return await ApplyAsync(userId, contentHash, globalDiscId, releaseDisc, matchedDifferentDisc, cancellationToken);
+    }
+
+    public async Task<AttachFingerprintResult> AttachFingerprintAsync(
+        string userId,
+        string contentHash,
+        string fingerprint,
+        DiscTargetIdentity? target,
+        CancellationToken cancellationToken = default)
+    {
+        var hasTarget = target is not null
+            && !string.IsNullOrWhiteSpace(target.ReleaseSlug)
+            && (!string.IsNullOrWhiteSpace(target.MediaItemSlug)
+                || !string.IsNullOrWhiteSpace(target.BoxsetSlug));
+
+        ReleaseDisc? releaseDisc;
+        var matchedDifferentDisc = false;
+        if (hasTarget)
+        {
+            var targetDisc = await ResolveByIdentityAsync(target!, cancellationToken);
+            if (targetDisc?.Disc is not null
+                && !string.Equals(
+                    targetDisc.Disc.ContentHash,
+                    contentHash,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                releaseDisc = await ResolveByContentHashAsync(contentHash, cancellationToken);
+                if (releaseDisc?.Disc is null)
+                {
+                    return BuildMatrixResult(
+                        AttachDiscIdOutcome.Mismatch,
+                        contentHash,
+                        targetDisc,
+                        fingerprint,
+                        targetDisc.EffectiveFingerprint());
+                }
+
+                matchedDifferentDisc = true;
+            }
+            else
+            {
+                releaseDisc = targetDisc;
+            }
+        }
+        else
+        {
+            releaseDisc = await ResolveByContentHashAsync(contentHash, cancellationToken);
+        }
+
+        if (releaseDisc?.Disc is null)
+        {
+            return new AttachFingerprintResult(
+                AttachDiscIdOutcome.NotFound,
+                contentHash,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                fingerprint,
+                null);
+        }
+
+        return await ApplyFingerprintAsync(
+            userId,
+            contentHash,
+            fingerprint,
+            releaseDisc,
+            matchedDifferentDisc,
+            cancellationToken);
+    }
+
+    private async Task<AttachFingerprintResult> ApplyFingerprintAsync(
+        string userId,
+        string contentHash,
+        string fingerprint,
+        ReleaseDisc releaseDisc,
+        bool matchedDifferentDisc,
+        CancellationToken cancellationToken)
+    {
+        AttachFingerprintResult Result(
+            AttachDiscIdOutcome outcome,
+            string? existingFingerprint)
+            => BuildMatrixResult(
+                outcome,
+                contentHash,
+                releaseDisc,
+                fingerprint,
+                existingFingerprint,
+                matchedDifferentDisc);
+
+        var snapshot = DiscFieldsUpdate.SnapshotFrom(
+            releaseDisc,
+            releaseDisc.Release?.MediaItem?.Slug,
+            releaseDisc.Release?.Boxset?.Slug,
+            releaseDisc.Release?.Slug ?? string.Empty);
+        var proposed = snapshot with { Fingerprint = fingerprint };
+        var proposedJson = JsonSerializer.Serialize(proposed, JsonOptions);
+        var snapshotJson = JsonSerializer.Serialize(snapshot, JsonOptions);
+
+        var owner = await database.Set<ReleaseDisc>()
+            .Where(rd => rd.Fingerprint == fingerprint)
+            .Select(rd => new { rd.DiscId })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (owner is not null)
+        {
+            if (owner.DiscId == releaseDisc.DiscId)
+            {
+                return Result(AttachDiscIdOutcome.AlreadyRecorded, fingerprint);
+            }
+
+            await FileConflictAsync(
+                userId,
+                $"Fingerprint conflict: {fingerprint} is already assigned to a different canonical disc.",
+                proposedJson,
+                snapshotJson,
+                cancellationToken);
+            return Result(AttachDiscIdOutcome.Conflict, fingerprint);
+        }
+
+        var siblingValues = await database.Set<ReleaseDisc>()
+            .Where(rd => rd.DiscId == releaseDisc.DiscId)
+            .Select(rd => rd.Fingerprint)
+            .ToListAsync(cancellationToken);
+        var effective = ReleaseDiscExtensions.EffectiveFingerprint(siblingValues);
+        if (!string.IsNullOrEmpty(effective))
+        {
+            await FileConflictAsync(
+                userId,
+                $"Fingerprint conflict: this disc already has {effective}, but {fingerprint} was submitted.",
+                proposedJson,
+                snapshotJson,
+                cancellationToken);
+            return Result(AttachDiscIdOutcome.Conflict, effective);
+        }
+
+        var suggestion = await editSuggestionService.SubmitAsync(
+            userId,
+            EditSuggestionSource.GraphQL,
+            $"Backfill fingerprint {fingerprint}",
+            new List<SubmitChangeInput>
+            {
+                new(DiscFieldsUpdate.Key, proposedJson, snapshotJson),
+            },
+            cancellationToken);
+        var appliedChange = await reviewService.ApproveChangeAsync(
+            suggestion.Id,
+            suggestion.Changes.First().Id,
+            userId,
+            adminNote: "Auto-approved add-only fingerprint backfill",
+            cancellationToken);
+        var persisted = await database.Set<ReleaseDisc>()
+            .Where(rd => rd.DiscId == releaseDisc.DiscId)
+            .Select(rd => rd.Fingerprint)
+            .ToListAsync(cancellationToken);
+
+        if (appliedChange?.Status != EditSuggestionChangeStatus.Applied
+            || !string.Equals(
+                ReleaseDiscExtensions.EffectiveFingerprint(persisted),
+                fingerprint,
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Fingerprint backfill was recorded but did not persist to the database.");
+        }
+
+        return Result(AttachDiscIdOutcome.Applied, null);
     }
 
     // Applies the Disc ID to a resolved release-disc: idempotent no-op when it already carries the
@@ -320,6 +511,33 @@ public sealed class DiscIdBackfillService(
             outcome, contentHash,
             parentMediaSlug, parentBoxsetSlug, parentMediaType, parentReleaseSlug, snapshot.DiscSlug, snapshot.DiscIndex,
             globalDiscId, existingGlobalDiscId);
+    }
+
+    private static AttachFingerprintResult BuildMatrixResult(
+        AttachDiscIdOutcome outcome,
+        string contentHash,
+        ReleaseDisc releaseDisc,
+        string fingerprint,
+        string? existingFingerprint,
+        bool matchedDifferentDisc = false)
+    {
+        var snapshot = DiscFieldsUpdate.SnapshotFrom(
+            releaseDisc,
+            releaseDisc.Release?.MediaItem?.Slug,
+            releaseDisc.Release?.Boxset?.Slug,
+            releaseDisc.Release?.Slug ?? string.Empty);
+        return new AttachFingerprintResult(
+            outcome,
+            contentHash,
+            snapshot.MediaItemSlug,
+            snapshot.BoxsetSlug,
+            releaseDisc.Release?.MediaItem?.Type,
+            snapshot.ReleaseSlug,
+            snapshot.DiscSlug,
+            snapshot.DiscIndex,
+            fingerprint,
+            existingFingerprint,
+            matchedDifferentDisc);
     }
 
     private IQueryable<ReleaseDisc> BaseQuery()

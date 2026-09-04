@@ -18,6 +18,8 @@ public class DiscIdBackfillServiceTests
     private const string ContentHash = "AAAA1111BBBB2222CCCC3333DDDD4444";
     private const string DiscId = "A734E4BEE726B8943F2E8817E3956EFC5F786C8B";
     private const string OtherDiscId = "91C2EB717C4323D8807C01BA79011A6B";
+    private const string Fingerprint = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    private const string OtherFingerprint = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
     private static DiscIdBackfillService CreateService(SqlServerDataContext db)
     {
@@ -410,5 +412,99 @@ public class DiscIdBackfillServiceTests
         var applied = await db.Set<ReleaseDisc>().FirstAsync(x => x.Slug == "disc-two");
         await Assert.That(applied.GlobalDiscId).IsEqualTo(DiscId);
         await Assert.That(await ReloadDiscIdAsync(db)).IsNull();
+    }
+
+    [Test]
+    public async Task AttachFingerprintAsync_CleanDisc_AppliesWithoutDiscId()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).AttachFingerprintAsync(
+            "user-1", ContentHash, Fingerprint, target: null);
+
+        await Assert.That(result.Outcome).IsEqualTo(AttachDiscIdOutcome.Applied);
+        await Assert.That(seed.ReleaseDisc.Fingerprint).IsEqualTo(Fingerprint);
+        var change = await db.Set<EditSuggestionChange>().SingleAsync();
+        await Assert.That(change.Status).IsEqualTo(EditSuggestionChangeStatus.Applied);
+        await Assert.That(change.SyncedToFilesAt).IsNull();
+    }
+
+    [Test]
+    public async Task AttachFingerprintAsync_CanonicalSiblingCarriesValue_IsIdempotent()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        AddMediaRelease(
+            seed.MediaItem,
+            seed.Disc,
+            "sibling-release",
+            "Sibling Release",
+            2022,
+            "sibling-disc",
+            0,
+            "Sibling Disc",
+            globalDiscId: null).Fingerprint = Fingerprint;
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).AttachFingerprintAsync(
+            "user-1", ContentHash, Fingerprint, target: null);
+
+        await Assert.That(result.Outcome).IsEqualTo(AttachDiscIdOutcome.AlreadyRecorded);
+        await Assert.That(seed.ReleaseDisc.Fingerprint).IsNull();
+        await Assert.That(await db.Set<EditSuggestionChange>().AnyAsync()).IsFalse();
+    }
+
+    [Test]
+    public async Task AttachFingerprintAsync_DifferentValueOnCanonicalSibling_FilesConflict()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        seed.ReleaseDisc.Fingerprint = OtherFingerprint;
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).AttachFingerprintAsync(
+            "user-1", ContentHash, Fingerprint, target: null);
+
+        await Assert.That(result.Outcome).IsEqualTo(AttachDiscIdOutcome.Conflict);
+        await Assert.That(result.ExistingFingerprint).IsEqualTo(OtherFingerprint);
+        await Assert.That(seed.ReleaseDisc.Fingerprint).IsEqualTo(OtherFingerprint);
+        var change = await db.Set<EditSuggestionChange>().SingleAsync();
+        await Assert.That(change.Status).IsEqualTo(EditSuggestionChangeStatus.Pending);
+    }
+
+    [Test]
+    public async Task AttachFingerprintAsync_ValueOwnedByDifferentCanonicalDisc_FilesConflict()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        var otherDisc = new Disc
+        {
+            Slug = "other-disc",
+            Index = 1,
+            Name = "Other Disc",
+            Format = "Blu-ray",
+            ContentHash = "9999888877776666555544443333EEEE",
+        };
+        seed.Release.Discs.Add(new ReleaseDisc
+        {
+            Slug = "other-disc",
+            Index = 1,
+            Name = "Other Disc",
+            Disc = otherDisc,
+            Fingerprint = Fingerprint,
+        });
+        await db.SaveChangesAsync();
+
+        var result = await CreateService(db).AttachFingerprintAsync(
+            "user-1", ContentHash, Fingerprint, target: null);
+
+        await Assert.That(result.Outcome).IsEqualTo(AttachDiscIdOutcome.Conflict);
+        await Assert.That(seed.ReleaseDisc.Fingerprint).IsNull();
     }
 }

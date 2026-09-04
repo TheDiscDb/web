@@ -232,6 +232,11 @@ public static class DiscFileFinalizer
             disc.GlobalDiscId = discFile.GlobalDiscId;
         }
 
+        if (string.IsNullOrEmpty(disc.Fingerprint))
+        {
+            disc.Fingerprint = discFile.Fingerprint;
+        }
+
         disc.Titles = logDisc.Titles.Select(mapper.Map).ToList();
 
         if (discFile.Unknown.Any())

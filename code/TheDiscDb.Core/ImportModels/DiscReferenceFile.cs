@@ -23,4 +23,7 @@ public class DiscReferenceFile
     /// </summary>
     [JsonPropertyName("globalDiscId")]
     public string? GlobalDiscId { get; set; }
+
+    [JsonPropertyName("fingerprint")]
+    public string? Fingerprint { get; set; }
 }

@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Core.DiscHash;
 using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
 
@@ -71,6 +72,18 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
         {
             disc.GlobalDiscId = this.Proposed.GlobalDiscId;
         }
+
+        if (!string.IsNullOrEmpty(this.Proposed.Fingerprint) && string.IsNullOrEmpty(disc.Fingerprint))
+        {
+            bool siblingCarriesValue = await context.ReleaseDiscs.AnyAsync(
+                releaseDisc => releaseDisc.DiscId == disc.DiscId
+                    && releaseDisc.Fingerprint == this.Proposed.Fingerprint,
+                cancellationToken);
+            if (!siblingCarriesValue)
+            {
+                disc.Fingerprint = this.Proposed.Fingerprint;
+            }
+        }
     }
 
     protected override string MissingTargetMessage()
@@ -95,8 +108,10 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
 
         var proposedId = this.Proposed.GlobalDiscId;
         var addingGlobalId = !string.IsNullOrEmpty(proposedId);
+        var proposedFingerprint = this.Proposed.Fingerprint;
+        var addingFingerprint = !string.IsNullOrEmpty(proposedFingerprint);
 
-        if (!addingHash && !addingGlobalId)
+        if (!addingHash && !addingGlobalId && !addingFingerprint)
         {
             return null;
         }
@@ -153,6 +168,39 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             }
         }
 
+        if (addingFingerprint)
+        {
+            if (!DiscFingerprint.IsValidFingerprint(proposedFingerprint))
+            {
+                return ChangeValidationResult.Conflict(
+                    "Fingerprint must be a 64-character lowercase hexadecimal string.");
+            }
+
+            var owner = await context.ReleaseDiscs
+                .Where(rd => rd.Fingerprint == proposedFingerprint)
+                .Select(rd => new { rd.DiscId })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (owner is not null && owner.DiscId != target.DiscId)
+            {
+                return ChangeValidationResult.Conflict(
+                    $"Fingerprint {proposedFingerprint} is already assigned to a different canonical disc.");
+            }
+
+            var differentSiblingValue = await context.ReleaseDiscs
+                .Where(rd => rd.DiscId == target.DiscId
+                    && rd.Fingerprint != null
+                    && rd.Fingerprint != proposedFingerprint)
+                .Select(rd => rd.Fingerprint)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (differentSiblingValue is not null)
+            {
+                return ChangeValidationResult.Conflict(
+                    $"This disc already has fingerprint {differentSiblingValue}; the submitted value differs.");
+            }
+        }
+
         return null;
     }
 
@@ -195,6 +243,15 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             AppendIfDifferent(drifted, nameof(original.GlobalDiscId), original.GlobalDiscId, current.GlobalDiscId);
         }
 
+        if (!string.IsNullOrEmpty(this.Proposed.Fingerprint) && string.IsNullOrEmpty(original.Fingerprint))
+        {
+            AppendIfDifferent(
+                drifted,
+                nameof(original.Fingerprint),
+                original.Fingerprint,
+                current.Fingerprint);
+        }
+
         return drifted.Length == 0
             ? null
             : "Disc has been modified since the suggestion was submitted: " + drifted.ToString().TrimEnd(',', ' ');
@@ -222,6 +279,13 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             _ => null,
         };
 
+        var fingerprint = disc switch
+        {
+            ReleaseDisc rd => rd.Fingerprint,
+            Disc d => d.Fingerprint,
+            _ => null,
+        };
+
         return new DiscFieldsDetails(
             MediaItemSlug: mediaItemSlug,
             BoxsetSlug: boxsetSlug,
@@ -231,7 +295,8 @@ public sealed class DiscFieldsUpdate : ChangeBase<DiscFieldsDetails>
             Name: disc.Name,
             Format: disc.Format,
             ContentHash: contentHash,
-            GlobalDiscId: globalDiscId);
+            GlobalDiscId: globalDiscId,
+            Fingerprint: fingerprint);
     }
 
     /// <summary>

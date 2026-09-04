@@ -27,6 +27,7 @@ public class SaveDiscRequest
     public string Slug { get; set; } = string.Empty;
     public string? ExistingDiscPath { get; set; }
     public string? GlobalDiscId { get; set; }
+    public string? Fingerprint { get; set; }
 }
 
 [Authorize]
@@ -133,6 +134,7 @@ public partial class AddDisc : CancellableComponentBase
     {
         this.copyFlowError = null;
         this.request.GlobalDiscId = null;
+        this.request.Fingerprint = null;
         this.request.ExistingDiscPath = null;
         this.intakeDiscMatch = null;
         var scan = await DiscScanner.ScanAsync(files, this.CancellationToken);
@@ -159,7 +161,12 @@ public partial class AddDisc : CancellableComponentBase
                 Name = item.Name,
                 Size = item.Size,
                 CreationTime = item.CreationTime
-            }).ToList()
+            }).ToList(),
+            FingerprintFiles = scan.FingerprintFiles.Select(item => new DiscFingerprintFileInput
+            {
+                Path = item.Path,
+                Size = item.Size,
+            }).ToList(),
         };
         var response = await this.ContributionClient.HashDisc.ExecuteAsync(
             hashInput,
@@ -173,6 +180,7 @@ public partial class AddDisc : CancellableComponentBase
         }
 
         hash = response.Data.HashDisc.DiscHash.Hash;
+        this.request.Fingerprint = response.Data.HashDisc.DiscHash.Fingerprint;
         this.request.ContentHash = hash;
         this.discSelected = true;
 
@@ -205,7 +213,8 @@ public partial class AddDisc : CancellableComponentBase
             Format = this.request.Format!,
             ContentHash = this.request.ContentHash,
             ExistingDiscPath = this.request.ExistingDiscPath,
-            GlobalDiscId = this.request.GlobalDiscId
+            GlobalDiscId = this.request.GlobalDiscId,
+            Fingerprint = this.request.Fingerprint,
         };
         var response = await this.ContributionClient.CreateDisc.ExecuteAsync(input, this.CancellationToken);
         if (!response.IsSuccessResult())
@@ -322,6 +331,7 @@ public partial class AddDisc : CancellableComponentBase
             this.intakeDiscMatch = null;
             request.ContentHash = manualHash.Trim();
             request.ExistingDiscPath = null;
+            request.Fingerprint = null;
             manualHashMode = true;
 
             var existingDiscResult = await TryCopyFromExistingDisc(request.ContentHash);
@@ -388,7 +398,8 @@ public partial class AddDisc : CancellableComponentBase
             Format = this.request.Format!,
             ContentHash = this.request.ContentHash,
             ExistingDiscPath = this.request.ExistingDiscPath,
-            GlobalDiscId = this.request.GlobalDiscId
+            GlobalDiscId = this.request.GlobalDiscId,
+            Fingerprint = this.request.Fingerprint,
         };
         var createDiscResponse = await this.ContributionClient.CreateDisc.ExecuteAsync(createInput, this.CancellationToken);
         if (!createDiscResponse.IsSuccessResult())

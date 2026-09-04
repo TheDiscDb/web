@@ -177,6 +177,7 @@ public class SqlServerDataContext : DbContext
         // GlobalDiscId is a transient carrier read from disc*.json and moved onto ReleaseDisc at
         // import; it is not a column on the shared canonical disc.
         disc.Ignore(x => x.GlobalDiscId);
+        disc.Ignore(x => x.Fingerprint);
 
         var releaseDisc = modelBuilder.Entity<ReleaseDisc>();
         releaseDisc.HasKey(x => x.Id);
@@ -192,8 +193,10 @@ public class SqlServerDataContext : DbContext
         releaseDisc.Ignore(x => x.ContentHash);
         releaseDisc.Ignore(x => x.Titles);
         releaseDisc.Property(x => x.GlobalDiscId).HasMaxLength(450);
+        releaseDisc.Property(x => x.Fingerprint).HasMaxLength(64);
         // A given Disc ID identifies one physical pressing: globally unique across release-discs.
         releaseDisc.HasIndex(x => x.GlobalDiscId).IsUnique().HasFilter("[GlobalDiscId] IS NOT NULL");
+        releaseDisc.HasIndex(x => x.Fingerprint).IsUnique().HasFilter("[Fingerprint] IS NOT NULL");
         releaseDisc.HasIndex(x => new { x.ReleaseId, x.Slug }).IsUnique().HasFilter("[Slug] IS NOT NULL");
         releaseDisc.HasIndex(x => new { x.ReleaseId, x.Index }).IsUnique();
 
@@ -274,6 +277,7 @@ public class SqlServerDataContext : DbContext
 
         var userDiscContribution = modelBuilder.Entity<UserContributionDisc>();
         userDiscContribution.HasKey(x => x.Id);
+        userDiscContribution.Property(x => x.Fingerprint).HasMaxLength(64);
         userDiscContribution.HasMany(x => x.Items)
             .WithOne(x => x.Disc)
             .OnDelete(DeleteBehavior.Cascade);

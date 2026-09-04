@@ -227,6 +227,8 @@ input ReleaseDiscFilterInput {
   name: StringOperationFilterInput
   format: StringOperationFilterInput
   contentHash: StringOperationFilterInput
+  globalDiscId: StringOperationFilterInput
+  fingerprint: StringOperationFilterInput
   titles: ListFilterInputTypeOfTitleFilterInput
 }
 
@@ -754,6 +756,7 @@ type ReleaseDisc {
   format: String
   contentHash: String
   globalDiscId: String
+  fingerprint: String
   titles(where: TitleFilterInput order: [TitleSortInput!]): [Title!]!
 }
 

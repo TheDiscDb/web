@@ -31,6 +31,7 @@ query GetDiscDetailByContentHash($hash: String, $templates: [FileNameTemplateInp
           slug
           contentHash
           globalDiscId
+          fingerprint
           titles(order: { index: ASC }) {
             index
             duration

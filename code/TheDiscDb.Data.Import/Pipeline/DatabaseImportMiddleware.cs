@@ -8,6 +8,7 @@ namespace TheDiscDb.Data.Import.Pipeline
     using Microsoft.AspNetCore.Identity;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.DependencyInjection;
+    using TheDiscDb.Core.DiscHash;
     using TheDiscDb.InputModels;
     using TheDiscDb.Web.Data;
 
@@ -111,6 +112,9 @@ namespace TheDiscDb.Data.Import.Pipeline
                 await this.NormalizeReleaseDiscGlobalIds(
                     item.MediaItem.Releases.SelectMany(release => release.Discs),
                     cancellationToken);
+                await this.NormalizeReleaseDiscFingerprint(
+                    item.MediaItem.Releases.SelectMany(release => release.Discs),
+                    cancellationToken);
                 await this.SaveChangesAsync();
             }
             else if (item.Boxset != null)
@@ -154,6 +158,9 @@ namespace TheDiscDb.Data.Import.Pipeline
                 if (item.Boxset.Release != null)
                 {
                     await this.NormalizeReleaseDiscGlobalIds(
+                        item.Boxset.Release.Discs,
+                        cancellationToken);
+                    await this.NormalizeReleaseDiscFingerprint(
                         item.Boxset.Release.Discs,
                         cancellationToken);
                 }
@@ -314,6 +321,63 @@ namespace TheDiscDb.Data.Import.Pipeline
             // Multi-title physical discs create one release link per member title. Keep the
             // pressing ID on the first link; siblings resolve it through EffectiveGlobalDiscId.
             releaseDisc.GlobalDiscId = null;
+        }
+
+        private async Task NormalizeReleaseDiscFingerprint(
+            IEnumerable<ReleaseDisc> releaseDiscs,
+            CancellationToken cancellationToken)
+        {
+            var claimedValues = new Dictionary<string, ReleaseDisc>(StringComparer.Ordinal);
+
+            foreach (var releaseDisc in releaseDiscs)
+            {
+                if (releaseDisc.Disc == null || string.IsNullOrWhiteSpace(releaseDisc.Fingerprint))
+                {
+                    continue;
+                }
+
+                string fingerprint = releaseDisc.Fingerprint.Trim().ToLowerInvariant();
+                if (!DiscFingerprint.IsValidFingerprint(fingerprint))
+                {
+                    throw new InvalidOperationException(
+                        $"Fingerprint '{releaseDisc.Fingerprint}' is not a valid Matrix256 v1 fingerprint.");
+                }
+
+                releaseDisc.Fingerprint = fingerprint;
+                if (claimedValues.TryGetValue(fingerprint, out var claimed))
+                {
+                    ResolveDuplicateFingerprint(releaseDisc, claimed, fingerprint);
+                    continue;
+                }
+
+                var existing = await this.GetDbContext().ReleaseDiscs
+                    .AsNoTracking()
+                    .Include(item => item.Disc)
+                    .FirstOrDefaultAsync(
+                        item => item.Fingerprint == fingerprint && item.Id != releaseDisc.Id,
+                        cancellationToken);
+                if (existing is not null)
+                {
+                    ResolveDuplicateFingerprint(releaseDisc, existing, fingerprint);
+                    continue;
+                }
+
+                claimedValues.Add(fingerprint, releaseDisc);
+            }
+        }
+
+        private static void ResolveDuplicateFingerprint(
+            ReleaseDisc releaseDisc,
+            ReleaseDisc existing,
+            string fingerprint)
+        {
+            if (!RepresentsSameCanonicalDisc(releaseDisc, existing))
+            {
+                throw new InvalidOperationException(
+                    $"Fingerprint '{fingerprint}' is already assigned to a different canonical disc.");
+            }
+
+            releaseDisc.Fingerprint = null;
         }
 
         private static bool RepresentsSameCanonicalDisc(ReleaseDisc left, ReleaseDisc right)

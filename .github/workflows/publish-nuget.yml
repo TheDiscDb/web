@@ -3,6 +3,9 @@ name: Publish TheDiscDb.Core NuGet
 on:
   workflow_dispatch:
 
+env:
+  RestoreConfigFile: ${{ github.workspace }}/nuget.ci.config
+
 jobs:
   publish:
     runs-on: ubuntu-latest

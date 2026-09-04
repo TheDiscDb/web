@@ -42,6 +42,7 @@ public class ReleaseDiscProjectionTypeInterceptor : TypeInterceptor
         SetResolver(typeDef, "contentHash", static d => d.Disc?.ContentHash);
         SetResolver(typeDef, "titles", static d => d.Disc?.Titles ?? Array.Empty<Title>());
         SetGlobalDiscIdResolver(typeDef);
+        SetFingerprintResolver(typeDef);
     }
 
     // The output globalDiscId is the pressing's *effective* id: its own stored value, or — when it
@@ -79,6 +80,38 @@ public class ReleaseDiscProjectionTypeInterceptor : TypeInterceptor
             return !string.IsNullOrEmpty(own)
                 ? own
                 : ReleaseDiscExtensions.EffectiveGlobalDiscId(rows.Select(r => r.GlobalDiscId));
+        };
+    }
+
+    private static void SetFingerprintResolver(ObjectTypeDefinition typeDef)
+    {
+        var field = typeDef.Fields.FirstOrDefault(f => f.Name == "fingerprint");
+        if (field is null)
+        {
+            return;
+        }
+
+        field.PureResolver = null;
+        field.Resolver = async context =>
+        {
+            var releaseDisc = context.Parent<ReleaseDisc>();
+            if (releaseDisc.DiscId <= 0)
+            {
+                return releaseDisc.Fingerprint;
+            }
+
+            var dbFactory = context.Service<IDbContextFactory<SqlServerDataContext>>();
+            await using var db = dbFactory.CreateDbContext();
+            var rows = await db.ReleaseDiscs
+                .AsNoTracking()
+                .Where(rd => rd.DiscId == releaseDisc.DiscId)
+                .Select(rd => new { rd.Id, rd.Fingerprint })
+                .ToListAsync(context.RequestAborted);
+
+            var own = rows.FirstOrDefault(r => r.Id == releaseDisc.Id)?.Fingerprint;
+            return !string.IsNullOrEmpty(own)
+                ? own
+                : ReleaseDiscExtensions.EffectiveFingerprint(rows.Select(r => r.Fingerprint));
         };
     }
 

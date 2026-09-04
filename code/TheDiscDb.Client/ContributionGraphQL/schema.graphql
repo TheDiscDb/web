@@ -141,6 +141,7 @@ type ContributionMutations {
   externalDataForContribution(input: ExternalDataForContributionInput!): ExternalDataForContributionPayload! @authorize @cost(weight: "10")
   hashDisc(input: HashDiscInput!): HashDiscPayload! @authorize @cost(weight: "10")
   attachGlobalDiscId(input: AttachGlobalDiscIdInput!): AttachGlobalDiscIdPayload! @authorize @cost(weight: "10")
+  attachDiscIdentifiers(input: AttachDiscIdentifiersInput!): AttachDiscIdentifiersPayload! @authorize @cost(weight: "10")
   sendAdminMessage(input: SendAdminMessageInput!): SendAdminMessagePayload! @authorize(policy: "Admin") @cost(weight: "10")
   sendUserMessage(input: SendUserMessageInput!): SendUserMessagePayload! @authorize @cost(weight: "10")
   markMessagesAsRead(input: MarkMessagesAsReadInput!): MarkMessagesAsReadPayload! @authorize @cost(weight: "10")
@@ -345,6 +346,7 @@ type DeleteItemFromDiscPayload {
 
 type DiscHash {
   hash: String!
+  fingerprint: String!
 }
 
 type DiscInfo {
@@ -432,6 +434,30 @@ type HashDiscPayload {
 type AttachGlobalDiscIdPayload {
   attachDiscIdResult: AttachDiscIdResult
   errors: [AttachGlobalDiscIdError!]
+}
+
+type AttachDiscIdentifiersPayload {
+  attachDiscIdentifiersResult: AttachDiscIdentifiersResult
+  errors: [AttachDiscIdentifiersError!]
+}
+
+type AttachDiscIdentifiersResult {
+  globalDiscId: AttachDiscIdResult
+  fingerprint: AttachFingerprintResult!
+}
+
+type AttachFingerprintResult {
+  outcome: AttachDiscIdOutcome!
+  contentHash: String!
+  mediaItemSlug: String
+  boxsetSlug: String
+  mediaItemType: String
+  releaseSlug: String
+  discSlug: String
+  discIndex: Int
+  fingerprint: String!
+  existingFingerprint: String
+  matchedDifferentDisc: Boolean!
 }
 
 type AttachDiscIdResult {
@@ -712,6 +738,8 @@ union PromoteIntakeDiscError = ContributionNotFoundError | AuthenticationError |
 
 union AttachGlobalDiscIdError = AuthenticationError
 
+union AttachDiscIdentifiersError = AuthenticationError
+
 union DeleteContributionError = ContributionNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
 
 union DeleteDiscFromContributionError = ContributionNotFoundError | DiscNotFoundError | AuthenticationError | InvalidIdError | InvalidOwnershipError | InvalidContributionStatusError
@@ -846,6 +874,7 @@ input CreateDiscInput {
   slug: String!
   existingDiscPath: String
   globalDiscId: String
+  fingerprint: String
 }
 
 input PromoteIntakeDiscInput {
@@ -944,11 +973,28 @@ input FileHashInfoInput {
 input HashDiscInput {
   contributionId: String!
   files: [FileHashInfoInput!]!
+  fingerprintFiles: [DiscFingerprintFileInput!]!
+}
+
+input DiscFingerprintFileInput {
+  path: String!
+  size: Long!
 }
 
 input AttachGlobalDiscIdInput {
   files: [FileHashInfoInput!]!
   globalDiscId: String!
+  mediaItemSlug: String
+  boxsetSlug: String
+  releaseSlug: String
+  discSlug: String
+  discIndex: Int
+}
+
+input AttachDiscIdentifiersInput {
+  files: [FileHashInfoInput!]!
+  fingerprintFiles: [DiscFingerprintFileInput!]!
+  globalDiscId: String
   mediaItemSlug: String
   boxsetSlug: String
   releaseSlug: String

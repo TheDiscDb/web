@@ -70,6 +70,7 @@ public partial class DiscDetail : ComponentBase
     private IDisplayItem? Release { get; set; }
     private IDisc? Disc { get; set; }
     private string? DiscGlobalDiscId { get; set; }
+    private string? DiscFingerprint { get; set; }
     private string? DiscContentHash { get; set; }
 
     private IEnumerable<IDiscItem> AllTitles { get; set; } = new List<IDiscItem>();
@@ -273,6 +274,7 @@ public partial class DiscDetail : ComponentBase
         var disc = release!.Discs!.First();
         this.Disc = disc;
         this.DiscGlobalDiscId = disc?.GlobalDiscId;
+        this.DiscFingerprint = disc?.Fingerprint;
         this.DiscContentHash = disc?.ContentHash;
 
         if (Disc == null)
@@ -318,6 +320,7 @@ public partial class DiscDetail : ComponentBase
         var disc = release!.Discs!.FirstOrDefault(d => SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
         this.Disc = disc;
         this.DiscGlobalDiscId = disc?.GlobalDiscId;
+        this.DiscFingerprint = disc?.Fingerprint;
         this.DiscContentHash = disc?.ContentHash;
 
         if (Disc == null)
@@ -363,6 +366,7 @@ public partial class DiscDetail : ComponentBase
         var disc = release!.Discs!.FirstOrDefault(d => SlugOrIndex.Create(d.Slug, d.Index) == SlugOrIndex.Create(SlugOrIndexString));
         this.Disc = disc;
         this.DiscGlobalDiscId = disc?.GlobalDiscId;
+        this.DiscFingerprint = disc?.Fingerprint;
         this.DiscContentHash = disc?.ContentHash;
 
         if (Disc == null)

@@ -64,6 +64,8 @@ public class DiscScannerTests
         await Assert.That(result.GlobalDiscId).IsEqualTo(AacsDiscId.Compute(aacsBytes));
         await Assert.That(result.HashFiles.Select(file => file.Name ?? string.Empty))
             .IsEquivalentTo(["00002.m2ts", "00001.M2TS"]);
+        await Assert.That(result.FingerprintFiles.Select(file => file.Path))
+            .IsEquivalentTo(files.Select(file => file.Path));
         await Assert.That(mediaReadCount).IsEqualTo(0);
         await Assert.That(discIdReadLimit).IsEqualTo(DiscScanner.MaxDiscIdFileSize);
     }
@@ -92,6 +94,9 @@ public class DiscScannerTests
             .IsEqualTo(DvdDiscId.Compute(videoTs, new byte[]?[] { vts01, vts02 }));
         await Assert.That(result.HashFiles.Count).IsEqualTo(4);
         await Assert.That(result.HashFiles.Any(file => file.Name == "ignored.vob")).IsFalse();
+        await Assert.That(result.FingerprintFiles.Count).IsEqualTo(files.Length);
+        await Assert.That(result.FingerprintFiles.Single(file => file.Path.EndsWith("ignored.vob")).Size)
+            .IsEqualTo(99_000);
         await Assert.That(mediaReadCount).IsEqualTo(0);
     }
 

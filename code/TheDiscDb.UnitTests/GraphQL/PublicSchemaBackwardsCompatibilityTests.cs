@@ -201,6 +201,99 @@ public class PublicSchemaBackwardsCompatibilityTests
     }
 
     [Test]
+    public async Task ReleaseDiscType_HasFingerprintField()
+    {
+        var executor = await BuildExecutorAsync(Guid.NewGuid().ToString());
+        var releaseDiscType = executor.Schema.GetType<ObjectType>(nameof(ReleaseDisc));
+
+        await Assert.That(releaseDiscType.Fields.ContainsField("fingerprint")).IsTrue();
+    }
+
+    [Test]
+    public async Task ReleaseDiscFilter_CanQueryFingerprint()
+    {
+        const string fingerprint = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        var dbName = Guid.NewGuid().ToString();
+        Seed(dbName);
+
+        var options = new DbContextOptionsBuilder<SqlServerDataContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+        using (var db = new SqlServerDataContext(options))
+        {
+            var releaseDisc = await db.ReleaseDiscs.SingleAsync();
+            releaseDisc.Fingerprint = fingerprint;
+            await db.SaveChangesAsync();
+        }
+
+        var executor = await BuildExecutorAsync(dbName);
+        var result = await executor.ExecuteAsync($$"""
+            query {
+              mediaItems {
+                nodes {
+                  releases {
+                    discs(where: { fingerprint: { eq: "{{fingerprint}}" } }) {
+                      fingerprint
+                    }
+                  }
+                }
+              }
+            }
+            """);
+
+        var json = result.ToJson();
+        await Assert.That(json).Contains($"\"fingerprint\": \"{fingerprint}\"");
+        await Assert.That(json).DoesNotContain("\"errors\"");
+    }
+
+    [Test]
+    public async Task FingerprintField_UsesCanonicalSiblingValue()
+    {
+        const string fingerprint = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        var dbName = Guid.NewGuid().ToString();
+        Seed(dbName);
+
+        var options = new DbContextOptionsBuilder<SqlServerDataContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+        using (var db = new SqlServerDataContext(options))
+        {
+            var release = await db.Releases
+                .Include(r => r.Discs)
+                .ThenInclude(rd => rd.Disc)
+                .SingleAsync();
+            release.Discs.Add(new ReleaseDisc
+            {
+                Slug = "disc-copy",
+                Index = 2,
+                Name = "Disc Copy",
+                Disc = release.Discs.Single().Disc,
+                Fingerprint = fingerprint,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var executor = await BuildExecutorAsync(dbName);
+        var result = await executor.ExecuteAsync("""
+            query {
+              mediaItems {
+                nodes {
+                  releases {
+                    discs(where: { index: { eq: 1 } }) {
+                      fingerprint
+                    }
+                  }
+                }
+              }
+            }
+            """);
+
+        var json = result.ToJson();
+        await Assert.That(json).Contains($"\"fingerprint\": \"{fingerprint}\"");
+        await Assert.That(json).DoesNotContain("\"errors\"");
+    }
+
+    [Test]
     public async Task QueryWithoutFilename_ReturnsNoFilenameKey()
     {
         var dbName = Guid.NewGuid().ToString();

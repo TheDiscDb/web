@@ -39,6 +39,10 @@ namespace TheDiscDb.InputModels
         [HotChocolate.GraphQLIgnore]
         public string? GlobalDiscId { get; set; }
 
+        [NotMapped]
+        [HotChocolate.GraphQLIgnore]
+        public string? Fingerprint { get; set; }
+
         [HotChocolate.Data.UseFiltering]
         [HotChocolate.Data.UseSorting]
         public ICollection<Title> Titles { get; set; } = new HashSet<Title>();
