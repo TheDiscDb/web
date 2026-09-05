@@ -242,13 +242,13 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
 
             await using var db = await DbFactory.CreateDbContextAsync(this.ComponentCt);
 
-            var releaseRow = await db.EngramReleases
+            var existingRelease = await db.EngramReleases
                 .FirstOrDefaultAsync(r => r.ReleaseId == ReleaseId, this.ComponentCt);
 
-            if (releaseRow?.UserContributionId != null)
+            if (existingRelease?.UserContributionId != null)
             {
-                ExistingContributionId = releaseRow.UserContributionId;
-                ExistingContributionEncodedId = IdEncoder.Encode(releaseRow.UserContributionId.Value);
+                ExistingContributionId = existingRelease.UserContributionId;
+                ExistingContributionEncodedId = IdEncoder.Encode(existingRelease.UserContributionId.Value);
                 NavigationManager.NavigateTo($"/contribution/engram/{ExistingContributionEncodedId}");
                 return;
             }
@@ -261,10 +261,36 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
             var externalId = firstSubmission.TmdbId?.ToString() ?? string.Empty;
             var externalProvider = string.IsNullOrEmpty(externalId) ? string.Empty : "TMDB";
 
-            // Wrap the whole creation in a transaction so any failure (including a
-            // EngramRelease.ReleaseId unique-index race with a concurrent submitter)
-            // rolls back the contribution and discs we created — no orphaned rows.
-            await using var transaction = await db.Database.BeginTransactionAsync();
+            // The creation runs inside a retriable execution strategy: the pooled
+            // context uses SqlServerRetryingExecutionStrategy (Aspire's
+            // EnrichSqlServerDbContext enables retry-on-failure by default), which
+            // rejects a user-initiated transaction unless it is opened inside the
+            // strategy's own execution unit. The transaction still guards against an
+            // EngramRelease.ReleaseId unique-index race with a concurrent submitter so
+            // any failure rolls back the contribution and discs we created.
+            UserContribution? createdContribution = null;
+            EngramRelease? linkedRelease = null;
+            bool redirectToExisting = false;
+
+            var strategy = db.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                // Clear any entities left tracked by a previous (failed) attempt so a
+                // retry starts clean, and re-read the release row inside the unit.
+                db.ChangeTracker.Clear();
+
+                var releaseRow = await db.EngramReleases
+                    .FirstOrDefaultAsync(r => r.ReleaseId == ReleaseId, this.ComponentCt);
+
+                if (releaseRow?.UserContributionId != null)
+                {
+                    ExistingContributionId = releaseRow.UserContributionId;
+                    ExistingContributionEncodedId = IdEncoder.Encode(releaseRow.UserContributionId.Value);
+                    redirectToExisting = true;
+                    return;
+                }
+
+                await using var transaction = await db.Database.BeginTransactionAsync(this.ComponentCt);
 
             var contribution = new UserContribution
             {
@@ -376,7 +402,7 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
 
                         ExistingContributionId = winner.UserContributionId;
                         ExistingContributionEncodedId = IdEncoder.Encode(winner.UserContributionId!.Value);
-                        NavigationManager.NavigateTo($"/contribution/engram/{ExistingContributionEncodedId}");
+                        redirectToExisting = true;
                         return;
                     }
                 }
@@ -396,7 +422,7 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
 
                     ExistingContributionId = concurrent.UserContributionId;
                     ExistingContributionEncodedId = IdEncoder.Encode(concurrent.UserContributionId.Value);
-                    NavigationManager.NavigateTo($"/contribution/engram/{ExistingContributionEncodedId}");
+                    redirectToExisting = true;
                     return;
                 }
 
@@ -416,7 +442,7 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
 
                     ExistingContributionId = winner.UserContributionId;
                     ExistingContributionEncodedId = IdEncoder.Encode(winner.UserContributionId!.Value);
-                    NavigationManager.NavigateTo($"/contribution/engram/{ExistingContributionEncodedId}");
+                    redirectToExisting = true;
                     return;
                 }
 
@@ -425,15 +451,27 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
 
             await transaction.CommitAsync();
 
-            await HistoryService.RecordCreatedAsync(contribution.Id, userId);
+                createdContribution = contribution;
+                linkedRelease = releaseRow;
+            });
+
+            if (redirectToExisting)
+            {
+                NavigationManager.NavigateTo($"/contribution/engram/{ExistingContributionEncodedId}");
+                return;
+            }
+
+            await HistoryService.RecordCreatedAsync(createdContribution!.Id, userId);
 
             // Copy front/back covers from Engram blobs (best-effort). Engram-uploaded
             // images are preferred because they reflect the actual physical disc; the
             // user can re-upload via the standard contribution edit flow if missing.
-            await CopyEngramImageToContribution(releaseRow.FrontImageUrl, contribution.EncodedId, "front", db, contribution);
-            await CopyEngramImageToContribution(releaseRow.BackImageUrl, contribution.EncodedId, "back", db, contribution);
+            // These blob copies live outside the retriable unit so a transient retry
+            // of the transaction never re-runs (or double-writes) them.
+            await CopyEngramImageToContribution(linkedRelease!.FrontImageUrl, createdContribution.EncodedId, "front", db, createdContribution);
+            await CopyEngramImageToContribution(linkedRelease.BackImageUrl, createdContribution.EncodedId, "back", db, createdContribution);
 
-            NavigationManager.NavigateTo($"/contribution/engram/{contribution.EncodedId}");
+            NavigationManager.NavigateTo($"/contribution/engram/{createdContribution.EncodedId}");
         }
         catch (Exception ex)
         {
