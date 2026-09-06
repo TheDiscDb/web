@@ -19,6 +19,7 @@
         <div class="row">
             <div class="col-md-6">
                 <dl>
+                    <dt>EncodedId</dt><dd><code>@EncodedId</code></dd>
                     <dt>ASIN</dt><dd>@(Boxset.Asin ?? "—")</dd>
                     <dt>UPC</dt><dd>@(Boxset.Upc ?? "—")</dd>
                     <dt>Locale</dt><dd>@(Boxset.Locale ?? "—")</dd>
@@ -74,6 +75,18 @@
             </tbody>
         </table>
     </section>
+
+    @if (Boxset.Status == UserContributionStatus.Approved)
+    {
+        <section class="info-card mb-3">
+            <h3>Import Command</h3>
+            <CodeHighlight CodeLanguage="PowerShell" Code="@PowershellCommand" />
+            <button class="btn btn-primary" @onclick="CopyCommandToClipboard">
+                <i class="e-icons e-copy"></i>
+                <span>Copy</span>
+            </button>
+        </section>
+    }
 
     <section class="d-flex gap-2 flex-wrap mb-3">
         @if (Boxset.Status == UserContributionStatus.ReadyForReview)

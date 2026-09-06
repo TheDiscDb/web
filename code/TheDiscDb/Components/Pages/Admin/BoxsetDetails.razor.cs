@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Client;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
@@ -20,6 +21,9 @@ public partial class BoxsetDetails : ComponentBase
     public IdEncoder IdEncoder { get; set; } = null!;
 
     [Inject]
+    IClipboardService Clipboard { get; set; } = null!;
+
+    [Inject]
     IContributionHistoryService HistoryService { get; set; } = null!;
 
     [Inject]
@@ -36,6 +40,10 @@ public partial class BoxsetDetails : ComponentBase
 
     private UserContributionBoxset? Boxset;
     private string? statusMessage;
+
+    private string EncodedId => Boxset != null ? IdEncoder.Encode(Boxset.Id) : BoxsetId;
+
+    private string PowershellCommand => $".\\ContributionBuddy.exe generate-boxset {EncodedId} import pr";
 
     private bool showMessageDialog;
     private string messageDialogHeader = string.Empty;
@@ -57,6 +65,14 @@ public partial class BoxsetDetails : ComponentBase
                 .ThenInclude(m => m.Disc!)
                     .ThenInclude(d => d.UserContribution)
             .FirstOrDefaultAsync(b => b.Id == decodedId);
+    }
+
+    private async Task CopyCommandToClipboard()
+    {
+        if (!string.IsNullOrEmpty(PowershellCommand))
+        {
+            await Clipboard.WriteTextAsync(PowershellCommand);
+        }
     }
 
     private async Task ApproveClicked()
