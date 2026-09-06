@@ -4,6 +4,10 @@
     border-top: 1px solid var(--border-color, #e0e0e0);
 }
 
+.scan-status {
+    margin-top: 1rem;
+}
+
 .manual-hash-divider {
     text-align: center;
     color: var(--text-muted, #888);

@@ -45,19 +45,28 @@ public partial class AddDiscId : CancellableComponentBase
     private string? matchedDiscUrl;
     private string? returnDiscUrl;
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await this.DiscDirectoryPicker.PreloadAsync(this.CancellationToken);
+        }
+    }
+
     private async Task OpenFolderAsync()
     {
         Reset();
         try
         {
             await using var selection = await this.DiscDirectoryPicker.PickAsync(
-                this.CancellationToken);
+                this.CancellationToken,
+                onSelectionCommitted: MarkBusy);
             if (selection is null)
             {
                 return;
             }
 
-            isBusy = true;
+            await Task.Yield();
             var scan = await DiscScanner.ScanAsync(selection.Files, this.CancellationToken);
             if (!string.IsNullOrEmpty(scan.Error))
             {
@@ -86,6 +95,12 @@ public partial class AddDiscId : CancellableComponentBase
         {
             isBusy = false;
         }
+    }
+
+    private void MarkBusy()
+    {
+        isBusy = true;
+        StateHasChanged();
     }
 
     private async Task SubmitAsync(DiscScanResult scan)
