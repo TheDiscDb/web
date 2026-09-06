@@ -1,0 +1,19 @@
+@* Reusable loading indicator. Wraps the Syncfusion spinner so loading feedback is
+   consistent across the site. Use inline for status rows/buttons, or set Overlay="true"
+   to cover a positioned (position: relative) parent container. *@
+@if (Visible)
+{
+    <div class="@RootCssClass" role="status" aria-live="polite">
+        <div class="loading-indicator__spinner">
+            <SfSpinner Visible="true" Size="@SpinnerSize" />
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <span class="loading-indicator__message">@Message</span>
+        }
+        else
+        {
+            <span class="loading-indicator__sr-only">Loading…</span>
+        }
+    </div>
+}

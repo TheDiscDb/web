@@ -23,7 +23,7 @@
 
     @if (isBusy)
     {
-        <p class="status">Reading disc and matching…</p>
+        <LoadingIndicator Message="Reading disc and calculating identifiers…" />
     }
 
     @if (!string.IsNullOrEmpty(message))

@@ -12,6 +12,7 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
     private readonly IJSRuntime js;
     private readonly IFileSystemAccessServiceInProcess fileSystemAccessService;
     private IJSObjectReference? module;
+    private bool? supportsFileSystemAccess;
 
     public DiscDirectoryPicker(IJSRuntime js, IFileSystemAccessServiceInProcess fileSystemAccessService)
     {
@@ -19,10 +20,27 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
         this.fileSystemAccessService = fileSystemAccessService;
     }
 
-    public async ValueTask<DiscFileSelection?> PickAsync(CancellationToken cancellationToken = default)
+    // Imports the interop module and caches the capability check ahead of time. Call this before
+    // the user clicks so that PickAsync performs no awaited `import()` inside the click handler;
+    // an awaited import yields the event loop and drops the browser's transient user activation,
+    // which makes showDirectoryPicker/input.click silently fail to open in Chromium.
+    public async ValueTask PreloadAsync(CancellationToken cancellationToken = default)
     {
         var module = await GetModuleAsync(cancellationToken);
-        if (await module.InvokeAsync<bool>("supportsFileSystemAccess", cancellationToken))
+        this.supportsFileSystemAccess ??=
+            await module.InvokeAsync<bool>("supportsFileSystemAccess", cancellationToken);
+    }
+
+    public async ValueTask<DiscFileSelection?> PickAsync(
+        CancellationToken cancellationToken = default,
+        Action? onSelectionCommitted = null)
+    {
+        // Reuse the preloaded module/capability when available so the first awaited call inside the
+        // user gesture is the picker itself, preserving transient user activation.
+        var module = this.module ?? await GetModuleAsync(cancellationToken);
+        var supported = this.supportsFileSystemAccess
+            ??= await module.InvokeAsync<bool>("supportsFileSystemAccess", cancellationToken);
+        if (supported)
         {
             try
             {
@@ -31,6 +49,10 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
                     {
                         Mode = FileSystemPermissionMode.Read,
                     });
+
+                // The folder is chosen; enumerating its files can be slow on a real disc,
+                // so signal "busy" before the enumeration starts.
+                onSelectionCommitted?.Invoke();
 
                 return new DiscFileSelection(await GetHandleFilesAsync(root));
             }
@@ -45,6 +67,8 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
         {
             return null;
         }
+
+        onSelectionCommitted?.Invoke();
 
         DiscScanFile[] files;
         try

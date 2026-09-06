@@ -102,18 +102,28 @@ public partial class AddDisc : CancellableComponentBase
         }
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await this.DiscDirectoryPicker.PreloadAsync(this.CancellationToken);
+        }
+    }
+
     async Task OpenFolderAsync()
     {
         this.copyFlowError = null;
         try
         {
-            await using var selection = await this.DiscDirectoryPicker.PickAsync(this.CancellationToken);
+            await using var selection = await this.DiscDirectoryPicker.PickAsync(
+                this.CancellationToken,
+                onSelectionCommitted: MarkScanning);
             if (selection is null)
             {
                 return;
             }
 
-            this.isScanning = true;
+            await Task.Yield();
             await TryCalculateHash(selection.Files);
         }
         catch (OperationCanceledException) when (this.CancellationToken.IsCancellationRequested)
@@ -128,6 +138,12 @@ public partial class AddDisc : CancellableComponentBase
         {
             this.isScanning = false;
         }
+    }
+
+    void MarkScanning()
+    {
+        this.isScanning = true;
+        this.StateHasChanged();
     }
 
     async Task TryCalculateHash(IReadOnlyList<DiscScanFile> files)

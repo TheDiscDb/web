@@ -31,6 +31,12 @@
                 <button class="btn btn-primary" @onclick="OpenFolderAsync" disabled="@isScanning">
                     @(isScanning ? "Reading Disc..." : "Select Disc Root Folder")
                 </button>
+                @if (isScanning)
+                {
+                    <div class="scan-status">
+                        <LoadingIndicator Message="Reading disc and calculating identifiers…" />
+                    </div>
+                }
                 @if (IsDevelopmentMode)
                 {
                     <div class="manual-hash-section">

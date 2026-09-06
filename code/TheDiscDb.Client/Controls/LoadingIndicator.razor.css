@@ -1,0 +1,68 @@
+.loading-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: #555;
+}
+
+.loading-indicator--vertical {
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    gap: 0.5rem;
+}
+
+.loading-indicator__message {
+    font-size: 0.95rem;
+    line-height: 1.3;
+}
+
+.loading-indicator--small .loading-indicator__message {
+    font-size: 0.85rem;
+}
+
+.loading-indicator--large .loading-indicator__message {
+    font-size: 1.05rem;
+}
+
+/* The Syncfusion spinner paints an absolutely-positioned pane over this box,
+   so it needs an explicit, positioned footprint per size. */
+.loading-indicator__spinner {
+    position: relative;
+    flex: none;
+}
+
+.loading-indicator--small .loading-indicator__spinner {
+    width: 18px;
+    height: 18px;
+}
+
+.loading-indicator--medium .loading-indicator__spinner {
+    width: 28px;
+    height: 28px;
+}
+
+.loading-indicator--large .loading-indicator__spinner {
+    width: 44px;
+    height: 44px;
+}
+
+.loading-indicator--overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: rgba(255, 255, 255, 0.72);
+    border-radius: inherit;
+}
+
+.loading-indicator__sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
