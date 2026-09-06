@@ -54,7 +54,13 @@ builder.Services.AddControllersWithViews( options =>
 {
     options.InputFormatters.Add(new PlainTextInputFormatter());
 });
-builder.Services.AddCors();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("GraphQL", policy => policy
+        .AllowAnyOrigin()
+        .AllowAnyHeader()
+        .WithMethods("GET", "POST", "OPTIONS"));
+});
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<TheDiscDb.Web.Authentication.ApiKeyManager>();
 
@@ -444,6 +450,8 @@ app.UseImageSharp();
 app.UseMiddleware<RssFeedMidleware>();
 app.UseMiddleware<LowercaseUrlMiddleware>();
 
+app.UseCors();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -451,13 +459,14 @@ app.UseWhen(
     ctx => ctx.Request.Path.StartsWithSegments("/graphql"),
     branch => branch.UseMiddleware<ApiKeyUsageMiddleware>());
 
-var graphqlEndpoint = app.MapGraphQL();
+var graphqlEndpoint = app.MapGraphQL().RequireCors("GraphQL");
 if (apiKeyAuthEnabled)
 {
     graphqlEndpoint.RequireAuthorization(ApiKeyAuthenticationDefaults.PolicyName);
 }
 
 app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema")
+   .RequireCors("GraphQL")
    .RequireAuthorization(ApiKeyAuthenticationDefaults.PolicyName);
 
 app.MapControllers();
