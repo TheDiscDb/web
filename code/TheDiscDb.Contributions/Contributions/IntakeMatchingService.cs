@@ -98,6 +98,26 @@ public sealed class IntakeMatchingService(
         IntakeDiscPromotionRequest request,
         CancellationToken cancellationToken = default)
     {
+        var strategy = database.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            // A retry may reuse this scoped context after a failed attempt. Clear any
+            // tracked state so the idempotent promotion flow reloads committed data.
+            database.ChangeTracker.Clear();
+            return await PromoteDiscCoreAsync(
+                contributionId,
+                userId,
+                request,
+                cancellationToken);
+        });
+    }
+
+    private async Task<IntakeDiscPromotionResult?> PromoteDiscCoreAsync(
+        int contributionId,
+        string userId,
+        IntakeDiscPromotionRequest request,
+        CancellationToken cancellationToken)
+    {
         await using var transaction = database.Database.IsRelational()
             ? await database.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
             : null;
