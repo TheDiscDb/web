@@ -158,8 +158,15 @@ public class ContributionNotificationService : IContributionNotificationService
 
         var title = $"{contribution.Title} ({contribution.Year})";
         var mediaType = contribution.MediaType?.ToLowerInvariant() ?? "movie";
-        var hasItemLink = !string.IsNullOrEmpty(contribution.TitleSlug);
-        var itemUrl = hasItemLink ? $"https://thediscdb.com/{mediaType}/{contribution.TitleSlug}" : "https://thediscdb.com";
+        var hasItemLink = !string.IsNullOrWhiteSpace(contribution.TitleSlug);
+        var hasReleaseLink = hasItemLink && !string.IsNullOrWhiteSpace(contribution.ReleaseSlug);
+        var itemUrl = hasItemLink
+            ? $"https://thediscdb.com/{mediaType}/{contribution.TitleSlug}"
+            : "https://thediscdb.com";
+        if (hasReleaseLink)
+        {
+            itemUrl += $"/releases/{contribution.ReleaseSlug}";
+        }
 
         var eTitle = E(contribution.Title);
         var eYear = E(contribution.Year);
