@@ -1,0 +1,20 @@
+<span class="@RootCssClass"
+      @ref="rootElement"
+      @onmouseleave="HandlePointerLeave"
+      @onfocusout="HandleFocusOut">
+    <button type="button"
+            class="help-popover__trigger"
+            aria-label="@AccessibleLabel"
+            aria-controls="@popoverId"
+            aria-expanded="@(isPinned ? "true" : "false")"
+            @onclick="TogglePinnedAsync">
+        <span aria-hidden="true">?</span>
+    </button>
+    <span id="@popoverId"
+          class="help-popover__panel"
+          role="region"
+          aria-label="@AccessibleLabel"
+          @onclick:stopPropagation="true">
+        @ChildContent
+    </span>
+</span>

@@ -113,6 +113,11 @@ else if (Contribution is not null)
                 </div>
                 <div class="mb-3">
                     <label>Release Slug<span class="required">*</span></label>
+                    <HelpPopover AccessibleLabel="What is a release slug?">
+                        A release slug is the URL-friendly name that identifies this specific release.
+                        Use lowercase words separated by hyphens, such as <strong>2016-blu-ray</strong>.
+                        Release slugs must be unique for all releases in a given title.
+                    </HelpPopover>
                     <SlugInput @ref="slugInput" class="form-control" @bind-Value="request.ReleaseSlug" CheckAvailability="CheckReleaseSlugAvailability" />
                     <ValidationMessage For="@(() => request.ReleaseSlug)" />
                     @if (ReleaseNamingSuggestion is { } suggestion)

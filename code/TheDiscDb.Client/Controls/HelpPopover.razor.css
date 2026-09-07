@@ -1,0 +1,78 @@
+.help-popover {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-start: 0.35rem;
+    position: relative;
+    vertical-align: text-bottom;
+}
+
+.help-popover__trigger {
+    align-items: center;
+    background: transparent;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    color: #5f6b7a;
+    display: inline-flex;
+    font-size: 0.72rem;
+    font-weight: 700;
+    height: 1.15rem;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    width: 1.15rem;
+}
+
+.help-popover__trigger:hover {
+    color: #212529;
+}
+
+.help-popover__trigger:focus-visible {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    outline: 2px solid #0d6efd;
+    outline-offset: 1px;
+}
+
+.help-popover__panel {
+    background: #fff;
+    border: 1px solid #c9ced6;
+    border-radius: 0.35rem;
+    box-shadow: 0 0.35rem 1rem rgba(33, 37, 41, 0.18);
+    color: #212529;
+    font-size: 0.875rem;
+    font-weight: 400;
+    inset-block-end: calc(100% + 0.5rem);
+    inset-inline-start: 0;
+    line-height: 1.4;
+    max-width: calc(100vw - 2rem);
+    opacity: 0;
+    padding: 0.65rem 0.75rem;
+    pointer-events: none;
+    position: absolute;
+    text-align: start;
+    transition: opacity 120ms ease-out, visibility 120ms ease-out;
+    visibility: hidden;
+    width: 22rem;
+    z-index: 1050;
+}
+
+.help-popover:not(.help-popover--suppressed):hover .help-popover__panel,
+.help-popover:not(.help-popover--suppressed):focus-within .help-popover__panel,
+.help-popover--pinned .help-popover__panel {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+}
+
+@media (max-width: 575.98px) {
+    .help-popover__panel {
+        inset: auto 1rem 1rem;
+        position: fixed;
+        width: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .help-popover__panel {
+        transition: none;
+    }
+}
