@@ -88,6 +88,11 @@
 
                         <div class="mb-3">
                             <label>Disc Slug</label>
+                            <HelpPopover AccessibleLabel="What is a disc slug?">
+                                A disc slug is the URL-friendly name that identifies this specific disc within its release.
+                                Use lowercase words separated by hyphens, such as <strong>bonus-features-disc</strong>.
+                                Disc slugs must be unique within the release.
+                            </HelpPopover>
                             <SlugInput @ref="slugInput" class="form-control" @bind-Value="request.Slug" CheckAvailability="CheckDiscSlugAvailability" />
                             <ValidationMessage For="@(() => request.Slug)" />
                             @if (DiscNamingSuggestion is { } suggestion)
