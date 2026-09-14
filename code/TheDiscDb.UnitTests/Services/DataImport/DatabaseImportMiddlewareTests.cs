@@ -46,6 +46,42 @@ public class DatabaseImportMiddlewareTests
         await Assert.That(exception!.Message).Contains("different canonical disc");
     }
 
+    [Test]
+    public async Task Process_EqualReleaseCountsWithChangedRelease_MatchesBySlug()
+    {
+        var factory = new InMemoryContextFactory();
+        await using var middleware = CreateMiddleware(factory);
+
+        await middleware.Process(
+            CreateItem(
+                "same-series",
+                new ReleaseData("season-15", "season-15-id", "season-15-hash"),
+                new ReleaseData("season-16", "season-16-id", "season-16-hash")),
+            default);
+
+        await middleware.Process(
+            CreateItem(
+                "same-series",
+                new ReleaseData("season-20", "season-20-id", "season-20-hash"),
+                new ReleaseData("season-15", "season-15-id", "season-15-hash")),
+            default);
+
+        await using var database = factory.CreateDbContext();
+        var releases = await database.Releases
+            .Include(release => release.Discs)
+                .ThenInclude(releaseDisc => releaseDisc.Disc)
+            .OrderBy(release => release.Slug)
+            .ToListAsync();
+
+        var season15Disc = releases.Single(release => release.Slug == "season-15").Discs.Single();
+        await Assert.That(season15Disc.GlobalDiscId).IsEqualTo("season-15-id");
+        await Assert.That(season15Disc.Disc!.ContentHash).IsEqualTo("season-15-hash");
+
+        var season20Disc = releases.Single(release => release.Slug == "season-20").Discs.Single();
+        await Assert.That(season20Disc.GlobalDiscId).IsEqualTo("season-20-id");
+        await Assert.That(season20Disc.Disc!.ContentHash).IsEqualTo("season-20-hash");
+    }
+
     private static DatabaseImportMiddleware CreateMiddleware(IDbContextFactory<SqlServerDataContext> factory)
     {
         var titleHandler = new TitleItemHandler(new TrackItemHandler(), new DiscItemReferenceItemHandler());
@@ -60,27 +96,10 @@ public class DatabaseImportMiddlewareTests
     }
 
     private static ImportItem CreateItem(string slug, string globalDiscId, string contentHash)
+        => CreateItem(slug, new ReleaseData("shared-release", globalDiscId, contentHash));
+
+    private static ImportItem CreateItem(string slug, params ReleaseData[] releases)
     {
-        var disc = new Disc
-        {
-            Format = "Blu-ray",
-            ContentHash = contentHash,
-        };
-        var releaseDisc = new ReleaseDisc
-        {
-            Index = 1,
-            Slug = "disc-1",
-            Name = "Disc 1",
-            GlobalDiscId = globalDiscId,
-            Disc = disc,
-        };
-        var release = new Release
-        {
-            Slug = "shared-release",
-            Title = "Shared Release",
-            Year = 2026,
-            Discs = [releaseDisc],
-        };
         return new ImportItem
         {
             MediaItem = new MediaItem
@@ -89,10 +108,32 @@ public class DatabaseImportMiddlewareTests
                 Title = slug,
                 Type = "Movie",
                 Year = 2026,
-                Releases = [release],
+                Releases = releases.Select(release => new Release
+                {
+                    Slug = release.Slug,
+                    Title = release.Slug,
+                    Year = 2026,
+                    Discs =
+                    [
+                        new ReleaseDisc
+                        {
+                            Index = 1,
+                            Slug = "disc-1",
+                            Name = "Disc 1",
+                            GlobalDiscId = release.GlobalDiscId,
+                            Disc = new Disc
+                            {
+                                Format = "Blu-ray",
+                                ContentHash = release.ContentHash,
+                            },
+                        },
+                    ],
+                }).ToList(),
             },
         };
     }
+
+    private sealed record ReleaseData(string Slug, string GlobalDiscId, string ContentHash);
 
     private sealed class InMemoryContextFactory : IDbContextFactory<SqlServerDataContext>
     {

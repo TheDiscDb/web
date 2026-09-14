@@ -9,9 +9,13 @@ public abstract class ItemHandler<T> : IItemHandler<T>
     public abstract void TryUpdate(T fromDatabase, T newValue);
 
     /// <summary>Handle updating a sub list of items</summary>
-    protected void HandleList<TItem>(ICollection<TItem> fromDatabase, ICollection<TItem> newValue, IItemHandler<TItem> handler)
+    protected void HandleList<TItem>(
+        ICollection<TItem> fromDatabase,
+        ICollection<TItem> newValue,
+        IItemHandler<TItem> handler,
+        bool matchByIdentity = false)
     {
-        if (newValue.Count == fromDatabase.Count)
+        if (!matchByIdentity && newValue.Count == fromDatabase.Count)
         {
             for (int i = 0; i < fromDatabase.Count; i++)
             {
