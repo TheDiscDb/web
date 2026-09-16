@@ -54,7 +54,7 @@ else
         else
         {
             <QuickGrid @key="this.quickGridVersion" Items="IdentifiedItems" Class="striped-grid naming-helper-grid">
-                <PropertyColumn Property="@(t => t.Source)" Title="Source File" Sortable="true" SortBy="SortSource">
+                <PropertyColumn Property="@(t => t.Source)" Title="Source File" Sortable="true">
                     <HeaderTemplate Context="col">
                         <button type="button" class="col-title" @onclick="() => SortColumnAsync(col)">
                             <span class="col-title-text">Source File</span>
@@ -134,7 +134,7 @@ else
                         @context.Size
                     </ChildContent>
                 </TemplateColumn>
-                <PropertyColumn Property="@(t => t.ChapterCount)" Title="Chapters" Class="col-narrow" Sortable="true" SortBy="SortChapters">
+                <PropertyColumn Property="@(t => t.ChapterCount)" Title="Chapters" Class="col-narrow" Sortable="true">
                     <HeaderTemplate Context="col">
                         <button type="button" class="col-title" @onclick="() => SortColumnAsync(col)">
                             <span class="col-title-text">Chapters</span>

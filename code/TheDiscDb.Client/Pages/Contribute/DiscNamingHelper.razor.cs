@@ -47,8 +47,6 @@ public partial class DiscNamingHelper : CancellableComponentBase
     private int quickGridVersion = 0;
     private bool hasCustomSort = false;
 
-    private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortSource =
-        GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => i.Source);
     private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortDescription =
         GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => i.Name);
     private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortFilename =
@@ -57,8 +55,6 @@ public partial class DiscNamingHelper : CancellableComponentBase
         GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => ParseLengthToSeconds(i.Duration));
     private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortSize =
         GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => ParseDisplaySizeToBytes(i.Size));
-    private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortChapters =
-        GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => i.ChapterCount);
 
     private bool IsPopup => string.Equals(this.Popup, "1", StringComparison.Ordinal);
 
