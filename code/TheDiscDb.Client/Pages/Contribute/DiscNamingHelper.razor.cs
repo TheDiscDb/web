@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.QuickGrid;
@@ -43,6 +44,22 @@ public partial class DiscNamingHelper : CancellableComponentBase
     private bool isLoading = true;
     private string? loadError;
 
+    private int quickGridVersion = 0;
+    private bool hasCustomSort = false;
+
+    private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortSource =
+        GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => i.Source);
+    private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortDescription =
+        GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => i.Name);
+    private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortFilename =
+        GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => i.Filename);
+    private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortDuration =
+        GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => ParseLengthToSeconds(i.Duration));
+    private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortSize =
+        GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => ParseDisplaySizeToBytes(i.Size));
+    private static readonly GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> SortChapters =
+        GridSort<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items>.ByAscending(i => i.ChapterCount);
+
     private bool IsPopup => string.Equals(this.Popup, "1", StringComparison.Ordinal);
 
     private IQueryable<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> IdentifiedItems => this.identifiedItems.AsQueryable();
@@ -73,12 +90,62 @@ public partial class DiscNamingHelper : CancellableComponentBase
 
         this.disc = payload.Disc;
         this.contribution = payload.Contribution;
-        this.identifiedItems = this.disc.Items
-            .Where(i => !string.IsNullOrWhiteSpace(i.Type))
-            .OrderBy(i => i.Source)
-            .ToList();
+        this.identifiedItems = OrderItemsLikeIdentifyPage(this.disc.Items, payload.Info?.Titles);
 
         this.isLoading = false;
+    }
+
+    // Present identified items in the same order they appear on the disc identify page,
+    // which renders the parsed log titles in their natural (index) order. Each item is
+    // matched to its source title and ordered by that title's index; unmatched items fall
+    // back to a stable Source-based ordering after the matched ones.
+    private static List<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> OrderItemsLikeIdentifyPage(
+        IReadOnlyList<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> items,
+        IReadOnlyList<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>? titles)
+    {
+        var identified = items
+            .Where(i => !string.IsNullOrWhiteSpace(i.Type))
+            .ToList();
+
+        if (titles is null || titles.Count == 0)
+        {
+            return identified
+                .OrderBy(i => i.Source, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        var matchedTitles = new HashSet<IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles>();
+        var titleIndexByItem = new Dictionary<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items, int>();
+
+        foreach (var item in identified)
+        {
+            var title = ContributionDiscTitleMatcher.FindMatch(
+                titles,
+                matchedTitles,
+                item.Source,
+                item.SegmentMap,
+                item.ChapterCount,
+                item.Size,
+                t => t.Playlist,
+                t => t.SegmentMap,
+                t => t.ChapterCount,
+                t => t.DisplaySize);
+
+            if (title != null)
+            {
+                matchedTitles.Add(title);
+                titleIndexByItem[item] = title.Index;
+            }
+            else
+            {
+                titleIndexByItem[item] = int.MaxValue;
+            }
+        }
+
+        return identified
+            .OrderBy(i => titleIndexByItem[i])
+            .ThenBy(i => i.Source, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private CopyButtonState GetTitleCopyState() => this.titleCopyState;
@@ -161,4 +228,53 @@ public partial class DiscNamingHelper : CancellableComponentBase
 
     private static bool HasCustomAudioTracks(IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items item) =>
         item.AudioTracks.Any(t => !string.IsNullOrWhiteSpace(t.Title));
+
+    private async Task SortColumnAsync(ColumnBase<IGetDiscLogs_DiscLogs_DiscLogs_Disc_Items> column)
+    {
+        await column.Grid.SortByColumnAsync(column);
+        this.hasCustomSort = true;
+    }
+
+    private void ResetSort()
+    {
+        this.hasCustomSort = false;
+        this.quickGridVersion++;
+    }
+
+    private static int ParseLengthToSeconds(string? length)
+    {
+        if (string.IsNullOrWhiteSpace(length))
+        {
+            return -1;
+        }
+
+        return TimeSpan.TryParse(length, CultureInfo.InvariantCulture, out var ts)
+            ? (int)ts.TotalSeconds
+            : -1;
+    }
+
+    private static long ParseDisplaySizeToBytes(string? displaySize)
+    {
+        if (string.IsNullOrWhiteSpace(displaySize))
+        {
+            return long.MaxValue;
+        }
+
+        string[] parts = displaySize.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length < 2 || !double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double size))
+        {
+            return long.MaxValue;
+        }
+
+        long multiplier = parts[1].ToUpperInvariant() switch
+        {
+            "KB" => 1024L,
+            "MB" => 1024L * 1024L,
+            "GB" => 1024L * 1024L * 1024L,
+            "TB" => 1024L * 1024L * 1024L * 1024L,
+            _ => 1L,
+        };
+
+        return (long)(size * multiplier);
+    }
 }
