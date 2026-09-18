@@ -25,8 +25,13 @@ internal static class ContributionDiscTitleMatcher
                     MetadataMatches(title, segmentMap, chapterCount, size, segmentMapSelector, chapterCountSelector, sizeSelector))
                 .ToList();
 
-            if (exactMatches.Count == 1)
+            if (exactMatches.Count >= 1)
             {
+                // Every exact match shares the same Source, SegmentMap, ChapterCount and Size, so the
+                // candidates are physically interchangeable. When multiple DB items share that signature
+                // (e.g. several episodes cut from a single playlist), consume the first still-available
+                // title so each item keeps a match. Returning null here instead would drop the item's
+                // DatabaseId on reload, and the next save would then insert a duplicate row.
                 return exactMatches[0];
             }
 

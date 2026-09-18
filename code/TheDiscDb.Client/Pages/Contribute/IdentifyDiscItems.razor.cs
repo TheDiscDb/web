@@ -935,7 +935,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
             return;
         }
 
-        bool isEdit = this.currentItem.DatabaseId != null;
+        bool isEdit = IdentifiedItemSubmission.GetSubmissionKind(this.currentItem.DatabaseId) == ItemSubmissionKind.Edit;
         if (isEdit)
         {
             callInProgress = true;
@@ -1090,6 +1090,45 @@ public partial class IdentifyDiscItems : CancellableComponentBase
     {
         if (this.currentItem == null || this.callInProgress)
         {
+            return;
+        }
+
+        bool isEdit = IdentifiedItemSubmission.GetSubmissionKind(this.currentItem.DatabaseId) == ItemSubmissionKind.Edit;
+        if (isEdit)
+        {
+            this.callInProgress = true;
+            var updateRequest = currentItem.CreateEditRequest();
+            var updateResponse = await this.ContributionClient.EditItemOnDisc.ExecuteAsync(new EditItemOnDiscInput
+            {
+                ContributionId = this.ContributionId!,
+                DiscId = this.DiscId!,
+                ItemId = this.currentItem.DatabaseId!,
+                ChapterCount = updateRequest.ChapterCount,
+                Description = updateRequest.Description,
+                Duration = updateRequest.Duration,
+                Name = updateRequest.Name,
+                SegmentCount = updateRequest.SegmentCount,
+                SegmentMap = updateRequest.SegmentMap,
+                Size = updateRequest.Size,
+                Source = updateRequest.Source,
+                Type = updateRequest.Type,
+                Season = updateRequest.Season,
+                Episode = updateRequest.Episode
+            });
+            this.callInProgress = false;
+
+            if (updateResponse.IsSuccessResult())
+            {
+                this.identifiedTitles[currentItem.Title] = currentItem;
+                this.StateHasChanged();
+            }
+            else
+            {
+                toastContent = "Error updating identified episode";
+                await toast!.ShowAsync();
+            }
+
+            await this.episodeDialog!.HideAsync();
             return;
         }
 
