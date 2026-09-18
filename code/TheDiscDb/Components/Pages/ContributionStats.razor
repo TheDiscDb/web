@@ -1,0 +1,88 @@
+@page "/contributions/stats"
+@rendermode InteractiveServer
+
+<PageTitle>Contribution Stats - TheDiscDb</PageTitle>
+<HeadContent>
+    <meta name="description" content="See how contributions to TheDiscDb have grown over time." />
+    <link rel="canonical" href="https://thediscdb.com/contributions/stats" />
+    <meta property="og:title" content="Contribution Stats - TheDiscDb" />
+    <meta property="og:description" content="See how contributions to TheDiscDb have grown over time." />
+    <meta property="og:url" content="https://thediscdb.com/contributions/stats" />
+    <meta property="og:type" content="website" />
+</HeadContent>
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Stats" Items='[("Home", "/"), ("Contribute", "/contribute")]' />
+
+<div class="contribute-layout contribution-stats-page">
+    <div class="page-header">
+        <h1>Contribution Stats</h1>
+        <div class="page-header__sub">The growth of community-contributed releases over time.</div>
+    </div>
+
+    @if (errorMessage != null)
+    {
+        <p class="error-state">@errorMessage</p>
+    }
+    else if (chartData != null)
+    {
+        @if (chartData.Count == 0)
+        {
+            <p class="empty-state">
+                No contributions have been added yet. <a href="/contribute">Be the first to contribute</a>!
+            </p>
+        }
+        else
+        {
+            <section class="stats-summary" aria-label="Contribution summary">
+                <div class="stats-summary__item">
+                    <span class="stats-summary__number">@totalContributions.ToString("N0")</span>
+                    <span class="stats-summary__label">Total contributions</span>
+                </div>
+                <div class="stats-summary__item">
+                    <span class="stats-summary__number">@firstContributionDate?.ToString("MMM d, yyyy")</span>
+                    <span class="stats-summary__label">First contribution</span>
+                </div>
+                <div class="stats-summary__item">
+                    <span class="stats-summary__number">@latestContributionDate?.ToString("MMM d, yyyy")</span>
+                    <span class="stats-summary__label">Latest contribution</span>
+                </div>
+            </section>
+
+            <section class="chart-card" aria-labelledby="contribution-chart-heading">
+                <div class="chart-card__header">
+                    <h2 id="contribution-chart-heading">Contributions over time</h2>
+                    <p>Cumulative releases, grouped by the date they were added.</p>
+                </div>
+
+                <SfChart Width="100%" Height="420px">
+                    <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.DateTime"
+                                       LabelFormat="MMM yyyy"
+                                       EdgeLabelPlacement="EdgeLabelPlacement.Shift">
+                        <ChartAxisMajorGridLines Width="0"></ChartAxisMajorGridLines>
+                    </ChartPrimaryXAxis>
+                    <ChartPrimaryYAxis Title="Total contributions" Minimum="0">
+                        <ChartAxisLineStyle Width="0"></ChartAxisLineStyle>
+                        <ChartAxisMajorTickLines Width="0"></ChartAxisMajorTickLines>
+                    </ChartPrimaryYAxis>
+                    <ChartTooltipSettings Enable="true"></ChartTooltipSettings>
+                    <ChartLegendSettings Visible="false"></ChartLegendSettings>
+                    <ChartSeriesCollection>
+                        <ChartSeries DataSource="@chartData"
+                                     XName="@nameof(ContributionStatsPoint.Date)"
+                                     YName="@nameof(ContributionStatsPoint.Total)"
+                                     Name="Contributions"
+                                     Type="ChartSeriesType.Line"
+                                     Fill="#1D9EFF"
+                                     Width="3">
+                            <ChartMarker Visible="false"></ChartMarker>
+                        </ChartSeries>
+                    </ChartSeriesCollection>
+                </SfChart>
+            </section>
+        }
+    }
+    else
+    {
+        <p><em>Loading...</em></p>
+    }
+</div>
