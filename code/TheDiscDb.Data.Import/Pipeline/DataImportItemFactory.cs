@@ -221,7 +221,14 @@ public class DataImportItemFactory
                     }
                     else
                     {
-                        AnsiConsole.WriteLine("No disc found for disc {0} ({1}), slug: {2}", discInfo.Index, discInfo.Name, discInfo.Slug);
+                        AnsiConsole.WriteLine(
+                            "No disc found for box set '{0}' ({1}), member title '{2}', disc {3} ('{4}'), slug '{5}'",
+                            file.Title,
+                            file.Slug,
+                            discInfo.TitleSlug,
+                            discInfo.Index,
+                            discInfo.Name,
+                            discInfo.Slug);
                     }
                 }
 
@@ -276,7 +283,7 @@ public class DataImportItemFactory
         return hasMovies || hasSeries;
     }
 
-    private async Task<Disc> FindBoxsetDisc(string baseDirectory, BoxSetReleaseFile file, BoxSetDisc disc, CancellationToken cancellationToken = default)
+    private async Task<Disc?> FindBoxsetDisc(string baseDirectory, BoxSetReleaseFile file, BoxSetDisc disc, CancellationToken cancellationToken = default)
     {
         if (baseDirectory.EndsWith("sets", StringComparison.OrdinalIgnoreCase) || baseDirectory.EndsWith("sets" + fileSystem.Path.PathSeparator, StringComparison.OrdinalIgnoreCase))
         {
@@ -317,6 +324,14 @@ public class DataImportItemFactory
                                 continue;
                             }
 
+                            var releaseJson = await this.fileSystem.File.ReadAllText(releaseFilePath, cancellationToken);
+                            var release = JsonSerializer.Deserialize<ReleaseFile>(releaseJson, DataImporter.JsonOptions);
+                            if (!string.Equals(release?.Slug, file.Slug, StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
+
+                            List<Disc> releaseDiscs = [];
                             await foreach (var discJsonPath in this.fileSystem.Directory.EnumerateFiles(releaseDirectory, "disc*.*", cancellationToken))
                             {
                                 if (!this.IsDiscBundleFile(discJsonPath))
@@ -329,18 +344,14 @@ public class DataImportItemFactory
                                 {
                                     continue;
                                 }
-                                // Boxset members reference discs by Slug when present, otherwise by Index
-                                // (the SlugOrIndex convention used elsewhere on the site). Match either.
-                                if (!string.IsNullOrEmpty(discFile.Slug) && discFile.Slug.Equals(disc.Slug, StringComparison.OrdinalIgnoreCase))
-                                {
-                                    return discFile;
-                                }
-                                if (string.IsNullOrEmpty(discFile.Slug) &&
-                                    int.TryParse(disc.Slug, out var refIndex) &&
-                                    discFile.Index == refIndex)
-                                {
-                                    return discFile;
-                                }
+
+                                releaseDiscs.Add(discFile);
+                            }
+
+                            var match = MatchBoxsetDisc(releaseDiscs, disc);
+                            if (match is not null)
+                            {
+                                return match;
                             }
                         }
                     }
@@ -349,6 +360,30 @@ public class DataImportItemFactory
         }
 
         return null;
+    }
+
+    internal static Disc? MatchBoxsetDisc(IReadOnlyCollection<Disc> releaseDiscs, BoxSetDisc boxsetDisc)
+    {
+        var slugMatch = releaseDiscs.FirstOrDefault(
+            candidate => !string.IsNullOrEmpty(candidate.Slug) &&
+                candidate.Slug.Equals(boxsetDisc.Slug, StringComparison.OrdinalIgnoreCase));
+        if (slugMatch is not null)
+        {
+            return slugMatch;
+        }
+
+        if (int.TryParse(boxsetDisc.Slug, out var refIndex))
+        {
+            var indexMatch = releaseDiscs.FirstOrDefault(candidate => candidate.Index == refIndex);
+            if (indexMatch is not null)
+            {
+                return indexMatch;
+            }
+        }
+
+        // A single-disc member release is unambiguous even when its release-local box-set slug
+        // intentionally differs from the canonical disc slug loaded through a .ref file.
+        return releaseDiscs.Count == 1 ? releaseDiscs.Single() : null;
     }
 
     private Series MapSeries(MetadataFile metadata)
