@@ -290,15 +290,18 @@ public class DataImportItemFactory
             baseDirectory = this.fileSystem.Path.GetDirectoryName(baseDirectory);
         }
 
-        string[] mediaTypeDirectories =
-        [
-            this.fileSystem.Path.Combine(baseDirectory, file.Type.ToLowerInvariant()),
-            this.fileSystem.Path.Combine(baseDirectory, "movie"),
-            this.fileSystem.Path.Combine(baseDirectory, "series")
-        ];
+        // Boxset.json's Type is set at the boxset level (typically "Movie"), but a "mixed" boxset
+        // can contain discs whose title actually lives under a different media type folder (e.g. a
+        // TV series disc in a movie+series boxset). Search every known media type folder rather than
+        // trusting file.Type alone, so mixed boxsets resolve all of their member discs.
+        string[] candidateMediaTypeFolders = new[] { file.Type?.ToLowerInvariant(), "movie", "series" }
+            .Where(f => !string.IsNullOrEmpty(f))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
-        foreach (var mediaTypeDirectory in mediaTypeDirectories.Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var mediaType in candidateMediaTypeFolders)
         {
+            string mediaTypeDirectory = this.fileSystem.Path.Combine(baseDirectory, mediaType);
             if (!await this.fileSystem.Directory.Exists(mediaTypeDirectory, cancellationToken))
             {
                 continue;
