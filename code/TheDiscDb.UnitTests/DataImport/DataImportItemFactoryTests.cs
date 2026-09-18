@@ -147,4 +147,42 @@ public class DataImportItemFactoryTests
         await Assert.That(disc.Name).IsEqualTo("Bonus Features");
         await Assert.That(disc.GlobalDiscId).IsNull();
     }
+
+    [Test]
+    public async Task MatchBoxsetDisc_SingleReferencedDiscWithDifferentSlug_ReturnsDisc()
+    {
+        var disc = new Disc
+        {
+            Index = 2,
+            Slug = "blu-ray",
+        };
+        var boxsetDisc = new BoxSetDisc
+        {
+            Index = 1,
+            Slug = "2010-blu-ray",
+        };
+
+        var result = DataImportItemFactory.MatchBoxsetDisc([disc], boxsetDisc);
+
+        await Assert.That(result).IsSameReferenceAs(disc);
+    }
+
+    [Test]
+    public async Task MatchBoxsetDisc_MultipleDiscsWithoutMatch_ReturnsNull()
+    {
+        Disc[] discs =
+        [
+            new() { Index = 2, Slug = "disc-2" },
+            new() { Index = 3, Slug = "disc-3" },
+        ];
+        var boxsetDisc = new BoxSetDisc
+        {
+            Index = 1,
+            Slug = "disc-1",
+        };
+
+        var result = DataImportItemFactory.MatchBoxsetDisc(discs, boxsetDisc);
+
+        await Assert.That(result).IsNull();
+    }
 }
