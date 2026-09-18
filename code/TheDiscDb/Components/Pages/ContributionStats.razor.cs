@@ -1,13 +1,11 @@
 using Microsoft.AspNetCore.Components;
-using Microsoft.EntityFrameworkCore;
-using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Components.Pages;
 
 public partial class ContributionStats : ComponentBase, IDisposable
 {
     [Inject]
-    private IDbContextFactory<SqlServerDataContext> DbFactory { get; set; } = null!;
+    private CacheHelper CacheHelper { get; set; } = null!;
 
     [Inject]
     private ILogger<ContributionStats> Logger { get; set; } = null!;
@@ -23,11 +21,7 @@ public partial class ContributionStats : ComponentBase, IDisposable
     {
         try
         {
-            await using var db = await this.DbFactory.CreateDbContextAsync(this.cts.Token);
-            var dates = await db.Releases
-                .AsNoTracking()
-                .Select(release => release.DateAdded)
-                .ToListAsync(this.cts.Token);
+            var dates = await this.CacheHelper.GetContributionDatesAsync(this.cts.Token);
 
             chartData = BuildCumulativeSeries(dates);
             totalContributions = dates.Count;
