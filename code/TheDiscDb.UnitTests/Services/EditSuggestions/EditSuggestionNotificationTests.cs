@@ -343,50 +343,6 @@ public class EditSuggestionNotificationTests
         await Assert.That(notifications.Resolved.Count).IsEqualTo(0);
     }
 
-    // ---- Messages --------------------------------------------------------
-
-    [Test]
-    public async Task AddMessageAsync_AdminMessage_RoutesToUser()
-    {
-        using var db = CreateDb();
-        var notifications = new RecordingNotificationService();
-        var resolver = UserResolver();
-        var service = new EditSuggestionService(
-            db, CreateFactory(), new EditSuggestionHistoryService(db), notifications, resolver);
-
-        var proposed = JsonSerializer.Serialize(MakeProposed(), JsonOptions);
-        var suggestion = await service.SubmitAsync("user-1", EditSuggestionSource.Web, null,
-            new List<SubmitChangeInput> { new(ReleaseFieldsUpdate.Key, proposed, null) }, CT);
-
-        await service.AddMessageAsync(suggestion.Id, "admin-9", "user-1", "Need more info", isAdmin: true, CT);
-
-        var msg = notifications.Messages.Single();
-        await Assert.That(msg.FromAdmin).IsTrue();
-        await Assert.That(msg.Body).IsEqualTo("Need more info");
-        await Assert.That(msg.Email).IsEqualTo("user@example.com");
-    }
-
-    [Test]
-    public async Task AddMessageAsync_UserMessage_RoutesToAdmin()
-    {
-        using var db = CreateDb();
-        var notifications = new RecordingNotificationService();
-        var resolver = UserResolver();
-        var service = new EditSuggestionService(
-            db, CreateFactory(), new EditSuggestionHistoryService(db), notifications, resolver);
-
-        var proposed = JsonSerializer.Serialize(MakeProposed(), JsonOptions);
-        var suggestion = await service.SubmitAsync("user-1", EditSuggestionSource.Web, null,
-            new List<SubmitChangeInput> { new(ReleaseFieldsUpdate.Key, proposed, null) }, CT);
-
-        await service.AddMessageAsync(suggestion.Id, "user-1", "admin-1", "Here you go", isAdmin: false, CT);
-
-        var msg = notifications.Messages.Single(m => m.Body == "Here you go");
-        await Assert.That(msg.FromAdmin).IsFalse();
-        await Assert.That(msg.Name).IsEqualTo("Test User");
-        await Assert.That(msg.Email).IsEqualTo("user@example.com");
-    }
-
     // ---- DI gate ---------------------------------------------------------
 
     private static Type? RegisteredImpl(string? mailgunApiKey, bool? notifyAdmins = null, bool? notifyUsers = null)

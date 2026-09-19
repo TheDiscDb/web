@@ -19,6 +19,7 @@ public partial class EditSuggestions : ComponentBase
     public string? StatusQuery { get; set; }
 
     private List<EditSuggestion>? suggestions;
+    private Dictionary<string, string> userNamesById = [];
     private readonly EditSuggestionStatus[] statusList = Enum.GetValues<EditSuggestionStatus>();
     private EditSuggestionStatus selectedStatus = EditSuggestionStatus.Pending;
     private EditSuggestionStatus? loadedStatus;
@@ -54,12 +55,23 @@ public partial class EditSuggestions : ComponentBase
             .Where(s => s.Status == selectedStatus)
             .OrderByDescending(s => s.Created)
             .ToListAsync();
+
+        var userIds = suggestions
+            .Select(s => s.UserId)
+            .Distinct()
+            .ToList();
+
+        userNamesById = await db.Users
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id) && u.UserName != null)
+            .ToDictionaryAsync(u => u.Id, u => u.UserName!);
     }
 
     private static string GetStatusBadge(EditSuggestionStatus status) => status switch
     {
         EditSuggestionStatus.Pending => "bg-warning text-dark",
         EditSuggestionStatus.InReview => "bg-info text-dark",
+        EditSuggestionStatus.ChangesRequested => "bg-warning text-dark",
         EditSuggestionStatus.Approved => "bg-success",
         EditSuggestionStatus.PartiallyApproved => "bg-success",
         EditSuggestionStatus.Rejected => "bg-danger",

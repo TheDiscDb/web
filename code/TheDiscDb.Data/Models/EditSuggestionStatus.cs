@@ -5,6 +5,7 @@ public enum EditSuggestionStatus
     Draft,
     Pending,
     InReview,
+    ChangesRequested,
     PartiallyApproved,
     Approved,
     Rejected,

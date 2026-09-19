@@ -13,6 +13,7 @@ public static class EditSuggestionStatusExtensions
     public static bool IsReviewable(this EditSuggestionStatus status)
         => status is EditSuggestionStatus.Pending
             or EditSuggestionStatus.InReview
+            or EditSuggestionStatus.ChangesRequested
             or EditSuggestionStatus.PartiallyApproved
             or EditSuggestionStatus.Conflicted;
 }

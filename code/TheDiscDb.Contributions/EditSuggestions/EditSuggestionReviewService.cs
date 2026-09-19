@@ -2,11 +2,13 @@ namespace TheDiscDb.Services.EditSuggestions;
 
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using TheDiscDb.Data.Changes;
 using TheDiscDb.Data.Changes.DiscFields;
 using TheDiscDb.InputModels;
@@ -17,9 +19,76 @@ public sealed class EditSuggestionReviewService(
     IChangeFactory changeFactory,
     IEditSuggestionHistoryService historyService,
     IEditSuggestionNotificationService? notifications = null,
-    IEditSuggestionRecipientResolver? recipients = null) : IEditSuggestionReviewService
+    IEditSuggestionRecipientResolver? recipients = null,
+    IMessageService? messageService = null) : IEditSuggestionReviewService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    public async Task<EditSuggestion?> RequestChangesAsync(
+        int suggestionId,
+        string adminUserId,
+        string message,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(message) || message.Length > 10_000)
+        {
+            throw new ArgumentException("Message must be between 1 and 10,000 characters.", nameof(message));
+        }
+
+        if (messageService is null)
+        {
+            throw new InvalidOperationException("The message service is required to request changes.");
+        }
+
+        await using var transaction = await BeginReviewTransactionAsync(cancellationToken);
+        var suggestion = await database.EditSuggestions
+            .Include(s => s.Changes.OrderBy(c => c.Ordinal))
+            .FirstOrDefaultAsync(s => s.Id == suggestionId, cancellationToken);
+
+        if (suggestion is null ||
+            suggestion.Status is not (
+                EditSuggestionStatus.Pending or
+                EditSuggestionStatus.InReview or
+                EditSuggestionStatus.ChangesRequested or
+                EditSuggestionStatus.Conflicted) ||
+            suggestion.Changes.Any(change =>
+                change.Status is EditSuggestionChangeStatus.Approved or EditSuggestionChangeStatus.Applied))
+        {
+            return null;
+        }
+
+        var oldStatus = suggestion.Status;
+        suggestion.Status = EditSuggestionStatus.ChangesRequested;
+        database.UserMessages.Add(new UserMessage
+        {
+            EditSuggestionId = suggestionId,
+            FromUserId = adminUserId,
+            ToUserId = suggestion.UserId,
+            Message = message,
+            IsRead = false,
+            CreatedAt = DateTimeOffset.UtcNow,
+            Type = UserMessageType.AdminMessage,
+        });
+
+        if (oldStatus != suggestion.Status)
+        {
+            database.EditSuggestionHistory.Add(new EditSuggestionHistory
+            {
+                SuggestionId = suggestionId,
+                TimeStamp = DateTimeOffset.UtcNow,
+                Description = $"Status changed from **{oldStatus}** to **{suggestion.Status}**",
+                UserId = adminUserId,
+                Type = EditSuggestionHistoryType.StatusChanged,
+            });
+        }
+
+        await database.SaveChangesAsync(cancellationToken);
+        await CommitReviewTransactionAsync(transaction, cancellationToken);
+        await messageService.NotifyAdminEditSuggestionMessageAsync(
+            suggestion, message, cancellationToken);
+
+        return suggestion;
+    }
 
     public async Task<EditSuggestionChange?> ApproveChangeAsync(
         int suggestionId,
@@ -28,6 +97,7 @@ public sealed class EditSuggestionReviewService(
         string? adminNote,
         CancellationToken cancellationToken)
     {
+        await using var transaction = await BeginReviewTransactionAsync(cancellationToken);
         var loaded = await LoadChangeAsync(suggestionId, changeId, cancellationToken);
         if (loaded is null)
         {
@@ -63,6 +133,7 @@ public sealed class EditSuggestionReviewService(
                 suggestionId, changeId, adminUserId, oldStatus, change.Status, adminNote, cancellationToken);
 
             await RefreshBundleStatusAsync(suggestion, adminUserId, cancellationToken);
+            await CommitReviewTransactionAsync(transaction, cancellationToken);
             return change;
         }
 
@@ -80,6 +151,7 @@ public sealed class EditSuggestionReviewService(
             suggestionId, changeId, adminUserId, oldStatus, change.Status, adminNote, cancellationToken);
 
         await RefreshBundleStatusAsync(suggestion, adminUserId, cancellationToken);
+        await CommitReviewTransactionAsync(transaction, cancellationToken);
         return change;
     }
 
@@ -90,6 +162,7 @@ public sealed class EditSuggestionReviewService(
         string? adminNote,
         CancellationToken cancellationToken)
     {
+        await using var transaction = await BeginReviewTransactionAsync(cancellationToken);
         var loaded = await LoadChangeAsync(suggestionId, changeId, cancellationToken);
         if (loaded is null)
         {
@@ -131,6 +204,7 @@ public sealed class EditSuggestionReviewService(
             adminUserId,
             cancellationToken,
             notifyResolution: !isStatusCorrection);
+        await CommitReviewTransactionAsync(transaction, cancellationToken);
         return change;
     }
 
@@ -145,6 +219,7 @@ public sealed class EditSuggestionReviewService(
             return null;
         }
 
+        await using var transaction = await BeginReviewTransactionAsync(cancellationToken);
         var suggestion = await database.EditSuggestions
             .Include(s => s.Changes.OrderBy(c => c.Ordinal))
             .FirstOrDefaultAsync(s => s.Id == suggestionId, cancellationToken);
@@ -192,6 +267,7 @@ public sealed class EditSuggestionReviewService(
             adminUserId,
             cancellationToken,
             notifyResolution: !isStatusCorrection);
+        await CommitReviewTransactionAsync(transaction, cancellationToken);
         return suggestion;
     }
 
@@ -200,6 +276,7 @@ public sealed class EditSuggestionReviewService(
         string adminUserId,
         CancellationToken cancellationToken)
     {
+        await using var transaction = await BeginReviewTransactionAsync(cancellationToken);
         var suggestion = await database.EditSuggestions
             .Include(s => s.Changes.OrderBy(c => c.Ordinal))
             .FirstOrDefaultAsync(s => s.Id == suggestionId, cancellationToken);
@@ -220,9 +297,11 @@ public sealed class EditSuggestionReviewService(
         }
 
         // Reload to get fresh statuses after the loop.
-        return await database.EditSuggestions
+        var result = await database.EditSuggestions
             .Include(s => s.Changes.OrderBy(c => c.Ordinal))
             .FirstOrDefaultAsync(s => s.Id == suggestionId, cancellationToken);
+        await CommitReviewTransactionAsync(transaction, cancellationToken);
+        return result;
     }
 
     public async Task<EditSuggestionChange?> ResolveConflictAsync(
@@ -691,6 +770,26 @@ public sealed class EditSuggestionReviewService(
                 suggestion.ReviewedAt = DateTimeOffset.UtcNow;
             }
 
+            if (notifyResolution &&
+                newStatus is EditSuggestionStatus.Rejected or EditSuggestionStatus.PartiallyApproved)
+            {
+                var summary = EditSuggestionResolutionSummary.BuildRejectedChangesMarkdown(suggestion);
+                if (!string.IsNullOrEmpty(summary))
+                {
+                    database.UserMessages.Add(new UserMessage
+                    {
+                        EditSuggestionId = suggestion.Id,
+                        FromUserId = adminUserId,
+                        ToUserId = suggestion.UserId,
+                        Message = summary,
+                        IsRead = false,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        Type = UserMessageType.AdminMessage,
+                        Purpose = UserMessagePurpose.ResolutionSummary,
+                    });
+                }
+            }
+
             await database.SaveChangesAsync(cancellationToken);
             await historyService.RecordStatusChangedAsync(
                 suggestion.Id, adminUserId, oldStatus, newStatus, cancellationToken);
@@ -717,4 +816,24 @@ public sealed class EditSuggestionReviewService(
         string? OriginalSnapshotJson) : IChangeApplyContext;
 
     private sealed record LoadedChange(EditSuggestion Suggestion, EditSuggestionChange Change);
+
+    private async Task<IDbContextTransaction?> BeginReviewTransactionAsync(
+        CancellationToken cancellationToken)
+    {
+        if (!database.Database.IsRelational() || database.Database.CurrentTransaction is not null)
+        {
+            return null;
+        }
+
+        return await database.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            cancellationToken);
+    }
+
+    private static Task CommitReviewTransactionAsync(
+        IDbContextTransaction? transaction,
+        CancellationToken cancellationToken) =>
+        transaction is null
+            ? Task.CompletedTask
+            : transaction.CommitAsync(cancellationToken);
 }

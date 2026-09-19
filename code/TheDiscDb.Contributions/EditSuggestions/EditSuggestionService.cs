@@ -153,8 +153,13 @@ public sealed class EditSuggestionService(
             return null;
         }
 
-        // Only pending/in-review suggestions can be withdrawn.
-        if (suggestion.Status is not (EditSuggestionStatus.Pending or EditSuggestionStatus.InReview))
+        // Only active suggestions can be withdrawn.
+        if (suggestion.Status is not (
+            EditSuggestionStatus.Pending or
+            EditSuggestionStatus.InReview or
+            EditSuggestionStatus.ChangesRequested) ||
+            suggestion.Changes.Any(change =>
+                change.Status is EditSuggestionChangeStatus.Approved or EditSuggestionChangeStatus.Applied))
         {
             return null;
         }
@@ -168,65 +173,6 @@ public sealed class EditSuggestionService(
             suggestion.Id, userId, oldStatus, EditSuggestionStatus.Withdrawn, cancellationToken);
 
         return suggestion;
-    }
-
-    public async Task<EditSuggestionMessage> AddMessageAsync(
-        int suggestionId,
-        string fromUserId,
-        string toUserId,
-        string body,
-        bool isAdmin,
-        CancellationToken cancellationToken)
-    {
-        var suggestion = await database.EditSuggestions
-            .FirstOrDefaultAsync(s => s.Id == suggestionId, cancellationToken)
-            ?? throw new InvalidOperationException($"EditSuggestion {suggestionId} not found.");
-
-        // Only the suggestion owner or an admin may post messages.
-        if (!isAdmin && suggestion.UserId != fromUserId)
-        {
-            throw new UnauthorizedAccessException(
-                $"User '{fromUserId}' is not the owner of suggestion {suggestionId} and is not an admin.");
-        }
-
-        var message = new EditSuggestionMessage
-        {
-            SuggestionId = suggestionId,
-            FromUserId = fromUserId,
-            ToUserId = toUserId,
-            Message = body,
-            CreatedAt = DateTimeOffset.UtcNow,
-        };
-
-        database.EditSuggestionMessages.Add(message);
-        await database.SaveChangesAsync(cancellationToken);
-
-        var historyType = isAdmin
-            ? EditSuggestionHistoryType.AdminMessage
-            : EditSuggestionHistoryType.UserMessage;
-        await historyService.RecordMessageAsync(suggestion.Id, fromUserId, historyType, cancellationToken);
-
-        if (notifications is not null)
-        {
-            if (isAdmin)
-            {
-                var recipient = recipients is null
-                    ? default
-                    : await recipients.ResolveAsync(toUserId, cancellationToken);
-                await notifications.NotifyMessageFromAdminAsync(
-                    suggestion, body, recipient.Email, cancellationToken);
-            }
-            else
-            {
-                var sender = recipients is null
-                    ? default
-                    : await recipients.ResolveAsync(fromUserId, cancellationToken);
-                await notifications.NotifyMessageFromUserAsync(
-                    suggestion, body, sender.DisplayName, sender.Email, cancellationToken);
-            }
-        }
-
-        return message;
     }
 
     private static string DeriveEntityType(string typeKey)

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using TheDiscDb.Services;
+using TheDiscDb.Services.EditSuggestions;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.UnitTests.Server.Services;
@@ -68,7 +69,9 @@ public class MessageServiceTests
         var userStore = new InMemoryUserStore();
         var userManager = new UserManager<TheDiscDbUser>(userStore, null!, null!, null!, null!, null!, null!, null!, null!);
         var logger = NullLogger<MessageService>.Instance;
-        return new MessageService(factory, notifications, userManager, logger);
+        var editNotifications = new NullEditSuggestionNotificationService(
+            NullLogger<NullEditSuggestionNotificationService>.Instance);
+        return new MessageService(factory, notifications, editNotifications, userManager, logger);
     }
 
     private static MessageService CreateService(string dbName)

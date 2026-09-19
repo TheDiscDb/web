@@ -144,6 +144,7 @@ public sealed class EditSuggestionNotificationService : IEditSuggestionNotificat
                 <h2 style="color: {BrandColor}; margin-top: 0;">{E(heading)}</h2>
                 <p>{E(intro)}</p>
                 {ChangeOutcomeTable(suggestion)}
+                {RejectedChangesSummary(suggestion)}
                 <p><a href="{UserUrl(suggestion)}" style="display: inline-block; padding: 10px 20px; background-color: {BrandColor}; color: #ffffff; text-decoration: none; border-radius: 4px;">View Your Suggestion</a></p>
                 <p style="color: #666; font-size: 14px;">Thank you for helping improve TheDiscDb!</p>
             """);
@@ -278,6 +279,12 @@ public sealed class EditSuggestionNotificationService : IEditSuggestionNotificat
                 {string.Concat(rows)}
             </table>
             """;
+    }
+
+    private static string RejectedChangesSummary(EditSuggestion suggestion)
+    {
+        var markdown = EditSuggestionResolutionSummary.BuildRejectedChangesMarkdown(suggestion);
+        return string.IsNullOrEmpty(markdown) ? string.Empty : RenderMarkdown(markdown);
     }
 
     private static string DescribeChangeStatus(EditSuggestionChangeStatus status) => status switch

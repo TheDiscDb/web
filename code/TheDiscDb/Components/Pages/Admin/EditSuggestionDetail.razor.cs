@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using TheDiscDb.Components.Controls;
+using TheDiscDb.Services;
 using TheDiscDb.Services.EditSuggestions;
 using TheDiscDb.Web.Data;
 
@@ -31,13 +33,20 @@ public partial class EditSuggestionDetail : ComponentBase
     [Inject]
     private ILogger<EditSuggestionDetail> Logger { get; set; } = null!;
 
+    [Inject]
+    private IMessageService MessageService { get; set; } = null!;
+
     private EditSuggestion? suggestion;
+    private string? submitterUserName;
     private string? actionMessage;
     private bool actionSuccess;
     private bool isProcessing;
     private string conflictResolution = string.Empty;
     private string suggestionRejectionReason = string.Empty;
+    private string requestChangesMessage = string.Empty;
+    private string newMessage = string.Empty;
     private Dictionary<int, string> rejectionReasons = [];
+    private List<EditSuggestionTimelineEntry> timelineEntries = [];
 
     // Disc ID conflict resolution context + the admin's chosen destination release-disc per change.
     private Dictionary<int, DiscIdConflictContext> discIdConflicts = [];
@@ -60,16 +69,26 @@ public partial class EditSuggestionDetail : ComponentBase
     private async Task LoadSuggestion()
     {
         await using var db = await DbFactory.CreateDbContextAsync();
+        submitterUserName = null;
         suggestion = await db.EditSuggestions
             .Include(s => s.Changes.OrderBy(c => c.Ordinal))
             .FirstOrDefaultAsync(s => s.Id == SuggestionId);
 
         if (suggestion != null)
         {
+            submitterUserName = await db.Users
+                .Where(u => u.Id == suggestion.UserId)
+                .Select(u => u.UserName)
+                .FirstOrDefaultAsync();
+
             foreach (var change in suggestion.Changes)
             {
                 rejectionReasons.TryAdd(change.Id, string.Empty);
             }
+
+            var adminUserId = await GetAdminUserId();
+            await MessageService.MarkEditSuggestionMessagesAsReadAsync(SuggestionId, adminUserId);
+            await LoadTimelineAsync(db, adminUserId);
 
             // Load Disc ID conflict context (submitted id, target id, candidate release-discs) for
             // any conflicted disc.fields.update change so the admin can attribute the id correctly.
@@ -91,10 +110,134 @@ public partial class EditSuggestionDetail : ComponentBase
                             selectedDestination[change.Id] = preferred.ReleaseDiscId;
                         }
                     }
+
                 }
             }
         }
     }
+
+    private async Task LoadTimelineAsync(SqlServerDataContext db, string currentUserId)
+    {
+        var history = await db.EditSuggestionHistory
+            .AsNoTracking()
+            .Where(item =>
+                item.SuggestionId == SuggestionId &&
+                item.Type != EditSuggestionHistoryType.AdminMessage &&
+                item.Type != EditSuggestionHistoryType.UserMessage)
+            .ToListAsync();
+
+        var messages = await db.UserMessages
+            .AsNoTracking()
+            .Where(message => message.EditSuggestionId == SuggestionId)
+            .ToListAsync();
+
+        var userIds = history.Select(item => item.UserId)
+            .Concat(messages.Select(message => message.FromUserId))
+            .Where(userId => !string.IsNullOrEmpty(userId))
+            .Distinct()
+            .ToList();
+        var userNames = await db.Users
+            .AsNoTracking()
+            .Where(user => userIds.Contains(user.Id) && user.UserName != null)
+            .ToDictionaryAsync(user => user.Id, user => user.UserName!);
+
+        timelineEntries =
+        [
+            ..history.Select(item => new EditSuggestionTimelineEntry(
+                item.Type.ToString(),
+                HistoryBadge(item.Type),
+                item.TimeStamp,
+                DisplayUser(item.UserId, currentUserId, userNames),
+                item.Description)),
+            ..messages.Select(message => new EditSuggestionTimelineEntry(
+                message.Type == UserMessageType.AdminMessage ? "Admin message" : "User message",
+                message.Type == UserMessageType.AdminMessage ? "bg-primary" : "bg-secondary",
+                message.CreatedAt,
+                DisplayUser(message.FromUserId, currentUserId, userNames),
+                message.Message)),
+        ];
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(newMessage))
+        {
+            return;
+        }
+
+        await RunActionAsync(
+            async userId =>
+            {
+                await MessageService.SendAdminEditSuggestionMessageAsync(
+                    SuggestionId, userId, newMessage);
+                newMessage = string.Empty;
+                return "Message sent.";
+            },
+            "Failed to send message for suggestion {SuggestionId}");
+    }
+
+    private async Task RequestChanges()
+    {
+        if (string.IsNullOrWhiteSpace(requestChangesMessage))
+        {
+            return;
+        }
+
+        await RunActionAsync(
+            async userId =>
+            {
+                var result = await ReviewService.RequestChangesAsync(
+                    SuggestionId, userId, requestChangesMessage);
+                if (result is null)
+                {
+                    throw new InvalidOperationException("Suggestion is no longer reviewable.");
+                }
+
+                requestChangesMessage = string.Empty;
+                return "Changes requested.";
+            },
+            "Failed to request changes for suggestion {SuggestionId}");
+    }
+
+    private async Task RunActionAsync(
+        Func<string, Task<string>> action,
+        string errorLogMessage)
+    {
+        isProcessing = true;
+        actionMessage = null;
+        try
+        {
+            actionMessage = await action(await GetAdminUserId());
+            actionSuccess = true;
+            await LoadSuggestion();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, errorLogMessage, SuggestionId);
+            actionMessage = ex is ArgumentException ? ex.Message : "The action could not be completed.";
+            actionSuccess = false;
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private static string DisplayUser(
+        string userId,
+        string currentUserId,
+        IReadOnlyDictionary<string, string> userNames) =>
+        userId == currentUserId ? "You" : userNames.GetValueOrDefault(userId, userId);
+
+    private static string HistoryBadge(EditSuggestionHistoryType type) => type switch
+    {
+        EditSuggestionHistoryType.Created => "bg-success",
+        EditSuggestionHistoryType.StatusChanged => "bg-info text-dark",
+        EditSuggestionHistoryType.ChangeStatusChanged => "bg-warning text-dark",
+        EditSuggestionHistoryType.FileSynced => "bg-success",
+        EditSuggestionHistoryType.Withdrawn => "bg-secondary",
+        _ => "bg-light text-dark",
+    };
 
     private async Task ApproveChange(int changeId)
     {
@@ -450,6 +593,16 @@ public partial class EditSuggestionDetail : ComponentBase
 
     private bool CanReview => suggestion is not null && suggestion.Status.IsReviewable();
 
+    private bool CanRequestChanges =>
+        suggestion is not null &&
+        suggestion.Status is (
+            EditSuggestionStatus.Pending
+            or EditSuggestionStatus.InReview
+            or EditSuggestionStatus.ChangesRequested
+            or EditSuggestionStatus.Conflicted) &&
+        !suggestion.Changes.Any(change =>
+            change.Status is EditSuggestionChangeStatus.Approved or EditSuggestionChangeStatus.Applied);
+
     private static string FormatJson(string json)
     {
         try
@@ -467,6 +620,7 @@ public partial class EditSuggestionDetail : ComponentBase
     {
         EditSuggestionStatus.Pending => "bg-warning text-dark",
         EditSuggestionStatus.InReview => "bg-info text-dark",
+        EditSuggestionStatus.ChangesRequested => "bg-warning text-dark",
         EditSuggestionStatus.Approved => "bg-success",
         EditSuggestionStatus.PartiallyApproved => "bg-success",
         EditSuggestionStatus.Rejected => "bg-danger",

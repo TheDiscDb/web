@@ -56,6 +56,7 @@ public partial class MyChanges : AuthenticatedComponentBase
     {
         EditSuggestionStatus.Pending => "bg-warning text-dark",
         EditSuggestionStatus.InReview => "bg-info text-dark",
+        EditSuggestionStatus.ChangesRequested => "bg-warning text-dark",
         EditSuggestionStatus.Approved => "bg-success",
         EditSuggestionStatus.PartiallyApproved => "bg-success",
         EditSuggestionStatus.Rejected => "bg-danger",

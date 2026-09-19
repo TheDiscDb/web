@@ -1,13 +1,14 @@
 query GetMessageThreads {
   messageThreads {
-    contributionId
-    encodedContributionId
-    contributionTitle
-    mediaTitle
+    kind
+    entityId
+    encodedEntityId
+    title
+    subtitle
+    route
     lastMessagePreview
     lastMessageAt
     unreadCount
     totalCount
-    isBoxset
   }
 }

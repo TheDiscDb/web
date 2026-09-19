@@ -11,6 +11,12 @@ using TheDiscDb.Web.Data;
 /// </summary>
 public interface IEditSuggestionReviewService
 {
+    Task<EditSuggestion?> RequestChangesAsync(
+        int suggestionId,
+        string adminUserId,
+        string message,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Validates and applies the change, transitioning it to <see cref="EditSuggestionChangeStatus.Applied"/>.
     /// If validation detects drift, the change is marked <see cref="EditSuggestionChangeStatus.Conflicted"/> instead.

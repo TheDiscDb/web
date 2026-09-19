@@ -37,13 +37,6 @@ public interface IEditSuggestionService
     /// </summary>
     Task<EditSuggestion?> WithdrawAsync(int suggestionId, string userId, bool isAdmin, CancellationToken cancellationToken = default);
 
-    Task<EditSuggestionMessage> AddMessageAsync(
-        int suggestionId,
-        string fromUserId,
-        string toUserId,
-        string body,
-        bool isAdmin,
-        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

@@ -1,117 +1,181 @@
 namespace TheDiscDb.UnitTests.Services.EditSuggestions;
 
-using System.Text.Json;
-using System.Threading;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using TheDiscDb.Data.Changes;
-using TheDiscDb.Data.Changes.ReleaseFields;
+using Microsoft.Extensions.Logging.Abstractions;
+using TheDiscDb.Services;
 using TheDiscDb.Services.EditSuggestions;
 using TheDiscDb.Web.Data;
 
 public class EditSuggestionMessagingTests
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-    private static readonly CancellationToken CT = CancellationToken.None;
-
-    private static SqlServerDataContext CreateDb()
+    private static SqlServerDataContext CreateDb(string dbName)
     {
         var options = new DbContextOptionsBuilder<SqlServerDataContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .UseInMemoryDatabase(dbName)
             .Options;
         return new SqlServerDataContext(options);
     }
 
-    private static IChangeFactory CreateFactory()
+    private static async Task<int> SeedSuggestionAsync(string dbName, string ownerId = "user-1")
     {
-        var builders = new IChangeBuilder[]
+        await using var db = CreateDb(dbName);
+        var suggestion = new EditSuggestion
         {
-            new ChangeBuilder<ReleaseFieldsDetails>(
-                ReleaseFieldsUpdate.Key,
-                (d, opts) => new ReleaseFieldsUpdate(d, opts)),
+            UserId = ownerId,
+            Created = DateTimeOffset.UtcNow,
+            Status = EditSuggestionStatus.Pending,
+            TargetEntityType = "Release",
+            TargetEntityKey = "movie/release",
         };
-        return new ChangeFactory(builders);
+        db.EditSuggestions.Add(suggestion);
+        await db.SaveChangesAsync();
+        return suggestion.Id;
     }
 
-    private static ReleaseFieldsDetails MakeReleaseDetails() => new(
-        MediaItemSlug: "the-movie",
-        BoxsetSlug: null,
-        ReleaseSlug: "the-release",
-        Title: "Updated Title",
-        RegionCode: "US",
-        Locale: "en-US",
-        Year: 2020,
-        Upc: null,
-        Isbn: null,
-        Asin: null,
-        ReleaseDate: new DateTimeOffset(2020, 5, 15, 0, 0, 0, TimeSpan.Zero));
-
-    private static async Task<(EditSuggestionService Service, SqlServerDataContext Db, int SuggestionId)> SeedSuggestionAsync(string ownerId = "user-1")
+    private static MessageService CreateService(
+        string dbName,
+        out RecordingEditSuggestionNotifications notifications)
     {
-        var db = CreateDb();
-        var service = new EditSuggestionService(db, CreateFactory(), new EditSuggestionHistoryService(db));
-        var proposed = JsonSerializer.Serialize(MakeReleaseDetails(), JsonOptions);
-        var suggestion = await service.SubmitAsync(ownerId, EditSuggestionSource.Web, null,
-            new List<SubmitChangeInput> { new(ReleaseFieldsUpdate.Key, proposed, null) }, CT);
-        return (service, db, suggestion.Id);
-    }
+        notifications = new RecordingEditSuggestionNotifications();
+        var users = new TestUserStore(
+        [
+            new TheDiscDbUser { Id = "user-1", UserName = "Test User", Email = "user@example.com" },
+            new TheDiscDbUser { Id = "admin-1", UserName = "Admin", Email = "admin@example.com" },
+            new TheDiscDbUser { Id = "admin-2", UserName = "Other Admin", Email = "admin2@example.com" },
+        ]);
+        var userManager = new UserManager<TheDiscDbUser>(
+            users, null!, null!, null!, null!, null!, null!, null!, null!);
 
-    [Test]
-    public async Task AddMessageAsync_OwnerCanPost_PersistsMessageAndRecordsUserMessageHistory()
-    {
-        var (service, db, suggestionId) = await SeedSuggestionAsync();
-        using var _ = db;
-
-        var message = await service.AddMessageAsync(suggestionId, "user-1", "admin-1", "Please clarify", isAdmin: false, CT);
-
-        await Assert.That(message.SuggestionId).IsEqualTo(suggestionId);
-        await Assert.That(message.FromUserId).IsEqualTo("user-1");
-        await Assert.That(message.ToUserId).IsEqualTo("admin-1");
-        await Assert.That(message.Message).IsEqualTo("Please clarify");
-
-        var persisted = await db.EditSuggestionMessages.SingleAsync(m => m.SuggestionId == suggestionId);
-        await Assert.That(persisted.Message).IsEqualTo("Please clarify");
-
-        var history = await db.EditSuggestionHistory
-            .Where(h => h.SuggestionId == suggestionId && h.Type == EditSuggestionHistoryType.UserMessage)
-            .SingleAsync();
-        await Assert.That(history.UserId).IsEqualTo("user-1");
+        return new MessageService(
+            new TestDbContextFactory(dbName),
+            new NullContributionNotifications(),
+            notifications,
+            userManager,
+            NullLogger<MessageService>.Instance);
     }
 
     [Test]
-    public async Task AddMessageAsync_AdminCanPostToAnySuggestion_RecordsAdminMessageHistory()
+    public async Task SendAdminEditSuggestionMessageAsync_PersistsUnifiedMessageAndNotifiesOwner()
     {
-        var (service, db, suggestionId) = await SeedSuggestionAsync();
-        using var _ = db;
+        var dbName = Guid.NewGuid().ToString();
+        var suggestionId = await SeedSuggestionAsync(dbName);
+        var service = CreateService(dbName, out var notifications);
 
-        var message = await service.AddMessageAsync(suggestionId, "admin-9", "user-1", "Looks good", isAdmin: true, CT);
+        var message = await service.SendAdminEditSuggestionMessageAsync(
+            suggestionId, "admin-1", "Need more information");
 
-        await Assert.That(message.FromUserId).IsEqualTo("admin-9");
+        await Assert.That(message.EditSuggestionId).IsEqualTo(suggestionId);
+        await Assert.That(message.ToUserId).IsEqualTo("user-1");
+        await Assert.That(message.Type).IsEqualTo(UserMessageType.AdminMessage);
+        await Assert.That(notifications.AdminMessages).Count().IsEqualTo(1);
 
-        var history = await db.EditSuggestionHistory
-            .Where(h => h.SuggestionId == suggestionId && h.Type == EditSuggestionHistoryType.AdminMessage)
-            .SingleAsync();
-        await Assert.That(history.UserId).IsEqualTo("admin-9");
+        await using var db = CreateDb(dbName);
+        await Assert.That(await db.UserMessages.CountAsync()).IsEqualTo(1);
     }
 
     [Test]
-    public async Task AddMessageAsync_NonOwnerNonAdmin_Throws()
+    public async Task SendUserEditSuggestionMessageAsync_RequiresOwnershipAndRoutesToLatestAdmin()
     {
-        var (service, db, suggestionId) = await SeedSuggestionAsync();
-        using var _ = db;
+        var dbName = Guid.NewGuid().ToString();
+        var suggestionId = await SeedSuggestionAsync(dbName);
+        var service = CreateService(dbName, out _);
+        await service.SendAdminEditSuggestionMessageAsync(
+            suggestionId, "admin-1", "First", sendNotification: false);
+        await service.SendAdminEditSuggestionMessageAsync(
+            suggestionId, "admin-2", "Second", sendNotification: false);
 
+        var reply = await service.SendUserEditSuggestionMessageAsync(
+            suggestionId, "user-1", "Here is the clarification");
+
+        await Assert.That(reply.ToUserId).IsEqualTo("admin-2");
+        await Assert.That(reply.Type).IsEqualTo(UserMessageType.UserMessage);
         await Assert.That(async () =>
-            await service.AddMessageAsync(suggestionId, "intruder", "user-1", "hi", isAdmin: false, CT))
+            await service.SendUserEditSuggestionMessageAsync(suggestionId, "intruder", "No"))
             .Throws<UnauthorizedAccessException>();
     }
 
     [Test]
-    public async Task AddMessageAsync_UnknownSuggestion_Throws()
+    public async Task SendUserEditSuggestionMessageAsync_RequiresExistingAdminParticipant()
     {
-        using var db = CreateDb();
-        var service = new EditSuggestionService(db, CreateFactory(), new EditSuggestionHistoryService(db));
+        var dbName = Guid.NewGuid().ToString();
+        var suggestionId = await SeedSuggestionAsync(dbName);
+        var service = CreateService(dbName, out _);
 
         await Assert.That(async () =>
-            await service.AddMessageAsync(9999, "user-1", "admin-1", "hi", isAdmin: false, CT))
+            await service.SendUserEditSuggestionMessageAsync(
+                suggestionId, "user-1", "Can someone review this?"))
             .Throws<InvalidOperationException>();
+    }
+
+    [Test]
+    public async Task EditSuggestionMessages_ValidateLengthAndCanBeMarkedRead()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        var suggestionId = await SeedSuggestionAsync(dbName);
+        var service = CreateService(dbName, out _);
+
+        await Assert.That(async () =>
+            await service.SendAdminEditSuggestionMessageAsync(suggestionId, "admin-1", " "))
+            .Throws<ArgumentException>();
+
+        await service.SendAdminEditSuggestionMessageAsync(
+            suggestionId, "admin-1", "Please review", sendNotification: false);
+        await service.MarkEditSuggestionMessagesAsReadAsync(suggestionId, "user-1");
+
+        await using var db = CreateDb(dbName);
+        var message = await db.UserMessages.SingleAsync();
+        await Assert.That(message.IsRead).IsTrue();
+    }
+
+    private sealed class TestDbContextFactory(string dbName) : IDbContextFactory<SqlServerDataContext>
+    {
+        public SqlServerDataContext CreateDbContext() => CreateDb(dbName);
+    }
+
+    private sealed class TestUserStore(IEnumerable<TheDiscDbUser> users) : IUserStore<TheDiscDbUser>
+    {
+        private readonly Dictionary<string, TheDiscDbUser> users = users.ToDictionary(user => user.Id);
+
+        public Task<TheDiscDbUser?> FindByIdAsync(string userId, CancellationToken cancellationToken) =>
+            Task.FromResult(users.GetValueOrDefault(userId));
+        public Task<TheDiscDbUser?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken) =>
+            Task.FromResult(users.Values.FirstOrDefault(user => user.NormalizedUserName == normalizedUserName));
+        public Task<string> GetUserIdAsync(TheDiscDbUser user, CancellationToken cancellationToken) => Task.FromResult(user.Id);
+        public Task<string?> GetUserNameAsync(TheDiscDbUser user, CancellationToken cancellationToken) => Task.FromResult(user.UserName);
+        public Task<string?> GetNormalizedUserNameAsync(TheDiscDbUser user, CancellationToken cancellationToken) => Task.FromResult(user.NormalizedUserName);
+        public Task SetUserNameAsync(TheDiscDbUser user, string? userName, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task SetNormalizedUserNameAsync(TheDiscDbUser user, string? normalizedName, CancellationToken cancellationToken) => Task.CompletedTask;
+        public Task<IdentityResult> CreateAsync(TheDiscDbUser user, CancellationToken cancellationToken) => Task.FromResult(IdentityResult.Success);
+        public Task<IdentityResult> UpdateAsync(TheDiscDbUser user, CancellationToken cancellationToken) => Task.FromResult(IdentityResult.Success);
+        public Task<IdentityResult> DeleteAsync(TheDiscDbUser user, CancellationToken cancellationToken) => Task.FromResult(IdentityResult.Success);
+        public void Dispose() { }
+    }
+
+    private sealed class RecordingEditSuggestionNotifications : IEditSuggestionNotificationService
+    {
+        public List<string> AdminMessages { get; } = [];
+        public List<string> UserMessages { get; } = [];
+
+        public Task NotifySuggestionSubmittedAsync(EditSuggestion suggestion, string? userEmail, string? userName, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task NotifySuggestionResolvedAsync(EditSuggestion suggestion, string? userEmail, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task NotifyMessageFromUserAsync(EditSuggestion suggestion, string message, string? userName, string? userEmail, CancellationToken cancellationToken = default)
+        {
+            UserMessages.Add(message);
+            return Task.CompletedTask;
+        }
+        public Task NotifyMessageFromAdminAsync(EditSuggestion suggestion, string message, string? userEmail, CancellationToken cancellationToken = default)
+        {
+            AdminMessages.Add(message);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class NullContributionNotifications : IContributionNotificationService
+    {
+        public Task NotifyContributionCreatedAsync(UserContribution contribution, string? userEmail, string? userName, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task NotifyContributionImportedAsync(UserContribution contribution, string? userEmail, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task NotifyMessageFromUserAsync(UserContribution contribution, string message, string? userName, string? userEmail, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task NotifyMessageFromAdminAsync(UserContribution contribution, string message, string? userEmail, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

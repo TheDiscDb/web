@@ -1,0 +1,26 @@
+.suggestion-timeline {
+    display: grid;
+    gap: 1rem;
+}
+
+.suggestion-timeline__entry {
+    border-left: 3px solid var(--bs-border-color);
+    padding-left: 1rem;
+}
+
+.suggestion-timeline__header {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-bottom: .5rem;
+}
+
+.suggestion-timeline__actor {
+    font-weight: 600;
+}
+
+.suggestion-timeline__header time {
+    color: var(--bs-secondary-color);
+    font-size: .875rem;
+}

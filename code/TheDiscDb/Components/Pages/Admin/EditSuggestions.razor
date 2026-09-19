@@ -40,6 +40,17 @@ else
         <TemplateColumn Title="Changes">
             @context.Changes.Count
         </TemplateColumn>
+        <TemplateColumn Title="Submitted By">
+            @if (userNamesById.TryGetValue(context.UserId, out var userName))
+            {
+                <div>@userName</div>
+                <code class="text-muted">@context.UserId</code>
+            }
+            else
+            {
+                <code>@context.UserId</code>
+            }
+        </TemplateColumn>
         <PropertyColumn Property="@(s => s.Source)" Title="Source" />
         <PropertyColumn Property="@(s => s.Created)" Title="Submitted" Format="g" Sortable="true" />
         <TemplateColumn Title="Status">

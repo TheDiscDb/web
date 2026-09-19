@@ -9,7 +9,7 @@
 <div class="contribute-layout">
     <div class="page-header">
         <h1>Messages</h1>
-        <div class="page-header__sub">View and reply to messages about your contributions.</div>
+        <div class="page-header__sub">View and reply to messages about your contributions and suggested edits.</div>
     </div>
 
     @if (isLoading)
@@ -29,14 +29,14 @@
         <div class="inbox-list">
             @foreach (var thread in threads)
             {
-                <a href="@(thread.IsBoxset ? $"/contribution/boxset/{thread.EncodedContributionId}/messages" : $"/contribution/{thread.EncodedContributionId}/messages")" class="inbox-thread @(thread.UnreadCount > 0 ? "unread" : "")">
+                <a href="@thread.Route" class="inbox-thread @(thread.UnreadCount > 0 ? "unread" : "")">
                     <div class="inbox-thread-left">
                         <div class="inbox-thread-title">
-                            @if (!string.IsNullOrEmpty(thread.MediaTitle))
+                            @if (!string.IsNullOrEmpty(thread.Subtitle))
                             {
-                                <span>@thread.MediaTitle — </span>
+                                <span>@thread.Subtitle — </span>
                             }
-                            @thread.ContributionTitle
+                            @thread.Title
                             @if (thread.UnreadCount > 0)
                             {
                                 <span class="inbox-unread-badge">@thread.UnreadCount</span>
@@ -59,7 +59,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="mb-3 opacity-25" viewBox="0 0 16 16">
                     <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
                 </svg>
-                <p class="mb-0">No messages yet. Messages from admins about your contributions will appear here.</p>
+                <p class="mb-0">No messages yet. Messages about your contributions and suggested edits will appear here.</p>
             </div>
         </section>
     }

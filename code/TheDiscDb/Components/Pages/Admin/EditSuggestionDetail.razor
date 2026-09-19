@@ -26,7 +26,7 @@ else
             <dt class="col-sm-3">Status</dt>
             <dd class="col-sm-9">
                 <span class="badge @GetStatusBadge(suggestion.Status)">@suggestion.Status</span>
-                <span class="text-muted ms-2">Calculated from the individual change statuses.</span>
+                <span class="text-muted ms-2">Tracks the review state and individual change outcomes.</span>
             </dd>
 
             <dt class="col-sm-3">Target</dt>
@@ -36,7 +36,20 @@ else
             <dd class="col-sm-9">@(suggestion.Summary ?? "(none)")</dd>
 
             <dt class="col-sm-3">Submitted</dt>
-            <dd class="col-sm-9">@suggestion.Created.ToString("g") by <code>@suggestion.UserId</code></dd>
+            <dd class="col-sm-9">@suggestion.Created.ToString("g")</dd>
+
+            <dt class="col-sm-3">Submitted by</dt>
+            <dd class="col-sm-9">
+                @if (!string.IsNullOrEmpty(submitterUserName))
+                {
+                    <span>@submitterUserName</span>
+                    <span class="text-muted ms-2">User ID: <code>@suggestion.UserId</code></span>
+                }
+                else
+                {
+                    <code>@suggestion.UserId</code>
+                }
+            </dd>
 
             <dt class="col-sm-3">Source</dt>
             <dd class="col-sm-9">@suggestion.Source</dd>
@@ -62,6 +75,28 @@ else
         <div class="mb-3">
             <button class="btn btn-success" @onclick="ApproveAll" disabled="@isProcessing">Approve All Pending</button>
         </div>
+    }
+
+    @if (CanRequestChanges)
+    {
+        <section class="card mb-3">
+            <div class="card-body">
+                <h2 class="h5 card-title">Request changes</h2>
+                <p class="card-text text-muted">
+                    This keeps the original proposed changes intact and moves the suggestion to Changes Requested.
+                </p>
+                <textarea class="form-control mb-2"
+                          rows="4"
+                          maxlength="10000"
+                          placeholder="Explain what needs clarification or correction (required)"
+                          @bind="requestChangesMessage"></textarea>
+                <button class="btn btn-warning"
+                        disabled="@(isProcessing || string.IsNullOrWhiteSpace(requestChangesMessage))"
+                        @onclick="RequestChanges">
+                    Request Changes
+                </button>
+            </div>
+        </section>
     }
 
     @if (CanRejectSuggestion)
@@ -204,6 +239,7 @@ else
                         </button>
                     </div>
                 }
+
             }
             @if (CanCorrectToRejected(change.Status))
             {
@@ -226,4 +262,27 @@ else
             }
         </div>
     }
+
+    <section class="card mb-3">
+        <div class="card-body">
+            <h2 class="h5 card-title">Conversation and history</h2>
+            <EditSuggestionTimeline Entries="@timelineEntries" />
+        </div>
+    </section>
+
+    <section class="card mb-3">
+        <div class="card-body">
+            <h2 class="h5 card-title">Send message</h2>
+            <textarea class="form-control mb-2"
+                      rows="4"
+                      maxlength="10000"
+                      placeholder="Type a message (markdown supported)"
+                      @bind="newMessage"></textarea>
+            <button class="btn btn-primary"
+                    disabled="@(isProcessing || string.IsNullOrWhiteSpace(newMessage))"
+                    @onclick="SendMessage">
+                Send Message
+            </button>
+        </div>
+    </section>
 }

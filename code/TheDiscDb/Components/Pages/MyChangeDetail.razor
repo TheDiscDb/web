@@ -44,7 +44,7 @@ else
         </dl>
     </section>
 
-    @if (suggestion.Status == EditSuggestionStatus.Pending)
+    @if (CanWithdraw)
     {
         <div class="mb-3">
             <button class="btn btn-outline-danger" @onclick="WithdrawSuggestion" disabled="@isProcessing">
@@ -79,6 +79,36 @@ else
             </div>
         </div>
     }
+
+    <section class="card mt-4">
+        <div class="card-body">
+            <h2 class="h5 card-title">Conversation and history</h2>
+            <EditSuggestionTimeline Entries="@timelineEntries" />
+        </div>
+    </section>
+
+    <section class="card mt-3">
+        <div class="card-body">
+            <h2 class="h5 card-title">Reply</h2>
+            @if (canReply)
+            {
+                <textarea class="form-control mb-2"
+                          rows="4"
+                          maxlength="10000"
+                          placeholder="Type a message (markdown supported)"
+                          @bind="newMessage"></textarea>
+                <button class="btn btn-primary"
+                        disabled="@(isProcessing || string.IsNullOrWhiteSpace(newMessage))"
+                        @onclick="SendMessage">
+                    Send Message
+                </button>
+            }
+            else
+            {
+                <p class="text-muted mb-0">You can reply after an administrator starts the conversation.</p>
+            }
+        </div>
+    </section>
 
     <div class="mt-3">
         <a href="/changes/my" class="btn btn-outline-secondary">← Back to My Changes</a>

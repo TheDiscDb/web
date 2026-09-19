@@ -10,19 +10,23 @@ namespace TheDiscDb.GraphQL.Contribute;
 
 public class MessageThread
 {
-    public int ContributionId { get; set; }
-    public string EncodedContributionId { get; set; } = string.Empty;
-    public string ContributionTitle { get; set; } = string.Empty;
-    public string? MediaTitle { get; set; }
+    public MessageThreadKind Kind { get; set; }
+    public int EntityId { get; set; }
+    public string EncodedEntityId { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string? Subtitle { get; set; }
+    public string Route { get; set; } = string.Empty;
     public string LastMessagePreview { get; set; } = string.Empty;
     public DateTimeOffset LastMessageAt { get; set; }
     public int UnreadCount { get; set; }
     public int TotalCount { get; set; }
-    /// <summary>
-    /// True when this thread belongs to a UserContributionBoxset (and ContributionId actually
-    /// holds the boxset id). False for regular contribution threads.
-    /// </summary>
-    public bool IsBoxset { get; set; }
+}
+
+public enum MessageThreadKind
+{
+    Contribution,
+    Boxset,
+    EditSuggestion,
 }
 
 public class ContributionQuery(IdEncoder idEncoder)
@@ -150,6 +154,7 @@ public class ContributionQuery(IdEncoder idEncoder)
         var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
             return [];
+        var isAdmin = user.IsInRole(DefaultRoles.Administrator);
 
         // Aggregate contribution-scoped threads in SQL.
         var contributionThreads = await context.UserMessages
@@ -197,7 +202,29 @@ public class ContributionQuery(IdEncoder idEncoder)
             })
             .ToListAsync();
 
-        if (contributionThreads.Count == 0 && boxsetThreads.Count == 0)
+        var suggestionThreads = await context.UserMessages
+            .Where(m => (m.ToUserId == userId || m.FromUserId == userId) && m.EditSuggestionId != null)
+            .Select(m => new
+            {
+                EditSuggestionId = m.EditSuggestionId!.Value,
+                m.ToUserId,
+                m.FromUserId,
+                m.IsRead,
+                m.CreatedAt,
+                m.Message
+            })
+            .GroupBy(m => m.EditSuggestionId)
+            .Select(g => new
+            {
+                EditSuggestionId = g.Key,
+                LastMessageAt = g.Max(m => m.CreatedAt),
+                UnreadCount = g.Count(m => m.ToUserId == userId && !m.IsRead),
+                TotalCount = g.Count(),
+                LastMessageText = g.OrderByDescending(m => m.CreatedAt).Select(m => m.Message).First()
+            })
+            .ToListAsync();
+
+        if (contributionThreads.Count == 0 && boxsetThreads.Count == 0 && suggestionThreads.Count == 0)
             return [];
 
         // Resolve display titles for both types.
@@ -213,24 +240,38 @@ public class ContributionQuery(IdEncoder idEncoder)
             .Select(b => new { b.Id, b.Title })
             .ToDictionaryAsync(b => b.Id, b => b.Title);
 
+        var suggestionIds = suggestionThreads.Select(t => t.EditSuggestionId).ToList();
+        var suggestionQuery = context.EditSuggestions
+            .Where(s => suggestionIds.Contains(s.Id));
+        if (!isAdmin)
+        {
+            suggestionQuery = suggestionQuery.Where(s => s.UserId == userId);
+        }
+
+        var suggestions = await suggestionQuery
+            .Select(s => new { s.Id, s.Summary, s.TargetEntityType, s.TargetEntityKey })
+            .ToDictionaryAsync(s => s.Id);
+
         static string Trim(string text) => text.Length > 100 ? text[..100] + "…" : text;
 
-        var threads = new List<MessageThread>(contributionThreads.Count + boxsetThreads.Count);
+        var threads = new List<MessageThread>(
+            contributionThreads.Count + boxsetThreads.Count + suggestionThreads.Count);
 
         foreach (var t in contributionThreads)
         {
             var contrib = contributions.GetValueOrDefault(t.ContributionId);
             threads.Add(new MessageThread
             {
-                ContributionId = t.ContributionId,
-                EncodedContributionId = idEncoder.Encode(t.ContributionId),
-                ContributionTitle = contrib?.ReleaseTitle ?? "Deleted Contribution",
-                MediaTitle = contrib?.Title,
+                Kind = MessageThreadKind.Contribution,
+                EntityId = t.ContributionId,
+                EncodedEntityId = idEncoder.Encode(t.ContributionId),
+                Title = contrib?.ReleaseTitle ?? "Deleted Contribution",
+                Subtitle = contrib?.Title,
+                Route = $"/contribution/{idEncoder.Encode(t.ContributionId)}/messages",
                 LastMessagePreview = Trim(t.LastMessageText),
                 LastMessageAt = t.LastMessageAt,
                 UnreadCount = t.UnreadCount,
                 TotalCount = t.TotalCount,
-                IsBoxset = false,
             });
         }
 
@@ -239,15 +280,41 @@ public class ContributionQuery(IdEncoder idEncoder)
             var title = boxsets.GetValueOrDefault(t.BoxsetId) ?? "Deleted Boxset";
             threads.Add(new MessageThread
             {
-                ContributionId = t.BoxsetId,
-                EncodedContributionId = idEncoder.Encode(t.BoxsetId),
-                ContributionTitle = title,
-                MediaTitle = "Boxset",
+                Kind = MessageThreadKind.Boxset,
+                EntityId = t.BoxsetId,
+                EncodedEntityId = idEncoder.Encode(t.BoxsetId),
+                Title = title,
+                Subtitle = "Boxset contribution",
+                Route = $"/contribution/boxset/{idEncoder.Encode(t.BoxsetId)}/messages",
                 LastMessagePreview = Trim(t.LastMessageText),
                 LastMessageAt = t.LastMessageAt,
                 UnreadCount = t.UnreadCount,
                 TotalCount = t.TotalCount,
-                IsBoxset = true,
+            });
+        }
+
+        foreach (var t in suggestionThreads)
+        {
+            if (!suggestions.TryGetValue(t.EditSuggestionId, out var suggestion))
+            {
+                continue;
+            }
+
+            var encodedId = idEncoder.Encode(t.EditSuggestionId);
+            threads.Add(new MessageThread
+            {
+                Kind = MessageThreadKind.EditSuggestion,
+                EntityId = t.EditSuggestionId,
+                EncodedEntityId = encodedId,
+                Title = suggestion.Summary ?? $"Suggested edit to {suggestion.TargetEntityType}",
+                Subtitle = suggestion.TargetEntityKey,
+                Route = isAdmin
+                    ? $"/admin/changes/{t.EditSuggestionId}"
+                    : $"/changes/my/{encodedId}",
+                LastMessagePreview = Trim(t.LastMessageText),
+                LastMessageAt = t.LastMessageAt,
+                UnreadCount = t.UnreadCount,
+                TotalCount = t.TotalCount,
             });
         }
 

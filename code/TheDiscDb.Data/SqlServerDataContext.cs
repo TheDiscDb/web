@@ -311,8 +311,14 @@ public class SqlServerDataContext : DbContext
         userMessage.HasKey(x => x.Id);
         userMessage.Property(x => x.Type)
             .HasConversion<string>();
+        userMessage.Property(x => x.Purpose)
+            .HasConversion<string>();
         userMessage.HasIndex(x => x.ContributionId);
         userMessage.HasIndex(x => x.BoxsetId);
+        userMessage.HasIndex(x => x.EditSuggestionId);
+        userMessage.HasIndex(x => new { x.EditSuggestionId, x.Purpose })
+            .IsUnique()
+            .HasFilter("[EditSuggestionId] IS NOT NULL AND [Purpose] IS NOT NULL");
         userMessage.HasIndex(x => new { x.ToUserId, x.IsRead });
         userMessage.HasOne(x => x.Contribution)
             .WithMany()
@@ -324,6 +330,11 @@ public class SqlServerDataContext : DbContext
             .HasForeignKey(x => x.BoxsetId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
+        userMessage.HasOne(x => x.EditSuggestion)
+            .WithMany()
+            .HasForeignKey(x => x.EditSuggestionId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Cascade);
 
         var contributionBoxset = modelBuilder.Entity<UserContributionBoxset>();
         contributionBoxset.HasKey(x => x.Id);
@@ -402,7 +413,10 @@ public class SqlServerDataContext : DbContext
         var suggestion = modelBuilder.Entity<EditSuggestion>();
         suggestion.HasKey(x => x.Id);
         suggestion.Property(x => x.UserId).IsRequired().HasMaxLength(450);
-        suggestion.Property(x => x.Status).HasConversion<string>().HasMaxLength(32);
+        suggestion.Property(x => x.Status)
+            .HasConversion<string>()
+            .HasMaxLength(32)
+            .IsConcurrencyToken();
         suggestion.Property(x => x.Source).HasConversion<string>().HasMaxLength(32);
         suggestion.Property(x => x.Summary).HasMaxLength(500);
         suggestion.Property(x => x.TargetEntityType).IsRequired().HasMaxLength(50);
@@ -459,16 +473,6 @@ public class SqlServerDataContext : DbContext
             .OnDelete(DeleteBehavior.NoAction);
         history.HasIndex(x => x.SuggestionId);
 
-        var message = modelBuilder.Entity<EditSuggestionMessage>();
-        message.HasKey(x => x.Id);
-        message.Property(x => x.FromUserId).IsRequired().HasMaxLength(450);
-        message.Property(x => x.ToUserId).IsRequired().HasMaxLength(450);
-        message.HasOne(x => x.Suggestion)
-            .WithMany()
-            .HasForeignKey(x => x.SuggestionId)
-            .OnDelete(DeleteBehavior.Cascade);
-        message.HasIndex(x => x.SuggestionId);
-        message.HasIndex(x => new { x.ToUserId, x.IsRead });
     }
 
     public DbSet<MediaItem> MediaItems { get; set; } = null!;
@@ -513,7 +517,6 @@ public class SqlServerDataContext : DbContext
     public DbSet<EditSuggestion> EditSuggestions { get; set; } = null!;
     public DbSet<EditSuggestionChange> EditSuggestionChanges { get; set; } = null!;
     public DbSet<EditSuggestionHistory> EditSuggestionHistory { get; set; } = null!;
-    public DbSet<EditSuggestionMessage> EditSuggestionMessages { get; set; } = null!;
 }
 
 public class EngramDisc

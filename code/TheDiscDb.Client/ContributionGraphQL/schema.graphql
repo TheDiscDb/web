@@ -199,15 +199,22 @@ type ContributionNotFoundError implements Error {
 }
 
 type MessageThread {
-  contributionId: Int!
-  encodedContributionId: String!
-  contributionTitle: String!
-  mediaTitle: String
+  kind: MessageThreadKind!
+  entityId: Int!
+  encodedEntityId: String!
+  title: String!
+  subtitle: String
+  route: String!
   lastMessagePreview: String!
   lastMessageAt: DateTime!
   unreadCount: Int!
   totalCount: Int!
-  isBoxset: Boolean!
+}
+
+enum MessageThreadKind {
+  CONTRIBUTION
+  BOXSET
+  EDIT_SUGGESTION
 }
 
 type ContributionQuery {
