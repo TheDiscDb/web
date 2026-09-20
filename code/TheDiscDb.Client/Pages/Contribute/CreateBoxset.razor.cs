@@ -48,7 +48,7 @@ public partial class CreateBoxset : ComponentBase
                 Title = request.Title,
                 SortTitle = request.SortTitle,
                 Slug = request.Slug,
-                Asin = request.Asin,
+                Asin = request.AsinNotAvailable ? null : request.Asin,
                 Upc = request.Upc,
                 Locale = request.Locale,
                 RegionCode = request.RegionCode,

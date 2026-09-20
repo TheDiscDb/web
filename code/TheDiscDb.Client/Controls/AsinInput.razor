@@ -1,0 +1,25 @@
+@inherits Microsoft.AspNetCore.Components.Forms.InputBase<string?>
+
+<label for="@inputId" class="form-label">
+    ASIN
+    @if (!isUnavailable)
+    {
+        <span class="text-danger">*</span>
+    }
+</label>
+<input id="@inputId"
+       value="@currentValue"
+       @oninput="HandleInput"
+       @onblur="HandleBlur"
+       disabled="@isUnavailable"
+       class="@CssClass"
+       @attributes="AdditionalAttributes" />
+<div class="form-check mt-2">
+    <input id="@unavailableInputId"
+           type="checkbox"
+           class="form-check-input"
+           checked="@isUnavailable"
+           @onchange="HandleUnavailableChanged" />
+    <label class="form-check-label" for="@unavailableInputId">This release doesn't have an ASIN</label>
+</div>
+<ValidationMessage For="@ValueExpression" />

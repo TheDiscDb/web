@@ -147,8 +147,10 @@ else
                     </div>
 
                     <div class="form-group">
-                        <label for="asin">ASIN *</label>
-                        <InputText id="asin" @bind-Value="request.Asin" class="form-control" placeholder="10 characters" />
+                        <AsinInput class="form-control"
+                                   placeholder="10 characters"
+                                   @bind-Value="request.Asin"
+                                   @bind-IsUnavailable="request.AsinNotAvailable" />
                     </div>
 
                     <div class="form-group">

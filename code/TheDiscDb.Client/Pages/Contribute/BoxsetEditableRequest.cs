@@ -17,9 +17,11 @@ public class BoxsetEditableRequest
     [Required]
     public string Slug { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "ASIN is required")]
+    [RequiredUnless(nameof(AsinNotAvailable), ErrorMessage = "ASIN is required")]
     [Asin]
     public string? Asin { get; set; }
+
+    public bool AsinNotAvailable { get; set; }
 
     [Required(ErrorMessage = "UPC/EAN is required")]
     [Upc]

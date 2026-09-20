@@ -116,6 +116,26 @@ public class EngramDetailsTests
     }
 
     [Test]
+    public async Task CreateFromEngramRequest_AsinNotAvailable_AllowsMissingAsin()
+    {
+        var request = new CreateFromEngramRequest
+        {
+            MediaType = "movie",
+            AsinNotAvailable = true,
+            Upc = "883929547654",
+            ReleaseDate = DateTimeOffset.UtcNow,
+            Locale = "en-US",
+            RegionCode = "1"
+        };
+
+        var ctx = new ValidationContext(request);
+        var results = new List<ValidationResult>();
+        var isValid = Validator.TryValidateObject(request, ctx, results, validateAllProperties: true);
+
+        await Assert.That(isValid).IsTrue();
+    }
+
+    [Test]
     public async Task CreateFromEngramRequest_AllRequiredFilled_PassesValidation()
     {
         var request = new CreateFromEngramRequest

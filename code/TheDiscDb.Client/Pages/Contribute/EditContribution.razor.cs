@@ -70,6 +70,7 @@ public partial class EditContribution : CancellableComponentBase
             if (Contribution != null)
             {
                 request.Asin = Contribution.Asin ?? string.Empty;
+                request.AsinNotAvailable = string.IsNullOrWhiteSpace(Contribution.Asin);
                 request.Upc = Contribution.Upc ?? string.Empty;
                 request.ReleaseDate = Contribution.ReleaseDate;
                 request.ReleaseTitle = Contribution.ReleaseTitle ?? string.Empty;
@@ -103,7 +104,7 @@ public partial class EditContribution : CancellableComponentBase
         var response = await ContributionClient.UpdateContribution.ExecuteAsync(new UpdateContributionInput
         {
             ContributionId = ContributionId!,
-            Asin = request.Asin,
+            Asin = request.AsinNotAvailable ? string.Empty : request.Asin,
             Upc = request.Upc,
             ReleaseDate = request.ReleaseDate,
             ReleaseTitle = request.ReleaseTitle,
@@ -247,9 +248,11 @@ public partial class EditContribution : CancellableComponentBase
 
 public class EditContributionRequest
 {
-    [Required]
+    [RequiredUnless(nameof(AsinNotAvailable), ErrorMessage = "ASIN is required")]
     [Asin]
     public string Asin { get; set; } = string.Empty;
+
+    public bool AsinNotAvailable { get; set; }
 
     [Required]
     [Upc]

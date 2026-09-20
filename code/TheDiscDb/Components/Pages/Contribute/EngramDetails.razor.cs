@@ -748,9 +748,11 @@ public class CreateFromEngramRequest
     [Required(ErrorMessage = "Release Date is required")]
     public DateTimeOffset? ReleaseDate { get; set; }
 
-    [Required(ErrorMessage = "ASIN is required")]
+    [RequiredUnless(nameof(AsinNotAvailable), ErrorMessage = "ASIN is required")]
     [Asin]
     public string? Asin { get; set; }
+
+    public bool AsinNotAvailable { get; set; }
 
     [Required(ErrorMessage = "UPC is required")]
     [Upc]

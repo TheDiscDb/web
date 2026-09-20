@@ -51,6 +51,7 @@ public partial class EditBoxset : CancellableComponentBase
                         request.SortTitle = boxset.SortTitle;
                         request.Slug = boxset.Slug;
                         request.Asin = boxset.Asin;
+                        request.AsinNotAvailable = string.IsNullOrWhiteSpace(boxset.Asin);
                         request.Upc = boxset.Upc;
                         request.Locale = boxset.Locale;
                         request.RegionCode = boxset.RegionCode;
@@ -104,7 +105,7 @@ public partial class EditBoxset : CancellableComponentBase
                 Title = request.Title,
                 SortTitle = request.SortTitle,
                 Slug = request.Slug,
-                Asin = request.Asin,
+                Asin = request.AsinNotAvailable ? null : request.Asin,
                 Upc = request.Upc,
                 Locale = request.Locale,
                 RegionCode = request.RegionCode,
