@@ -388,6 +388,24 @@ public class DiscIdBackfillServiceTests
     }
 
     [Test]
+    public async Task AttachAsync_CtaTargetWithNoExistingContentHash_Applies()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        // Target disc has never had a content-hash recorded (the "backfill when none exist" case) —
+        // there's nothing to compare against, so the target should be treated as a match, not a mismatch.
+        seed.Disc.ContentHash = null;
+        await db.SaveChangesAsync();
+
+        var target = new DiscTargetIdentity(ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex);
+        var result = await CreateService(db).AttachAsync("user-1", ContentHash, DiscId, target);
+
+        await Assert.That(result.Outcome).IsEqualTo(AttachDiscIdOutcome.Applied);
+        await Assert.That(result.MatchedDifferentDisc).IsFalse();
+        await Assert.That(await ReloadDiscIdAsync(db)).IsEqualTo(DiscId);
+    }
+
+    [Test]
     public async Task AttachAsync_CtaTargetMismatch_ButInsertedDiscMatchesAnother_AppliesToThatDisc()
     {
         using var db = ChangeTestSeed.CreateDbContext();
@@ -430,6 +448,24 @@ public class DiscIdBackfillServiceTests
         var change = await db.Set<EditSuggestionChange>().SingleAsync();
         await Assert.That(change.Status).IsEqualTo(EditSuggestionChangeStatus.Applied);
         await Assert.That(change.SyncedToFilesAt).IsNull();
+    }
+
+    [Test]
+    public async Task AttachFingerprintAsync_CtaTargetWithNoExistingContentHash_Applies()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        // Target disc has never had a content-hash recorded — nothing to compare against, so the
+        // target should be treated as a match, not a mismatch.
+        seed.Disc.ContentHash = null;
+        await db.SaveChangesAsync();
+
+        var target = new DiscTargetIdentity(ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug, ChangeTestSeed.DiscSlug, ChangeTestSeed.DiscIndex);
+        var result = await CreateService(db).AttachFingerprintAsync("user-1", ContentHash, Fingerprint, target);
+
+        await Assert.That(result.Outcome).IsEqualTo(AttachDiscIdOutcome.Applied);
+        await Assert.That(result.MatchedDifferentDisc).IsFalse();
+        await Assert.That(seed.ReleaseDisc.Fingerprint).IsEqualTo(Fingerprint);
     }
 
     [Test]
