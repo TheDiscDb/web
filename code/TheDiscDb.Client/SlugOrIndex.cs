@@ -49,12 +49,12 @@ public struct SlugOrIndex : IEquatable<SlugOrIndex>
             return new SlugOrIndex(0);
         }
 
-        if (int.TryParse(slugOrIndex, out var index))
-        {
-            return new SlugOrIndex(index);
-        }
-
-        return new SlugOrIndex(slugOrIndex);
+        // Keep the raw string as the slug even when it happens to parse as a number
+        // (e.g. a disc slug of "2018"). Discarding it here would make this value only
+        // equal another SlugOrIndex by numeric Index, which fails to match a disc whose
+        // real Index differs from its numeric-looking Slug.
+        int? index = int.TryParse(slugOrIndex, out var parsedIndex) ? parsedIndex : null;
+        return new SlugOrIndex(slugOrIndex, index);
     }
 
     public static SlugOrIndex Create(string? slug, int? index)
@@ -69,12 +69,7 @@ public struct SlugOrIndex : IEquatable<SlugOrIndex>
 
     public static implicit operator SlugOrIndex(string input)
     {
-        if (int.TryParse(input, out var index))
-        {
-            return new SlugOrIndex(index);
-        }
-
-        return new SlugOrIndex(input);
+        return Create(input);
     }
 
     public override string? ToString()
