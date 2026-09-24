@@ -60,8 +60,12 @@
             </div>
 
             <div class="mb-3">
-                <label>ASIN<span class="required">*</span></label>
-                <InputText class="form-control" @bind-Value="request.Asin" />
+                <label>ASIN@if (!request.AsinNotAvailable) { <span class="required">*</span> }</label>
+                <InputText class="form-control" @bind-Value="request.Asin" disabled="@request.AsinNotAvailable" />
+                <div class="form-check mt-2">
+                    <InputCheckbox id="asin-not-available" class="form-check-input" @bind-Value="request.AsinNotAvailable" @bind-Value:after="OnAsinAvailabilityChanged" />
+                    <label class="form-check-label" for="asin-not-available">ASIN not available for this release</label>
+                </div>
                 <ValidationMessage For="@(() => request.Asin)" />
             </div>
             <div class="mb-3">

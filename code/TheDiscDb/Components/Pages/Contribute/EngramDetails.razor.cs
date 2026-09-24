@@ -208,6 +208,14 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
         return TmdbYear?.ToString() ?? string.Empty;
     }
 
+    private void OnAsinAvailabilityChanged()
+    {
+        if (request.AsinNotAvailable)
+        {
+            request.Asin = string.Empty;
+        }
+    }
+
     private async Task CreateContributionFromEngram()
     {
         if (IsCreating)
@@ -748,9 +756,11 @@ public class CreateFromEngramRequest
     [Required(ErrorMessage = "Release Date is required")]
     public DateTimeOffset? ReleaseDate { get; set; }
 
-    [Required(ErrorMessage = "ASIN is required")]
+    [RequiredUnless(nameof(AsinNotAvailable), ErrorMessage = "ASIN is required")]
     [Asin]
     public string? Asin { get; set; }
+
+    public bool AsinNotAvailable { get; set; }
 
     [Required(ErrorMessage = "UPC is required")]
     [Upc]

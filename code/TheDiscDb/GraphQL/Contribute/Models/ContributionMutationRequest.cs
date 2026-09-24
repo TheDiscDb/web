@@ -12,7 +12,6 @@ public class ContributionMutationRequest
     public string ExternalProvider { get; set; } = "TMDB";
     [Required]
     public DateTimeOffset ReleaseDate { get; set; }
-    [Required]
     [Asin]
     public string Asin { get; set; } = string.Empty;
     [Required]

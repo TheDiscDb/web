@@ -17,9 +17,10 @@ public class EditContributionRequest
 {
     [Required]
     public DateTimeOffset ReleaseDate { get; set; }
-    [Required]
+    [RequiredUnless(nameof(AsinNotAvailable), ErrorMessage = "ASIN is required")]
     [Asin]
     public string Asin { get; set; } = string.Empty;
+    public bool AsinNotAvailable { get; set; }
     [Required]
     [Upc]
     public string Upc { get; set; } = string.Empty;
@@ -85,6 +86,7 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
             if (this.Contribution != null)
             {
                 request.Asin = this.Contribution.Asin ?? string.Empty;
+                request.AsinNotAvailable = string.IsNullOrWhiteSpace(this.Contribution.Asin);
                 request.Locale = this.Contribution.Locale ?? string.Empty;
                 request.RegionCode = this.Contribution.RegionCode ?? string.Empty;
                 request.ReleaseDate = this.Contribution.ReleaseDate;
@@ -103,6 +105,14 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
         }
     }
 
+    private void OnAsinAvailabilityChanged()
+    {
+        if (request.AsinNotAvailable)
+        {
+            request.Asin = string.Empty;
+        }
+    }
+
     public async ValueTask DisposeAsync() => await database.DisposeAsync();
 
     private async Task HandleValidSubmit(Microsoft.AspNetCore.Components.Forms.EditContext args)
@@ -111,7 +121,7 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
         {
             var oldStatus = this.Contribution.Status;
 
-            this.Contribution.Asin = request.Asin;
+            this.Contribution.Asin = request.AsinNotAvailable ? string.Empty : request.Asin;
             this.Contribution.Locale = request.Locale;
             this.Contribution.RegionCode = request.RegionCode;
             this.Contribution.ReleaseDate = request.ReleaseDate;

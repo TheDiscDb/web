@@ -22,13 +22,15 @@ public class ReleaseDetailFormBindings
         this.target = target;
     }
 
-    [Required(ErrorMessage = "ASIN is required")]
+    [RequiredUnless(nameof(AsinNotAvailable), ErrorMessage = "ASIN is required")]
     [Asin]
     public string? Asin
     {
         get => string.IsNullOrEmpty(target.Asin) ? null : target.Asin;
         set => target.Asin = value ?? string.Empty;
     }
+
+    public bool AsinNotAvailable { get; set; }
 
     [Required(ErrorMessage = "UPC/EAN is required")]
     [Upc]

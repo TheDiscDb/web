@@ -68,7 +68,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
             this.form?.ReleaseSlug,
             title => HttpUtility.UrlEncode(CreateSlug(title, GetReleaseSlugYear(title))));
     private static readonly System.Text.RegularExpressions.Regex AsinRegex = new(@"^\w{10}$", System.Text.RegularExpressions.RegexOptions.Compiled);
-    private bool ImportFromAmazonDisabled => !AsinRegex.IsMatch(this.request.Asin ?? string.Empty) || IsAmazonImportInProgress;
+    private bool ImportFromAmazonDisabled => this.form?.AsinNotAvailable == true || !AsinRegex.IsMatch(this.request.Asin ?? string.Empty) || IsAmazonImportInProgress;
     private bool IsAmazonImportInProgress = false;
 
     private SfUploader? frontImageUploader;
@@ -234,7 +234,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         }
 
         var applied = false;
-        if (string.IsNullOrWhiteSpace(this.form!.Asin) && !string.IsNullOrWhiteSpace(match.Asin))
+        if (!this.form!.AsinNotAvailable && string.IsNullOrWhiteSpace(this.form.Asin) && !string.IsNullOrWhiteSpace(match.Asin))
         {
             this.form.Asin = match.Asin;
             applied = true;
@@ -352,6 +352,11 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         {
             this.request.ReleaseDate = date;
         }
+
+        if (this.form?.AsinNotAvailable == true)
+        {
+            this.request.Asin = string.Empty;
+        }
         
         var result = await this.ContributionClient.CreateContribution.ExecuteAsync(new CreateContributionInput
         {
@@ -410,7 +415,22 @@ public partial class ReleaseDetailInput : CancellableComponentBase
 
     private void OnAsinInput(ChangeEventArgs args)
     {
+        if (this.form?.AsinNotAvailable == true)
+        {
+            this.request.Asin = string.Empty;
+            return;
+        }
+
         this.request.Asin = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private void OnAsinAvailabilityChanged()
+    {
+        if (this.form?.AsinNotAvailable == true)
+        {
+            this.form.Asin = null;
+            this.request.Asin = string.Empty;
+        }
     }
 
     private async Task ReleaseTitleChanged(ChangeEventArgs args)
