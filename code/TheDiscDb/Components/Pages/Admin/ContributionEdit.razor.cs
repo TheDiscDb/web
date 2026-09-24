@@ -105,14 +105,6 @@ public partial class ContributionEdit : ComponentBase, IAsyncDisposable
         }
     }
 
-    private void OnAsinAvailabilityChanged()
-    {
-        if (request.AsinNotAvailable)
-        {
-            request.Asin = string.Empty;
-        }
-    }
-
     public async ValueTask DisposeAsync() => await database.DisposeAsync();
 
     private async Task HandleValidSubmit(Microsoft.AspNetCore.Components.Forms.EditContext args)
