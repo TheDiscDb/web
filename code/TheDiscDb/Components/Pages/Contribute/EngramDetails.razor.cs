@@ -208,14 +208,6 @@ public partial class EngramDetails : ComponentBase, IAsyncDisposable
         return TmdbYear?.ToString() ?? string.Empty;
     }
 
-    private void OnAsinAvailabilityChanged()
-    {
-        if (request.AsinNotAvailable)
-        {
-            request.Asin = string.Empty;
-        }
-    }
-
     private async Task CreateContributionFromEngram()
     {
         if (IsCreating)

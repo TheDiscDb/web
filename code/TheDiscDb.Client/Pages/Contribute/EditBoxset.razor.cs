@@ -88,14 +88,6 @@ public partial class EditBoxset : CancellableComponentBase
         request.SortTitle = null;
     }
 
-    private void OnAsinAvailabilityChanged()
-    {
-        if (request.AsinNotAvailable)
-        {
-            request.Asin = null;
-        }
-    }
-
     private async Task HandleSubmit()
     {
         isSubmitting = true;

@@ -177,11 +177,14 @@ public sealed class DiscIdBackfillService(
         {
             var targetDisc = await ResolveByIdentityAsync(target!, cancellationToken);
 
-            // Disc-detail CTA: the user is on a specific disc's page. If the inserted disc's
-            // content-hash doesn't match that disc, they inserted a different disc. Rather than
-            // rejecting it, see whether the inserted disc matches some other disc in the database
-            // that could use this Disc ID, and update that one instead.
+            // Disc-detail CTA: the user is on a specific disc's page. If the target disc already has
+            // a *known* content-hash and it doesn't match the inserted disc, they inserted a
+            // different disc. Rather than rejecting it, see whether the inserted disc matches some
+            // other disc in the database that could use this Disc ID, and update that one instead.
+            // If the target disc has no content-hash yet (the common "backfill" case), there's
+            // nothing to compare against, so treat it as the intended target.
             if (targetDisc?.Disc is not null
+                && !string.IsNullOrEmpty(targetDisc.Disc.ContentHash)
                 && !string.Equals(targetDisc.Disc.ContentHash, contentHash, StringComparison.OrdinalIgnoreCase))
             {
                 var altDisc = await ResolveByContentHashAsync(contentHash, cancellationToken);
@@ -229,7 +232,11 @@ public sealed class DiscIdBackfillService(
         if (hasTarget)
         {
             var targetDisc = await ResolveByIdentityAsync(target!, cancellationToken);
+            // As in AttachAsync: only treat this as a possible mismatch when the target disc already
+            // has a known content-hash that differs. A disc with no content-hash yet (the common
+            // "backfill" case) has nothing to compare against, so treat it as the intended target.
             if (targetDisc?.Disc is not null
+                && !string.IsNullOrEmpty(targetDisc.Disc.ContentHash)
                 && !string.Equals(
                     targetDisc.Disc.ContentHash,
                     contentHash,

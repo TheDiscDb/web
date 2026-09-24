@@ -31,14 +31,6 @@ public partial class CreateBoxset : ComponentBase
         request.Slug = title.Slugify();
     }
 
-    private void OnAsinAvailabilityChanged()
-    {
-        if (request.AsinNotAvailable)
-        {
-            request.Asin = null;
-        }
-    }
-
     private async Task HandleSubmit()
     {
         isSubmitting = true;

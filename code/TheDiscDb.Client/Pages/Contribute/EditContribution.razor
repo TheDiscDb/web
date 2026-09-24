@@ -92,13 +92,9 @@ else if (Contribution is not null)
                 <ValidationSummary />
 
                 <div class="mb-3">
-                    <label>ASIN@if (!request.AsinNotAvailable) { <span class="required">*</span> }</label>
-                    <InputText class="form-control" @bind-Value="request.Asin" disabled="@request.AsinNotAvailable" />
-                    <div class="form-check mt-2">
-                        <InputCheckbox id="asin-not-available" class="form-check-input" @bind-Value="request.AsinNotAvailable" @bind-Value:after="OnAsinAvailabilityChanged" />
-                        <label class="form-check-label" for="asin-not-available">ASIN not available for this release</label>
-                    </div>
-                    <ValidationMessage For="@(() => request.Asin)" />
+                    <AsinInput class="form-control"
+                               @bind-Value="request.Asin"
+                               @bind-IsUnavailable="request.AsinNotAvailable" />
                 </div>
                 <div class="mb-3">
                     <label>UPC/EAN<span class="required">*</span></label>

@@ -81,4 +81,22 @@ public class CacheHelper
 #pragma warning restore CS8603 // Possible null reference return.
         });
     }
+
+    public async Task<IReadOnlyList<DateTimeOffset>> GetContributionDatesAsync(CancellationToken cancellationToken = default)
+    {
+        const string cacheKey = "ContributionStats|DateAdded";
+
+        var dates = await this.cache.GetOrCreateAsync<List<DateTimeOffset>>(cacheKey, async entry =>
+        {
+            await using var context = await this.context.CreateDbContextAsync(cancellationToken);
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+
+            return await context.Releases
+                .AsNoTracking()
+                .Select(release => release.DateAdded)
+                .ToListAsync(cancellationToken);
+        });
+
+        return dates ?? [];
+    }
 }

@@ -190,14 +190,6 @@ public partial class EditContribution : CancellableComponentBase
         }
     }
 
-    private void OnAsinAvailabilityChanged()
-    {
-        if (request.AsinNotAvailable)
-        {
-            request.Asin = string.Empty;
-        }
-    }
-
     private async Task<bool> CheckReleaseSlugAvailability(string slug, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(this.externalId))

@@ -3,12 +3,16 @@ namespace TheDiscDb.UnitTests.Client;
 public class SlugOrIndexTests
 {
     [Test]
-    public async Task Create_WithNumericString_SetsIndex()
+    public async Task Create_WithNumericString_SetsIndexAndSlug()
     {
         var soi = SlugOrIndex.Create("5");
 
         await Assert.That(soi.Index).IsEqualTo(5);
-        await Assert.That(soi.Slug).IsNull();
+
+        // The raw string is retained as the slug even though it parses as a number, so that
+        // this value can still equal a numeric-looking disc Slug (e.g. "2018") rather than
+        // only ever matching by Index.
+        await Assert.That(soi.Slug).IsEqualTo("5");
     }
 
     [Test]
@@ -87,6 +91,19 @@ public class SlugOrIndexTests
         SlugOrIndex soi = "42";
 
         await Assert.That(soi.Index).IsEqualTo(42);
+        await Assert.That(soi.Slug).IsEqualTo("42");
+    }
+
+    [Test]
+    public async Task Equals_NumericSlugMatchesRealDiscWithDifferentIndex_ReturnsTrue()
+    {
+        // Regression test for https://github.com/TheDiscDb/web/issues/89: a disc whose Slug
+        // happens to look like a number (e.g. "2018") but whose real Index differs must still
+        // match when looked up by that slug via the URL.
+        var fromDisc = SlugOrIndex.Create("2018", 1);
+        var fromUrl = SlugOrIndex.Create("2018");
+
+        await Assert.That(fromDisc.Equals(fromUrl)).IsTrue();
     }
 
     [Test]

@@ -353,14 +353,9 @@ public partial class ReleaseDetailInput : CancellableComponentBase
             this.request.ReleaseDate = date;
         }
 
-        if (this.form?.AsinNotAvailable == true)
-        {
-            this.request.Asin = string.Empty;
-        }
-        
         var result = await this.ContributionClient.CreateContribution.ExecuteAsync(new CreateContributionInput
         {
-            Input = this.request
+            Input = this.CreateSubmissionRequest()
         });
 
         if (result == null || !result.IsSuccessResult())
@@ -413,24 +408,28 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         this.NavigationManager!.NavigateTo($"/contribution/{newContribution.EncodedId!}");
     }
 
-    private void OnAsinInput(ChangeEventArgs args)
+    private ContributionMutationRequestInput CreateSubmissionRequest()
     {
-        if (this.form?.AsinNotAvailable == true)
+        return new ContributionMutationRequestInput
         {
-            this.request.Asin = string.Empty;
-            return;
-        }
-
-        this.request.Asin = args.Value?.ToString() ?? string.Empty;
-    }
-
-    private void OnAsinAvailabilityChanged()
-    {
-        if (this.form?.AsinNotAvailable == true)
-        {
-            this.form.Asin = null;
-            this.request.Asin = string.Empty;
-        }
+            MediaType = this.request.MediaType,
+            ExternalId = this.request.ExternalId,
+            ExternalProvider = this.request.ExternalProvider,
+            ReleaseDate = this.request.ReleaseDate,
+            Asin = this.form?.AsinNotAvailable == true ? string.Empty : this.request.Asin,
+            Upc = this.request.Upc,
+            FrontImageUrl = this.request.FrontImageUrl,
+            BackImageUrl = this.request.BackImageUrl,
+            ReleaseTitle = this.request.ReleaseTitle,
+            ReleaseSlug = this.request.ReleaseSlug,
+            RegionCode = this.request.RegionCode,
+            Locale = this.request.Locale,
+            Title = this.request.Title,
+            Year = this.request.Year,
+            StorageId = this.request.StorageId,
+            Status = this.request.Status,
+            BoxsetId = this.request.BoxsetId
+        };
     }
 
     private async Task ReleaseTitleChanged(ChangeEventArgs args)
