@@ -195,10 +195,14 @@ public static class DiscPath
                 $"The selected directory returned an invalid file path: {relativePath}");
         }
 
-        bool startsAtDiscRoot = segments[0].Equals("BDMV", StringComparison.OrdinalIgnoreCase)
-            || segments[0].Equals("AACS", StringComparison.OrdinalIgnoreCase)
-            || segments[0].Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase);
-        int startIndex = startsAtDiscRoot || segments.Length == 1 ? 0 : 1;
+        int discRootIndex = Array.FindIndex(
+            segments,
+            segment => segment.Equals("BDMV", StringComparison.OrdinalIgnoreCase)
+                || segment.Equals("AACS", StringComparison.OrdinalIgnoreCase)
+                || segment.Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase));
+        int startIndex = discRootIndex >= 0
+            ? discRootIndex
+            : segments.Length == 1 ? 0 : 1;
         return string.Join('/', segments.Skip(startIndex));
     }
 }
