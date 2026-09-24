@@ -25,6 +25,15 @@ public class DiscScannerTests
     }
 
     [Test]
+    public async Task NormalizeDirectoryUploadPath_RemovesNestedSelectedRoot()
+    {
+        var path = DiscPath.NormalizeDirectoryUploadPath(
+            @"The Tourist\BDMV\STREAM\00001.m2ts");
+
+        await Assert.That(path).IsEqualTo("BDMV/STREAM/00001.m2ts");
+    }
+
+    [Test]
     public async Task NormalizeDirectoryUploadPath_RootLevelFile_DoesNotFailSelection()
     {
         var path = DiscPath.NormalizeDirectoryUploadPath("desktop.ini");
