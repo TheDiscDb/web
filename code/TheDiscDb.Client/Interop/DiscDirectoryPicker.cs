@@ -102,6 +102,21 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
         }
     }
 
+    public async ValueTask DownloadAsync(
+        string fileName,
+        string contentType,
+        byte[] contents,
+        CancellationToken cancellationToken = default)
+    {
+        var module = await GetModuleAsync(cancellationToken);
+        await module.InvokeVoidAsync(
+            "downloadBytes",
+            cancellationToken,
+            fileName,
+            contentType,
+            contents);
+    }
+
     private async ValueTask<IJSObjectReference> GetModuleAsync(CancellationToken cancellationToken)
     {
         this.module ??= await this.js.InvokeAsync<IJSObjectReference>(

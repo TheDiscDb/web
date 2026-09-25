@@ -52,6 +52,8 @@
         <PackageReference Include="Sqids" Version="3.2.1" />
         <PackageReference Include="StrawberryShake.Blazor" Version="15.1.14" />
         <ProjectReference Include="..\TheDiscDb.MakeMkv\TheDiscDb.MakeMkv.csproj" />
+        <ProjectReference Include="..\TheDiscDb.OpticalDiscManifest\TheDiscDb.OpticalDiscManifest.csproj" />
+        <ProjectReference Include="..\TheDiscDb.OpticalDiscParsers\TheDiscDb.OpticalDiscParsers.csproj" />
         <PackageReference Include="Syncfusion.Blazor.Inputs" Version="33.1.47" />
         <PackageReference Include="Syncfusion.Blazor.Themes" Version="33.1.47" />
         <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="33.1.47" />

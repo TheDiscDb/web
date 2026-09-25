@@ -82,3 +82,13 @@ export async function readFile(selectionId, fileId, maxAllowedSize) {
 export function releaseSelection(selectionId) {
     selections.delete(selectionId);
 }
+
+export function downloadBytes(fileName, contentType, contents) {
+    const blob = new Blob([contents], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
+}
