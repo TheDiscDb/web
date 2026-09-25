@@ -8,7 +8,7 @@ public sealed class ManifestTitleSummaryTests
     [Fact]
     public void Build_SurfacesMainFeatureFirst_AmongManySmallTitles()
     {
-        // Mirrors the real Age of Ultron 3D disc shape: dozens of short menu/trailer
+        // Mirrors a feature disc shape: dozens of short menu/trailer
         // playlists (1-2 chapters each) plus a single 14-chapter main feature whose
         // SizeBytes already reflects the combined base + dependent-view clip size.
         var titles = new List<ManifestTitle>();

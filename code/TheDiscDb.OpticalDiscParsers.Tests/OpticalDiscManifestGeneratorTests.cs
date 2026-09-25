@@ -11,7 +11,7 @@ public sealed class OpticalDiscManifestGeneratorTests
     [Fact]
     public async Task GenerateAsync_BluRay_IsValidDeterministicAndDoesNotReadPayload()
     {
-        var files = CreateBluRayFiles("Hell on Wheels Disc 1");
+        var files = CreateBluRayFiles("BD-A");
         var request = CreateRequest(files, "aacs-disc-id", new string('A', 40));
         var generator = new OpticalDiscManifestGenerator();
 
@@ -36,10 +36,10 @@ public sealed class OpticalDiscManifestGeneratorTests
     [Fact]
     public async Task GenerateAsync_BluRay_UsesBackupControlFileWhenPrimaryIsMissing()
     {
-        var files = CreateBluRayFiles("Hell on Wheels Disc 1")
+        var files = CreateBluRayFiles("BD-A")
             .Where(file => !file.Path.Equals("BDMV/index.bdmv", StringComparison.OrdinalIgnoreCase))
             .ToList();
-        var indexSource = Path.Combine(fixturesPath, "BDMV", "Hell on Wheels Disc 1", "index.bdmv");
+        var indexSource = Path.Combine(fixturesPath, "BDMV", "BD-A", "index.bdmv");
         files.Add(RecordingFile.FromDisk("BDMV/BACKUP/index.bdmv", indexSource));
         var generator = new OpticalDiscManifestGenerator();
 
@@ -62,7 +62,7 @@ public sealed class OpticalDiscManifestGeneratorTests
     [Fact]
     public async Task GenerateAsync_Uhd_UsesVersion0300Signal()
     {
-        var files = CreateBluRayFiles("Project Hail Mary");
+        var files = CreateBluRayFiles("UHD-A");
         var generator = new OpticalDiscManifestGenerator();
 
         var result = await generator.GenerateAsync(
@@ -74,14 +74,13 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
-    public async Task GenerateAsync_ProjectHailMaryUhd_SurfacesHevcDynamicRangeAndColorSpaceEvidence()
+    public async Task GenerateAsync_Uhd_SurfacesHevcDynamicRangeAndColorSpaceEvidence()
     {
-        // Real Project Hail Mary UHD disc CLPI evidence (00589.clpi), already verified at the
-        // parser layer in ClpiParserTests.ParseAsync_ProjectHailMaryFeature_ReadsHevcAndCpiEntries:
+        // Real UHD CLPI evidence (00589.clpi), already verified at the parser layer:
         // DynamicRangeTypeCode=1, ColorSpaceCode=2, HdrPlusFlag=false. This test proves the ODM
         // mapper surfaces that control-file-only HDR/color-space evidence into disc.clips instead
         // of silently dropping it.
-        var files = CreateBluRayFiles("Project Hail Mary")
+        var files = CreateBluRayFiles("UHD-A")
             .Concat([RecordingFile.Payload("BDMV/STREAM/00589.m2ts", 1_000_000)])
             .ToList();
         var generator = new OpticalDiscManifestGenerator();
@@ -113,7 +112,7 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
-    public async Task GenerateAsync_AgeOfUltron3D_MapsBaseAndDependentViewRelationshipAndClips()
+    public async Task GenerateAsync_MvcPlaylist_MapsBaseAndDependentViewRelationshipAndClips()
     {
         // Combined base + dependent-view byte total per task evidence: 43,553,961,984.
         const long CombinedBytes = 43_553_961_984;
@@ -123,10 +122,10 @@ public sealed class OpticalDiscManifestGeneratorTests
         {
             RecordingFile.FromDisk(
                 "BDMV/PLAYLIST/00800.mpls",
-                Path.Combine(fixturesPath, "MPLS", "Avengers Age of Ultron 3D", "00800.mpls")),
+                Path.Combine(fixturesPath, "MPLS", "BD-3D", "00800.mpls")),
             RecordingFile.FromDisk(
                 "BDMV/CLIPINF/00301.clpi",
-                Path.Combine(fixturesPath, "CLPI", "Avengers Age of Ultron 3D", "00301.clpi")),
+                Path.Combine(fixturesPath, "CLPI", "BD-3D", "00301.clpi")),
             RecordingFile.Payload("BDMV/STREAM/00300.m2ts", PerClipBytes),
             RecordingFile.Payload("BDMV/STREAM/00301.m2ts", PerClipBytes),
         };
@@ -197,13 +196,11 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     /// <summary>
-    /// Real Avatar (2009) 2023 Ultimate Collector's Edition 4K disc02 evidence, captured by
-    /// running the generator directly against the physically mounted disc and cross-checked
-    /// against the stored MakeMKV-derived <c>disc02.json</c> fixture. Every clip byte size and
-    /// segment ordering value below is copied verbatim from that real disc/fixture; only the
-    /// clip payload bytes themselves are synthesized (the parser must never read them).
+    /// Real long-playlist evidence captured from a mounted disc and cross-checked against its
+    /// stored manifest. Clip byte sizes and segment ordering are retained as regression data;
+    /// only the clip payload bytes are synthesized because the parser must never read them.
     /// </summary>
-    private static readonly IReadOnlyDictionary<string, long> AvatarUhdDisc02ClipSizes = new Dictionary<string, long>
+    private static readonly IReadOnlyDictionary<string, long> LongPlaylistClipSizes = new Dictionary<string, long>
     {
         ["00062"] = 5905029120L,
         ["00069"] = 3544399872L,
@@ -265,7 +262,7 @@ public sealed class OpticalDiscManifestGeneratorTests
         ["00125"] = 363356160L,
     };
 
-    private static readonly string[] AvatarUhdDisc02Playlist00800SegmentMap =
+    private static readonly string[] LongPlaylist00800SegmentMap =
     [
         "00062", "00107", "00071", "00108", "00073", "00109", "00075", "00125", "00069", "00110",
         "00078", "00111", "00080", "00112", "00082", "00113", "00084", "00114", "00086", "00115",
@@ -273,7 +270,7 @@ public sealed class OpticalDiscManifestGeneratorTests
         "00098", "00121", "00100", "00122", "00102", "00123", "00104", "00124", "00106",
     ];
 
-    private static readonly string[] AvatarUhdDisc02Playlist00801SegmentMap =
+    private static readonly string[] LongPlaylist00801SegmentMap =
     [
         "00062", "00070", "00071", "00072", "00073", "00074", "00075", "00076", "00069", "00077",
         "00078", "00079", "00080", "00081", "00082", "00083", "00084", "00085", "00086", "00087",
@@ -284,7 +281,7 @@ public sealed class OpticalDiscManifestGeneratorTests
     [Theory]
     [InlineData("00800.mpls", 86_534_971_392L)]
     [InlineData("00801.mpls", 86_535_124_992L)]
-    public async Task GenerateAsync_AvatarUhdDisc02_MatchesRealDiscSegmentOrderSizeDurationAndCorrectedChapterCount(
+    public async Task GenerateAsync_LongPlaylist_MatchesSegmentOrderSizeDurationAndCorrectedChapterCount(
         string playlistFileName,
         long expectedSizeBytes)
     {
@@ -292,13 +289,13 @@ public sealed class OpticalDiscManifestGeneratorTests
         {
             RecordingFile.FromDisk(
                 $"BDMV/PLAYLIST/{playlistFileName}",
-                Path.Combine(fixturesPath, "MPLS", "Avatar UHD Disc02", playlistFileName)),
+                Path.Combine(fixturesPath, "MPLS", "UHD-B", playlistFileName)),
         };
-        foreach (var (clipId, size) in AvatarUhdDisc02ClipSizes)
+        foreach (var (clipId, size) in LongPlaylistClipSizes)
         {
             files.Add(RecordingFile.FromDisk(
                 $"BDMV/CLIPINF/{clipId}.clpi",
-                Path.Combine(fixturesPath, "CLPI", "Avatar UHD Disc02", $"{clipId}.clpi")));
+                Path.Combine(fixturesPath, "CLPI", "UHD-A", "00589.clpi")));
             files.Add(RecordingFile.Payload($"BDMV/STREAM/{clipId}.m2ts", size));
         }
 
@@ -318,10 +315,10 @@ public sealed class OpticalDiscManifestGeneratorTests
         // Exact whole-file byte sum from the real disc / stored disc02.json fixture.
         Assert.Equal(expectedSizeBytes, title.SizeBytes);
         var expectedSegmentMapForSizeCheck = playlistFileName == "00800.mpls"
-            ? AvatarUhdDisc02Playlist00800SegmentMap
-            : AvatarUhdDisc02Playlist00801SegmentMap;
+            ? LongPlaylist00800SegmentMap
+            : LongPlaylist00801SegmentMap;
         Assert.Equal(
-            expectedSegmentMapForSizeCheck.Sum(clip => AvatarUhdDisc02ClipSizes[clip]),
+            expectedSegmentMapForSizeCheck.Sum(clip => LongPlaylistClipSizes[clip]),
             title.SizeBytes);
 
         // Real-disc duration evidence (9722.003467s / 437,490,156 ticks @ 45kHz).
@@ -329,8 +326,8 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         // Exact 39-segment ordering per the stored disc02.json SegmentMap.
         var expectedSegmentMap = playlistFileName == "00800.mpls"
-            ? AvatarUhdDisc02Playlist00800SegmentMap
-            : AvatarUhdDisc02Playlist00801SegmentMap;
+            ? LongPlaylist00800SegmentMap
+            : LongPlaylist00801SegmentMap;
         Assert.Equal(39, expectedSegmentMap.Length);
         Assert.Equal(expectedSegmentMap, title.Segments!.Select(segment => segment.Clip).ToArray());
 
@@ -345,7 +342,7 @@ public sealed class OpticalDiscManifestGeneratorTests
                 && item.Path == $"BDMV/PLAYLIST/{playlistFileName}"
                 && item.Message.Contains("11261"));
 
-        // Avatar's real MPLS extension type/version (3.5) is preserved as a truthful,
+        // The real MPLS extension type/version (3.5) is preserved as a truthful,
         // unsupported-entry diagnostic rather than guessed at in the mapper.
         Assert.Contains(
             first.Manifest.Diagnostics!,
@@ -362,7 +359,7 @@ public sealed class OpticalDiscManifestGeneratorTests
     [Fact]
     public async Task GenerateAsync_Dvd_JoinsLogicalTitlesAndChapterTiming()
     {
-        var root = Path.Combine(fixturesPath, "Best In Show");
+        var root = Path.Combine(fixturesPath, "DVD-A");
         var files = Directory.GetFiles(root, "*.IFO")
             .Select(path => RecordingFile.FromDisk(
                 $"VIDEO_TS/{Path.GetFileName(path)}",
@@ -402,14 +399,14 @@ public sealed class OpticalDiscManifestGeneratorTests
     [Fact]
     public async Task GenerateAsync_DvdSequentialTitles_SumAuthoredCellSectorsToMakeMkvTitleSizes()
     {
-        // MakeMKV TINFO:11 sizes from data repo Reservoir Dogs (1992)/2002-special-edition-dvd/disc01.txt.
+        // MakeMKV TINFO:11 sizes from the associated multi-title DVD fixture baseline.
         long[] expected =
         [
             4_774_885_376, 141_600_768, 86_566_912, 78_424_064, 29_485_056, 42_805_248,
             378_882_048, 209_395_712, 198_991_872, 351_432_704, 185_497_600, 271_239_168,
             454_447_104, 1_671_004_160, 48_924_672, 11_198_464, 37_392_384,
         ];
-        var files = CreateDvdIfoFiles("Reservoir Dogs");
+        var files = CreateDvdIfoFiles("DVD-B");
 
         var result = await new OpticalDiscManifestGenerator().GenerateAsync(
             CreateRequest(files, "dvd-disc-id", new string('E', 32)));
@@ -421,9 +418,9 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
-    public async Task GenerateAsync_FightClubDvd_SizesSequentialMainFeatureAndOmitsMultiPgcSizes()
+    public async Task GenerateAsync_Dvd_SizesSequentialMainFeatureAndOmitsMultiPgcSizes()
     {
-        var files = CreateDvdIfoFiles("Fight Club");
+        var files = CreateDvdIfoFiles("DVD-D");
 
         var result = await new OpticalDiscManifestGenerator().GenerateAsync(
             CreateRequest(files, "dvd-disc-id", new string('F', 32)));
@@ -466,7 +463,7 @@ public sealed class OpticalDiscManifestGeneratorTests
     [Fact]
     public async Task GenerateAsync_DvdMissingTitleSet_DoesNotClaimCompleteTitles()
     {
-        var root = Path.Combine(fixturesPath, "Best In Show");
+        var root = Path.Combine(fixturesPath, "DVD-A");
         var files = Directory.GetFiles(root, "*.IFO")
             .Where(path => !path.EndsWith("VTS_02_0.IFO", StringComparison.OrdinalIgnoreCase))
             .Select(path => RecordingFile.FromDisk(
@@ -505,10 +502,10 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Theory]
-    [InlineData(1_876)] // Knives Out 1080p 00002/00018/00042/00200 and AoU 2D 00181 evidence (one frame).
-    [InlineData(11_261)] // Spartacus (UHD) and Avatar (UHD) evidence.
-    [InlineData(11_262)] // Avengers: Age of Ultron 3D evidence.
-    [InlineData(15_014)] // 2001: A Space Odyssey (UHD) main feature evidence.
+    [InlineData(1_876)] // One-frame terminal marks from short titles.
+    [InlineData(11_261)] // Measured terminal-mark offset.
+    [InlineData(11_262)] // Measured terminal-mark offset.
+    [InlineData(15_014)] // Measured terminal-mark offset.
     [InlineData(22_500)] // Upper bound: exactly one half second.
     public void CreateBluRayChapters_ExcludesFinalEntryMarkAtKnownTerminalSentinelTicks(long ticksFromEnd)
     {
@@ -562,11 +559,11 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
-    public async Task GenerateAsync_AgeOfUltron2DShortPlaylist_PreservesLegitimateSecondChapter()
+    public async Task GenerateAsync_ShortPlaylist_PreservesLegitimateSecondChapter()
     {
         var playlist = RecordingFile.FromDisk(
             "BDMV/PLAYLIST/00050.mpls",
-            Path.Combine(fixturesPath, "MPLS", "Avengers Age of Ultron 2D", "00050.mpls"));
+            Path.Combine(fixturesPath, "MPLS", "BD-B", "00050.mpls"));
         var generator = new OpticalDiscManifestGenerator();
 
         var result = await generator.GenerateAsync(
@@ -627,7 +624,7 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Theory]
-    [InlineData(3_753, 15_014)] // Age of Ultron 2D 00050-00052/00054-00057 shape.
+    [InlineData(3_753, 15_014)] // Short two-item playlist shape.
     [InlineData(44_999, 60_000)] // Final mark just under one second in.
     public void CreateBluRayChapters_PreservesFinalMarkWithLessThanOneSecondOfPrecedingContent(
         long finalMarkStart, long totalDurationTicks)
@@ -691,7 +688,7 @@ public sealed class OpticalDiscManifestGeneratorTests
         var diagnostics = new List<ManifestDiagnostic>();
         var playlist = CreateSyntheticPlaylist(outTime: 1_000, marks: []) with
         {
-            StereoVideoRelationships = [CreateAgeOfUltronStereoRelationship()],
+            StereoVideoRelationships = [CreateMvcStereoRelationship()],
         };
 
         var view = OpticalDiscManifestGenerator.CreateStereoscopicView(
@@ -715,7 +712,7 @@ public sealed class OpticalDiscManifestGeneratorTests
     public void CreateStereoscopicView_EmitsDiagnosticWhenMultipleRelationshipsAreDeclared()
     {
         var diagnostics = new List<ManifestDiagnostic>();
-        var relationship = CreateAgeOfUltronStereoRelationship();
+        var relationship = CreateMvcStereoRelationship();
         var playlist = CreateSyntheticPlaylist(outTime: 1_000, marks: []) with
         {
             StereoVideoRelationships = [relationship, relationship],
@@ -775,10 +772,10 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
-    public void AddUnsupportedExtensionDiagnostics_EmitsTruthfulDiagnosticForAvatarExtensionType3Point5()
+    public void AddUnsupportedExtensionDiagnostics_EmitsTruthfulDiagnosticForUnsupportedType3Point5()
     {
         // Parser commit 961ffd6 preserves entries it does not interpret (for example,
-        // Avatar's 3.5 extension type) rather than guessing their semantics. The mapper
+        // an unsupported 3.5 extension type) rather than guessing its semantics. The mapper
         // must surface this honestly and must never infer meaning for it.
         var diagnostics = new List<ManifestDiagnostic>();
         var playlist = CreateSyntheticPlaylist(outTime: 1_000, marks: []) with
@@ -815,7 +812,7 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Contains("3.5", diagnostic.Message);
     }
 
-    private static MplsStereoVideoRelationship CreateAgeOfUltronStereoRelationship()
+    private static MplsStereoVideoRelationship CreateMvcStereoRelationship()
         => new()
         {
             RelationshipType = MplsStereoVideoRelationship.ThreeDimensionalDependentView,
