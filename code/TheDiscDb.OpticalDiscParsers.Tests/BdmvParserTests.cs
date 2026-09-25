@@ -16,8 +16,8 @@ public class BdmvParserTests
     );
 
     [Theory]
-    [InlineData("Hell on Wheels Disc 1", "0200", "E1 Entertainment", 11, "HDMV", "HDMV")]
-    [InlineData("Project Hail Mary", "0300", "Provider Name", 90, "BD-J", "BD-J")]
+    [InlineData("BD-A", "0200", "E1 Entertainment", 11, "HDMV", "HDMV")]
+    [InlineData("BD-B", "0300", "Provider Name", 90, "BD-J", "BD-J")]
     public async Task ParseIndexAsync_Samples_ReadsAppInfoAndTitleTable(
         string discName,
         string expectedVersion,
@@ -48,7 +48,7 @@ public class BdmvParserTests
     [Fact]
     public async Task ParseIndexAsync_BdjDisc_ReadsBdjApplicationNames()
     {
-        var path = Path.Combine(fixturesPath, "Project Hail Mary", "index.bdmv");
+        var path = Path.Combine(fixturesPath, "BD-B", "index.bdmv");
         var parser = CreateParser(path);
 
         var result = await parser.ParseIndexAsync();
@@ -62,8 +62,8 @@ public class BdmvParserTests
     }
 
     [Theory]
-    [InlineData("Hell on Wheels Disc 1", "0200", 13, 22)]
-    [InlineData("Project Hail Mary", "0300", 3, 2000)]
+    [InlineData("BD-A", "0200", 13, 22)]
+    [InlineData("BD-B", "0300", 3, 2000)]
     public async Task ParseMovieObjectsAsync_Samples_ReadsObjectsAndCommands(
         string discName,
         string expectedVersion,
@@ -88,9 +88,9 @@ public class BdmvParserTests
     }
 
     [Fact]
-    public async Task ParseMovieObjectsAsync_ProjectHailMary_ReadsCommandFields()
+    public async Task ParseMovieObjectsAsync_BdjDisc_ReadsCommandFields()
     {
-        var path = Path.Combine(fixturesPath, "Project Hail Mary", "MovieObject.bdmv");
+        var path = Path.Combine(fixturesPath, "BD-B", "MovieObject.bdmv");
         var parser = CreateParser(path);
 
         var result = await parser.ParseMovieObjectsAsync();

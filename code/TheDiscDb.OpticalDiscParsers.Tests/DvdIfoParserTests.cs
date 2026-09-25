@@ -17,14 +17,14 @@ public class DvdIfoParserTests
     );
 
     /// <summary>
-    /// Tests parsing the VMGI header from Best In Show VIDEO_TS.IFO.
+    /// Tests parsing the VMGI header from the multi-title DVD fixture.
     /// Validates that the parser correctly reads the disc identifier, spec version, and title counts.
     /// </summary>
     [Fact]
-    public async Task ParseVmgiAsync_BestInShow_ReadsVmgiHeader()
+    public async Task ParseVmgiAsync_MultiTitleFixture_ReadsVmgiHeader()
     {
         // Arrange
-        var videoTsPath = Path.Combine(fixturesPath, "Best In Show", "VIDEO_TS.IFO");
+        var videoTsPath = Path.Combine(fixturesPath, "DVD-A", "VIDEO_TS.IFO");
         Assert.True(File.Exists(videoTsPath), $"Fixture not found: {videoTsPath}");
         
         var bytes = File.ReadAllBytes(videoTsPath);
@@ -40,7 +40,7 @@ public class DvdIfoParserTests
         Assert.NotNull(result.Value);
         var vmgi = result.Value;
 
-        // Verify expected header values from Best In Show DVD
+        // Verify the expected navigation header values.
         Assert.Equal("DVDVIDEO-VMG", vmgi.Identifier);
         Assert.True(vmgi.SpecificationVersion >= 0x0100, "Spec version should be at least 0x0100");
         Assert.NotEmpty(vmgi.ProviderId);
@@ -65,15 +65,15 @@ public class DvdIfoParserTests
     }
 
     /// <summary>
-    /// Tests parsing the VTSI header from Best In Show VTS_01_0.IFO.
+    /// Tests parsing a VTSI header from the multi-title DVD fixture.
     /// Validates that the parser correctly reads title set information.
     /// Note: Fixture files are stubs with minimal data, so we validate structure rather than content.
     /// </summary>
     [Fact]
-    public async Task ParseVtsiAsync_BestInShowTitle1_ReadsVtsiHeader()
+    public async Task ParseVtsiAsync_MultiTitleFixture_ReadsVtsiHeader()
     {
         // Arrange
-        var vts01Path = Path.Combine(fixturesPath, "Best In Show", "VTS_01_0.IFO");
+        var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         Assert.True(File.Exists(vts01Path), $"Fixture not found: {vts01Path}");
         
         var bytes = File.ReadAllBytes(vts01Path);
@@ -104,9 +104,9 @@ public class DvdIfoParserTests
     /// Tests that parsing multiple VMGI files from different discs produces consistent structure.
     /// </summary>
     [Theory]
-    [InlineData("Best In Show")]
-    [InlineData("Reservoir Dogs")]
-    [InlineData("The Goonies")]
+    [InlineData("DVD-A")]
+    [InlineData("DVD-B")]
+    [InlineData("DVD-C")]
     public async Task ParseVmgiAsync_MultipleDvds_ConsistentStructure(string discName)
     {
         // Arrange
@@ -163,7 +163,7 @@ public class DvdIfoParserTests
     public async Task ParseVtsiAsync_ReturnsValidStreamsAndProgramChains()
     {
         // Arrange
-        var vts01Path = Path.Combine(fixturesPath, "Best In Show", "VTS_01_0.IFO");
+        var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         Assert.True(File.Exists(vts01Path), $"Fixture not found: {vts01Path}");
         
         var bytes = File.ReadAllBytes(vts01Path);
@@ -200,7 +200,7 @@ public class DvdIfoParserTests
     public async Task ParseVtsiAsync_VideoParsing_ExtractsCodecAndStandard()
     {
         // Arrange
-        var vts01Path = Path.Combine(fixturesPath, "Best In Show", "VTS_01_0.IFO");
+        var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path);
         var reader = new MemoryOpticalDiscReader(bytes);
         var binaryReader = new OpticalDiscBinaryReader(reader);
@@ -244,18 +244,16 @@ public class DvdIfoParserTests
     }
 
     /// <summary>
-    /// Decodes VTS_V_ATR/VTS_SPST_ATR per the DVD-Video bit layout. Raw bytes and MakeMKV baselines:
-    /// Fight Club VTS2 = 0x4E 0x80 (NTSC 16:9, CC field 1; MakeMKV 16:9 + CC608),
-    /// Fight Club VTS3 = 0x43 0x00 (NTSC 4:3, previously misreported as PAL 720x576),
-    /// Reservoir Dogs VTS3 = 0x43 0x00 (MakeMKV titles 14-16 report 4:3).
+    /// Decodes VTS_V_ATR/VTS_SPST_ATR per the DVD-Video bit layout. The fixture bytes cover
+    /// 16:9/4:3, line-21 CC signaling, and the previously swapped aspect/standard bit pattern.
     /// </summary>
     [Theory]
-    [InlineData("Fight Club", 2, "16:9", true, false)]
-    [InlineData("Fight Club", 3, "4:3", false, false)]
-    [InlineData("Fight Club", 5, "16:9", false, false)]
-    [InlineData("Reservoir Dogs", 1, "16:9", true, false)]
-    [InlineData("Reservoir Dogs", 3, "4:3", false, false)]
-    [InlineData("The Goonies", 2, "4:3", true, false)]
+    [InlineData("DVD-D", 2, "16:9", true, false)]
+    [InlineData("DVD-D", 3, "4:3", false, false)]
+    [InlineData("DVD-D", 5, "16:9", false, false)]
+    [InlineData("DVD-B", 1, "16:9", true, false)]
+    [InlineData("DVD-B", 3, "4:3", false, false)]
+    [InlineData("DVD-C", 2, "4:3", true, false)]
     public async Task ParseVtsiAsync_VideoAttributes_DecodeStandardAspectAndLine21Captions(
         string disc, int titleSet, string aspectRatio, bool ccField1, bool ccField2)
     {
@@ -274,10 +272,10 @@ public class DvdIfoParserTests
     }
 
     [Theory]
-    [InlineData("Fight Club", 2)]
-    [InlineData("Fight Club", 3)]
-    [InlineData("The Goonies", 1)]
-    [InlineData("Best In Show", 1)]
+    [InlineData("DVD-D", 2)]
+    [InlineData("DVD-D", 3)]
+    [InlineData("DVD-C", 1)]
+    [InlineData("DVD-A", 1)]
     public async Task ParseVtsiAsync_SubpictureAttributes_DecodeRleCodingModeFromHighBits(string disc, int titleSet)
     {
         var bytes = File.ReadAllBytes(Path.Combine(fixturesPath, disc, $"VTS_{titleSet:00}_0.IFO"));
@@ -297,7 +295,7 @@ public class DvdIfoParserTests
     public async Task ParseVtsiAsync_AudioParsing_ExtractsCodecTypes()
     {
         // Arrange
-        var vts01Path = Path.Combine(fixturesPath, "Best In Show", "VTS_01_0.IFO");
+        var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path);
         var reader = new MemoryOpticalDiscReader(bytes);
         var binaryReader = new OpticalDiscBinaryReader(reader);
@@ -333,7 +331,7 @@ public class DvdIfoParserTests
     public async Task ParseVtsiAsync_SubtitleParsing_ExtractsCodingModes()
     {
         // Arrange
-        var vts01Path = Path.Combine(fixturesPath, "Best In Show", "VTS_01_0.IFO");
+        var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path);
         var reader = new MemoryOpticalDiscReader(bytes);
         var binaryReader = new OpticalDiscBinaryReader(reader);
@@ -364,12 +362,12 @@ public class DvdIfoParserTests
     /// Tests stream parsing across multiple fixture files to ensure robustness.
     /// </summary>
     [Theory]
-    [InlineData("Best In Show", "VTS_01_0.IFO")]
-    [InlineData("Best In Show", "VTS_02_0.IFO")]
-    [InlineData("Reservoir Dogs", "VTS_01_0.IFO")]
-    [InlineData("Reservoir Dogs", "VTS_02_0.IFO")]
-    [InlineData("The Goonies", "VTS_01_0.IFO")]
-    [InlineData("The Goonies", "VTS_02_0.IFO")]
+    [InlineData("DVD-A", "VTS_01_0.IFO")]
+    [InlineData("DVD-A", "VTS_02_0.IFO")]
+    [InlineData("DVD-B", "VTS_01_0.IFO")]
+    [InlineData("DVD-B", "VTS_02_0.IFO")]
+    [InlineData("DVD-C", "VTS_01_0.IFO")]
+    [InlineData("DVD-C", "VTS_02_0.IFO")]
     public async Task ParseVtsiAsync_MultipleFixtures_ParsesSuccessfully(string movie, string filename)
     {
         // Arrange
@@ -417,7 +415,7 @@ public class DvdIfoParserTests
     public async Task ParseVtsiAsync_ProgramChainParsing_CreatesEntriesForAllChains()
     {
         // Arrange
-        var vts01Path = Path.Combine(fixturesPath, "Best In Show", "VTS_01_0.IFO");
+        var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path);
         var reader = new MemoryOpticalDiscReader(bytes);
         var binaryReader = new OpticalDiscBinaryReader(reader);
@@ -450,9 +448,9 @@ public class DvdIfoParserTests
     /// Tests that VMGI TT_SRPT logical-title parsing follows the title table pointer.
     /// </summary>
     [Theory]
-    [InlineData("Best In Show", 23, 2)]
-    [InlineData("Reservoir Dogs", 17, 4)]
-    [InlineData("The Goonies", 9, 2)]
+    [InlineData("DVD-A", 23, 2)]
+    [InlineData("DVD-B", 17, 4)]
+    [InlineData("DVD-C", 9, 2)]
     public async Task ParseVmgiAsync_ReadsTtSrptLogicalTitles(string discName, int expectedTitleCount, int expectedTitleSetCount)
     {
         // Arrange
@@ -484,10 +482,10 @@ public class DvdIfoParserTests
     /// Tests that VTSI parsing follows VTS_PTT_SRPT and VTS_PGCIT into real chapter and PGC tables.
     /// </summary>
     [Fact]
-    public async Task ParseVtsiAsync_BestInShow_ReadsPttMapsAndProgramChains()
+    public async Task ParseVtsiAsync_MultiTitleFixture_ReadsPttMapsAndProgramChains()
     {
         // Arrange
-        var vts01Path = Path.Combine(fixturesPath, "Best In Show", "VTS_01_0.IFO");
+        var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path);
         var reader = new MemoryOpticalDiscReader(bytes);
         var binaryReader = new OpticalDiscBinaryReader(reader);
@@ -528,7 +526,7 @@ public class DvdIfoParserTests
     public async Task ParseVtsiAsync_TruncatedPttTable_ReportsDiagnostic()
     {
         // Arrange
-        var vts01Path = Path.Combine(fixturesPath, "Best In Show", "VTS_01_0.IFO");
+        var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path).Take(2050).ToArray();
         var reader = new MemoryOpticalDiscReader(bytes);
         var binaryReader = new OpticalDiscBinaryReader(reader);

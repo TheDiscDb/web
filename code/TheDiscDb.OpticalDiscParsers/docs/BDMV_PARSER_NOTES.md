@@ -18,9 +18,7 @@ The implementation intentionally parses navigation metadata only. It does not pa
 
 Fixtures are copied from the local TheDiscDb sample corpus:
 
-- `B:\code\thediscdb\BDMV`
-- `B:\code\thediscdb\CLPI`
-- `B:\code\thediscdb\Mpls`
+- local BDMV, CLPI, MPLS, and DVD IFO control-file samples
 - existing DVD IFO fixtures in the test fixture tree
 
 See:
@@ -86,7 +84,7 @@ Fields that still require payload inspection, stream decoding, or profile-specif
 
 Standalone clip association is a Blu-ray filesystem convention, not an embedded CLPI field: an ODM mapper can pair `BDMV/CLIPINF/xxxxx.clpi` with `BDMV/STREAM/xxxxx.m2ts` by the shared five-character file stem while still using only CLPI control-file bytes for timing and stream evidence.
 
-For 3D dependent-view clips, CLPI `ExtensionData` entry `2.5` may declare stereoscopic stream attributes even when standard ProgramInfo has zero streams. The parser exposes those records through `ClpiFile.ExtensionStreams`; for the Avengers Age of Ultron 3D `00301.clpi` fixture this includes PID `0x1012`, coding type `0x20` (`MVC Video`), format code `6`, and rate code `1`.
+For 3D dependent-view clips, CLPI `ExtensionData` entry `2.5` may declare stereoscopic stream attributes even when standard ProgramInfo has zero streams. The parser exposes those records through `ClpiFile.ExtensionStreams`; the `BD-3D/00301.clpi` fixture includes PID `0x1012`, coding type `0x20` (`MVC Video`), format code `6`, and rate code `1`.
 
 ## MPLS ExtensionData and MVC dependent views
 
@@ -105,7 +103,7 @@ Supported extension entries:
 | `2.1` | STN SS extension | Dependent-view stereoscopic stream records, including stream type, SubPath/SubClip ids, PID, coding type, format code, rate code, raw attributes, and offset-sequence count |
 | `2.2` | SubPath entries extension | Extension SubPath/SubPlayItem records, including SS Video SubPath type `8`, dependent clip id, codec id, STC id, in/out times, sync PlayItem id, sync PTS, and referenced clips |
 
-When both entries are present, the parser creates `MplsStereoVideoRelationship` records. For the Avengers Age of Ultron 3D `00800.mpls` fixture, this exposes base clip `00300` with dependent MVC clip `00301` as relationship type `3d-dependent-view`; the playlist remains a single non-multi-angle PlayItem and the dependent view is not modeled as an alternate angle or logical title.
+When both entries are present, the parser creates `MplsStereoVideoRelationship` records. For the `BD-3D/00800.mpls` fixture, this exposes base clip `00300` with dependent MVC clip `00301` as relationship type `3d-dependent-view`; the playlist remains a single non-multi-angle PlayItem and the dependent view is not modeled as an alternate angle or logical title.
 
 SSIF is a filesystem presentation for interleaved stereoscopic streams. The parser does not inspect `.ssif` or `.m2ts` payloads and does not infer payload-derived facts such as exact profile/level, Dolby Vision data, bitrate, decoded frame layout, or forced-subtitle variants.
 
@@ -118,7 +116,7 @@ SSIF is a filesystem presentation for interleaved stereoscopic streams. The pars
 
 Fixture observation: all currently committed MPLS fixtures contain only mark type `0x01` for parsed marks. The ODM chapter mapper should count chapter marks with `MarkType == MplsPlaylistMark.EntryMarkType` (or `IsEntryMark`) and should not treat link marks (`0x02`) as chapters.
 
-3D fixture observation: `Avengers Age of Ultron 3D/00800.mpls` has 15 authored entry marks. The final entry mark is 11,262 ticks at 45 kHz before the PlayItem end. The parser intentionally exposes all authored marks accurately; MakeMKV-style chapter-end filtering belongs in ODM mapping or presentation policy, not in the parser.
+3D fixture observation: `BD-3D/00800.mpls` has 15 authored entry marks. The final entry mark is 11,262 ticks at 45 kHz before the PlayItem end. The parser intentionally exposes all authored marks accurately; MakeMKV-style chapter-end filtering belongs in ODM mapping or presentation policy, not in the parser.
 
 ## Manifest-mapping and schema-change proposals
 

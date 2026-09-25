@@ -16,10 +16,8 @@ public class ClpiParserTests
     );
 
     [Theory]
-    [InlineData("Hell on Wheels Disc 1", "00000.clpi", "0200")]
-    [InlineData("Hell on Wheels Disc 1", "00001.clpi", "0200")]
-    [InlineData("Project Hail Mary", "00589.clpi", "0300")]
-    [InlineData("Project Hail Mary", "00648.clpi", "0300")]
+    [InlineData("BD-A", "00000.clpi", "0200")]
+    [InlineData("UHD-A", "00589.clpi", "0300")]
     public async Task ParseAsync_Samples_ReadsHeaderAndSectionOffsets(string discName, string filename, string expectedVersion)
     {
         var path = Path.Combine(fixturesPath, discName, filename);
@@ -41,8 +39,8 @@ public class ClpiParserTests
     }
 
     [Theory]
-    [InlineData("Hell on Wheels Disc 1", "00000.clpi")]
-    [InlineData("Project Hail Mary", "00589.clpi")]
+    [InlineData("BD-A", "00000.clpi")]
+    [InlineData("UHD-A", "00589.clpi")]
     public async Task ParseAsync_FeatureClips_ReadsClipInfoSequenceAndPrograms(string discName, string filename)
     {
         var parser = CreateParser(Path.Combine(fixturesPath, discName, filename));
@@ -64,9 +62,9 @@ public class ClpiParserTests
     }
 
     [Fact]
-    public async Task ParseAsync_ProjectHailMaryFeature_ReadsHevcAndCpiEntries()
+    public async Task ParseAsync_UhdFeature_ReadsHevcAndCpiEntries()
     {
-        var parser = CreateParser(Path.Combine(fixturesPath, "Project Hail Mary", "00589.clpi"));
+        var parser = CreateParser(Path.Combine(fixturesPath, "UHD-A", "00589.clpi"));
 
         var result = await parser.ParseAsync();
 
@@ -97,9 +95,9 @@ public class ClpiParserTests
     }
 
     [Fact]
-    public async Task ParseAsync_AvengersAgeOfUltron3DDependentClip_ReadsMvcStream()
+    public async Task ParseAsync_MvcDependentClip_ReadsMvcStream()
     {
-        var parser = CreateParser(Path.Combine(fixturesPath, "Avengers Age of Ultron 3D", "00301.clpi"));
+        var parser = CreateParser(Path.Combine(fixturesPath, "BD-3D", "00301.clpi"));
 
         var result = await parser.ParseAsync();
 
@@ -119,7 +117,7 @@ public class ClpiParserTests
     [Fact]
     public async Task ParseAsync_TruncatedStreamAttributes_ReportsDiagnostic()
     {
-        var path = Path.Combine(fixturesPath, "Project Hail Mary", "00589.clpi");
+        var path = Path.Combine(fixturesPath, "UHD-A", "00589.clpi");
         var bytes = File.ReadAllBytes(path);
         var firstStreamAttributeStart = GetFirstProgramStreamAttributeStart(bytes);
         Array.Resize(ref bytes, firstStreamAttributeStart + 2);

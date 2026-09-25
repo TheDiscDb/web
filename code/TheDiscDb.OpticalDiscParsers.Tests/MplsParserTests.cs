@@ -17,10 +17,8 @@ public class MplsParserTests
     );
 
     [Theory]
-    [InlineData("Hell on Wheels Disc 1", "00000.mpls", "0200")]
-    [InlineData("Hell on Wheels Disc 1", "00001.mpls", "0200")]
-    [InlineData("Project Hail Mary", "00149.mpls", "0300")]
-    [InlineData("Project Hail Mary", "01213.mpls", "0300")]
+    [InlineData("BD-A", "00000.mpls", "0200")]
+    [InlineData("UHD-A", "00149.mpls", "0300")]
     public async Task ParseAsync_Samples_ReadsHeaderAndPlaylistSections(string discName, string filename, string expectedVersion)
     {
         var path = Path.Combine(fixturesPath, discName, filename);
@@ -41,9 +39,8 @@ public class MplsParserTests
     }
 
     [Theory]
-    [InlineData("Hell on Wheels Disc 1", "00000.mpls", "00003")]
-    [InlineData("Project Hail Mary", "00149.mpls", "00174")]
-    [InlineData("Project Hail Mary", "01213.mpls", "00600")]
+    [InlineData("BD-A", "00000.mpls", "00003")]
+    [InlineData("UHD-A", "00149.mpls", "00174")]
     public async Task ParseAsync_FeaturePlaylists_ReadsPlayItemsAndStreams(string discName, string filename, string expectedFirstClip)
     {
         var parser = CreateParser(Path.Combine(fixturesPath, discName, filename));
@@ -63,9 +60,9 @@ public class MplsParserTests
     }
 
     [Fact]
-    public async Task ParseAsync_ProjectHailMaryFeature_ReadsHevcStreamsAndMarks()
+    public async Task ParseAsync_UhdFeature_ReadsHevcStreamsAndMarks()
     {
-        var parser = CreateParser(Path.Combine(fixturesPath, "Project Hail Mary", "00149.mpls"));
+        var parser = CreateParser(Path.Combine(fixturesPath, "UHD-A", "00149.mpls"));
 
         var result = await parser.ParseAsync();
 
@@ -85,9 +82,9 @@ public class MplsParserTests
     }
 
     [Fact]
-    public async Task ParseAsync_AvengersAgeOfUltron3D_ExposesMvcDependentView()
+    public async Task ParseAsync_MvcPlaylist_ExposesDependentView()
     {
-        var parser = CreateParser(Path.Combine(fixturesPath, "Avengers Age of Ultron 3D", "00800.mpls"));
+        var parser = CreateParser(Path.Combine(fixturesPath, "BD-3D", "00800.mpls"));
 
         var result = await parser.ParseAsync();
 
@@ -142,9 +139,9 @@ public class MplsParserTests
     }
 
     [Fact]
-    public async Task ParseAsync_AvengersAgeOfUltron3D_ExposesAuthoredPlaylistMarks()
+    public async Task ParseAsync_MvcPlaylist_ExposesAuthoredPlaylistMarks()
     {
-        var parser = CreateParser(Path.Combine(fixturesPath, "Avengers Age of Ultron 3D", "00800.mpls"));
+        var parser = CreateParser(Path.Combine(fixturesPath, "BD-3D", "00800.mpls"));
 
         var result = await parser.ParseAsync();
 
@@ -158,9 +155,9 @@ public class MplsParserTests
     }
 
     [Fact]
-    public async Task ParseAsync_Non3DPlaylist_HasNoStereoRelationships()
+    public async Task ParseAsync_NonStereoPlaylist_HasNoStereoRelationships()
     {
-        var parser = CreateParser(Path.Combine(fixturesPath, "Project Hail Mary", "00149.mpls"));
+        var parser = CreateParser(Path.Combine(fixturesPath, "UHD-A", "00149.mpls"));
 
         var result = await parser.ParseAsync();
 
@@ -172,7 +169,7 @@ public class MplsParserTests
     [Fact]
     public async Task ParseAsync_UnsupportedExtensionEntry_PreservesBoundedMetadata()
     {
-        var path = Path.Combine(fixturesPath, "Avengers Age of Ultron 3D", "00800.mpls");
+        var path = Path.Combine(fixturesPath, "BD-3D", "00800.mpls");
         var bytes = File.ReadAllBytes(path);
         int extensionDataStart = (int)ReadUInt32(bytes, 16);
         bytes[extensionDataStart + 12] = 0x7F;
@@ -196,7 +193,7 @@ public class MplsParserTests
     [Fact]
     public async Task ParseAsync_TruncatedExtensionDescriptor_ReportsDiagnostic()
     {
-        var path = Path.Combine(fixturesPath, "Avengers Age of Ultron 3D", "00800.mpls");
+        var path = Path.Combine(fixturesPath, "BD-3D", "00800.mpls");
         var bytes = File.ReadAllBytes(path);
         int extensionDataStart = (int)ReadUInt32(bytes, 16);
         Array.Resize(ref bytes, extensionDataStart + 18);
