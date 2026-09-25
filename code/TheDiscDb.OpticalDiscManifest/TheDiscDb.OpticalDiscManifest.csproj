@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0;net8.0-browser</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Schema\optical-disc-manifest-v1.schema.json" />
+    <PackageReference Include="JsonSchema.Net" Version="9.4.0" />
+    <ProjectReference Include="..\TheDiscDb.OpticalDiscParsers\TheDiscDb.OpticalDiscParsers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="TheDiscDb.OpticalDiscParsers.Tests" />
+  </ItemGroup>
+
+</Project>

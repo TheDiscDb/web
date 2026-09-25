@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TheDiscDb.OpticalDiscManifest\TheDiscDb.OpticalDiscManifest.csproj" />
     <ProjectReference Include="..\TheDiscDb.OpticalDiscParsers\TheDiscDb.OpticalDiscParsers.csproj" />
   </ItemGroup>
 

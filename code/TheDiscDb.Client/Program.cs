@@ -6,6 +6,9 @@ using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb.Client;
 using TheDiscDb.Client.Interop;
+using TheDiscDb.Client.Services;
+using TheDiscDb.OpticalDiscManifest.Generation;
+using TheDiscDb.OpticalDiscManifest.Validation;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Client;
 
@@ -47,6 +50,9 @@ builder.Services
 builder.Services.AddFileSystemAccessService();
 builder.Services.AddFileSystemAccessServiceInProcess();
 builder.Services.AddScoped<DiscDirectoryPicker>();
+builder.Services.AddSingleton<OpticalDiscManifestSchemaValidator>();
+builder.Services.AddScoped<OpticalDiscManifestGenerator>();
+builder.Services.AddScoped<BrowserOpticalDiscManifestScanner>();
 
 builder.Services.AddScoped<IExternalSearchService, ExternalSearchService>();
 

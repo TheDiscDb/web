@@ -1,6 +1,8 @@
+using TheDiscDb.OpticalDiscManifest.Generation;
+
 namespace TheDiscDb.Client.Pages.Contribute;
 
-public sealed class DiscScanFile
+public sealed class DiscScanFile : IManifestDiscFile
 {
     private readonly Func<long, CancellationToken, ValueTask<byte[]>> readBytes;
 

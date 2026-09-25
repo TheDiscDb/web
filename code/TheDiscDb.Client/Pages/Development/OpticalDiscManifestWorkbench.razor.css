@@ -1,0 +1,54 @@
+.manifest-workbench {
+    margin: 0 auto;
+    max-width: 90rem;
+    padding: 2rem 1rem;
+}
+
+.scan-status,
+.download-row,
+.alert {
+    margin-top: 1rem;
+}
+
+.metrics {
+    display: grid;
+    grid-template-columns: minmax(10rem, max-content) 1fr;
+    gap: 0.35rem 1rem;
+}
+
+.metrics dt {
+    font-weight: 600;
+}
+
+.metrics dd {
+    margin: 0;
+}
+
+.download-row {
+    display: flex;
+    gap: 0.75rem;
+}
+
+pre {
+    max-height: 40rem;
+    overflow: auto;
+    padding: 1rem;
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.25rem;
+}
+
+.title-filter {
+    max-width: 24rem;
+    margin-bottom: 0.75rem;
+}
+
+.manifest-json-details {
+    margin-top: 1rem;
+}
+
+.manifest-json-details > summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}

@@ -1,0 +1,206 @@
+@page "/development/optical-disc-manifest"
+@inherits CancellableComponentBase
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<PageTitle>Optical Disc Manifest Workbench</PageTitle>
+
+@if (!isDevelopment)
+{
+    <p>This page is available only in development.</p>
+}
+else
+{
+    <div class="manifest-workbench">
+        <h1>Optical Disc Manifest Workbench</h1>
+        <p>
+            Select the root of a mounted DVD, Blu-ray, or UHD Blu-ray. Processing
+            stays in this browser. The scanner reads only bounded navigation
+            metadata and never opens VOB or M2TS payloads.
+        </p>
+
+        <button class="btn btn-primary" @onclick="ScanAsync" disabled="@isScanning">
+            @(isScanning ? "Scanning..." : "Select Disc Root Folder")
+        </button>
+
+        @if (isScanning)
+        {
+            <div class="scan-status">
+                <LoadingIndicator Message="@stage" />
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-danger">@error</div>
+        }
+
+        @if (result is not null)
+        {
+            <section class="info-card">
+                <h2>Scan summary</h2>
+                <dl class="metrics">
+                    <dt>Format</dt>
+                    <dd>@result.Manifest.Disc.Format</dd>
+                    <dt>Schema valid</dt>
+                    <dd>@(result.Validation.IsValid ? "Yes" : "No")</dd>
+                    <dt>Files enumerated</dt>
+                    <dd>@result.Metrics.FilesEnumerated</dd>
+                    <dt>Control files read</dt>
+                    <dd>@result.Metrics.ControlFilesRead</dd>
+                    <dt>Control bytes read</dt>
+                    <dd>@result.Metrics.ControlBytesRead.ToString("N0")</dd>
+                    <dt>Manifest bytes</dt>
+                    <dd>@result.Metrics.OutputBytes.ToString("N0")</dd>
+                    <dt>Elapsed</dt>
+                    <dd>@result.Metrics.ElapsedMilliseconds.ToString("N1") ms</dd>
+                    <dt>Managed memory delta</dt>
+                    <dd>@FormatMemoryDelta()</dd>
+                </dl>
+
+                <h2>Capabilities</h2>
+                <ul>
+                    @foreach (var capability in result.Manifest.Capabilities)
+                    {
+                        <li><code>@capability</code></li>
+                    }
+                </ul>
+
+                <h2>Diagnostics</h2>
+                @if (result.Manifest.Diagnostics is not { Count: > 0 }
+                    && result.Validation.Errors.Count == 0)
+                {
+                    <p>No diagnostics.</p>
+                }
+                else
+                {
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Severity</th>
+                                <th>Code</th>
+                                <th>Path / offset</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var diagnostic in result.Manifest.Diagnostics ?? [])
+                            {
+                                <tr>
+                                    <td>@diagnostic.Severity</td>
+                                    <td><code>@diagnostic.Code</code></td>
+                                    <td>@FormatLocation(diagnostic)</td>
+                                    <td>@diagnostic.Message</td>
+                                </tr>
+                            }
+                            @foreach (var validationError in result.Validation.Errors)
+                            {
+                                <tr>
+                                    <td>error</td>
+                                    <td><code>ODM_SCHEMA</code></td>
+                                    <td></td>
+                                    <td>@validationError</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+
+                <div class="download-row">
+                    <button class="btn btn-primary"
+                            @onclick="DownloadAsync"
+                            disabled="@(!result.Validation.IsValid)">
+                        Download .odm.json
+                    </button>
+                    <button class="btn btn-secondary" @onclick="Reset">Clear</button>
+                </div>
+
+                <h2>Titles (@titleRows.Count)</h2>
+                <p>
+                    Sorted largest-first by observed size so the main feature (for a
+                    stereoscopic 3D title, the combined base + dependent-view size)
+                    surfaces at the top. Filter by playlist path, clip id, or "3D".
+                </p>
+                @if (titleRows.Count == 0)
+                {
+                    <p>No titles found.</p>
+                }
+                else
+                {
+                    <input class="form-control title-filter"
+                           type="search"
+                           placeholder="Filter titles (e.g. 00800, 3D, clip id)..."
+                           @bind="titleFilter"
+                           @bind:event="oninput" />
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Index</th>
+                                <th>Source</th>
+                                <th>Duration</th>
+                                <th>Chapters</th>
+                                <th>Size</th>
+                                <th>3D</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var title in FilteredTitleRows)
+                            {
+                                <tr>
+                                    <td>@title.Index</td>
+                                    <td><code>@title.SourcePath</code></td>
+                                    <td>@(title.DurationDisplay ?? "—")</td>
+                                    <td>@(title.ChapterCount?.ToString() ?? "—")</td>
+                                    <td>@(title.SizeDisplay ?? "—")</td>
+                                    <td>
+                                        @if (title.Is3D)
+                                        {
+                                            <span class="badge bg-info" title="@title.StereoscopicSummary">3D</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+
+                @if (clipRows.Count > 0)
+                {
+                    <h2>CLPI-backed clips (@clipRows.Count)</h2>
+                    <p>
+                        Standalone <code>BDMV/STREAM</code>/<code>BDMV/CLIPINF</code> clip
+                        candidates, distinct from titles above (not asserted as playable
+                        logical titles or playlists).
+                    </p>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Clip</th>
+                                <th>Stream path</th>
+                                <th>Duration</th>
+                                <th>Size</th>
+                                <th>Streams</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var clip in clipRows)
+                            {
+                                <tr>
+                                    <td><code>@clip.ClipId</code></td>
+                                    <td><code>@clip.StreamPath</code></td>
+                                    <td>@(clip.DurationDisplay ?? "—")</td>
+                                    <td>@(clip.SizeDisplay ?? "—")</td>
+                                    <td>@clip.StreamCount</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+
+                <details class="manifest-json-details">
+                    <summary>Manifest JSON (raw, click to expand)</summary>
+                    <pre><code>@json</code></pre>
+                </details>
+            </section>
+        }
+    </div>
+}

@@ -1,0 +1,834 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.thediscdb.com/optical-disc-manifest/v1/optical-disc-manifest.schema.json",
+  "title": "Optical Disc Manifest v1",
+  "description": "A tool-neutral manifest of observed DVD, Blu-ray, or UHD Blu-ray structure.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "producer",
+    "capabilities",
+    "disc"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri-reference"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "producer": {
+      "$ref": "#/$defs/producer"
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "disc.identifiers",
+          "disc.files.hash-inputs",
+          "disc.files.complete",
+          "disc.titles",
+          "disc.titles.complete",
+          "disc.segments",
+          "disc.streams.declared",
+          "disc.streams.payload-verified",
+          "disc.chapters.counts",
+          "disc.chapters.timing",
+          "disc.titles.stereoscopic-3d",
+          "disc.clips"
+        ]
+      }
+    },
+    "capturedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "disc": {
+      "$ref": "#/$defs/disc"
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/diagnostic"
+      }
+    },
+    "extensions": {
+      "$ref": "#/$defs/extensions"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "contains": {
+              "const": "disc.files.complete"
+            }
+          }
+        },
+        "required": [
+          "capabilities"
+        ]
+      },
+      "then": {
+        "properties": {
+          "disc": {
+            "required": [
+              "files"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "capabilities": {
+            "contains": {
+              "const": "disc.titles.complete"
+            }
+          }
+        },
+        "required": [
+          "capabilities"
+        ]
+      },
+      "then": {
+        "properties": {
+          "disc": {
+            "required": [
+              "titles"
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048
+        }
+      }
+    },
+    "disc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format"
+      ],
+      "properties": {
+        "format": {
+          "enum": [
+            "dvd",
+            "blu-ray",
+            "uhd-blu-ray",
+            "unknown"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "identifiers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/file"
+          }
+        },
+        "titles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/title"
+          }
+        },
+        "clips": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/clip"
+          }
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "identifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value",
+        "computedBy"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "aacs-disc-id",
+            "dvd-disc-id",
+            "matrix256",
+            "legacy-disc-hash"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[0-9A-Fa-f]{32,128}$"
+        },
+        "computedBy": {
+          "enum": [
+            "producer",
+            "server",
+            "unknown"
+          ]
+        },
+        "algorithmVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "inputPaths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        }
+      }
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*//).+$"
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sizeBytes"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "modifiedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "role": {
+          "enum": [
+            "metadata",
+            "playlist",
+            "stream",
+            "menu",
+            "backup",
+            "other"
+          ]
+        }
+      }
+    },
+    "title": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "source"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source": {
+          "$ref": "#/$defs/titleSource"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "durationTicks45k": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "chapterCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "chapters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/chapter"
+          }
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/segment"
+          }
+        },
+        "streams": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stream"
+          }
+        },
+        "stereoscopic3D": {
+          "$ref": "#/$defs/stereoscopicView"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "titleSource": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/bluRayPlaylistSource"
+        },
+        {
+          "$ref": "#/$defs/bluRayStreamSource"
+        },
+        {
+          "$ref": "#/$defs/dvdPgcSource"
+        },
+        {
+          "$ref": "#/$defs/dvdTitleSource"
+        },
+        {
+          "$ref": "#/$defs/fileSource"
+        },
+        {
+          "$ref": "#/$defs/unknownSource"
+        }
+      ]
+    },
+    "bluRayPlaylistSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "path"
+      ],
+      "properties": {
+        "kind": {
+          "const": "blu-ray-playlist"
+        },
+        "path": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/path"
+            },
+            {
+              "pattern": "^BDMV/PLAYLIST/[^/]+\\.[Mm][Pp][Ll][Ss]$"
+            }
+          ]
+        }
+      }
+    },
+    "bluRayStreamSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "path"
+      ],
+      "properties": {
+        "kind": {
+          "const": "blu-ray-stream"
+        },
+        "path": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/path"
+            },
+            {
+              "pattern": "^BDMV/STREAM/[^/]+\\.[Mm]2[Tt][Ss]$"
+            }
+          ]
+        }
+      }
+    },
+    "dvdPgcSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "titleSet",
+        "pgc"
+      ],
+      "properties": {
+        "kind": {
+          "const": "dvd-pgc"
+        },
+        "titleSet": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 99
+        },
+        "pgc": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "angle": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "dvdTitleSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "title",
+        "titleSet",
+        "titleSetTitle"
+      ],
+      "properties": {
+        "kind": {
+          "const": "dvd-title"
+        },
+        "title": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "titleSet": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "titleSetTitle": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 99
+        },
+        "angle": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "fileSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "path"
+      ],
+      "properties": {
+        "kind": {
+          "const": "file"
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        }
+      }
+    },
+    "unknownSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "label"
+      ],
+      "properties": {
+        "kind": {
+          "const": "unknown"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        }
+      }
+    },
+    "chapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "startSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "durationSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "startTicks45k": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "durationTicks45k": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "clip"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clip": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "filePath": {
+          "$ref": "#/$defs/path"
+        },
+        "startSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "durationSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "startTicks45k": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "durationTicks45k": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "angle": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "stream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "type",
+        "codec"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "type": {
+          "enum": [
+            "video",
+            "audio",
+            "subtitle",
+            "data",
+            "unknown"
+          ]
+        },
+        "codec": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "pid": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8191
+        },
+        "codingTypeCode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "formatCode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "rateCode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "dynamicRangeTypeCode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        },
+        "colorSpaceCode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        },
+        "hdrPlusFlag": {
+          "type": "boolean"
+        },
+        "line21ClosedCaptionFields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": [1, 2]
+          }
+        },
+        "language": {
+          "type": "string",
+          "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$"
+        },
+        "languageName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "audioLayout": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "resolution": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "aspectRatio": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        }
+      }
+    },
+    "stereoscopicView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relationshipType",
+        "baseClipId",
+        "dependentClipId"
+      ],
+      "properties": {
+        "relationshipType": {
+          "const": "3d-dependent-view"
+        },
+        "baseClipId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "baseCodecId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "baseStcId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dependentClipId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "dependentCodecId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "dependentStcId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "syncPlayItemId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "syncPresentationTimestampTicks45k": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "isSsVideoSubPath": {
+          "type": "boolean"
+        },
+        "dependentStream": {
+          "$ref": "#/$defs/stereoscopicDependentStream"
+        }
+      }
+    },
+    "stereoscopicDependentStream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "codingTypeCode",
+        "codec"
+      ],
+      "properties": {
+        "pid": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 8191
+        },
+        "codingTypeCode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "codec": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "formatCode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "rateCode": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        }
+      }
+    },
+    "clip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clipId"
+      ],
+      "properties": {
+        "clipId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "streamPath": {
+          "$ref": "#/$defs/path"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "clipInfoPath": {
+          "$ref": "#/$defs/path"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "durationTicks45k": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "numberOfSourcePackets": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "transportStreamRecordingRate": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "streams": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stream"
+          }
+        }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "severity",
+        "code",
+        "message"
+      ],
+      "properties": {
+        "severity": {
+          "enum": [
+            "info",
+            "warning",
+            "error"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_.-]{1,63}$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "byteOffset": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9]+(?:\\.[a-z0-9-]+)+(?:/[A-Za-z0-9._~-]+)+$"
+      },
+      "additionalProperties": true
+    }
+  }
+}
