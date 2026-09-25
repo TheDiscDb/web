@@ -42,7 +42,7 @@ public class BdmvParserTests
         Assert.Equal(expectedTitleCount, index.Titles.Count);
         Assert.Equal(expectedFirstPlaybackType, index.FirstPlayback.ObjectType);
         Assert.Equal(expectedTopMenuType, index.TopMenu.ObjectType);
-        Assert.Empty(index.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+        Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public class BdmvParserTests
         Assert.Equal(expectedObjectCount, movieObjects.Objects.Count);
         Assert.Equal(expectedFirstObjectCommands, movieObjects.Objects[0].NumberOfCommands);
         Assert.Equal(movieObjects.Objects[0].NumberOfCommands, movieObjects.Objects[0].Commands.Count);
-        Assert.Empty(movieObjects.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+        Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
     [Fact]
@@ -106,8 +106,6 @@ public class BdmvParserTests
     private static BdmvParser CreateParser(string path)
     {
         var bytes = File.ReadAllBytes(path);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        return new BdmvParser(binaryReader);
+        return new BdmvParser(new MemoryOpticalDiscReader(bytes));
     }
 }

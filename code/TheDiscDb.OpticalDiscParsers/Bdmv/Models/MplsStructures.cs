@@ -1,7 +1,5 @@
 namespace TheDiscDb.OpticalDiscParsers.Bdmv.Models;
 
-using TheDiscDb.OpticalDiscParsers.Diagnostics;
-
 /// <summary>
 /// Represents parsed information from a Blu-ray playlist (.mpls) file.
 /// </summary>
@@ -43,8 +41,6 @@ public record MplsPlaylist
     /// <summary>Gets explicit stereoscopic base/dependent-view relationships.</summary>
     public required IReadOnlyList<MplsStereoVideoRelationship> StereoVideoRelationships { get; init; }
 
-    /// <summary>Gets diagnostics generated while parsing.</summary>
-    public required IReadOnlyList<ParserDiagnostic> Diagnostics { get; init; }
 }
 
 /// <summary>

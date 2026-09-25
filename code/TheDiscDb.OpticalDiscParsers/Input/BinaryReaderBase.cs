@@ -7,15 +7,17 @@ using Diagnostics;
 /// Base class for defensive, bounds-checking binary readers.
 /// Validates every read operation and emits diagnostics for malformed data.
 /// </summary>
-public abstract class BinaryReaderBase
+internal abstract class BinaryReaderBase
 {
+    private readonly DiagnosticBag diagnostics;
     private long position;
 
     /// <summary>
     /// Creates a new binary reader with initial position 0.
     /// </summary>
-    protected BinaryReaderBase()
+    protected BinaryReaderBase(DiagnosticBag diagnostics)
     {
+        this.diagnostics = diagnostics;
         position = 0;
     }
 
@@ -23,11 +25,6 @@ public abstract class BinaryReaderBase
     /// Gets the current read position.
     /// </summary>
     public long Position => position;
-
-    /// <summary>
-    /// Gets the diagnostic bag for this reader.
-    /// </summary>
-    public DiagnosticBag Diagnostics { get; protected init; } = new();
 
     /// <summary>
     /// Reads bytes from the source asynchronously.
@@ -46,14 +43,14 @@ public abstract class BinaryReaderBase
         const int size = sizeof(uint);
         if (!TryCheckBounds(position, size, out var error))
         {
-            Diagnostics.Error(position, "BOUNDS_ERROR", error);
+            diagnostics.Error(position, "BOUNDS_ERROR", error);
             return 0;
         }
 
         var data = await ReadCoreAsync(position, size);
         if (data.Length < size)
         {
-            Diagnostics.Error(position, "TRUNCATED_READ", $"Expected {size} bytes, got {data.Length}");
+            diagnostics.Error(position, "TRUNCATED_READ", $"Expected {size} bytes, got {data.Length}");
             return 0;
         }
 
@@ -71,14 +68,14 @@ public abstract class BinaryReaderBase
         const int size = sizeof(uint);
         if (!TryCheckBounds(position, size, out var error))
         {
-            Diagnostics.Error(position, "BOUNDS_ERROR", error);
+            diagnostics.Error(position, "BOUNDS_ERROR", error);
             return 0;
         }
 
         var data = await ReadCoreAsync(position, size);
         if (data.Length < size)
         {
-            Diagnostics.Error(position, "TRUNCATED_READ", $"Expected {size} bytes, got {data.Length}");
+            diagnostics.Error(position, "TRUNCATED_READ", $"Expected {size} bytes, got {data.Length}");
             return 0;
         }
 
@@ -95,14 +92,14 @@ public abstract class BinaryReaderBase
         const int size = sizeof(ushort);
         if (!TryCheckBounds(position, size, out var error))
         {
-            Diagnostics.Error(position, "BOUNDS_ERROR", error);
+            diagnostics.Error(position, "BOUNDS_ERROR", error);
             return 0;
         }
 
         var data = await ReadCoreAsync(position, size);
         if (data.Length < size)
         {
-            Diagnostics.Error(position, "TRUNCATED_READ", $"Expected {size} bytes, got {data.Length}");
+            diagnostics.Error(position, "TRUNCATED_READ", $"Expected {size} bytes, got {data.Length}");
             return 0;
         }
 
@@ -119,14 +116,14 @@ public abstract class BinaryReaderBase
         const int size = sizeof(byte);
         if (!TryCheckBounds(position, size, out var error))
         {
-            Diagnostics.Error(position, "BOUNDS_ERROR", error);
+            diagnostics.Error(position, "BOUNDS_ERROR", error);
             return 0;
         }
 
         var data = await ReadCoreAsync(position, size);
         if (data.Length < size)
         {
-            Diagnostics.Error(position, "TRUNCATED_READ", "Expected 1 byte, got 0");
+            diagnostics.Error(position, "TRUNCATED_READ", "Expected 1 byte, got 0");
             return 0;
         }
 
@@ -144,7 +141,7 @@ public abstract class BinaryReaderBase
     {
         if (length < 0)
         {
-            Diagnostics.Error(position, "INVALID_LENGTH", $"Requested length {length} is negative");
+            diagnostics.Error(position, "INVALID_LENGTH", $"Requested length {length} is negative");
             return ReadOnlyMemory<byte>.Empty;
         }
 
@@ -155,14 +152,14 @@ public abstract class BinaryReaderBase
 
         if (!TryCheckBounds(position, length, out var error))
         {
-            Diagnostics.Error(position, "BOUNDS_ERROR", error);
+            diagnostics.Error(position, "BOUNDS_ERROR", error);
             return ReadOnlyMemory<byte>.Empty;
         }
 
         var data = await ReadCoreAsync(position, length);
         if (data.Length < length)
         {
-            Diagnostics.Warning(position, "PARTIAL_READ", $"Expected {length} bytes, got {data.Length}");
+            diagnostics.Warning(position, "PARTIAL_READ", $"Expected {length} bytes, got {data.Length}");
         }
 
         position += data.Length;
@@ -176,7 +173,7 @@ public abstract class BinaryReaderBase
     {
         if (offset < 0)
         {
-            Diagnostics.Error(offset, "INVALID_SEEK", "Seek offset cannot be negative");
+            diagnostics.Error(offset, "INVALID_SEEK", "Seek offset cannot be negative");
             return;
         }
 

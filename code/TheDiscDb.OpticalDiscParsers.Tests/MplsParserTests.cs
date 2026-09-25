@@ -35,7 +35,7 @@ public class MplsParserTests
         Assert.True(playlist.PlaylistStartAddress > 0);
         Assert.True(playlist.PlaylistMarkStartAddress > playlist.PlaylistStartAddress);
         Assert.NotEmpty(playlist.PlayItems);
-        Assert.Empty(playlist.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+        Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
     [Theory]
@@ -135,7 +135,7 @@ public class MplsParserTests
         Assert.Equal("MVC Video", relationship.DependentViewStream.CodingType);
         Assert.Equal(6, relationship.DependentViewStream.FormatCode.GetValueOrDefault());
         Assert.Equal(1, relationship.DependentViewStream.RateCode.GetValueOrDefault());
-        Assert.Empty(playlist.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+        Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
     [Fact]
@@ -207,6 +207,52 @@ public class MplsParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_TruncatedHeader_ReturnsReaderAndParserDiagnostics()
+    {
+        var parser = CreateParser("MP"u8.ToArray());
+
+        var result = await parser.ParseAsync();
+
+        Assert.Null(result.Value);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "PARTIAL_READ");
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "MP001");
+    }
+
+    [Fact]
+    public async Task ParseAsync_ReusedParser_DoesNotLeakDiagnosticsBetweenCalls()
+    {
+        var validBytes = File.ReadAllBytes(Path.Combine(fixturesPath, "BD-A", "00000.mpls"));
+        var source = new MutableOpticalDiscReader("MP"u8.ToArray());
+        var parser = new MplsParser(source);
+
+        var failed = await parser.ParseAsync();
+        source.Data = validBytes;
+        var succeeded = await parser.ParseAsync();
+
+        Assert.NotEmpty(failed.Diagnostics);
+        Assert.NotNull(succeeded.Value);
+        Assert.DoesNotContain(succeeded.Diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Fact]
+    public async Task ParseAsync_ConcurrentCalls_UseIndependentCursors()
+    {
+        var bytes = File.ReadAllBytes(Path.Combine(fixturesPath, "BD-A", "00000.mpls"));
+        var parser = new MplsParser(new MemoryOpticalDiscReader(bytes));
+
+        var results = await Task.WhenAll(
+            parser.ParseAsync().AsTask(),
+            parser.ParseAsync().AsTask());
+
+        Assert.All(results, result => Assert.NotNull(result.Value));
+        Assert.Equal(
+            results[0].Value!.PlayItems.Select(item => (item.ClipId, item.InTime, item.OutTime)),
+            results[1].Value!.PlayItems.Select(item => (item.ClipId, item.InTime, item.OutTime)));
+        Assert.DoesNotContain(results.SelectMany(result => result.Diagnostics),
+            diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+    }
+
+    [Fact]
     public async Task ParseAsync_AllFixtures_ParseWithoutCriticalErrors()
     {
         var files = Directory.GetFiles(fixturesPath, "*.mpls", SearchOption.AllDirectories);
@@ -218,7 +264,7 @@ public class MplsParserTests
             var result = await parser.ParseAsync();
 
             Assert.NotNull(result.Value);
-            Assert.Empty(result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+            Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
         }
     }
 
@@ -230,9 +276,7 @@ public class MplsParserTests
 
     private static MplsParser CreateParser(byte[] bytes)
     {
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        return new MplsParser(binaryReader);
+        return new MplsParser(new MemoryOpticalDiscReader(bytes));
     }
 
     private static uint ReadUInt32(byte[] bytes, int offset)
@@ -240,4 +284,23 @@ public class MplsParserTests
             | ((uint)bytes[offset + 1] << 16)
             | ((uint)bytes[offset + 2] << 8)
             | bytes[offset + 3];
+
+    private sealed class MutableOpticalDiscReader(byte[] data) : IOpticalDiscReader
+    {
+        public byte[] Data { get; set; } = data;
+
+        public ValueTask<ReadOnlyMemory<byte>> ReadAsync(long offset, int length)
+        {
+            if (offset < 0 || offset >= Data.Length)
+            {
+                return ValueTask.FromResult(ReadOnlyMemory<byte>.Empty);
+            }
+
+            var availableLength = Math.Min(length, Data.Length - (int)offset);
+            return ValueTask.FromResult<ReadOnlyMemory<byte>>(
+                new ReadOnlyMemory<byte>(Data, (int)offset, availableLength));
+        }
+
+        public ValueTask<long> GetLengthAsync() => ValueTask.FromResult((long)Data.Length);
+    }
 }

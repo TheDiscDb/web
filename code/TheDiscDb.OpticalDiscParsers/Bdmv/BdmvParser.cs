@@ -12,37 +12,60 @@ using TheDiscDb.OpticalDiscParsers.Models;
 /// </summary>
 public sealed class BdmvParser
 {
-    private readonly OpticalDiscBinaryReader reader;
-    private readonly DiagnosticBag diagnostics;
+    private readonly IOpticalDiscReader source;
 
     /// <summary>
     /// Creates a new BDMV parser.
     /// </summary>
-    public BdmvParser(OpticalDiscBinaryReader reader)
+    public BdmvParser(IOpticalDiscReader source)
     {
-        this.reader = reader ?? throw new ArgumentNullException(nameof(reader));
-        diagnostics = new DiagnosticBag();
+        this.source = source ?? throw new ArgumentNullException(nameof(source));
     }
 
     /// <summary>
     /// Parses an index.bdmv file.
     /// </summary>
+    public ValueTask<ParserResult<BdmvIndex>> ParseIndexAsync()
+    {
+        var context = new ParseContext(source);
+        return new BdmvParseSession(context).ParseIndexAsync();
+    }
+
+    /// <summary>
+    /// Parses a MovieObject.bdmv file.
+    /// </summary>
+    public ValueTask<ParserResult<BdmvMovieObjects>> ParseMovieObjectsAsync()
+    {
+        var context = new ParseContext(source);
+        return new BdmvParseSession(context).ParseMovieObjectsAsync();
+    }
+}
+
+internal sealed class BdmvParseSession
+{
+    private readonly OpticalDiscBinaryReader reader;
+    private readonly DiagnosticBag diagnostics;
+
+    public BdmvParseSession(ParseContext context)
+    {
+        reader = context.Reader;
+        diagnostics = context.Diagnostics;
+    }
+
     public async ValueTask<ParserResult<BdmvIndex>> ParseIndexAsync()
     {
-        diagnostics.Clear();
-
         var identifier = await ReadStringAtAsync(0, 4);
         var version = await ReadStringAtAsync(4, 4);
         if (identifier != "INDX")
         {
             diagnostics.Error(0, "BD001", $"Expected index.bdmv identifier 'INDX', got '{identifier ?? "<null>"}'");
-            return new ParserResult<BdmvIndex>(null, diagnostics.Diagnostics);
+            return new ParserResult<BdmvIndex>(null, diagnostics.Snapshot());
         }
 
         if (version is null)
         {
             diagnostics.Error(4, "BD002", "Missing index.bdmv version");
-            return new ParserResult<BdmvIndex>(null, diagnostics.Diagnostics);
+            return new ParserResult<BdmvIndex>(null, diagnostics.Snapshot());
         }
 
         uint indexStartAddress = await ReadUInt32AtAsync(8);
@@ -59,32 +82,26 @@ public sealed class BdmvParser
             AppInfo = appInfo,
             FirstPlayback = firstPlayback,
             TopMenu = topMenu,
-            Titles = titles,
-            Diagnostics = diagnostics.Diagnostics
+            Titles = titles
         };
 
-        return new ParserResult<BdmvIndex>(index, diagnostics.Diagnostics);
+        return new ParserResult<BdmvIndex>(index, diagnostics.Snapshot());
     }
 
-    /// <summary>
-    /// Parses a MovieObject.bdmv file.
-    /// </summary>
     public async ValueTask<ParserResult<BdmvMovieObjects>> ParseMovieObjectsAsync()
     {
-        diagnostics.Clear();
-
         var identifier = await ReadStringAtAsync(0, 4);
         var version = await ReadStringAtAsync(4, 4);
         if (identifier != "MOBJ")
         {
             diagnostics.Error(0, "BD010", $"Expected MovieObject.bdmv identifier 'MOBJ', got '{identifier ?? "<null>"}'");
-            return new ParserResult<BdmvMovieObjects>(null, diagnostics.Diagnostics);
+            return new ParserResult<BdmvMovieObjects>(null, diagnostics.Snapshot());
         }
 
         if (version is null)
         {
             diagnostics.Error(4, "BD011", "Missing MovieObject.bdmv version");
-            return new ParserResult<BdmvMovieObjects>(null, diagnostics.Diagnostics);
+            return new ParserResult<BdmvMovieObjects>(null, diagnostics.Snapshot());
         }
 
         uint extensionDataStartAddress = await ReadUInt32AtAsync(8);
@@ -112,11 +129,10 @@ public sealed class BdmvParser
             Version = version,
             ExtensionDataStartAddress = extensionDataStartAddress,
             DataLength = dataLength,
-            Objects = objects,
-            Diagnostics = diagnostics.Diagnostics
+            Objects = objects
         };
 
-        return new ParserResult<BdmvMovieObjects>(movieObjects, diagnostics.Diagnostics);
+        return new ParserResult<BdmvMovieObjects>(movieObjects, diagnostics.Snapshot());
     }
 
     private async ValueTask<BdmvAppInfo> ParseAppInfoAsync()

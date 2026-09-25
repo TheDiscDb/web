@@ -16,6 +16,8 @@
   <Project Path="TheDiscDb.Mailgun/TheDiscDb.Mailgun.csproj" />
   <Project Path="TheDiscDb.MakeMkv/TheDiscDb.MakeMkv.csproj" />
   <Project Path="TheDiscDb.Naming/TheDiscDb.Naming.csproj" />
+  <Project Path="TheDiscDb.OpticalDiscParsers.Tests/TheDiscDb.OpticalDiscParsers.Tests.csproj" />
+  <Project Path="TheDiscDb.OpticalDiscParsers/TheDiscDb.OpticalDiscParsers.csproj" />
   <Project Path="TheDiscDb.Search/TheDiscDb.Search.csproj" />
   <Project Path="TheDiscDb.ServiceDefaults/TheDiscDb.ServiceDefaults.csproj" />
   <Project Path="TheDiscDb.UnitTests/TheDiscDb.UnitTests.csproj" />

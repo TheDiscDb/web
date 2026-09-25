@@ -12,6 +12,37 @@ using TheDiscDb.OpticalDiscParsers.Models;
 /// </summary>
 public sealed class DvdIfoParser
 {
+    private readonly IOpticalDiscReader source;
+
+    /// <summary>
+    /// Creates a new DVD IFO parser.
+    /// </summary>
+    public DvdIfoParser(IOpticalDiscReader source)
+    {
+        this.source = source ?? throw new ArgumentNullException(nameof(source));
+    }
+
+    /// <summary>
+    /// Parses a VMGI (Video Manager Information) file and returns its header information.
+    /// </summary>
+    public ValueTask<ParserResult<VmgiHeader>> ParseVmgiAsync()
+    {
+        var context = new ParseContext(source);
+        return new DvdIfoParseSession(context).ParseVmgiAsync();
+    }
+
+    /// <summary>
+    /// Parses a VTSI (Video Title Set Information) file and returns its header information.
+    /// </summary>
+    public ValueTask<ParserResult<VtsiHeader>> ParseVtsiAsync(int titleSetNumber = 1)
+    {
+        var context = new ParseContext(source);
+        return new DvdIfoParseSession(context).ParseVtsiAsync(titleSetNumber);
+    }
+}
+
+internal sealed class DvdIfoParseSession
+{
     private const int SectorSize = 2048;
     private const int MaximumDvdTitles = 99;
     private const int MaximumDvdTitleSets = 99;
@@ -23,33 +54,25 @@ public sealed class DvdIfoParser
     private readonly OpticalDiscBinaryReader reader;
     private readonly DiagnosticBag diagnostics;
 
-    /// <summary>
-    /// Creates a new DVD IFO parser.
-    /// </summary>
-    public DvdIfoParser(OpticalDiscBinaryReader reader)
+    public DvdIfoParseSession(ParseContext context)
     {
-        this.reader = reader ?? throw new ArgumentNullException(nameof(reader));
-        diagnostics = new DiagnosticBag();
+        reader = context.Reader;
+        diagnostics = context.Diagnostics;
     }
 
-    /// <summary>
-    /// Parses a VMGI (Video Manager Information) file and returns its header information.
-    /// </summary>
     public async ValueTask<ParserResult<VmgiHeader>> ParseVmgiAsync()
     {
-        diagnostics.Clear();
-
         string? identifier = await ReadStringAtAsync(0x00, 12);
         if (identifier is null)
         {
             diagnostics.Error(0, "VD001", "Invalid or missing VMGI identifier");
-            return new ParserResult<VmgiHeader>(null, diagnostics.Diagnostics);
+            return new ParserResult<VmgiHeader>(null, diagnostics.Snapshot());
         }
 
         if (!identifier.StartsWith("DVDVIDEO-VMG", StringComparison.Ordinal))
         {
             diagnostics.Error(0, "VD002", $"Expected VMGI identifier 'DVDVIDEO-VMG', got '{identifier}'");
-            return new ParserResult<VmgiHeader>(null, diagnostics.Diagnostics);
+            return new ParserResult<VmgiHeader>(null, diagnostics.Snapshot());
         }
 
         ushort specVersion = await ReadSpecificationVersionAsync();
@@ -83,31 +106,25 @@ public sealed class DvdIfoParser
             RegionMask = regionMask,
             NumberOfAccessibleMenus = 0,
             TitleSets = titleSets,
-            Titles = titles,
-            Diagnostics = diagnostics.Diagnostics
+            Titles = titles
         };
 
-        return new ParserResult<VmgiHeader>(header, diagnostics.Diagnostics);
+        return new ParserResult<VmgiHeader>(header, diagnostics.Snapshot());
     }
 
-    /// <summary>
-    /// Parses a VTSI (Video Title Set Information) file and returns its header information.
-    /// </summary>
-    public async ValueTask<ParserResult<VtsiHeader>> ParseVtsiAsync(int titleSetNumber = 1)
+    public async ValueTask<ParserResult<VtsiHeader>> ParseVtsiAsync(int titleSetNumber)
     {
-        diagnostics.Clear();
-
         string? identifier = await ReadStringAtAsync(0x00, 12);
         if (identifier is null)
         {
             diagnostics.Error(0, "VD010", "Invalid or missing VTSI identifier");
-            return new ParserResult<VtsiHeader>(null, diagnostics.Diagnostics);
+            return new ParserResult<VtsiHeader>(null, diagnostics.Snapshot());
         }
 
         if (!identifier.StartsWith("DVDVIDEO-VTS", StringComparison.Ordinal))
         {
             diagnostics.Error(0, "VD011", $"Expected VTSI identifier 'DVDVIDEO-VTS', got '{identifier}'");
-            return new ParserResult<VtsiHeader>(null, diagnostics.Diagnostics);
+            return new ParserResult<VtsiHeader>(null, diagnostics.Snapshot());
         }
 
         ushort specVersion = await ReadSpecificationVersionAsync();
@@ -135,11 +152,10 @@ public sealed class DvdIfoParser
             AudioStreams = audioStreams,
             SubtitleStreams = subtitleStreams,
             ProgramChains = programChains,
-            TitlePartMaps = titlePartMaps,
-            Diagnostics = diagnostics.Diagnostics
+            TitlePartMaps = titlePartMaps
         };
 
-        return new ParserResult<VtsiHeader>(header, diagnostics.Diagnostics);
+        return new ParserResult<VtsiHeader>(header, diagnostics.Snapshot());
     }
 
     private async ValueTask<IReadOnlyList<VmgiTitle>> ParseVmgiTitlesAsync()

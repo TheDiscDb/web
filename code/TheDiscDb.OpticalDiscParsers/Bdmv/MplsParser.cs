@@ -12,38 +12,51 @@ using TheDiscDb.OpticalDiscParsers.Models;
 /// </summary>
 public sealed class MplsParser
 {
-    private readonly OpticalDiscBinaryReader reader;
-    private readonly DiagnosticBag diagnostics;
+    private readonly IOpticalDiscReader source;
 
     /// <summary>
     /// Creates a new MPLS parser.
     /// </summary>
-    public MplsParser(OpticalDiscBinaryReader reader)
+    public MplsParser(IOpticalDiscReader source)
     {
-        this.reader = reader ?? throw new ArgumentNullException(nameof(reader));
-        diagnostics = new DiagnosticBag();
+        this.source = source ?? throw new ArgumentNullException(nameof(source));
     }
 
     /// <summary>
     /// Parses an .mpls playlist file.
     /// </summary>
+    public ValueTask<ParserResult<MplsPlaylist>> ParseAsync()
+    {
+        var context = new ParseContext(source);
+        return new MplsParseSession(context).ParseAsync();
+    }
+}
+
+internal sealed class MplsParseSession
+{
+    private readonly OpticalDiscBinaryReader reader;
+    private readonly DiagnosticBag diagnostics;
+
+    public MplsParseSession(ParseContext context)
+    {
+        reader = context.Reader;
+        diagnostics = context.Diagnostics;
+    }
+
     public async ValueTask<ParserResult<MplsPlaylist>> ParseAsync()
     {
-        diagnostics.Clear();
-        reader.Diagnostics.Clear();
-
         var identifier = await ReadStringAtAsync(0, 4);
         var version = await ReadStringAtAsync(4, 4);
         if (identifier != "MPLS")
         {
             diagnostics.Error(0, "MP001", $"Expected MPLS identifier 'MPLS', got '{identifier ?? "<null>"}'");
-            return new ParserResult<MplsPlaylist>(null, diagnostics.Diagnostics);
+            return new ParserResult<MplsPlaylist>(null, diagnostics.Snapshot());
         }
 
         if (version is null)
         {
             diagnostics.Error(4, "MP002", "Missing MPLS version");
-            return new ParserResult<MplsPlaylist>(null, diagnostics.Diagnostics);
+            return new ParserResult<MplsPlaylist>(null, diagnostics.Snapshot());
         }
 
         uint playlistStartAddress = await ReadUInt32AtAsync(8);
@@ -53,7 +66,7 @@ public sealed class MplsParser
         var (playItems, subPaths) = await ParsePlaylistSectionAsync(playlistStartAddress);
         var marks = await ParsePlaylistMarksAsync(playlistMarkStartAddress);
         var extensionParseResult = await ParseExtensionDataAsync(extensionDataStartAddress, playItems);
-        var parserDiagnostics = diagnostics.Diagnostics.Concat(reader.Diagnostics.Diagnostics).ToArray();
+        var parserDiagnostics = diagnostics.Snapshot();
 
         var playlist = new MplsPlaylist
         {
@@ -68,8 +81,7 @@ public sealed class MplsParser
             Marks = marks,
             ExtensionData = extensionParseResult.ExtensionData,
             ExtensionSubPaths = extensionParseResult.ExtensionSubPaths,
-            StereoVideoRelationships = extensionParseResult.StereoVideoRelationships,
-            Diagnostics = parserDiagnostics
+            StereoVideoRelationships = extensionParseResult.StereoVideoRelationships
         };
 
         return new ParserResult<MplsPlaylist>(playlist, parserDiagnostics);

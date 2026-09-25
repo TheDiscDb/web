@@ -1,7 +1,5 @@
 namespace TheDiscDb.OpticalDiscParsers.Bdmv.Models;
 
-using TheDiscDb.OpticalDiscParsers.Diagnostics;
-
 /// <summary>
 /// Represents parsed information from a Blu-ray Disc Movie index.bdmv file.
 /// </summary>
@@ -31,8 +29,6 @@ public record BdmvIndex
     /// <summary>Gets the title entries from the index table.</summary>
     public required IReadOnlyList<BdmvTitle> Titles { get; init; }
 
-    /// <summary>Gets diagnostics generated while parsing.</summary>
-    public required IReadOnlyList<ParserDiagnostic> Diagnostics { get; init; }
 }
 
 /// <summary>
@@ -121,8 +117,6 @@ public record BdmvMovieObjects
     /// <summary>Gets the movie object entries.</summary>
     public required IReadOnlyList<BdmvMovieObject> Objects { get; init; }
 
-    /// <summary>Gets diagnostics generated while parsing.</summary>
-    public required IReadOnlyList<ParserDiagnostic> Diagnostics { get; init; }
 }
 
 /// <summary>

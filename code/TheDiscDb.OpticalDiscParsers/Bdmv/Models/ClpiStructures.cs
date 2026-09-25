@@ -1,7 +1,5 @@
 namespace TheDiscDb.OpticalDiscParsers.Bdmv.Models;
 
-using TheDiscDb.OpticalDiscParsers.Diagnostics;
-
 /// <summary>
 /// Represents parsed information from a Blu-ray clip information (.clpi) file.
 /// </summary>
@@ -46,8 +44,6 @@ public record ClpiFile
     /// <summary>Gets presentation timing summarized from SequenceInfo STC records.</summary>
     public ClpiPresentationSummary? PresentationSummary { get; init; }
 
-    /// <summary>Gets diagnostics generated while parsing.</summary>
-    public required IReadOnlyList<ParserDiagnostic> Diagnostics { get; init; }
 }
 
 /// <summary>

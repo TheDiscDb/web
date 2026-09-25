@@ -12,38 +12,51 @@ using TheDiscDb.OpticalDiscParsers.Models;
 /// </summary>
 public sealed class ClpiParser
 {
-    private readonly OpticalDiscBinaryReader reader;
-    private readonly DiagnosticBag diagnostics;
+    private readonly IOpticalDiscReader source;
 
     /// <summary>
     /// Creates a new CLPI parser.
     /// </summary>
-    public ClpiParser(OpticalDiscBinaryReader reader)
+    public ClpiParser(IOpticalDiscReader source)
     {
-        this.reader = reader ?? throw new ArgumentNullException(nameof(reader));
-        diagnostics = new DiagnosticBag();
+        this.source = source ?? throw new ArgumentNullException(nameof(source));
     }
 
     /// <summary>
     /// Parses a .clpi file.
     /// </summary>
+    public ValueTask<ParserResult<ClpiFile>> ParseAsync()
+    {
+        var context = new ParseContext(source);
+        return new ClpiParseSession(context).ParseAsync();
+    }
+}
+
+internal sealed class ClpiParseSession
+{
+    private readonly OpticalDiscBinaryReader reader;
+    private readonly DiagnosticBag diagnostics;
+
+    public ClpiParseSession(ParseContext context)
+    {
+        reader = context.Reader;
+        diagnostics = context.Diagnostics;
+    }
+
     public async ValueTask<ParserResult<ClpiFile>> ParseAsync()
     {
-        diagnostics.Clear();
-        reader.Diagnostics.Clear();
-
         var identifier = await ReadStringAtAsync(0, 4);
         var version = await ReadStringAtAsync(4, 4);
         if (identifier != "HDMV")
         {
             diagnostics.Error(0, "CL001", $"Expected CLPI identifier 'HDMV', got '{identifier ?? "<null>"}'");
-            return new ParserResult<ClpiFile>(null, diagnostics.Diagnostics);
+            return new ParserResult<ClpiFile>(null, diagnostics.Snapshot());
         }
 
         if (version is null)
         {
             diagnostics.Error(4, "CL002", "Missing CLPI version");
-            return new ParserResult<ClpiFile>(null, diagnostics.Diagnostics);
+            return new ParserResult<ClpiFile>(null, diagnostics.Snapshot());
         }
 
         uint sequenceInfoStartAddress = await ReadUInt32AtAsync(8);
@@ -58,7 +71,7 @@ public sealed class ClpiParser
         var cpiEntries = await ParseCpiAsync(cpiStartAddress);
         var extensionStreams = await ParseExtensionStreamsAsync(extensionDataStartAddress);
         var presentationSummary = CreatePresentationSummary(atcSequences);
-        var parserDiagnostics = diagnostics.Diagnostics.Concat(reader.Diagnostics.Diagnostics).ToArray();
+        var parserDiagnostics = diagnostics.Snapshot();
 
         var file = new ClpiFile
         {
@@ -74,8 +87,7 @@ public sealed class ClpiParser
             Programs = programs,
             ExtensionStreams = extensionStreams,
             CpiEntries = cpiEntries,
-            PresentationSummary = presentationSummary,
-            Diagnostics = parserDiagnostics
+            PresentationSummary = presentationSummary
         };
 
         return new ParserResult<ClpiFile>(file, parserDiagnostics);

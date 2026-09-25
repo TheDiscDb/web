@@ -2,7 +2,6 @@ namespace TheDiscDb.OpticalDiscParsers.Dvd.Models;
 
 using TheDiscDb.OpticalDiscParsers.Input;
 using TheDiscDb.OpticalDiscParsers.Models;
-using TheDiscDb.OpticalDiscParsers.Diagnostics;
 
 /// <summary>
 /// Represents parsed information from a DVD Video Manager Information (VMGI) file.
@@ -43,8 +42,6 @@ public record VmgiHeader
     /// <summary>Gets logical DVD title entries from the VMGI TT_SRPT table.</summary>
     public required IReadOnlyList<VmgiTitle> Titles { get; init; }
 
-    /// <summary>Gets any diagnostics generated during parsing (warnings, errors).</summary>
-    public required IReadOnlyList<ParserDiagnostic> Diagnostics { get; init; }
 }
 
 /// <summary>
@@ -170,8 +167,6 @@ public record VtsiHeader
     /// <summary>Gets VTS title/chapter mappings from the VTS_PTT_SRPT table.</summary>
     public required IReadOnlyList<VtsTitlePartMap> TitlePartMaps { get; init; }
 
-    /// <summary>Gets any diagnostics generated during parsing.</summary>
-    public required IReadOnlyList<ParserDiagnostic> Diagnostics { get; init; }
 }
 
 /// <summary>

@@ -28,9 +28,7 @@ public class DvdIfoParserTests
         Assert.True(File.Exists(videoTsPath), $"Fixture not found: {videoTsPath}");
         
         var bytes = File.ReadAllBytes(videoTsPath);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVmgiAsync();
@@ -58,7 +56,7 @@ public class DvdIfoParserTests
         Assert.Equal(1, firstTitle.NumberOfAngles);
 
         // Verify no critical errors
-        var criticalErrors = vmgi.Diagnostics
+        var criticalErrors = result.Diagnostics
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .ToList();
         Assert.Empty(criticalErrors);
@@ -77,9 +75,7 @@ public class DvdIfoParserTests
         Assert.True(File.Exists(vts01Path), $"Fixture not found: {vts01Path}");
         
         var bytes = File.ReadAllBytes(vts01Path);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
@@ -94,7 +90,7 @@ public class DvdIfoParserTests
         Assert.True(vtsi.SpecificationVersion >= 0x0100, "Spec version should be at least 0x0100");
 
         // Verify no critical errors (note: fixtures may have minimal program chain data)
-        var criticalErrors = vtsi.Diagnostics
+        var criticalErrors = result.Diagnostics
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .ToList();
         Assert.Empty(criticalErrors);
@@ -118,9 +114,7 @@ public class DvdIfoParserTests
         }
 
         var bytes = File.ReadAllBytes(videoTsPath);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVmgiAsync();
@@ -167,9 +161,7 @@ public class DvdIfoParserTests
         Assert.True(File.Exists(vts01Path), $"Fixture not found: {vts01Path}");
         
         var bytes = File.ReadAllBytes(vts01Path);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
@@ -187,7 +179,7 @@ public class DvdIfoParserTests
         Assert.NotNull(vtsi.TitlePartMaps);
 
         // Verify no critical errors in parsing
-        var criticalErrors = vtsi.Diagnostics
+        var criticalErrors = result.Diagnostics
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .ToList();
         Assert.Empty(criticalErrors);
@@ -202,9 +194,7 @@ public class DvdIfoParserTests
         // Arrange
         var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
@@ -258,7 +248,7 @@ public class DvdIfoParserTests
         string disc, int titleSet, string aspectRatio, bool ccField1, bool ccField2)
     {
         var bytes = File.ReadAllBytes(Path.Combine(fixturesPath, disc, $"VTS_{titleSet:00}_0.IFO"));
-        var parser = new DvdIfoParser(new OpticalDiscBinaryReader(new MemoryOpticalDiscReader(bytes)));
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         var video = Assert.Single((await parser.ParseVtsiAsync(titleSet)).Value!.VideoStreams!)!;
 
@@ -279,7 +269,7 @@ public class DvdIfoParserTests
     public async Task ParseVtsiAsync_SubpictureAttributes_DecodeRleCodingModeFromHighBits(string disc, int titleSet)
     {
         var bytes = File.ReadAllBytes(Path.Combine(fixturesPath, disc, $"VTS_{titleSet:00}_0.IFO"));
-        var parser = new DvdIfoParser(new OpticalDiscBinaryReader(new MemoryOpticalDiscReader(bytes)));
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         var subtitles = (await parser.ParseVtsiAsync(titleSet)).Value!.SubtitleStreams!;
 
@@ -297,9 +287,7 @@ public class DvdIfoParserTests
         // Arrange
         var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
@@ -333,9 +321,7 @@ public class DvdIfoParserTests
         // Arrange
         var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
@@ -380,9 +366,7 @@ public class DvdIfoParserTests
         }
         
         var bytes = File.ReadAllBytes(vtsPath);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
@@ -402,7 +386,7 @@ public class DvdIfoParserTests
         Assert.NotNull(vtsi.TitlePartMaps);
         
         // Verify no parsing errors
-        var errors = vtsi.Diagnostics
+        var errors = result.Diagnostics
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .ToList();
         Assert.Empty(errors);
@@ -417,9 +401,7 @@ public class DvdIfoParserTests
         // Arrange
         var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
@@ -456,9 +438,7 @@ public class DvdIfoParserTests
         // Arrange
         var videoTsPath = Path.Combine(fixturesPath, discName, "VIDEO_TS.IFO");
         var bytes = File.ReadAllBytes(videoTsPath);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVmgiAsync();
@@ -487,9 +467,7 @@ public class DvdIfoParserTests
         // Arrange
         var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path);
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
@@ -528,9 +506,7 @@ public class DvdIfoParserTests
         // Arrange
         var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
         var bytes = File.ReadAllBytes(vts01Path).Take(2050).ToArray();
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        var parser = new DvdIfoParser(binaryReader);
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
         // Act
         var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
@@ -538,6 +514,6 @@ public class DvdIfoParserTests
 
         // Assert
         Assert.Empty(vtsi.TitlePartMaps);
-        Assert.Contains(vtsi.Diagnostics, diagnostic => diagnostic.Code == "VD031" || diagnostic.Code == "VD099");
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "VD031" || diagnostic.Code == "VD099");
     }
 }

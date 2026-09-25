@@ -35,7 +35,7 @@ public class ClpiParserTests
         Assert.True(clpi.ProgramInfoStartAddress > clpi.SequenceInfoStartAddress);
         Assert.True(clpi.CpiStartAddress > clpi.ProgramInfoStartAddress);
         Assert.True(clpi.ClipMarkStartAddress > clpi.CpiStartAddress);
-        Assert.Empty(clpi.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+        Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
     [Theory]
@@ -111,7 +111,7 @@ public class ClpiParserTests
         Assert.Equal(0x1012, mvc.Pid);
         Assert.Equal(6, mvc.FormatCode);
         Assert.Equal(1, mvc.RateCode);
-        Assert.Empty(clpi.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+        Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public class ClpiParserTests
             var result = await parser.ParseAsync();
 
             Assert.NotNull(result.Value);
-            Assert.Empty(result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error));
+            Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
         }
     }
 
@@ -152,9 +152,7 @@ public class ClpiParserTests
 
     private static ClpiParser CreateParser(byte[] bytes)
     {
-        var reader = new MemoryOpticalDiscReader(bytes);
-        var binaryReader = new OpticalDiscBinaryReader(reader);
-        return new ClpiParser(binaryReader);
+        return new ClpiParser(new MemoryOpticalDiscReader(bytes));
     }
 
     private static int GetFirstProgramStreamAttributeStart(byte[] bytes)
