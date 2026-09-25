@@ -1,7 +1,7 @@
 sha256  9186841fc37984ec583391f98c7003dde4deaa4c3e5370fda7546d9ca2fa3183  TheDiscDb.OpticalDiscParsers.Tests/fixtures/BDMV/BD-A/index.bdmv
 sha256  2503937211651da2eb6f2eecce56ff4d850ee50b47e958873987a85d39b9cd7b  TheDiscDb.OpticalDiscParsers.Tests/fixtures/BDMV/BD-A/MovieObject.bdmv
-sha256  6110c91a71b775f39529bef8b7ad3108526783597e31532958c60a46ff0d3d60  TheDiscDb.OpticalDiscParsers.Tests/fixtures/BDMV/BD-B/index.bdmv
-sha256  c6b98464d3e4100c732881f4f6aa64f47ded975c60d3e1dd6679f93f66cdd12d  TheDiscDb.OpticalDiscParsers.Tests/fixtures/BDMV/BD-B/MovieObject.bdmv
+sha256  6110c91a71b775f39529bef8b7ad3108526783597e31532958c60a46ff0d3d60  TheDiscDb.OpticalDiscParsers.Tests/fixtures/BDMV/UHD-A/index.bdmv
+sha256  c6b98464d3e4100c732881f4f6aa64f47ded975c60d3e1dd6679f93f66cdd12d  TheDiscDb.OpticalDiscParsers.Tests/fixtures/BDMV/UHD-A/MovieObject.bdmv
 sha256  16614fd6deb6d150f4ff37698f0636ac790fa13de0b89677bbef512095f46867  TheDiscDb.OpticalDiscParsers.Tests/fixtures/CLPI/BD-3D/00301.clpi
 sha256  6c13ac48e89a946dff15fea4671372e89f07925abf4afd6d31c0915726ea79e6  TheDiscDb.OpticalDiscParsers.Tests/fixtures/CLPI/BD-A/00000.clpi
 sha256  29188820f1d52aee99005f7d4644d39db9e3dea34ee6a9f3386f39df3311f03a  TheDiscDb.OpticalDiscParsers.Tests/fixtures/CLPI/UHD-A/00589.clpi

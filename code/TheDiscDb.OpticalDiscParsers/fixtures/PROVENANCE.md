@@ -20,7 +20,7 @@ Only control files are included. No `.VOB` payloads or `.BUP` backups are commit
 | Fixture directory | Files | Coverage |
 |---|---|---|
 | `BDMV/BD-A` | `index.bdmv`, `MovieObject.bdmv` | BDMV 0200 / HDMV structures |
-| `BDMV/BD-B` | `index.bdmv`, `MovieObject.bdmv` | BDMV 0300 / BD-J structures |
+| `BDMV/UHD-A` | `index.bdmv`, `MovieObject.bdmv` | BDMV 0300 / BD-J structures |
 | `CLPI/BD-A` | `00000.clpi` | CLPI 0200 header, timing, and stream parsing |
 | `CLPI/UHD-A` | `00589.clpi` | CLPI 0300, HEVC, HDR/color-space, and CPI evidence |
 | `CLPI/BD-3D` | `00301.clpi` | MVC dependent-view extension stream |
