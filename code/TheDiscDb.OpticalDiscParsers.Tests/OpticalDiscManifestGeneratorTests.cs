@@ -15,8 +15,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var request = CreateRequest(files, "aacs-disc-id", new string('A', 40));
         var generator = new OpticalDiscManifestGenerator();
 
-        var first = await generator.GenerateAsync(request);
-        var second = await generator.GenerateAsync(request);
+        var first = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
+        var second = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
 
         Assert.True(first.Validation.IsValid, string.Join(Environment.NewLine, first.Validation.Errors));
         Assert.Equal("blu-ray", first.Manifest.Disc.Format);
@@ -44,7 +44,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var generator = new OpticalDiscManifestGenerator();
 
         var result = await generator.GenerateAsync(
-            CreateRequest(files, "aacs-disc-id", new string('E', 40)));
+            CreateRequest(files, "aacs-disc-id", new string('E', 40)),
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
         Assert.Equal("blu-ray", result.Manifest.Disc.Format);
@@ -66,7 +67,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var generator = new OpticalDiscManifestGenerator();
 
         var result = await generator.GenerateAsync(
-            CreateRequest(files, "aacs-disc-id", new string('B', 40)));
+            CreateRequest(files, "aacs-disc-id", new string('B', 40)),
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
         Assert.Equal("uhd-blu-ray", result.Manifest.Disc.Format);
@@ -86,7 +88,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var generator = new OpticalDiscManifestGenerator();
 
         var result = await generator.GenerateAsync(
-            CreateRequest(files, "aacs-disc-id", new string('C', 40)));
+            CreateRequest(files, "aacs-disc-id", new string('C', 40)),
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
 
@@ -132,8 +135,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var generator = new OpticalDiscManifestGenerator();
         var request = CreateRequest(files, "aacs-disc-id", new string('F', 40));
 
-        var first = await generator.GenerateAsync(request);
-        var second = await generator.GenerateAsync(request);
+        var first = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
+        var second = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
 
         Assert.True(first.Validation.IsValid, string.Join(Environment.NewLine, first.Validation.Errors));
         Assert.Equal(first.Json, second.Json);
@@ -302,8 +305,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var generator = new OpticalDiscManifestGenerator();
         var request = CreateRequest(files, "aacs-disc-id", new string('D', 40));
 
-        var first = await generator.GenerateAsync(request);
-        var second = await generator.GenerateAsync(request);
+        var first = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
+        var second = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
 
         Assert.True(first.Validation.IsValid, string.Join(Environment.NewLine, first.Validation.Errors));
         Assert.Equal(first.Json, second.Json);
@@ -369,7 +372,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var generator = new OpticalDiscManifestGenerator();
 
         var result = await generator.GenerateAsync(
-            CreateRequest(files, "dvd-disc-id", new string('C', 32)));
+            CreateRequest(files, "dvd-disc-id", new string('C', 32)),
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
         Assert.Equal("dvd", result.Manifest.Disc.Format);
@@ -409,7 +413,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var files = CreateDvdIfoFiles("DVD-B");
 
         var result = await new OpticalDiscManifestGenerator().GenerateAsync(
-            CreateRequest(files, "dvd-disc-id", new string('E', 32)));
+            CreateRequest(files, "dvd-disc-id", new string('E', 32)),
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
         var titles = result.Manifest.Disc.Titles!;
@@ -423,7 +428,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var files = CreateDvdIfoFiles("DVD-D");
 
         var result = await new OpticalDiscManifestGenerator().GenerateAsync(
-            CreateRequest(files, "dvd-disc-id", new string('F', 32)));
+            CreateRequest(files, "dvd-disc-id", new string('F', 32)),
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
         var titles = result.Manifest.Disc.Titles!;
@@ -473,7 +479,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var generator = new OpticalDiscManifestGenerator();
 
         var result = await generator.GenerateAsync(
-            CreateRequest(files, "dvd-disc-id", new string('D', 32)));
+            CreateRequest(files, "dvd-disc-id", new string('D', 32)),
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
         Assert.DoesNotContain("disc.titles.complete", result.Manifest.Capabilities);
@@ -568,7 +575,7 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         var result = await generator.GenerateAsync(
             CreateRequest([playlist], "aacs-disc-id", new string('2', 40)),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.Validation.IsValid);
         var title = Assert.Single(result.Manifest.Disc.Titles!);
@@ -906,7 +913,6 @@ public sealed class OpticalDiscManifestGeneratorTests
             ExtensionData = null,
             ExtensionSubPaths = [],
             StereoVideoRelationships = [],
-            Diagnostics = [],
         };
     }
 

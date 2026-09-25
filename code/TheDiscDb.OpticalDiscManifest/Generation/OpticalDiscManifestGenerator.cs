@@ -1336,8 +1336,8 @@ public sealed partial class OpticalDiscManifestGenerator
         }
     }
 
-    private static OpticalDiscBinaryReader CreateReader(byte[] bytes)
-        => new(new MemoryOpticalDiscReader(bytes));
+    private static IOpticalDiscReader CreateReader(byte[] bytes)
+        => new MemoryOpticalDiscReader(bytes);
 
     private static NormalizedFile? Find(IEnumerable<NormalizedFile> files, string path)
         => files.FirstOrDefault(item => string.Equals(item.Path, path, StringComparison.OrdinalIgnoreCase));
