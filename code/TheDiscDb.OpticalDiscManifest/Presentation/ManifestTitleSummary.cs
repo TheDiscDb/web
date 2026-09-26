@@ -20,14 +20,14 @@ public static class ManifestTitleSummaryBuilder
         }
 
         return titles
-            .Select(ToRow)
+            .Select((title, index) => ToRow(title, index))
             .OrderByDescending(row => row.SizeBytes ?? -1)
             .ThenByDescending(row => row.DurationSeconds ?? -1)
             .ThenBy(row => row.Index)
             .ToArray();
     }
 
-    private static ManifestTitleSummaryRow ToRow(ManifestTitle title)
+    private static ManifestTitleSummaryRow ToRow(ManifestTitle title, int index)
     {
         var stereo = title.Stereoscopic3D;
         string? stereoSummary = stereo is null
@@ -36,11 +36,12 @@ public static class ManifestTitleSummaryBuilder
 
         return new ManifestTitleSummaryRow
         {
-            Index = title.Index,
-            SourcePath = title.Source.Path ?? title.Source.Label ?? title.Source.Kind,
+            Index = index,
+            SourcePath = title.Source.Path
+                ?? (title.Source.Title is int number ? $"DVD title {number}" : "Disc title"),
             DurationSeconds = title.DurationSeconds,
             DurationDisplay = ManifestSummaryFormatting.FormatDuration(title.DurationSeconds),
-            ChapterCount = title.ChapterCount,
+            ChapterCount = title.Chapters?.Count,
             SizeBytes = title.SizeBytes,
             SizeDisplay = ManifestSummaryFormatting.FormatSize(title.SizeBytes),
             Is3D = stereo is not null,
@@ -88,31 +89,41 @@ public sealed record ManifestTitleSummaryRow
 /// </summary>
 public static class ManifestClipSummaryBuilder
 {
-    public static IReadOnlyList<ManifestClipSummaryRow> Build(IReadOnlyList<ManifestClip>? clips)
+    public static IReadOnlyList<ManifestClipSummaryRow> Build(
+        IReadOnlyList<ManifestClip>? clips,
+        IReadOnlyList<ManifestFile>? files = null)
     {
         if (clips is null || clips.Count == 0)
         {
             return [];
         }
 
+        var fileSizes = (files ?? [])
+            .ToDictionary(file => file.Path, file => file.SizeBytes, StringComparer.OrdinalIgnoreCase);
+
         return clips
-            .Select(ToRow)
+            .Select(clip => ToRow(clip, fileSizes))
             .OrderByDescending(row => row.SizeBytes ?? -1)
             .ThenByDescending(row => row.DurationSeconds ?? -1)
             .ThenBy(row => row.ClipId, StringComparer.Ordinal)
             .ToArray();
     }
 
-    private static ManifestClipSummaryRow ToRow(ManifestClip clip)
+    private static ManifestClipSummaryRow ToRow(
+        ManifestClip clip,
+        IReadOnlyDictionary<string, long> fileSizes)
     {
+        long? sizeBytes = clip.StreamPath is not null && fileSizes.TryGetValue(clip.StreamPath, out long size)
+            ? size
+            : null;
         return new ManifestClipSummaryRow
         {
             ClipId = clip.ClipId,
             StreamPath = clip.StreamPath,
             DurationSeconds = clip.DurationSeconds,
             DurationDisplay = ManifestSummaryFormatting.FormatDuration(clip.DurationSeconds),
-            SizeBytes = clip.SizeBytes,
-            SizeDisplay = ManifestSummaryFormatting.FormatSize(clip.SizeBytes),
+            SizeBytes = sizeBytes,
+            SizeDisplay = ManifestSummaryFormatting.FormatSize(sizeBytes),
             StreamCount = clip.Streams?.Count ?? 0,
         };
     }

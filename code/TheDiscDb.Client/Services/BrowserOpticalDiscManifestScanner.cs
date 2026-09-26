@@ -21,7 +21,7 @@ public sealed class BrowserOpticalDiscManifestScanner
     {
         reportProgress?.Invoke("Calculating disc identifiers");
         var identifierScan = await DiscScanner.ScanAsync(files, cancellationToken);
-        var identifiers = CreateIdentifiers(files, identifierScan);
+        var identifiers = CreateIdentifiers(identifierScan);
 
         return await generator.GenerateAsync(
             new ManifestGenerationRequest
@@ -41,7 +41,6 @@ public sealed class BrowserOpticalDiscManifestScanner
     }
 
     private static IReadOnlyList<ManifestIdentifier>? CreateIdentifiers(
-        IReadOnlyList<DiscScanFile> files,
         DiscScanResult scan)
     {
         if (string.IsNullOrWhiteSpace(scan.GlobalDiscId))
@@ -50,27 +49,13 @@ public sealed class BrowserOpticalDiscManifestScanner
         }
 
         string kind;
-        IReadOnlyList<string> inputPaths;
         if (scan.Format == DiscFormatConstants.Dvd)
         {
             kind = "dvd-disc-id";
-            inputPaths = files
-                .Select(file => OpticalDiscManifestGenerator.NormalizePath(file.Path))
-                .Where(path => path.Equals("VIDEO_TS/VIDEO_TS.IFO", StringComparison.OrdinalIgnoreCase)
-                    || (path.StartsWith("VIDEO_TS/VTS_", StringComparison.OrdinalIgnoreCase)
-                        && path.EndsWith("_0.IFO", StringComparison.OrdinalIgnoreCase)))
-                .OrderBy(path => path, StringComparer.Ordinal)
-                .ToArray();
         }
         else
         {
             kind = "aacs-disc-id";
-            inputPaths = files
-                .Select(file => OpticalDiscManifestGenerator.NormalizePath(file.Path))
-                .Where(path => path.Equals("AACS/Unit_Key_RO.inf", StringComparison.OrdinalIgnoreCase)
-                    || path.Equals("AACS/DUPLICATE/Unit_Key_RO.inf", StringComparison.OrdinalIgnoreCase))
-                .Take(1)
-                .ToArray();
         }
 
         return
@@ -79,8 +64,6 @@ public sealed class BrowserOpticalDiscManifestScanner
             {
                 Kind = kind,
                 Value = scan.GlobalDiscId,
-                ComputedBy = "producer",
-                InputPaths = inputPaths,
             },
         ];
     }

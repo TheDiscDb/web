@@ -79,7 +79,9 @@ public partial class OpticalDiscManifestWorkbench : CancellableComponentBase
                 CancellationToken);
             json = Encoding.UTF8.GetString(result.Json);
             titleRows = ManifestTitleSummaryBuilder.Build(result.Manifest.Disc.Titles);
-            clipRows = ManifestClipSummaryBuilder.Build(result.Manifest.Disc.Clips);
+            clipRows = ManifestClipSummaryBuilder.Build(
+                result.Manifest.Disc.Clips,
+                result.Manifest.Disc.Files);
         }
         catch (OperationCanceledException) when (CancellationToken.IsCancellationRequested)
         {

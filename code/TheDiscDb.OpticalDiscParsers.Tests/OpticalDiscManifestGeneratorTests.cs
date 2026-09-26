@@ -1,3 +1,6 @@
+using System.Buffers.Binary;
+using System.Security.Cryptography;
+using System.Text;
 using TheDiscDb.OpticalDiscManifest.Generation;
 using TheDiscDb.OpticalDiscManifest.Models;
 using TheDiscDb.OpticalDiscParsers.Bdmv.Models;
@@ -20,14 +23,78 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         Assert.True(first.Validation.IsValid, string.Join(Environment.NewLine, first.Validation.Errors));
         Assert.Equal("blu-ray", first.Manifest.Disc.Format);
-        Assert.Contains("disc.files.complete", first.Manifest.Capabilities);
-        Assert.Contains("disc.titles", first.Manifest.Capabilities);
-        Assert.DoesNotContain("disc.titles.complete", first.Manifest.Capabilities);
-        Assert.Contains("disc.streams.declared", first.Manifest.Capabilities);
-        Assert.DoesNotContain("disc.streams.payload-verified", first.Manifest.Capabilities);
-        Assert.Contains(first.Manifest.Diagnostics!, item => item.Code == "ODM_BD_TITLES_PARTIAL");
+        Assert.Contains(first.Diagnostics, item => item.Code == "ODM_BD_TITLES_PARTIAL");
+        Assert.Equal(1, first.Manifest.Disc.Identifiers.Count(item => item.Kind == "thediscdb-content-hash"));
+        Assert.DoesNotContain("\"capabilities\"", System.Text.Encoding.UTF8.GetString(first.Json));
+        Assert.DoesNotContain("\"diagnostics\"", System.Text.Encoding.UTF8.GetString(first.Json));
         Assert.NotEmpty(first.Manifest.Disc.Titles!);
         Assert.Equal(first.Json, second.Json);
+        Assert.All(
+            files.Where(file => file.Path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)),
+            file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public void SchemaValidator_RejectsRemovedPropertiesAndMissingContentHash()
+    {
+        const string documentPrefix =
+            """{"schemaVersion":1,"producer":{"name":"test","version":"1"},"disc":{"format":"unknown","identifiers":[{"kind":"thediscdb-content-hash","value":"0123456789ABCDEF0123456789ABCDEF"}],"files":[]""";
+        var validator = new TheDiscDb.OpticalDiscManifest.Validation.OpticalDiscManifestSchemaValidator();
+        string[] invalidDocuments =
+        [
+            """{"schemaVersion":1,"producer":{"name":"test","version":"1"},"capabilities":[],"disc":{"format":"unknown","identifiers":[{"kind":"thediscdb-content-hash","value":"0123456789ABCDEF0123456789ABCDEF"}],"files":[]}}""",
+            documentPrefix + ""","titles":[{"source":{"title":1},"index":0}]}}""",
+            """{"schemaVersion":1,"producer":{"name":"test","version":"1"},"disc":{"format":"unknown","files":[]}}""",
+        ];
+
+        Assert.All(invalidDocuments, json =>
+            Assert.False(validator.Validate(Encoding.UTF8.GetBytes(json)).IsValid));
+        Assert.True(validator.Validate(Encoding.UTF8.GetBytes(documentPrefix + "}}")).IsValid);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_ContentHashUsesOrdinalBareNamesAndExcludesBackupAndSsifFiles()
+    {
+        var files = new[]
+        {
+            RecordingFile.Payload("BDMV/STREAM/2.m2ts", 2),
+            RecordingFile.Payload("BDMV/STREAM/10.M2TS", 1),
+            RecordingFile.Payload("BDMV/BACKUP/STREAM/01.m2ts", 99),
+            RecordingFile.Payload("BDMV/STREAM/00001.ssif", 77),
+        };
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('A', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var contentHash = Assert.Single(
+            result.Manifest.Disc.Identifiers,
+            item => item.Kind == "thediscdb-content-hash");
+        Span<byte> sizes = stackalloc byte[16];
+        BinaryPrimitives.WriteInt64LittleEndian(sizes[..8], 1);
+        BinaryPrimitives.WriteInt64LittleEndian(sizes[8..], 2);
+        Assert.Equal(Convert.ToHexString(MD5.HashData(sizes)), contentHash.Value);
+        Assert.All(files, file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_UsesDiscNameFromDlXml()
+    {
+        const string Xml =
+            """<di:discinfo xmlns:di="urn:BDA:bdmv;discinfo"><di:title><di:name>Example Disc Name</di:name></di:title></di:discinfo>""";
+        var xmlFile = RecordingFile.FromBytes(
+            "BDMV/META/DL/bdmv_dl.xml",
+            Encoding.UTF8.GetBytes(Xml));
+        var files = CreateBluRayFiles("BD-A").Append(xmlFile).ToArray();
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('A', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        Assert.Equal("Example Disc Name", result.Manifest.Disc.Name);
+        Assert.Equal(1, xmlFile.ReadCount);
         Assert.All(
             files.Where(file => file.Path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)),
             file => Assert.Equal(0, file.ReadCount));
@@ -49,13 +116,11 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
         Assert.Equal("blu-ray", result.Manifest.Disc.Format);
-        Assert.Contains(result.Manifest.Disc.Files, item =>
-            item.Path == "BDMV/BACKUP/index.bdmv"
-            && item.Role == "backup");
-        Assert.Contains(result.Manifest.Diagnostics!, item =>
+        Assert.Contains(result.Manifest.Disc.Files, item => item.Path == "BDMV/BACKUP/index.bdmv");
+        Assert.Contains(result.Diagnostics, item =>
             item.Code == "ODM_CONTROL_FILE_BACKUP_USED"
             && item.Path == "BDMV/BACKUP/index.bdmv");
-        Assert.DoesNotContain(result.Manifest.Diagnostics!, item =>
+        Assert.DoesNotContain(result.Diagnostics, item =>
             item.Code == "ODM_CONTROL_FILE_MISSING"
             && item.Path == "BDMV/index.bdmv");
     }
@@ -98,6 +163,18 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Equal(1, hevcStream.DynamicRangeTypeCode);
         Assert.Equal(2, hevcStream.ColorSpaceCode);
         Assert.False(hevcStream.HdrPlusFlag);
+        Assert.Equal("video", hevcStream.Category);
+        Assert.Equal("3840x2160", hevcStream.Resolution);
+        Assert.Equal("16:9", hevcStream.AspectRatio);
+        Assert.Equal(23.976, hevcStream.FrameRate);
+        Assert.False(hevcStream.IsInterlaced);
+        Assert.Contains(clip.Streams!, stream => stream.Type == "audio" && stream.SampleRate is not null);
+        Assert.Contains(
+            result.Manifest.Disc.Titles!.SelectMany(title => title.Streams ?? []),
+            stream => stream.Category == "video"
+                && stream.Resolution is not null
+                && stream.FrameRate is not null
+                && stream.IsInterlaced is not null);
 
         // Non-video streams must not fabricate HDR/color-space evidence they don't carry.
         Assert.All(
@@ -140,8 +217,6 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         Assert.True(first.Validation.IsValid, string.Join(Environment.NewLine, first.Validation.Errors));
         Assert.Equal(first.Json, second.Json);
-        Assert.Contains("disc.titles.stereoscopic-3d", first.Manifest.Capabilities);
-        Assert.Contains("disc.clips", first.Manifest.Capabilities);
 
         var title = Assert.Single(first.Manifest.Disc.Titles!);
         var stereoscopic3D = title.Stereoscopic3D;
@@ -166,22 +241,23 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         var baseClip = Assert.Single(clips, clip => clip.ClipId == "00300");
         Assert.Equal("BDMV/STREAM/00300.m2ts", baseClip.StreamPath);
-        Assert.Equal(PerClipBytes, baseClip.SizeBytes);
+        Assert.Equal(PerClipBytes, Assert.Single(
+            first.Manifest.Disc.Files,
+            file => file.Path == baseClip.StreamPath).SizeBytes);
         // No CLPI fixture is available for 00300: CLPI-derived fields must be honestly
         // absent rather than inferred or guessed.
         Assert.Null(baseClip.ClipInfoPath);
         Assert.Null(baseClip.DurationSeconds);
-        Assert.Null(baseClip.DurationTicks45k);
         Assert.Null(baseClip.NumberOfSourcePackets);
         Assert.Null(baseClip.TransportStreamRecordingRate);
         Assert.Null(baseClip.Streams);
 
         var dependentClip = Assert.Single(clips, clip => clip.ClipId == "00301");
         Assert.Equal("BDMV/STREAM/00301.m2ts", dependentClip.StreamPath);
-        Assert.Equal(PerClipBytes, dependentClip.SizeBytes);
+        Assert.Equal(PerClipBytes, Assert.Single(
+            first.Manifest.Disc.Files,
+            file => file.Path == dependentClip.StreamPath).SizeBytes);
         Assert.Equal("BDMV/CLIPINF/00301.clpi", dependentClip.ClipInfoPath);
-        Assert.NotNull(dependentClip.DurationTicks45k);
-        Assert.True(dependentClip.DurationTicks45k > 0);
         Assert.True(dependentClip.DurationSeconds > 0);
         Assert.True(dependentClip.NumberOfSourcePackets > 0);
         Assert.True(dependentClip.TransportStreamRecordingRate > 0);
@@ -325,7 +401,7 @@ public sealed class OpticalDiscManifestGeneratorTests
             title.SizeBytes);
 
         // Real-disc duration evidence (9722.003467s / 437,490,156 ticks @ 45kHz).
-        Assert.Equal(437_490_156L, title.DurationTicks45k);
+        Assert.Equal(9722.003467, title.DurationSeconds);
 
         // Exact 39-segment ordering per the stored disc02.json SegmentMap.
         var expectedSegmentMap = playlistFileName == "00800.mpls"
@@ -336,11 +412,10 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         // Raw entry marks are 36; the corrected/emitted chapter count excludes the terminal
         // chapter-end sentinel, per task evidence (final mark 11,261 ticks from playlist end).
-        Assert.Equal(35, title.ChapterCount);
         Assert.Equal(35, title.Chapters!.Count);
 
         Assert.Contains(
-            first.Manifest.Diagnostics!,
+            first.Diagnostics,
             item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED"
                 && item.Path == $"BDMV/PLAYLIST/{playlistFileName}"
                 && item.Message.Contains("11261"));
@@ -348,10 +423,14 @@ public sealed class OpticalDiscManifestGeneratorTests
         // The real MPLS extension type/version (3.5) is preserved as a truthful,
         // unsupported-entry diagnostic rather than guessed at in the mapper.
         Assert.Contains(
-            first.Manifest.Diagnostics!,
+            first.Diagnostics,
             item => item.Code == "ODM_BD_EXTENSION_UNSUPPORTED"
                 && item.Path == $"BDMV/PLAYLIST/{playlistFileName}"
                 && item.Message.Contains("3.5"));
+        string unsupportedExtensionEvidence =
+            title.Extensions!["thediscdb.optical-disc-manifest/unsupported-mpls-extensions"].GetRawText();
+        Assert.Contains("\"typeIdentifier\":3", unsupportedExtensionEvidence);
+        Assert.Contains("\"versionIdentifier\":5", unsupportedExtensionEvidence);
 
         // Never open CLPI/M2TS payloads: only file-size metadata backs disc.clips/segments.
         Assert.All(
@@ -377,21 +456,16 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
         Assert.Equal("dvd", result.Manifest.Disc.Format);
-        Assert.Contains("disc.titles.complete", result.Manifest.Capabilities);
-        Assert.Contains("disc.chapters.counts", result.Manifest.Capabilities);
-        Assert.Contains("disc.chapters.timing", result.Manifest.Capabilities);
         Assert.DoesNotContain(
-            result.Manifest.Diagnostics ?? [],
+            result.Diagnostics,
             item => item.Code == "ODM_DVD_PARTIAL");
 
         var titles = Assert.IsAssignableFrom<IReadOnlyList<ManifestTitle>>(result.Manifest.Disc.Titles);
         Assert.Equal(23, titles.Count);
         var mainTitle = titles[0];
-        Assert.Equal("dvd-title", mainTitle.Source.Kind);
         Assert.Equal(1, mainTitle.Source.Title);
         Assert.Equal(1, mainTitle.Source.TitleSet);
         Assert.Equal(1, mainTitle.Source.TitleSetTitle);
-        Assert.Equal(35, mainTitle.ChapterCount);
         Assert.Equal(35, mainTitle.Chapters!.Count);
         Assert.Equal(0, mainTitle.Chapters[0].StartSeconds);
         Assert.True(mainTitle.Chapters[0].DurationSeconds > 0);
@@ -437,7 +511,6 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         var main = titles[0];
         Assert.Equal(2, main.Source.TitleSet);
-        Assert.Equal(37, main.ChapterCount);
         Assert.Equal(37, main.Chapters!.Count);
         Assert.Equal(8342.527528, main.DurationSeconds);
         // Exactly MakeMKV's title size and every sector of VTS_02_1..8.VOB (all 59 cells).
@@ -447,6 +520,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         var video = Assert.Single(main.Streams!, stream => stream.Type == "video");
         Assert.Equal("720x480", video.Resolution);
         Assert.Equal("16:9", video.AspectRatio);
+        Assert.Equal("video", video.Category);
+        Assert.Equal(29.97, video.FrameRate);
         Assert.Equal([1], video.Line21ClosedCaptionFields);
         Assert.All(main.Streams!.Where(stream => stream.Type == "subtitle"), stream => Assert.Equal("RLE", stream.Codec));
         Assert.Contains("\"line21ClosedCaptionFields\":[1]", System.Text.RegularExpressions.Regex.Replace(System.Text.Encoding.UTF8.GetString(result.Json), @"\s", string.Empty));
@@ -483,8 +558,7 @@ public sealed class OpticalDiscManifestGeneratorTests
             TestContext.Current.CancellationToken);
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
-        Assert.DoesNotContain("disc.titles.complete", result.Manifest.Capabilities);
-        Assert.Contains(result.Manifest.Diagnostics!, item => item.Code == "ODM_DVD_PARTIAL");
+        Assert.Contains(result.Diagnostics, item => item.Code == "ODM_DVD_PARTIAL");
     }
 
     [Fact]
@@ -504,8 +578,8 @@ public sealed class OpticalDiscManifestGeneratorTests
             playlist, diagnostics, "BDMV/PLAYLIST/00000.mpls");
 
         Assert.Equal(2, chapters.Count);
-        Assert.Equal(0, chapters[0].StartTicks45k);
-        Assert.Equal(100_000, chapters[1].StartTicks45k);
+        Assert.Equal(0, chapters[0].StartSeconds);
+        Assert.Equal(2.222222, chapters[1].StartSeconds);
     }
 
     [Theory]
@@ -531,7 +605,7 @@ public sealed class OpticalDiscManifestGeneratorTests
             playlist, diagnostics, "BDMV/PLAYLIST/00000.mpls");
 
         var chapter = Assert.Single(chapters);
-        Assert.Equal(0, chapter.StartTicks45k);
+        Assert.Equal(0, chapter.StartSeconds);
         Assert.Contains(
             diagnostics,
             item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED" && item.Severity == "info");
@@ -559,7 +633,7 @@ public sealed class OpticalDiscManifestGeneratorTests
             playlist, diagnostics, "BDMV/PLAYLIST/00000.mpls");
 
         Assert.Equal(2, chapters.Count);
-        Assert.Equal(finalMarkStart, chapters[1].StartTicks45k);
+        Assert.Equal(Math.Round(finalMarkStart / 45_000d, 6), chapters[1].StartSeconds);
         Assert.DoesNotContain(
             diagnostics,
             item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
@@ -579,10 +653,10 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         Assert.True(result.Validation.IsValid);
         var title = Assert.Single(result.Manifest.Disc.Titles!);
-        Assert.Equal(2, title.ChapterCount);
-        Assert.Equal([0L, 3_753L], title.Chapters!.Select(chapter => chapter.StartTicks45k));
+        Assert.Equal(2, title.Chapters!.Count);
+        Assert.Equal([0d, 0.0834], title.Chapters.Select(chapter => chapter.StartSeconds));
         Assert.DoesNotContain(
-            result.Manifest.Diagnostics ?? [],
+            result.Diagnostics,
             item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
         Assert.Equal(1, playlist.ReadCount);
     }
@@ -649,7 +723,7 @@ public sealed class OpticalDiscManifestGeneratorTests
             playlist, diagnostics, "BDMV/PLAYLIST/00050.mpls");
 
         Assert.Equal(2, chapters.Count);
-        Assert.Equal(finalMarkStart, chapters[1].StartTicks45k);
+        Assert.Equal(Math.Round(finalMarkStart / 45_000d, 6), chapters[1].StartSeconds);
         Assert.DoesNotContain(
             diagnostics,
             item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
@@ -931,7 +1005,6 @@ public sealed class OpticalDiscManifestGeneratorTests
                 {
                     Kind = identifierKind,
                     Value = identifier,
-                    ComputedBy = "producer",
                 },
             ],
         };
@@ -962,12 +1035,14 @@ public sealed class OpticalDiscManifestGeneratorTests
     private sealed class RecordingFile : IManifestDiscFile
     {
         private readonly string? sourcePath;
+        private readonly byte[]? content;
 
-        private RecordingFile(string path, long size, string? sourcePath)
+        private RecordingFile(string path, long size, string? sourcePath, byte[]? content = null)
         {
             Path = path;
             Size = size;
             this.sourcePath = sourcePath;
+            this.content = content;
         }
 
         public string Path { get; }
@@ -982,11 +1057,19 @@ public sealed class OpticalDiscManifestGeneratorTests
         public static RecordingFile Payload(string path, long size)
             => new(path, size, null);
 
+        public static RecordingFile FromBytes(string path, byte[] content)
+            => new(path, content.LongLength, null, content);
+
         public async ValueTask<byte[]> ReadBytesAsync(
             long maxAllowedSize,
             CancellationToken cancellationToken = default)
         {
             ReadCount++;
+            if (content is not null)
+            {
+                return content;
+            }
+
             if (sourcePath is null)
             {
                 throw new InvalidOperationException($"Payload file was read: {Path}");

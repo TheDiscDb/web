@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace TheDiscDb.OpticalDiscManifest.Models;
@@ -15,13 +16,7 @@ public sealed record OpticalDiscManifestDocument
     public required ManifestProducer Producer { get; init; }
 
     [JsonPropertyOrder(-70)]
-    public required IReadOnlyList<string> Capabilities { get; init; }
-
-    [JsonPropertyOrder(-60)]
     public required ManifestDisc Disc { get; init; }
-
-    [JsonPropertyOrder(-50)]
-    public IReadOnlyList<ManifestDiagnostic>? Diagnostics { get; init; }
 }
 
 public sealed record ManifestProducer
@@ -39,7 +34,7 @@ public sealed record ManifestDisc
 
     public string? Name { get; init; }
 
-    public IReadOnlyList<ManifestIdentifier>? Identifiers { get; init; }
+    public required IReadOnlyList<ManifestIdentifier> Identifiers { get; init; }
 
     public required IReadOnlyList<ManifestFile> Files { get; init; }
 
@@ -60,12 +55,6 @@ public sealed record ManifestIdentifier
     public required string Kind { get; init; }
 
     public required string Value { get; init; }
-
-    public required string ComputedBy { get; init; }
-
-    public string? AlgorithmVersion { get; init; }
-
-    public IReadOnlyList<string>? InputPaths { get; init; }
 }
 
 public sealed record ManifestFile
@@ -73,19 +62,13 @@ public sealed record ManifestFile
     public required string Path { get; init; }
 
     public required long SizeBytes { get; init; }
-
-    public required string Role { get; init; }
 }
 
 public sealed record ManifestTitle
 {
-    public required int Index { get; init; }
-
     public required ManifestTitleSource Source { get; init; }
 
     public double? DurationSeconds { get; init; }
-
-    public long? DurationTicks45k { get; init; }
 
     /// <summary>
     /// Gets the observed size, in bytes, of the stream file(s) backing this title. For a
@@ -95,8 +78,6 @@ public sealed record ManifestTitle
     /// only some backing clip files are present in the file inventory.
     /// </summary>
     public long? SizeBytes { get; init; }
-
-    public int? ChapterCount { get; init; }
 
     public IReadOnlyList<ManifestChapter>? Chapters { get; init; }
 
@@ -111,12 +92,12 @@ public sealed record ManifestTitle
     /// logical title.
     /// </summary>
     public ManifestStereoscopicView? Stereoscopic3D { get; init; }
+
+    public IReadOnlyDictionary<string, JsonElement>? Extensions { get; init; }
 }
 
 public sealed record ManifestTitleSource
 {
-    public required string Kind { get; init; }
-
     public string? Path { get; init; }
 
     public int? TitleSet { get; init; }
@@ -124,53 +105,33 @@ public sealed record ManifestTitleSource
     public int? Title { get; init; }
 
     public int? TitleSetTitle { get; init; }
-
-    public int? Pgc { get; init; }
-
-    public int? Angle { get; init; }
-
-    public string? Label { get; init; }
 }
 
 public sealed record ManifestChapter
 {
-    public required int Index { get; init; }
-
-    public double? StartSeconds { get; init; }
+    public required double StartSeconds { get; init; }
 
     public double? DurationSeconds { get; init; }
-
-    public long? StartTicks45k { get; init; }
-
-    public long? DurationTicks45k { get; init; }
 }
 
 public sealed record ManifestSegment
 {
-    public required int Index { get; init; }
-
     public required string Clip { get; init; }
-
-    public string? FilePath { get; init; }
 
     public double? StartSeconds { get; init; }
 
     public double? DurationSeconds { get; init; }
-
-    public long? StartTicks45k { get; init; }
-
-    public long? DurationTicks45k { get; init; }
 
     public int? Angle { get; init; }
 }
 
 public sealed record ManifestStream
 {
-    public required int Index { get; init; }
-
     public required string Type { get; init; }
 
     public required string Codec { get; init; }
+
+    public string? Category { get; init; }
 
     public int? Pid { get; init; }
 
@@ -216,6 +177,12 @@ public sealed record ManifestStream
     public string? Resolution { get; init; }
 
     public string? AspectRatio { get; init; }
+
+    public double? FrameRate { get; init; }
+
+    public bool? IsInterlaced { get; init; }
+
+    public string? SampleRate { get; init; }
 }
 
 public sealed record ManifestStereoscopicView
@@ -265,7 +232,9 @@ public sealed record ManifestStereoscopicDependentStream
 /// stream file paired by five-character stem with its <c>BDMV/CLIPINF/xxxxx.clpi</c>
 /// clip-information file, when present. This is semantically distinct from
 /// <see cref="ManifestTitle"/>: it records authored clip-level evidence without
-/// asserting the clip is a playable logical title or playlist candidate.
+/// asserting the clip is a playable logical title or playlist candidate. Its exact
+/// stream-file size is represented by the corresponding <see cref="ManifestFile"/>
+/// entry in <see cref="ManifestDisc.Files"/>.
 /// </summary>
 public sealed record ManifestClip
 {
@@ -273,14 +242,9 @@ public sealed record ManifestClip
 
     public string? StreamPath { get; init; }
 
-    /// <summary>Gets the exact observed M2TS stream-file size, from file metadata only.</summary>
-    public long? SizeBytes { get; init; }
-
     public string? ClipInfoPath { get; init; }
 
     public double? DurationSeconds { get; init; }
-
-    public long? DurationTicks45k { get; init; }
 
     public long? NumberOfSourcePackets { get; init; }
 
@@ -326,6 +290,8 @@ public sealed record ManifestValidationResult(
 public sealed record ManifestGenerationResult
 {
     public required OpticalDiscManifestDocument Manifest { get; init; }
+
+    public required IReadOnlyList<ManifestDiagnostic> Diagnostics { get; init; }
 
     public required byte[] Json { get; init; }
 

@@ -1,6 +1,11 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Linq;
 using TheDiscDb.OpticalDiscManifest.Models;
 using TheDiscDb.OpticalDiscManifest.Serialization;
 using TheDiscDb.OpticalDiscManifest.Validation;
@@ -41,6 +46,7 @@ public sealed partial class OpticalDiscManifestGenerator
         var files = NormalizeFiles(request.Files, diagnostics);
         var readMetrics = new ReadMetrics();
         var format = DetectFormat(files);
+        string? discName = null;
         IReadOnlyList<ManifestTitle> titles = Array.Empty<ManifestTitle>();
         IReadOnlyList<ManifestClip> clips = Array.Empty<ManifestClip>();
 
@@ -54,6 +60,7 @@ public sealed partial class OpticalDiscManifestGenerator
             request.ReportProgress?.Invoke("Parsing Blu-ray navigation metadata");
             var bluRay = await ParseBluRayAsync(files, diagnostics, readMetrics, cancellationToken);
             format = bluRay.IsUhd ? "uhd-blu-ray" : "blu-ray";
+            discName = bluRay.DiscName;
             titles = bluRay.Titles;
             clips = bluRay.Clips;
         }
@@ -67,7 +74,6 @@ public sealed partial class OpticalDiscManifestGenerator
             });
         }
 
-        var capabilities = BuildCapabilities(format, request.Identifiers, titles, clips, diagnostics);
         request.ReportProgress?.Invoke("Building deterministic manifest");
         var manifest = new OpticalDiscManifestDocument
         {
@@ -79,29 +85,19 @@ public sealed partial class OpticalDiscManifestGenerator
                 Version = request.ProducerVersion,
                 Uri = request.ProducerUri,
             },
-            Capabilities = capabilities,
             Disc = new ManifestDisc
             {
                 Format = format,
-                Identifiers = request.Identifiers?.Count > 0
-                    ? request.Identifiers.OrderBy(item => item.Kind, StringComparer.Ordinal).ToArray()
-                    : null,
+                Name = discName,
+                Identifiers = CreateIdentifiers(files, format, request.Identifiers),
                 Files = files.Select(item => new ManifestFile
                 {
                     Path = item.Path,
                     SizeBytes = item.File.Size,
-                    Role = ClassifyRole(item.Path),
                 }).ToArray(),
                 Titles = titles.Count > 0 ? titles : null,
                 Clips = clips.Count > 0 ? clips : null,
             },
-            Diagnostics = diagnostics.Count > 0
-                ? diagnostics
-                    .OrderBy(item => item.Path, StringComparer.Ordinal)
-                    .ThenBy(item => item.ByteOffset)
-                    .ThenBy(item => item.Code, StringComparer.Ordinal)
-                    .ToArray()
-                : null,
         };
 
         var json = OpticalDiscManifestJson.Serialize(manifest);
@@ -112,6 +108,11 @@ public sealed partial class OpticalDiscManifestGenerator
         return new ManifestGenerationResult
         {
             Manifest = manifest,
+            Diagnostics = diagnostics
+                .OrderBy(item => item.Path, StringComparer.Ordinal)
+                .ThenBy(item => item.ByteOffset)
+                .ThenBy(item => item.Code, StringComparer.Ordinal)
+                .ToArray(),
             Json = json,
             Validation = validation,
             Metrics = new ManifestScanMetrics
@@ -195,6 +196,65 @@ public sealed partial class OpticalDiscManifestGenerator
             (true, false) => "dvd",
             (false, true) => "blu-ray",
             _ => "unknown",
+        };
+    }
+
+    private static IReadOnlyList<ManifestIdentifier> CreateIdentifiers(
+        IReadOnlyList<NormalizedFile> files,
+        string format,
+        IReadOnlyList<ManifestIdentifier>? suppliedIdentifiers)
+    {
+        var identifiers = (suppliedIdentifiers ?? [])
+            .Where(item => !string.Equals(item.Kind, "thediscdb-content-hash", StringComparison.Ordinal))
+            .Append(new ManifestIdentifier
+            {
+                Kind = "thediscdb-content-hash",
+                Value = ComputeContentHash(files, format),
+            })
+            .OrderBy(item => item.Kind, StringComparer.Ordinal)
+            .ToArray();
+
+        return identifiers;
+    }
+
+    private static string ComputeContentHash(IReadOnlyList<NormalizedFile> files, string format)
+    {
+        var payloadFiles = files
+            .Where(item => IsContentHashInput(item.Path, format))
+            .OrderBy(item => Path.GetFileName(item.Path), StringComparer.Ordinal);
+
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
+        Span<byte> sizeBytes = stackalloc byte[sizeof(long)];
+        foreach (var file in payloadFiles)
+        {
+            if (file.File.Size < 0)
+            {
+                throw new InvalidDataException($"File '{file.Path}' has a negative size and cannot be hashed.");
+            }
+
+            BinaryPrimitives.WriteInt64LittleEndian(sizeBytes, file.File.Size);
+            hash.AppendData(sizeBytes);
+        }
+
+        return Convert.ToHexString(hash.GetHashAndReset());
+    }
+
+    private static bool IsContentHashInput(string path, string format)
+    {
+        if (path.StartsWith("BDMV/BACKUP/", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith(".ssif", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return format switch
+        {
+            "blu-ray" or "uhd-blu-ray" => IsControlFile(path, "BDMV/STREAM", ".m2ts"),
+            "dvd" => path.StartsWith("VIDEO_TS/", StringComparison.OrdinalIgnoreCase)
+                && (path.EndsWith(".vob", StringComparison.OrdinalIgnoreCase)
+                    || path.EndsWith(".ifo", StringComparison.OrdinalIgnoreCase)
+                    || path.EndsWith(".bup", StringComparison.OrdinalIgnoreCase)),
+            _ => false,
         };
     }
 
@@ -305,7 +365,7 @@ public sealed partial class OpticalDiscManifestGenerator
                         $"Logical title {title.Number} part {part.Number} references unavailable PGC {part.ProgramChainNumber}, program {part.ProgramNumber}."));
                     timingComplete = false;
                     sizeComplete = false;
-                    chapters.Add(new ManifestChapter { Index = part.Number - 1 });
+                    chapters.Add(new ManifestChapter { StartSeconds = 0 });
                     continue;
                 }
 
@@ -321,13 +381,12 @@ public sealed partial class OpticalDiscManifestGenerator
                 if (!timingComplete || !TryGetProgramDurationSeconds(pgc, part.ProgramNumber, out double duration))
                 {
                     timingComplete = false;
-                    chapters.Add(new ManifestChapter { Index = part.Number - 1 });
+                    chapters.Add(new ManifestChapter { StartSeconds = 0 });
                     continue;
                 }
 
                 chapters.Add(new ManifestChapter
                 {
-                    Index = part.Number - 1,
                     StartSeconds = RoundSeconds(elapsedSeconds),
                     DurationSeconds = RoundSeconds(duration),
                 });
@@ -344,25 +403,22 @@ public sealed partial class OpticalDiscManifestGenerator
                 });
                 chapters = titleMap.Parts
                     .OrderBy(item => item.Number)
-                    .Select(item => new ManifestChapter { Index = item.Number - 1 })
+                    .Select(_ => new ManifestChapter { StartSeconds = 0 })
                     .ToList();
             }
 
             var streams = CreateDvdStreams(vtsi);
             titles.Add(new ManifestTitle
             {
-                Index = title.Number - 1,
                 Source = new ManifestTitleSource
                 {
-                    Kind = "dvd-title",
                     Title = title.Number,
                     TitleSet = title.TitleSetNumber,
                     TitleSetTitle = title.TitleSetTitleNumber,
                 },
                 DurationSeconds = timingComplete ? RoundSeconds(elapsedSeconds) : null,
                 SizeBytes = sizeComplete && completeParts && titleMap.Parts.Count > 0 ? sizeBytes : null,
-                ChapterCount = title.NumberOfPartsOfTitle,
-                Chapters = chapters.Count > 0 ? chapters : null,
+                Chapters = chapters.Count > 0 && timingComplete ? chapters : null,
                 Streams = streams.Count > 0 ? streams : null,
             });
         }
@@ -471,19 +527,20 @@ public sealed partial class OpticalDiscManifestGenerator
         var streams = new List<ManifestStream>();
         streams.AddRange(vtsi.VideoStreams.OrderBy(item => item.Index).Select(item => new ManifestStream
         {
-            Index = streams.Count,
             Type = "video",
+            Category = "video",
             Codec = item.Codec,
             Resolution = item.Resolution,
             AspectRatio = item.AspectRatio,
+            FrameRate = item.FrameRate,
             Line21ClosedCaptionFields = GetLine21ClosedCaptionFields(item),
         }));
         foreach (var stream in vtsi.AudioStreams.OrderBy(item => item.Index))
         {
             streams.Add(new ManifestStream
             {
-                Index = streams.Count,
                 Type = "audio",
+                Category = "audio",
                 Codec = stream.Codec,
                 Language = NormalizeLanguage(stream.LanguageCode),
                 AudioLayout = stream.Channels,
@@ -494,8 +551,8 @@ public sealed partial class OpticalDiscManifestGenerator
         {
             streams.Add(new ManifestStream
             {
-                Index = streams.Count,
                 Type = "subtitle",
+                Category = "subpicture",
                 Codec = stream.CodingMode,
                 Language = NormalizeLanguage(stream.LanguageCode),
             });
@@ -606,9 +663,10 @@ public sealed partial class OpticalDiscManifestGenerator
 
             parsedPlaylists++;
             isUhd |= result.Value.Version == "0300";
-            titles.Add(CreateBluRayTitle(titles.Count, result.Path, result.Value, files, clpiByClip, diagnostics));
+            titles.Add(CreateBluRayTitle(result.Path, result.Value, files, clpiByClip, diagnostics));
         }
 
+        string? discName = await ReadBluRayDiscNameAsync(files, diagnostics, metrics, cancellationToken);
         if (playlistCandidates == 0)
         {
             diagnostics.Add(MissingFile("BDMV/PLAYLIST/*.mpls"));
@@ -635,7 +693,74 @@ public sealed partial class OpticalDiscManifestGenerator
 
         var clips = CreateBluRayClips(files, clpiByClip, clpiPathByClip);
 
-        return new BluRayParseResult(titles, isUhd, clips);
+        return new BluRayParseResult(titles, isUhd, clips, discName);
+    }
+
+    private static async Task<string?> ReadBluRayDiscNameAsync(
+        IReadOnlyList<NormalizedFile> files,
+        ICollection<ManifestDiagnostic> diagnostics,
+        ReadMetrics metrics,
+        CancellationToken cancellationToken)
+    {
+        const string primaryPath = "BDMV/META/DL/bdmv_dl.xml";
+        const string backupPath = "BDMV/BACKUP/META/DL/bdmv_dl.xml";
+        var primary = Find(files, primaryPath);
+        var backup = Find(files, backupPath);
+
+        foreach (var file in new[] { primary, backup }.OfType<NormalizedFile>())
+        {
+            var bytes = await ReadControlFileAsync(file, diagnostics, metrics, cancellationToken);
+            if (bytes is null)
+            {
+                continue;
+            }
+
+            try
+            {
+                using var stream = new MemoryStream(bytes, writable: false);
+                using var reader = XmlReader.Create(stream, new XmlReaderSettings
+                {
+                    DtdProcessing = DtdProcessing.Prohibit,
+                    XmlResolver = null,
+                    MaxCharactersInDocument = MaxControlFileSize,
+                });
+                var document = XDocument.Load(reader);
+                string? name = document
+                    .Descendants()
+                    .Where(element => element.Name.LocalName == "title")
+                    .SelectMany(element => element.Elements()
+                        .Where(child => child.Name.LocalName == "name"))
+                    .Select(element => element.Value.Trim())
+                    .FirstOrDefault(value => value.Length > 0);
+                if (name is not null)
+                {
+                    if (file == backup)
+                    {
+                        diagnostics.Add(new ManifestDiagnostic
+                        {
+                            Severity = "info",
+                            Code = "ODM_CONTROL_FILE_BACKUP_USED",
+                            Message = "Used backup disc metadata because BDMV/META/DL/bdmv_dl.xml was missing or did not contain a disc name.",
+                            Path = backupPath,
+                        });
+                    }
+
+                    return name;
+                }
+            }
+            catch (XmlException ex)
+            {
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "warning",
+                    Code = "ODM_DISC_NAME_XML_INVALID",
+                    Message = ex.Message,
+                    Path = file.Path,
+                });
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -669,12 +794,10 @@ public sealed partial class OpticalDiscManifestGenerator
             {
                 ClipId = clipId,
                 StreamPath = streamFile?.Path,
-                SizeBytes = streamFile?.File.Size,
                 ClipInfoPath = clpiPath,
                 DurationSeconds = clpi?.PresentationSummary is not null
                     ? TicksToSeconds(clpi.PresentationSummary.DurationTicks45k)
                     : null,
-                DurationTicks45k = clpi?.PresentationSummary?.DurationTicks45k,
                 NumberOfSourcePackets = clpi?.ClipInfo.NumberOfSourcePackets,
                 TransportStreamRecordingRate = clpi?.ClipInfo.TransportStreamRecordingRate,
                 Streams = clpi is not null ? CreateClpiStreams(clpi) : null,
@@ -685,7 +808,6 @@ public sealed partial class OpticalDiscManifestGenerator
     }
 
     private static ManifestTitle CreateBluRayTitle(
-        int index,
         string path,
         MplsPlaylist playlist,
         IReadOnlyList<NormalizedFile> files,
@@ -710,15 +832,10 @@ public sealed partial class OpticalDiscManifestGenerator
                 };
             foreach (var clip in clips.Select((value, angleIndex) => new { value, angleIndex }))
             {
-                var streamPath = $"BDMV/STREAM/{clip.value.ClipId}.m2ts";
                 segments.Add(new ManifestSegment
                 {
-                    Index = segments.Count,
                     Clip = clip.value.ClipId,
-                    FilePath = Find(files, streamPath)?.Path,
-                    StartTicks45k = cumulativeTicks,
                     StartSeconds = TicksToSeconds(cumulativeTicks),
-                    DurationTicks45k = durationTicks,
                     DurationSeconds = TicksToSeconds(durationTicks),
                     Angle = clips.Count > 1 ? clip.angleIndex + 1 : null,
                 });
@@ -747,20 +864,17 @@ public sealed partial class OpticalDiscManifestGenerator
         AddUnsupportedExtensionDiagnostics(playlist, diagnostics, path);
         return new ManifestTitle
         {
-            Index = index,
             Source = new ManifestTitleSource
             {
-                Kind = "blu-ray-playlist",
                 Path = path,
             },
-            DurationTicks45k = cumulativeTicks,
             DurationSeconds = TicksToSeconds(cumulativeTicks),
             SizeBytes = ComputeTitleSizeBytes(segments, stereoscopic3D, files),
-            ChapterCount = chapters.Count,
             Chapters = chapters.Count > 0 ? chapters : null,
             Segments = segments,
             Streams = streams.Count > 0 ? streams : null,
             Stereoscopic3D = stereoscopic3D,
+            Extensions = CreateUnsupportedExtensionEvidence(playlist),
         };
     }
 
@@ -883,6 +997,36 @@ public sealed partial class OpticalDiscManifestGenerator
         }
     }
 
+    private static IReadOnlyDictionary<string, JsonElement>? CreateUnsupportedExtensionEvidence(
+        MplsPlaylist playlist)
+    {
+        var unsupportedEntries = playlist.ExtensionData?.Entries
+            .Where(entry => !entry.IsSupported)
+            .ToArray();
+        if (unsupportedEntries is not { Length: > 0 })
+        {
+            return null;
+        }
+
+        const string extensionKey = "thediscdb.optical-disc-manifest/unsupported-mpls-extensions";
+        var evidence = unsupportedEntries.Select(entry => new
+        {
+            typeIdentifier = entry.TypeIdentifier,
+            versionIdentifier = entry.VersionIdentifier,
+            name = entry.Name,
+            relativeStartAddress = entry.RelativeStartAddress,
+            length = entry.Length,
+            overlapsAnotherEntry = entry.OverlapsAnotherEntry,
+            rawDataHex = entry.RawDataHex,
+            isRawDataTruncated = entry.IsRawDataTruncated,
+        });
+
+        return new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+        {
+            [extensionKey] = JsonSerializer.SerializeToElement(evidence),
+        };
+    }
+
     /// <summary>
     /// Minimum ticks (45 kHz) between a final entry mark and playlist end still treated
     /// as a MakeMKV-style terminal chapter-end sentinel. The mark must lie strictly
@@ -971,6 +1115,7 @@ public sealed partial class OpticalDiscManifestGenerator
         }
 
         var chapters = new List<ManifestChapter>(resolved.Count);
+        var chapterStartTicks = new List<long>(resolved.Count);
         for (int i = 0; i < resolved.Count; i++)
         {
             var (mark, startTicks) = resolved[i];
@@ -992,12 +1137,18 @@ public sealed partial class OpticalDiscManifestGenerator
 
             chapters.Add(new ManifestChapter
             {
-                Index = chapters.Count,
-                StartTicks45k = startTicks,
                 StartSeconds = TicksToSeconds(startTicks),
-                DurationTicks45k = mark.Duration,
-                DurationSeconds = TicksToSeconds(mark.Duration),
             });
+            chapterStartTicks.Add(startTicks);
+        }
+
+        for (int i = 0; i < chapters.Count; i++)
+        {
+            long chapterEndTicks = i + 1 < chapters.Count
+                ? chapterStartTicks[i + 1]
+                : totalDurationTicks45k;
+            long durationTicks = Math.Max(0, chapterEndTicks - chapterStartTicks[i]);
+            chapters[i] = chapters[i] with { DurationSeconds = TicksToSeconds(durationTicks) };
         }
 
         return chapters;
@@ -1026,19 +1177,26 @@ public sealed partial class OpticalDiscManifestGenerator
             .ThenBy(item => item.CodingTypeCode))
         {
             var clpi = FindClpiStream(playlist, clpiByClip, stream.Pid);
+            int? formatCode = clpi?.FormatCode ?? stream.FormatCode;
+            int? rateCode = clpi?.RateCode ?? stream.RateCode;
             streams.Add(new ManifestStream
             {
-                Index = streams.Count,
                 Type = MapStreamType(stream.Category),
                 Codec = clpi?.CodingType ?? stream.CodingType,
+                Category = MapStreamCategory(stream.Category),
                 Pid = stream.Pid,
                 CodingTypeCode = clpi?.CodingTypeCode ?? stream.CodingTypeCode,
-                FormatCode = clpi?.FormatCode ?? stream.FormatCode,
-                RateCode = clpi?.RateCode ?? stream.RateCode,
+                FormatCode = formatCode,
+                RateCode = rateCode,
                 DynamicRangeTypeCode = clpi?.DynamicRangeTypeCode,
                 ColorSpaceCode = clpi?.ColorSpaceCode,
                 HdrPlusFlag = clpi?.HdrPlusFlag,
                 Language = NormalizeLanguage(clpi?.LanguageCode ?? stream.LanguageCode),
+                Resolution = MapVideoResolution(formatCode),
+                AspectRatio = MapAspectRatio(clpi?.AspectCode),
+                FrameRate = MapFrameRate(rateCode),
+                IsInterlaced = MapIsInterlaced(formatCode),
+                SampleRate = MapSampleRate(rateCode, stream.Category),
             });
         }
 
@@ -1097,9 +1255,9 @@ public sealed partial class OpticalDiscManifestGenerator
         {
             streams.Add(new ManifestStream
             {
-                Index = streams.Count,
                 Type = MapStreamType(stream.Category),
                 Codec = stream.CodingType,
+                Category = MapStreamCategory(stream.Category),
                 Pid = stream.Pid,
                 CodingTypeCode = stream.CodingTypeCode,
                 FormatCode = stream.FormatCode,
@@ -1108,71 +1266,15 @@ public sealed partial class OpticalDiscManifestGenerator
                 ColorSpaceCode = stream.ColorSpaceCode,
                 HdrPlusFlag = stream.HdrPlusFlag,
                 Language = NormalizeLanguage(stream.LanguageCode),
+                Resolution = MapVideoResolution(stream.FormatCode),
+                AspectRatio = MapAspectRatio(stream.AspectCode),
+                FrameRate = MapFrameRate(stream.RateCode),
+                IsInterlaced = MapIsInterlaced(stream.FormatCode),
+                SampleRate = MapSampleRate(stream.RateCode, stream.Category),
             });
         }
 
         return streams;
-    }
-
-    private static IReadOnlyList<string> BuildCapabilities(
-        string format,
-        IReadOnlyList<ManifestIdentifier>? identifiers,
-        IReadOnlyList<ManifestTitle> titles,
-        IReadOnlyList<ManifestClip> clips,
-        IReadOnlyList<ManifestDiagnostic> diagnostics)
-    {
-        var capabilities = new List<string>();
-        if (identifiers?.Count > 0)
-        {
-            capabilities.Add("disc.identifiers");
-            capabilities.Add("disc.files.hash-inputs");
-        }
-
-        capabilities.Add("disc.files.complete");
-        if (titles.Count > 0)
-        {
-            capabilities.Add("disc.titles");
-        }
-
-        bool hasErrors = diagnostics.Any(item => item.Severity == "error");
-        bool partialDvd = diagnostics.Any(item => item.Code == "ODM_DVD_PARTIAL");
-        bool completeLogicalTitlesSupported = format == "dvd";
-        if (completeLogicalTitlesSupported && titles.Count > 0 && !hasErrors && !partialDvd)
-        {
-            capabilities.Add("disc.titles.complete");
-        }
-
-        if (titles.Any(item => item.Segments?.Count > 0))
-        {
-            capabilities.Add("disc.segments");
-        }
-
-        if (titles.Any(item => item.Streams?.Count > 0))
-        {
-            capabilities.Add("disc.streams.declared");
-        }
-
-        if (titles.Any(item => item.ChapterCount is not null))
-        {
-            capabilities.Add("disc.chapters.counts");
-        }
-
-        if (titles.Any(item => item.Chapters?.Any(chapter => chapter.StartSeconds is not null) == true))
-        {
-            capabilities.Add("disc.chapters.timing");
-        }
-
-        if (titles.Any(item => item.Stereoscopic3D is not null))
-        {
-            capabilities.Add("disc.titles.stereoscopic-3d");
-        }
-
-        if (clips.Count > 0)
-        {
-            capabilities.Add("disc.clips");
-        }
-
-        return capabilities;
     }
 
     private static async Task<ParsedControl<T>?> ParseControlWithBackupAsync<T>(
@@ -1356,44 +1458,85 @@ public sealed partial class OpticalDiscManifestGenerator
             Path = path,
         };
 
-    private static string ClassifyRole(string path)
-    {
-        if (path.Contains("/BACKUP/", StringComparison.OrdinalIgnoreCase))
-        {
-            return "backup";
-        }
-
-        if (path.EndsWith(".mpls", StringComparison.OrdinalIgnoreCase))
-        {
-            return "playlist";
-        }
-
-        if (path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)
-            || path.EndsWith(".vob", StringComparison.OrdinalIgnoreCase))
-        {
-            return "stream";
-        }
-
-        if (path.EndsWith(".ifo", StringComparison.OrdinalIgnoreCase)
-            || path.EndsWith(".clpi", StringComparison.OrdinalIgnoreCase)
-            || path.EndsWith(".bdmv", StringComparison.OrdinalIgnoreCase)
-            || path.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWith("AACS/", StringComparison.OrdinalIgnoreCase))
-        {
-            return "metadata";
-        }
-
-        return "other";
-    }
-
     private static string MapStreamType(string category)
         => category switch
         {
-            "Video" or "SecondaryVideo" => "video",
+            "Video" or "SecondaryVideo" or "DolbyVisionVideo" => "video",
             "Audio" or "SecondaryAudio" => "audio",
-            "PresentationGraphics" or "InteractiveGraphics" => "subtitle",
+            "PresentationGraphics" or "PictureInPicturePresentationGraphics" or "Subpicture" => "subtitle",
+            "InteractiveGraphics" => "menu",
             _ => "unknown",
         };
+
+    private static string? MapStreamCategory(string category)
+        => category switch
+        {
+            "Video" => "video",
+            "SecondaryVideo" => "secondaryVideo",
+            "Audio" => "audio",
+            "SecondaryAudio" => "secondaryAudio",
+            "PresentationGraphics" => "presentationGraphics",
+            "InteractiveGraphics" => "interactiveGraphics",
+            "DolbyVisionVideo" => "dolbyVisionVideo",
+            "PictureInPicturePresentationGraphics" => "pictureInPicturePresentationGraphics",
+            "Subpicture" => "subpicture",
+            _ => null,
+        };
+
+    private static string? MapVideoResolution(int? formatCode)
+        => formatCode switch
+        {
+            1 or 3 => "720x480",
+            2 or 7 => "720x576",
+            4 or 6 => "1920x1080",
+            5 => "1280x720",
+            8 => "3840x2160",
+            _ => null,
+        };
+
+    private static string? MapAspectRatio(int? aspectCode)
+        => aspectCode switch
+        {
+            2 => "4:3",
+            3 => "16:9",
+            _ => null,
+        };
+
+    private static double? MapFrameRate(int? rateCode)
+        => rateCode switch
+        {
+            1 => 23.976,
+            2 => 24,
+            3 => 25,
+            4 => 29.97,
+            6 => 50,
+            7 => 59.94,
+            _ => null,
+        };
+
+    private static bool? MapIsInterlaced(int? formatCode)
+        => formatCode switch
+        {
+            1 or 2 or 4 => true,
+            3 or 5 or 6 or 7 or 8 => false,
+            _ => null,
+        };
+
+    private static string? MapSampleRate(int? rateCode, string category)
+    {
+        if (category is not ("Audio" or "SecondaryAudio"))
+        {
+            return null;
+        }
+
+        return rateCode switch
+        {
+            1 => "48 kHz",
+            2 => "96 kHz",
+            3 => "192 kHz",
+            _ => null,
+        };
+    }
 
     private static string? NormalizeLanguage(string? language)
         => string.IsNullOrWhiteSpace(language) || language == "und"
@@ -1417,7 +1560,11 @@ public sealed partial class OpticalDiscManifestGenerator
 
     private sealed record ParsedControl<T>(string Path, T? Value, ParserResult<T> Result) where T : class;
 
-    private sealed record BluRayParseResult(IReadOnlyList<ManifestTitle> Titles, bool IsUhd, IReadOnlyList<ManifestClip> Clips);
+    private sealed record BluRayParseResult(
+        IReadOnlyList<ManifestTitle> Titles,
+        bool IsUhd,
+        IReadOnlyList<ManifestClip> Clips,
+        string? DiscName);
 
     private sealed class ReadMetrics
     {

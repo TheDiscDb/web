@@ -8,7 +8,6 @@
   "required": [
     "schemaVersion",
     "producer",
-    "capabilities",
     "disc"
   ],
   "properties": {
@@ -22,27 +21,6 @@
     "producer": {
       "$ref": "#/$defs/producer"
     },
-    "capabilities": {
-      "type": "array",
-      "minItems": 1,
-      "uniqueItems": true,
-      "items": {
-        "enum": [
-          "disc.identifiers",
-          "disc.files.hash-inputs",
-          "disc.files.complete",
-          "disc.titles",
-          "disc.titles.complete",
-          "disc.segments",
-          "disc.streams.declared",
-          "disc.streams.payload-verified",
-          "disc.chapters.counts",
-          "disc.chapters.timing",
-          "disc.titles.stereoscopic-3d",
-          "disc.clips"
-        ]
-      }
-    },
     "capturedAt": {
       "type": "string",
       "format": "date-time"
@@ -50,64 +28,10 @@
     "disc": {
       "$ref": "#/$defs/disc"
     },
-    "diagnostics": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/diagnostic"
-      }
-    },
     "extensions": {
       "$ref": "#/$defs/extensions"
     }
   },
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "capabilities": {
-            "contains": {
-              "const": "disc.files.complete"
-            }
-          }
-        },
-        "required": [
-          "capabilities"
-        ]
-      },
-      "then": {
-        "properties": {
-          "disc": {
-            "required": [
-              "files"
-            ]
-          }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": {
-          "capabilities": {
-            "contains": {
-              "const": "disc.titles.complete"
-            }
-          }
-        },
-        "required": [
-          "capabilities"
-        ]
-      },
-      "then": {
-        "properties": {
-          "disc": {
-            "required": [
-              "titles"
-            ]
-          }
-        }
-      }
-    }
-  ],
   "$defs": {
     "producer": {
       "type": "object",
@@ -138,7 +62,8 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "format"
+        "format",
+        "identifiers"
       ],
       "properties": {
         "format": {
@@ -157,6 +82,18 @@
         "identifiers": {
           "type": "array",
           "uniqueItems": true,
+          "minItems": 1,
+          "contains": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "const": "thediscdb-content-hash"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
           "items": {
             "$ref": "#/$defs/identifier"
           }
@@ -189,8 +126,7 @@
       "additionalProperties": false,
       "required": [
         "kind",
-        "value",
-        "computedBy"
+        "value"
       ],
       "properties": {
         "kind": {
@@ -198,31 +134,12 @@
             "aacs-disc-id",
             "dvd-disc-id",
             "matrix256",
-            "legacy-disc-hash"
+            "thediscdb-content-hash"
           ]
         },
         "value": {
           "type": "string",
           "pattern": "^[0-9A-Fa-f]{32,128}$"
-        },
-        "computedBy": {
-          "enum": [
-            "producer",
-            "server",
-            "unknown"
-          ]
-        },
-        "algorithmVersion": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 50
-        },
-        "inputPaths": {
-          "type": "array",
-          "uniqueItems": true,
-          "items": {
-            "$ref": "#/$defs/path"
-          }
         }
       }
     },
@@ -250,16 +167,6 @@
         "modifiedAt": {
           "type": "string",
           "format": "date-time"
-        },
-        "role": {
-          "enum": [
-            "metadata",
-            "playlist",
-            "stream",
-            "menu",
-            "backup",
-            "other"
-          ]
         }
       }
     },
@@ -267,14 +174,9 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "index",
         "source"
       ],
       "properties": {
-        "index": {
-          "type": "integer",
-          "minimum": 0
-        },
         "source": {
           "$ref": "#/$defs/titleSource"
         },
@@ -282,15 +184,7 @@
           "type": "number",
           "minimum": 0
         },
-        "durationTicks45k": {
-          "type": "integer",
-          "minimum": 0
-        },
         "sizeBytes": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "chapterCount": {
           "type": "integer",
           "minimum": 0
         },
@@ -321,112 +215,19 @@
       }
     },
     "titleSource": {
-      "oneOf": [
-        {
-          "$ref": "#/$defs/bluRayPlaylistSource"
-        },
-        {
-          "$ref": "#/$defs/bluRayStreamSource"
-        },
-        {
-          "$ref": "#/$defs/dvdPgcSource"
-        },
-        {
-          "$ref": "#/$defs/dvdTitleSource"
-        },
-        {
-          "$ref": "#/$defs/fileSource"
-        },
-        {
-          "$ref": "#/$defs/unknownSource"
-        }
-      ]
-    },
-    "bluRayPlaylistSource": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "path"
-      ],
+      "minProperties": 1,
       "properties": {
-        "kind": {
-          "const": "blu-ray-playlist"
-        },
         "path": {
           "allOf": [
             {
               "$ref": "#/$defs/path"
             },
             {
-              "pattern": "^BDMV/PLAYLIST/[^/]+\\.[Mm][Pp][Ll][Ss]$"
+              "pattern": "^BDMV/(BACKUP/)?PLAYLIST/[^/]+\\.[Mm][Pp][Ll][Ss]$"
             }
           ]
-        }
-      }
-    },
-    "bluRayStreamSource": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "path"
-      ],
-      "properties": {
-        "kind": {
-          "const": "blu-ray-stream"
-        },
-        "path": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/path"
-            },
-            {
-              "pattern": "^BDMV/STREAM/[^/]+\\.[Mm]2[Tt][Ss]$"
-            }
-          ]
-        }
-      }
-    },
-    "dvdPgcSource": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "titleSet",
-        "pgc"
-      ],
-      "properties": {
-        "kind": {
-          "const": "dvd-pgc"
-        },
-        "titleSet": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 99
-        },
-        "pgc": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "angle": {
-          "type": "integer",
-          "minimum": 1
-        }
-      }
-    },
-    "dvdTitleSource": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "title",
-        "titleSet",
-        "titleSetTitle"
-      ],
-      "properties": {
-        "kind": {
-          "const": "dvd-title"
         },
         "title": {
           "type": "integer",
@@ -442,44 +243,6 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 99
-        },
-        "angle": {
-          "type": "integer",
-          "minimum": 1
-        }
-      }
-    },
-    "fileSource": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "path"
-      ],
-      "properties": {
-        "kind": {
-          "const": "file"
-        },
-        "path": {
-          "$ref": "#/$defs/path"
-        }
-      }
-    },
-    "unknownSource": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "kind",
-        "label"
-      ],
-      "properties": {
-        "kind": {
-          "const": "unknown"
-        },
-        "label": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 255
         }
       }
     },
@@ -487,27 +250,15 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "index"
+        "startSeconds"
       ],
       "properties": {
-        "index": {
-          "type": "integer",
-          "minimum": 0
-        },
         "startSeconds": {
           "type": "number",
           "minimum": 0
         },
         "durationSeconds": {
           "type": "number",
-          "minimum": 0
-        },
-        "startTicks45k": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "durationTicks45k": {
-          "type": "integer",
           "minimum": 0
         }
       }
@@ -516,21 +267,13 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "index",
         "clip"
       ],
       "properties": {
-        "index": {
-          "type": "integer",
-          "minimum": 0
-        },
         "clip": {
           "type": "string",
           "minLength": 1,
           "maxLength": 255
-        },
-        "filePath": {
-          "$ref": "#/$defs/path"
         },
         "startSeconds": {
           "type": "number",
@@ -538,14 +281,6 @@
         },
         "durationSeconds": {
           "type": "number",
-          "minimum": 0
-        },
-        "startTicks45k": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "durationTicks45k": {
-          "type": "integer",
           "minimum": 0
         },
         "angle": {
@@ -558,22 +293,31 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "index",
         "type",
         "codec"
       ],
       "properties": {
-        "index": {
-          "type": "integer",
-          "minimum": 0
-        },
         "type": {
           "enum": [
             "video",
             "audio",
             "subtitle",
+            "menu",
             "data",
             "unknown"
+          ]
+        },
+        "category": {
+          "enum": [
+            "video",
+            "secondaryVideo",
+            "audio",
+            "secondaryAudio",
+            "presentationGraphics",
+            "interactiveGraphics",
+            "dolbyVisionVideo",
+            "pictureInPicturePresentationGraphics",
+            "subpicture"
           ]
         },
         "codec": {
@@ -643,6 +387,18 @@
           "maxLength": 50
         },
         "aspectRatio": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "frameRate": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "isInterlaced": {
+          "type": "boolean"
+        },
+        "sampleRate": {
           "type": "string",
           "minLength": 1,
           "maxLength": 50
@@ -758,19 +514,11 @@
         "streamPath": {
           "$ref": "#/$defs/path"
         },
-        "sizeBytes": {
-          "type": "integer",
-          "minimum": 0
-        },
         "clipInfoPath": {
           "$ref": "#/$defs/path"
         },
         "durationSeconds": {
           "type": "number",
-          "minimum": 0
-        },
-        "durationTicks45k": {
-          "type": "integer",
           "minimum": 0
         },
         "numberOfSourcePackets": {
@@ -786,40 +534,6 @@
           "items": {
             "$ref": "#/$defs/stream"
           }
-        }
-      }
-    },
-    "diagnostic": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "severity",
-        "code",
-        "message"
-      ],
-      "properties": {
-        "severity": {
-          "enum": [
-            "info",
-            "warning",
-            "error"
-          ]
-        },
-        "code": {
-          "type": "string",
-          "pattern": "^[A-Z][A-Z0-9_.-]{1,63}$"
-        },
-        "message": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 2048
-        },
-        "path": {
-          "$ref": "#/$defs/path"
-        },
-        "byteOffset": {
-          "type": "integer",
-          "minimum": 0
         }
       }
     },

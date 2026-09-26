@@ -57,16 +57,8 @@ else
                     <dd>@FormatMemoryDelta()</dd>
                 </dl>
 
-                <h2>Capabilities</h2>
-                <ul>
-                    @foreach (var capability in result.Manifest.Capabilities)
-                    {
-                        <li><code>@capability</code></li>
-                    }
-                </ul>
-
                 <h2>Diagnostics</h2>
-                @if (result.Manifest.Diagnostics is not { Count: > 0 }
+                @if (result.Diagnostics.Count == 0
                     && result.Validation.Errors.Count == 0)
                 {
                     <p>No diagnostics.</p>
@@ -83,7 +75,7 @@ else
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var diagnostic in result.Manifest.Diagnostics ?? [])
+                            @foreach (var diagnostic in result.Diagnostics)
                             {
                                 <tr>
                                     <td>@diagnostic.Severity</td>

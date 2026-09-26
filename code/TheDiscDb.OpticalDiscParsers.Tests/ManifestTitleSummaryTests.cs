@@ -16,22 +16,20 @@ public sealed class ManifestTitleSummaryTests
         {
             titles.Add(new ManifestTitle
             {
-                Index = i,
-                Source = new ManifestTitleSource { Kind = "blu-ray-playlist", Path = $"BDMV/PLAYLIST/{i:00000}.mpls" },
+                Source = new ManifestTitleSource { Path = $"BDMV/PLAYLIST/{i:00000}.mpls" },
                 DurationSeconds = 30 + i,
-                ChapterCount = 1,
+                Chapters = [new ManifestChapter { StartSeconds = 0 }],
                 SizeBytes = 50_000_000,
             });
         }
 
         var mainFeature = new ManifestTitle
         {
-            Index = 74,
-            Source = new ManifestTitleSource { Kind = "blu-ray-playlist", Path = "BDMV/PLAYLIST/00800.mpls" },
+            Source = new ManifestTitleSource { Path = "BDMV/PLAYLIST/00800.mpls" },
             DurationSeconds = 8478.761956,
-            ChapterCount = 14,
+            Chapters = Enumerable.Range(0, 14).Select(index => new ManifestChapter { StartSeconds = index }).ToArray(),
             SizeBytes = 43_553_961_984,
-            Segments = [new ManifestSegment { Index = 0, Clip = "00300", FilePath = "BDMV/STREAM/00300.m2ts" }],
+            Segments = [new ManifestSegment { Clip = "00300" }],
             Stereoscopic3D = new ManifestStereoscopicView
             {
                 RelationshipType = "3d-dependent-view",
@@ -68,10 +66,9 @@ public sealed class ManifestTitleSummaryTests
         {
             new ManifestTitle
             {
-                Index = 0,
-                Source = new ManifestTitleSource { Kind = "blu-ray-playlist", Path = "BDMV/PLAYLIST/00001.mpls" },
+                Source = new ManifestTitleSource { Path = "BDMV/PLAYLIST/00001.mpls" },
                 DurationSeconds = 120,
-                ChapterCount = 1,
+                Chapters = [new ManifestChapter { StartSeconds = 0 }],
                 SizeBytes = 1_000_000,
             },
         };
@@ -92,25 +89,28 @@ public sealed class ManifestTitleSummaryTests
             {
                 ClipId = "00301",
                 StreamPath = "BDMV/STREAM/00301.m2ts",
-                SizeBytes = 20_000_000_000,
                 DurationSeconds = 8478.76,
-                Streams = [new ManifestStream { Index = 0, Type = "video", Codec = "MVC Video" }],
+                Streams = [new ManifestStream { Type = "video", Codec = "MVC Video" }],
             },
             new ManifestClip
             {
                 ClipId = "00300",
                 StreamPath = "BDMV/STREAM/00300.m2ts",
-                SizeBytes = 23_553_961_984,
                 DurationSeconds = 8478.76,
                 Streams =
                 [
-                    new ManifestStream { Index = 0, Type = "video", Codec = "AVC Video" },
-                    new ManifestStream { Index = 1, Type = "audio", Codec = "DTS-HD Master Audio" },
+                    new ManifestStream { Type = "video", Codec = "AVC Video" },
+                    new ManifestStream { Type = "audio", Codec = "DTS-HD Master Audio" },
                 ],
             },
         };
 
-        var rows = ManifestClipSummaryBuilder.Build(clips);
+        var rows = ManifestClipSummaryBuilder.Build(
+            clips,
+            [
+                new ManifestFile { Path = "BDMV/STREAM/00301.m2ts", SizeBytes = 20_000_000_000 },
+                new ManifestFile { Path = "BDMV/STREAM/00300.m2ts", SizeBytes = 23_553_961_984 },
+            ]);
 
         Assert.Equal(2, rows.Count);
         Assert.Equal("00300", rows[0].ClipId);
