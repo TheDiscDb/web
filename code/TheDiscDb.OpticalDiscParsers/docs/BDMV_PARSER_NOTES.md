@@ -51,8 +51,8 @@ No proprietary DVD/Blu-ray specification text, disc keys, decrypted media, or th
 |---|---|---|
 | BDMV index | `INDX0200`, `INDX0300`, AppInfo, HDMV/BD-J title refs | Extension data is not deeply interpreted beyond offsets; BD-J app resources are not loaded |
 | MovieObject | `MOBJ0200`, `MOBJ0300`, object flags, command bitfields | Commands are exposed structurally; no HDMV VM execution or semantic decompilation |
-| CLPI | `HDMV0200`, `HDMV0300`, ClipInfo source-packet count and recording-rate fields, ATC/STC timing summary, ProgramInfo streams, CLPI extension-declared stereoscopic streams, raw stream attributes, ISRC, CPI summaries | EP-map coarse/fine entries are summarized but not expanded into full seek tables; CLPI does not embed the `xxxxx` file stem used to pair `xxxxx.clpi` with `STREAM/xxxxx.m2ts`; most CLPI extension entry types are preserved only by diagnostics/known-safe skips |
-| MPLS | `MPLS0200`, `MPLS0300`, play items, primary and alternate-angle clip refs, stream tables, SubPath/SubPlayItem records, ExtensionData descriptors, stereoscopic extension SubPaths, STN SS dependent-view stream metadata, explicit MVC base/dependent-view relationships, playlist marks | PiP metadata, static metadata, and most non-3D extension blocks are preserved as bounded unsupported metadata but not deeply interpreted |
+| CLPI | `HDMV0200`, `HDMV0300`, ClipInfo source-packet count and recording-rate fields, ATC/STC timing summary, ProgramInfo streams with normalized video height/interlace/frame-rate/aspect-ratio values when known, CLPI extension-declared stereoscopic streams, raw stream attributes, ISRC, CPI summaries | EP-map coarse/fine entries are summarized but not expanded into full seek tables; CLPI does not embed the `xxxxx` file stem used to pair `xxxxx.clpi` with `STREAM/xxxxx.m2ts`; most CLPI extension entry types are preserved only by diagnostics/known-safe skips |
+| MPLS | `MPLS0200`, `MPLS0300`, play items, primary and alternate-angle clip refs, separate primary/PiP PG and Dolby Vision STN entries, SubPath/SubPlayItem records, ExtensionData descriptors, stereoscopic extension SubPaths, STN SS dependent-view stream metadata, explicit MVC base/dependent-view relationships, playlist marks with playlist-relative times | PiP metadata and static metadata extension blocks, plus most other non-3D extension blocks, are preserved as bounded unsupported metadata but not deeply interpreted |
 | DVD IFO | `DVDVIDEO-VMG`, `DVDVIDEO-VTS`, TT_SRPT logical titles, VTS_PTT_SRPT PTT-to-`(PGCN, PGN)` maps, VTS_PGCIT PGC search pointers, PGC audio/subpicture control records, program maps, cell playback records, cell position records, stream attributes | Menu PGC interpretation, VM command semantics, complete language/unit tables, detailed channel-layout normalization, and DVD conformance across broader multi-angle/seamless-branching fixture sets remain future work |
 | Backup metadata | DVD `.BUP` fallback and Blu-ray `BDMV/BACKUP/*` fallback for index, MovieObject, CLPI, and MPLS control files | Fallback records diagnostic evidence; media payload backup/recovery is intentionally out of scope |
 | WebAssembly | Parser project builds as a dependency of `TheDiscDb.Client` | Fixture execution currently runs under .NET tests; WASM runtime parser execution should be added when integrated into the scanner UI |
@@ -76,6 +76,7 @@ No proprietary DVD/Blu-ray specification text, disc keys, decrypted media, or th
   - PMT PID;
   - stream group count;
   - per-stream PID, category, coding type, raw attribute length, raw attribute bytes, format code, rate code, aspect code, language code, character code, and ISRC when present;
+  - normalized video height, interlace state, frame rate, and aspect ratio when the raw codes have known values;
   - HEVC-specific raw flags exposed by CLPI: CR flag, dynamic-range type code, color-space code, and HDR10+ flag.
 - CPI:
   - entry-map PID, stream type, coarse/fine entry counts, and EP-map start address summary.
@@ -117,6 +118,8 @@ SSIF is a filesystem presentation for interleaved stereoscopic streams. The pars
 Fixture observation: all currently committed MPLS fixtures contain only mark type `0x01` for parsed marks. The ODM chapter mapper should count chapter marks with `MarkType == MplsPlaylistMark.EntryMarkType` (or `IsEntryMark`) and should not treat link marks (`0x02`) as chapters.
 
 3D fixture observation: `BD-3D/00800.mpls` has 15 authored entry marks. The final entry mark is 11,262 ticks at 45 kHz before the PlayItem end. The parser intentionally exposes all authored marks accurately; MakeMKV-style chapter-end filtering belongs in ODM mapping or presentation policy, not in the parser.
+
+MPLS `MplsStreamTable` keeps primary PG entries separate from PiP PG entries and Dolby Vision entries. Each mark retains its authored PlayItem-local `Time` and exposes `PlaylistTimeTicks45k`/`PlaylistTime` when its PlayItem reference and in-time permit a safe conversion. Playlist-relative time is the sum of earlier PlayItem durations plus the mark's offset from the referenced PlayItem's in-time.
 
 ## Manifest-mapping and schema-change proposals
 

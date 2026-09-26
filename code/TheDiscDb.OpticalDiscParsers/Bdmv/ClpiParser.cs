@@ -408,6 +408,10 @@ internal sealed class ClpiParseSession
             FormatCode = formatCode,
             RateCode = rateCode,
             AspectCode = aspectCode,
+            VideoHeight = GetVideoHeight(formatCode),
+            IsInterlaced = GetInterlaced(formatCode),
+            FrameRate = GetFrameRate(rateCode),
+            AspectRatio = GetAspectRatio(aspectCode),
             OcFlag = ocFlag,
             CrFlag = crFlag,
             DynamicRangeTypeCode = dynamicRangeTypeCode,
@@ -574,6 +578,45 @@ internal sealed class ClpiParseSession
 
         return length == 0 ? null : Encoding.ASCII.GetString(bytes.Span[..length]);
     }
+
+    private static int? GetVideoHeight(int? formatCode)
+        => formatCode switch
+        {
+            1 or 3 => 480,
+            2 or 7 => 576,
+            4 or 6 => 1080,
+            5 => 720,
+            8 => 2160,
+            _ => null
+        };
+
+    private static bool? GetInterlaced(int? formatCode)
+        => formatCode switch
+        {
+            1 or 2 or 4 => true,
+            3 or 5 or 6 or 7 or 8 => false,
+            _ => null
+        };
+
+    private static double? GetFrameRate(int? rateCode)
+        => rateCode switch
+        {
+            1 => 24000.0 / 1001.0,
+            2 => 24,
+            3 => 25,
+            4 => 30000.0 / 1001.0,
+            6 => 50,
+            7 => 60000.0 / 1001.0,
+            _ => null
+        };
+
+    private static string? GetAspectRatio(int? aspectCode)
+        => aspectCode switch
+        {
+            2 => "4:3",
+            3 => "16:9",
+            _ => null
+        };
 
     private static bool IsVideoCodingType(byte codingType)
     {

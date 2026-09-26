@@ -64,7 +64,7 @@ internal sealed class MplsParseSession
         uint extensionDataStartAddress = await ReadUInt32AtAsync(16);
         var appInfo = await ParseAppInfoAsync();
         var (playItems, subPaths) = await ParsePlaylistSectionAsync(playlistStartAddress);
-        var marks = await ParsePlaylistMarksAsync(playlistMarkStartAddress);
+        var marks = AddPlaylistTimeline(await ParsePlaylistMarksAsync(playlistMarkStartAddress), playItems);
         var extensionParseResult = await ParseExtensionDataAsync(extensionDataStartAddress, playItems);
         var parserDiagnostics = diagnostics.Snapshot();
 
@@ -253,14 +253,17 @@ internal sealed class MplsParseSession
         int secondaryAudioCount = span[offset++];
         int secondaryVideoCount = span[offset++];
         int pipPgCount = span[offset++];
-        offset += 5;
+        int dolbyVisionCount = span[offset++];
+        offset += 4;
 
         var video = ParseStreams(data, ref offset, videoCount, "Video");
         var audio = ParseStreams(data, ref offset, audioCount, "Audio");
-        var pg = ParseStreams(data, ref offset, pgCount + pipPgCount, "PresentationGraphics");
+        var pg = ParseStreams(data, ref offset, pgCount, "PresentationGraphics");
         var ig = ParseStreams(data, ref offset, igCount, "InteractiveGraphics");
         var secondaryAudio = ParseStreams(data, ref offset, secondaryAudioCount, "SecondaryAudio");
         var secondaryVideo = ParseStreams(data, ref offset, secondaryVideoCount, "SecondaryVideo");
+        var pipPg = ParseStreams(data, ref offset, pipPgCount, "PictureInPicturePresentationGraphics");
+        var dolbyVision = ParseStreams(data, ref offset, dolbyVisionCount, "DolbyVisionVideo");
 
         if (length > data.Length - 2)
         {
@@ -272,10 +275,49 @@ internal sealed class MplsParseSession
             VideoStreams = video,
             AudioStreams = audio,
             PresentationGraphicsStreams = pg,
+            PictureInPicturePresentationGraphicsStreams = pipPg,
             InteractiveGraphicsStreams = ig,
             SecondaryAudioStreams = secondaryAudio,
-            SecondaryVideoStreams = secondaryVideo
+            SecondaryVideoStreams = secondaryVideo,
+            DolbyVisionVideoStreams = dolbyVision
         };
+    }
+
+    private static IReadOnlyList<MplsPlaylistMark> AddPlaylistTimeline(
+        IReadOnlyList<MplsPlaylistMark> marks,
+        IReadOnlyList<MplsPlayItem> playItems)
+    {
+        var playItemStartTimes = new ulong[playItems.Count];
+        ulong playlistTime = 0;
+        for (int i = 0; i < playItems.Count; i++)
+        {
+            playItemStartTimes[i] = playlistTime;
+            var playItem = playItems[i];
+            if (playItem.OutTime >= playItem.InTime)
+            {
+                playlistTime += playItem.OutTime - playItem.InTime;
+            }
+        }
+
+        return marks.Select(mark =>
+        {
+            int playItemIndex = mark.PlayItemReference;
+            if ((uint)playItemIndex >= (uint)playItems.Count)
+            {
+                return mark;
+            }
+
+            var playItem = playItems[playItemIndex];
+            if (mark.Time < playItem.InTime)
+            {
+                return mark;
+            }
+
+            return mark with
+            {
+                PlaylistTimeTicks45k = playItemStartTimes[playItemIndex] + mark.Time - playItem.InTime
+            };
+        }).ToArray();
     }
 
     private List<MplsStream> ParseStreams(ReadOnlyMemory<byte> data, ref int offset, int count, string category)
@@ -1062,9 +1104,11 @@ internal sealed class MplsParseSession
             VideoStreams = Array.Empty<MplsStream>(),
             AudioStreams = Array.Empty<MplsStream>(),
             PresentationGraphicsStreams = Array.Empty<MplsStream>(),
+            PictureInPicturePresentationGraphicsStreams = Array.Empty<MplsStream>(),
             InteractiveGraphicsStreams = Array.Empty<MplsStream>(),
             SecondaryAudioStreams = Array.Empty<MplsStream>(),
-            SecondaryVideoStreams = Array.Empty<MplsStream>()
+            SecondaryVideoStreams = Array.Empty<MplsStream>(),
+            DolbyVisionVideoStreams = Array.Empty<MplsStream>()
         };
     }
 
