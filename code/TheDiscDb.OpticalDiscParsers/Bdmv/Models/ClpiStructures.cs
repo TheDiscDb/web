@@ -192,6 +192,18 @@ public record ClpiProgramStream
     /// <summary>Gets the raw aspect-ratio code when present.</summary>
     public int? AspectCode { get; init; }
 
+    /// <summary>Gets the video height in pixels when the format code is known.</summary>
+    public int? VideoHeight { get; init; }
+
+    /// <summary>Gets whether the video format is interlaced when known.</summary>
+    public bool? IsInterlaced { get; init; }
+
+    /// <summary>Gets the frame rate in frames per second when known.</summary>
+    public double? FrameRate { get; init; }
+
+    /// <summary>Gets the display aspect ratio when known.</summary>
+    public string? AspectRatio { get; init; }
+
     /// <summary>Gets whether the video stream sets the OC flag.</summary>
     public bool? OcFlag { get; init; }
 

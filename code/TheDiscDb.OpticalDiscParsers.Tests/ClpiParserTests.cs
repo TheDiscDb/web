@@ -84,6 +84,10 @@ public class ClpiParserTests
         Assert.False(hevc.CrFlag);
         Assert.Equal(1, hevc.DynamicRangeTypeCode);
         Assert.Equal(2, hevc.ColorSpaceCode);
+        Assert.Equal(2160, hevc.VideoHeight);
+        Assert.False(hevc.IsInterlaced);
+        Assert.Equal(24000.0 / 1001.0, hevc.FrameRate);
+        Assert.Equal("16:9", hevc.AspectRatio);
         Assert.False(hevc.HdrPlusFlag);
         Assert.Equal(524280u, clpi.PresentationSummary!.StartTime);
         Assert.Equal(423153361u, clpi.PresentationSummary.EndTime);

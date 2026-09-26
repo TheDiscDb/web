@@ -201,6 +201,9 @@ public record MplsStreamTable
     /// <summary>Gets presentation graphics streams.</summary>
     public required IReadOnlyList<MplsStream> PresentationGraphicsStreams { get; init; }
 
+    /// <summary>Gets picture-in-picture presentation graphics streams.</summary>
+    public IReadOnlyList<MplsStream> PictureInPicturePresentationGraphicsStreams { get; init; } = Array.Empty<MplsStream>();
+
     /// <summary>Gets interactive graphics streams.</summary>
     public required IReadOnlyList<MplsStream> InteractiveGraphicsStreams { get; init; }
 
@@ -209,6 +212,9 @@ public record MplsStreamTable
 
     /// <summary>Gets secondary video streams.</summary>
     public required IReadOnlyList<MplsStream> SecondaryVideoStreams { get; init; }
+
+    /// <summary>Gets Dolby Vision video streams.</summary>
+    public IReadOnlyList<MplsStream> DolbyVisionVideoStreams { get; init; } = Array.Empty<MplsStream>();
 }
 
 /// <summary>
@@ -437,6 +443,14 @@ public record MplsPlaylistMark
 
     /// <summary>Gets the mark timestamp as a TimeSpan.</summary>
     public TimeSpan TimeSpan => TimeSpan.FromSeconds(Time / 45000.0);
+
+    /// <summary>Gets the mark timestamp on the full playlist timeline in 45 kHz ticks.</summary>
+    public ulong? PlaylistTimeTicks45k { get; init; }
+
+    /// <summary>Gets the mark timestamp on the full playlist timeline.</summary>
+    public TimeSpan? PlaylistTime => PlaylistTimeTicks45k is { } ticks
+        ? TimeSpan.FromSeconds(ticks / 45000.0)
+        : null;
 
     /// <summary>Gets whether this mark is an entry/chapter mark.</summary>
     public bool IsEntryMark => MarkType == EntryMarkType;

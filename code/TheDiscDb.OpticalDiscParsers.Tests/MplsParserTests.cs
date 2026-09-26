@@ -78,7 +78,11 @@ public class MplsParserTests
             Assert.Equal(MplsPlaylistMark.EntryMarkType, mark.MarkType);
             Assert.True(mark.IsEntryMark);
             Assert.False(mark.IsLinkMark);
+            Assert.NotNull(mark.PlaylistTimeTicks45k);
         });
+        Assert.Contains(
+            playlist.PlayItems.SelectMany(item => item.StreamTable.DolbyVisionVideoStreams),
+            stream => stream.Category == "DolbyVisionVideo");
     }
 
     [Fact]
@@ -152,6 +156,38 @@ public class MplsParserTests
         Assert.Equal(15, playlist.Marks.Count);
         Assert.All(playlist.Marks, mark => Assert.True(mark.IsEntryMark));
         Assert.Equal(11262u, playItem.OutTime - playlist.Marks[^1].Time);
+        Assert.Equal(
+            playlist.Marks[0].Time - playItem.InTime,
+            playlist.Marks[0].PlaylistTimeTicks45k);
+    }
+
+    [Fact]
+    public async Task ParseAsync_MultiPlayItemMarks_UsesCumulativePlaylistTime()
+    {
+        var files = Directory.GetFiles(fixturesPath, "*.mpls", SearchOption.AllDirectories);
+        int mappedMarks = 0;
+
+        foreach (var file in files)
+        {
+            var result = await CreateParser(file).ParseAsync();
+            Assert.NotNull(result.Value);
+            var playlist = result.Value!;
+
+            foreach (var mark in playlist.Marks.Where(mark => mark.PlayItemReference > 0))
+            {
+                var referencedPlayItem = playlist.PlayItems[mark.PlayItemReference];
+                ulong precedingDuration = playlist.PlayItems
+                    .Take(mark.PlayItemReference)
+                    .Aggregate(0UL, (total, item) => total + item.OutTime - item.InTime);
+
+                Assert.Equal(
+                    precedingDuration + mark.Time - referencedPlayItem.InTime,
+                    mark.PlaylistTimeTicks45k);
+                mappedMarks++;
+            }
+        }
+
+        Assert.True(mappedMarks > 0, "Expected a fixture with marks after the first PlayItem.");
     }
 
     [Fact]
