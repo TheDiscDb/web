@@ -315,12 +315,19 @@ namespace TheDiscDb.Data.Import.Pipeline
             if (!RepresentsSameCanonicalDisc(releaseDisc, existing))
             {
                 throw new InvalidOperationException(
-                    $"Global Disc ID '{globalDiscId}' is already assigned to a different canonical disc.");
+                    $"Global Disc ID '{globalDiscId}' is already assigned to a different canonical disc. " +
+                    $"Incoming: {DescribeReleaseDisc(releaseDisc)}. Existing: {DescribeReleaseDisc(existing)}.");
             }
 
             // Multi-title physical discs create one release link per member title. Keep the
             // pressing ID on the first link; siblings resolve it through EffectiveGlobalDiscId.
             releaseDisc.GlobalDiscId = null;
+        }
+
+        private static string DescribeReleaseDisc(ReleaseDisc releaseDisc)
+        {
+            return $"release disc {releaseDisc.Index} ('{releaseDisc.Name ?? string.Empty}', slug '{releaseDisc.Slug ?? string.Empty}'), " +
+                $"format '{releaseDisc.Disc?.Format ?? string.Empty}', content hash '{releaseDisc.Disc?.ContentHash ?? string.Empty}'";
         }
 
         private async Task NormalizeReleaseDiscFingerprint(
