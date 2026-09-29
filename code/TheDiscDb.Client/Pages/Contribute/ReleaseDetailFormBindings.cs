@@ -80,4 +80,24 @@ public class ReleaseDetailFormBindings
         get => string.IsNullOrEmpty(target.RegionCode) ? null : target.RegionCode;
         set => target.RegionCode = value ?? string.Empty;
     }
+
+    // Optional external provider ids (blu-ray.com, dvdcompare.net, dvdtalk.com — see
+    // TheDiscDb/web#82). No validation attributes: these are optional free-text ids.
+    public string? BlurayComId
+    {
+        get => target.BlurayComId;
+        set => target.BlurayComId = value;
+    }
+
+    public string? DvdCompareId
+    {
+        get => target.DvdCompareId;
+        set => target.DvdCompareId = value;
+    }
+
+    public string? DvdTalkId
+    {
+        get => target.DvdTalkId;
+        set => target.DvdTalkId = value;
+    }
 }

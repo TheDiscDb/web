@@ -413,6 +413,7 @@ public class DataImportItemFactory
         release.ImageUrl = releaseFile.ImageUrl;
         release.ReleaseDate = releaseFile.ReleaseDate;
         release.DateAdded = releaseFile.DateAdded;
+        release.Externalids = releaseFile.ExternalIds;
 
         foreach (var contributor in releaseFile.Contributors)
         {

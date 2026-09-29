@@ -204,7 +204,8 @@ public class ContributionGeneratorService
                     RegionCode = contribution.RegionCode ?? "1",
                     Asin = contribution.Asin,
                     ReleaseDate = contribution.ReleaseDate,
-                    DateAdded = DateTime.UtcNow.Date
+                    DateAdded = DateTime.UtcNow.Date,
+                    ExternalIds = BuildExternalIds(contribution)
                 };
 
                 var user = await this.userManager.FindByIdAsync(contribution.UserId);
@@ -607,6 +608,28 @@ public class ContributionGeneratorService
         }
 
         throw new InvalidOperationException($"Unknown media type: {mediaType}");
+    }
+
+    /// <summary>
+    /// Builds the release.json <see cref="ExternalIds"/> block from provider ids entered via the
+    /// contribution flow's "Add external link" section, or null when none were provided (see
+    /// TheDiscDb/web#82).
+    /// </summary>
+    private static ExternalIds? BuildExternalIds(UserContribution contribution)
+    {
+        if (string.IsNullOrEmpty(contribution.BlurayComId)
+            && string.IsNullOrEmpty(contribution.DvdCompareId)
+            && string.IsNullOrEmpty(contribution.DvdTalkId))
+        {
+            return null;
+        }
+
+        return new ExternalIds
+        {
+            BlurayCom = contribution.BlurayComId,
+            DvdCompare = contribution.DvdCompareId,
+            DvdTalk = contribution.DvdTalkId,
+        };
     }
 
     private static SummaryFileItem CreateSummaryFileItem(UserContributionDiscItem item)

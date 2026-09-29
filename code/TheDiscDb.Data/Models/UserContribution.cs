@@ -41,6 +41,16 @@ public class UserContribution : IHasId, IContributionDisplay
     public string Locale { get; set; } = string.Empty;
     public string RegionCode { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Optional third-party provider ids entered via the "Add external link" section of the
+    /// release-details step (blu-ray.com, dvdcompare.net, dvdtalk.com). Carried through to
+    /// <see cref="TheDiscDb.InputModels.Release.Externalids"/> when the contribution is
+    /// generated into a release.json. See TheDiscDb/web#82.
+    /// </summary>
+    public string? BlurayComId { get; set; }
+    public string? DvdCompareId { get; set; }
+    public string? DvdTalkId { get; set; }
+
     // These are mostly used for display and lookup but are redundant data
     public string? Title { get; set; } = string.Empty;
     public string? Year { get; set; } = string.Empty;

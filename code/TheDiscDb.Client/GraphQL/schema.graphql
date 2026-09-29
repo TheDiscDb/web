@@ -505,7 +505,11 @@ type ExternalIds {
   tmdb: String
   imdb: String
   tvdb: String
+  blurayCom: String
+  dvdCompare: String
+  dvdTalk: String
   mediaItem: MediaItem
+  release: Release
 }
 
 input DiscItemReferenceSortInput {
@@ -616,6 +620,7 @@ type Release {
   dateAdded: DateTime!
   fullTitle: String!
   type: String!
+  externalids: ExternalIds
   discs(where: ReleaseDiscFilterInput order: [ReleaseDiscSortInput!]): [ReleaseDisc!]!
   releaseGroups(where: ReleaseGroupFilterInput order: [ReleaseGroupSortInput!]): [ReleaseGroup!]!
   mediaItem: MediaItem

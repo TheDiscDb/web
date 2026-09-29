@@ -139,6 +139,23 @@ else if (Contribution is not null)
                     <InputText class="form-control" @bind-Value="request.RegionCode" />
                     <ValidationMessage For="@(() => request.RegionCode)" />
                 </div>
+                <div class="mb-3">
+                    <label>Add external link</label>
+                    <div class="external-link-inputs">
+                        <div class="mb-2">
+                            <label>Blu-ray.com id</label>
+                            <InputText class="form-control" @bind-Value="request.BlurayComId" placeholder="e.g. 263678" />
+                        </div>
+                        <div class="mb-2">
+                            <label>DVDCompare id</label>
+                            <InputText class="form-control" @bind-Value="request.DvdCompareId" placeholder="e.g. 111" />
+                        </div>
+                        <div class="mb-2">
+                            <label>DVD Talk id</label>
+                            <InputText class="form-control" @bind-Value="request.DvdTalkId" placeholder="e.g. 45391" />
+                        </div>
+                    </div>
+                </div>
 
                 <div class="cta-row split">
                     <a class="btn btn-secondary" href="/contribution/@ContributionId">Cancel</a>

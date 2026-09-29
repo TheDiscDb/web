@@ -35,6 +35,28 @@ public class ReleaseItemHandler : ItemHandler<Release>
         fromDatabase.Upc = newValue.Upc;
         fromDatabase.Year = newValue.Year;
 
+        if (newValue.Externalids != null)
+        {
+            // Merge in place to avoid creating a new ExternalIds row (and orphaning the
+            // existing one) on every re-import. Only overwrite a non-empty incoming value so a
+            // partial metadata refresh doesn't blank out an id set via the contribution flow.
+            if (fromDatabase.Externalids == null)
+            {
+                fromDatabase.Externalids = newValue.Externalids;
+            }
+            else
+            {
+                foreach (var provider in TheDiscDb.InputModels.ExternalProviderCatalog.Providers)
+                {
+                    var incoming = TheDiscDb.InputModels.ExternalProviderCatalog.GetStoredId(newValue.Externalids, provider.Id);
+                    if (!string.IsNullOrEmpty(incoming))
+                    {
+                        TheDiscDb.InputModels.ExternalProviderCatalog.SetStoredId(fromDatabase.Externalids, provider.Id, incoming);
+                    }
+                }
+            }
+        }
+
         HandleList(fromDatabase.Discs, newValue.Discs, this.discItemHandler);
     }
 }

@@ -77,6 +77,9 @@ public partial class EditContribution : CancellableComponentBase
                 request.ReleaseSlug = Contribution.ReleaseSlug ?? string.Empty;
                 request.Locale = Contribution.Locale ?? string.Empty;
                 request.RegionCode = Contribution.RegionCode ?? string.Empty;
+                request.BlurayComId = Contribution.BlurayComId;
+                request.DvdCompareId = Contribution.DvdCompareId;
+                request.DvdTalkId = Contribution.DvdTalkId;
 
                 externalId = Contribution.ExternalId;
 
@@ -111,6 +114,9 @@ public partial class EditContribution : CancellableComponentBase
             ReleaseSlug = request.ReleaseSlug,
             Locale = request.Locale,
             RegionCode = request.RegionCode,
+            BlurayComId = request.BlurayComId,
+            DvdCompareId = request.DvdCompareId,
+            DvdTalkId = request.DvdTalkId,
             FrontImageUrl = currentFrontImageUrl,
             BackImageUrl = backImageDeleted ? null : currentBackImageUrl,
             DeleteBackImage = backImageDeleted
@@ -270,4 +276,10 @@ public class EditContributionRequest
     public string Locale { get; set; } = string.Empty;
 
     public string RegionCode { get; set; } = string.Empty;
+
+    // Optional external provider ids (blu-ray.com, dvdcompare.net, dvdtalk.com — see
+    // TheDiscDb/web#82). No validation attributes: these are optional free-text ids.
+    public string? BlurayComId { get; set; }
+    public string? DvdCompareId { get; set; }
+    public string? DvdTalkId { get; set; }
 }

@@ -29,6 +29,17 @@ public class ContributionMutationRequest
     [Required]
     public string Locale { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Optional third-party provider ids (blu-ray.com, dvdcompare.net, dvdtalk.com) entered via
+    /// the "Add external link" section of the release-details step. Keys correspond to
+    /// <see cref="TheDiscDb.InputModels.ExternalProviderCatalog"/> provider ids; see
+    /// TheDiscDb/web#82. Explicit properties (rather than a dictionary) so the fields show up
+    /// as normal named fields in the GraphQL input type.
+    /// </summary>
+    public string? BlurayComId { get; set; }
+    public string? DvdCompareId { get; set; }
+    public string? DvdTalkId { get; set; }
+
     public string Title { get; set; } = string.Empty;
     public string Year { get; set; } = string.Empty;
     public Guid StorageId { get; set; } = Guid.Empty;
@@ -56,6 +67,9 @@ public class ContributionMutationRequest
         this.ReleaseSlug = contribution.ReleaseSlug ?? string.Empty;
         this.RegionCode = contribution.RegionCode;
         this.Locale = contribution.Locale;
+        this.BlurayComId = contribution.BlurayComId;
+        this.DvdCompareId = contribution.DvdCompareId;
+        this.DvdTalkId = contribution.DvdTalkId;
         this.Title = contribution.Title ?? string.Empty;
         this.Year = contribution.Year ?? string.Empty;
         this.Status = contribution.Status;

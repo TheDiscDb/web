@@ -643,6 +643,9 @@ type UserContribution {
   releaseSlug: String
   locale: String!
   regionCode: String!
+  blurayComId: String
+  dvdCompareId: String
+  dvdTalkId: String
   title: String
   year: String
   titleSlug: String!
@@ -855,6 +858,9 @@ input ContributionMutationRequestInput {
   releaseSlug: String!
   regionCode: String!
   locale: String!
+  blurayComId: String
+  dvdCompareId: String
+  dvdTalkId: String
   title: String!
   year: String!
   storageId: UUID!
@@ -1782,6 +1788,9 @@ input UpdateContributionInput {
   frontImageUrl: String
   backImageUrl: String
   deleteBackImage: Boolean!
+  blurayComId: String
+  dvdCompareId: String
+  dvdTalkId: String
 }
 
 type UpdateContributionPayload {

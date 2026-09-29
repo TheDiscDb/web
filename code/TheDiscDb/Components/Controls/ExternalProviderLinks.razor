@@ -1,0 +1,11 @@
+@if (Links.Count > 0)
+{
+    <span class="external-provider-links">
+        @foreach (var link in Links)
+        {
+            <a href="@link.Url" target="_blank" rel="noopener noreferrer" class="external-provider-link" title="View on @link.Provider.Name">
+                <img src="@link.Provider.LogoUrl" alt="View on @link.Provider.Name" width="@this.Width" />
+            </a>
+        }
+    </span>
+}

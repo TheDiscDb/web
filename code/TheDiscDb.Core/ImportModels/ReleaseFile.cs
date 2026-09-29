@@ -1,6 +1,7 @@
 ﻿namespace TheDiscDb.ImportModels
 {
     using System;
+    using TheDiscDb.InputModels;
 
     public class ReleaseFile
     {
@@ -19,6 +20,9 @@
         public string? BackImageUrl { get; set; }
         public DateTimeOffset ReleaseDate { get; set; }
         public DateTimeOffset DateAdded { get; set; }
+
+        /// <summary>Optional per-edition provider links (blu-ray.com, etc.); see TheDiscDb/web#82.</summary>
+        public ExternalIds? ExternalIds { get; set; }
         public ICollection<Contributor> Contributors { get; set; } = new HashSet<Contributor>();
         public ICollection<string> Groups { get; set; } = new List<string>();
     }

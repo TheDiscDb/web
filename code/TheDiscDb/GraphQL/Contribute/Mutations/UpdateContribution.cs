@@ -34,6 +34,9 @@ public partial class ContributionMutations
         string? frontImageUrl,
         string? backImageUrl,
         bool deleteBackImage,
+        string? blurayComId,
+        string? dvdCompareId,
+        string? dvdTalkId,
         UserManager<TheDiscDbUser> userManager,
         CancellationToken cancellationToken = default)
     {
@@ -55,6 +58,9 @@ public partial class ContributionMutations
         contribution.ReleaseSlug = releaseSlug;
         contribution.Locale = locale;
         contribution.RegionCode = regionCode;
+        contribution.BlurayComId = blurayComId;
+        contribution.DvdCompareId = dvdCompareId;
+        contribution.DvdTalkId = dvdTalkId;
 
         if (!string.IsNullOrEmpty(frontImageUrl))
         {

@@ -20,6 +20,15 @@
         public DateTimeOffset ReleaseDate { get; set; }
         public DateTimeOffset DateAdded { get; set; }
 
+        /// <summary>
+        /// Optional per-edition provider links (blu-ray.com, dvdcompare.net, etc. — see
+        /// TheDiscDb/web#82). Unlike <see cref="MediaItem.Externalids"/>, this is optional
+        /// (nullable FK) since most releases won't have these set.
+        /// </summary>
+        public ExternalIds? Externalids { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore]
+        public int? ExternalIdsId { get; set; }
+
         [System.Text.Json.Serialization.JsonIgnore]
         public string FullTitle => $"{Title} ({Year})";
 

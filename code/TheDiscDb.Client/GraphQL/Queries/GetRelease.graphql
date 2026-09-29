@@ -19,6 +19,11 @@ query GetRelease($slug: String, $releaseSlug: String, $mediaType: String) {
         asin
         upc
         releaseDate
+        externalids {
+          blurayCom
+          dvdCompare
+          dvdTalk
+        }
         discs(order: { index: ASC }) {
           index
           name

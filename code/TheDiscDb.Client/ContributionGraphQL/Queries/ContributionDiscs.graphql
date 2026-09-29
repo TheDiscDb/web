@@ -23,6 +23,9 @@ query ContributionDiscs($contribtionId: EncodedIdFilter) {
       backImageUrl
       created
       locale
+      blurayComId
+      dvdCompareId
+      dvdTalkId
       boxset {
         encodedId
         title

@@ -155,6 +155,11 @@ public class SqlServerDataContext : DbContext
         release.HasMany(x => x.Contributors)
             .WithMany(x => x.Releases)
             .UsingEntity(j => j.ToTable("ReleaseContributor"));
+        // Optional (nullable FK), unlike MediaItem.Externalids — most releases won't have any
+        // provider links set. See TheDiscDb/web#82.
+        release.HasOne(x => x.Externalids).WithOne(x => x.Release)
+            .HasForeignKey<Release>(x => x.ExternalIdsId)
+            .IsRequired(false);
 
         var releaseGroup = modelBuilder.Entity<ReleaseGroup>();
         releaseGroup.HasOne(x => x.Release).WithMany(x => x.ReleaseGroups);
