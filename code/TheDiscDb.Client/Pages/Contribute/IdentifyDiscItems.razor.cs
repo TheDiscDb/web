@@ -120,12 +120,16 @@ public class ItemIdentification
         {
             ChapterCount = Title.ChapterCount,
             Description = Description,
-            Size = Title.DisplaySize!,
-            Duration = Title.Length!,
+            // These map to non-null GraphQL inputs, but a disc description is not obliged to carry
+            // them: MakeMKV omits fields it cannot determine, and the optical disc manifest marks
+            // them optional. Sending an empty value keeps the mutation usable instead of failing
+            // in the generated serializer with an error that points nowhere useful.
+            Size = Title.DisplaySize ?? string.Empty,
+            Duration = Title.Length ?? string.Empty,
             Name = ItemTitle,
             SegmentCount = Title.Segments.Count(t => t.Type != null && t.Type.Equals("Video", StringComparison.OrdinalIgnoreCase)),
-            SegmentMap = Title.SegmentMap!,
-            Source = Title.Playlist!,
+            SegmentMap = Title.SegmentMap ?? string.Empty,
+            Source = Title.Playlist ?? string.Empty,
             Type = Type,
             Season = Episode?.Season ?? null,
             Episode = Episode?.Episode ?? null
@@ -138,12 +142,12 @@ public class ItemIdentification
         {
             ChapterCount = Title.ChapterCount,
             Description = Description,
-            Size = Title.DisplaySize!,
-            Duration = Title.Length!,
+            Size = Title.DisplaySize ?? string.Empty,
+            Duration = Title.Length ?? string.Empty,
             Name = ItemTitle,
             SegmentCount = Title.Segments.Count(t => t.Type != null && t.Type.Equals("Video", StringComparison.OrdinalIgnoreCase)),
-            SegmentMap = Title.SegmentMap!,
-            Source = Title.Playlist!,
+            SegmentMap = Title.SegmentMap ?? string.Empty,
+            Source = Title.Playlist ?? string.Empty,
             Type = Type,
             Season = Episode != null ? Episode.Season : null,
             Episode = Episode != null ? Episode.Episode : null

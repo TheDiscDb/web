@@ -186,6 +186,56 @@ public class OpticalDiscManifestMapperTests
     }
 
     [Test]
+    public async Task ToDiscInfo_FormatsSegmentMapTheWayMakeMkvDoes()
+    {
+        // MakeMKV writes field 26 as clip numbers without leading zeros, e.g.
+        // "250,1066,1067". The manifest names the same clips as "00250", so the mapper has to
+        // normalize or manifest-sourced discs would not compare against log-sourced ones.
+        const string WithSegments = """
+            {
+              "schemaVersion": 1,
+              "producer": { "name": "thediscdb", "version": "1.0.0" },
+              "disc": {
+                "format": "blu-ray",
+                "identifiers": [
+                  { "kind": "thediscdb-content-hash", "value": "57B059114B517DF43BE4D05FCA0869FA" }
+                ],
+                "titles": [
+                  {
+                    "source": { "path": "BDMV/PLAYLIST/00249.mpls" },
+                    "segments": [
+                      { "clip": "00250" },
+                      { "clip": "01066" },
+                      { "clip": "BDMV/STREAM/01067.m2ts" }
+                    ]
+                  }
+                ]
+              }
+            }
+            """;
+
+        var result = new OpticalDiscManifestValidator().Parse(WithSegments);
+        await Assert.That(result.Error).IsNull();
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(result.Document!);
+
+        await Assert.That(info.Titles[0].SegmentMap).IsEqualTo("250,1066,1067");
+    }
+
+    [Test]
+    public async Task ToDiscInfo_AlwaysProducesASegmentMap()
+    {
+        // The identify flow sends SegmentMap to a non-null GraphQL input. Manifests produced by the
+        // current converter carry no segments at all, so a null here fails the mutation.
+        DiscInfo info = await MapSampleAsync();
+
+        foreach (Title title in info.Titles)
+        {
+            await Assert.That(title.SegmentMap).IsNotNull();
+        }
+    }
+
+    [Test]
     public async Task ToDiscInfo_NumbersTitlesSequentially()
     {
         // The manifest carries no MakeMKV title index, so ordinals are the only stable numbering

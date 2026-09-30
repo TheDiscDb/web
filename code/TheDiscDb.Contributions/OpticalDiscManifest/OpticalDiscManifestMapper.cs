@@ -192,19 +192,37 @@ public static class OpticalDiscManifestMapper
         return name.Length == 0 ? null : name;
     }
 
-    private static string? MapSegmentMap(IList<OpticalDiscManifestSegment> segments)
+    private static string MapSegmentMap(IList<OpticalDiscManifestSegment> segments)
     {
-        if (segments.Count == 0)
+        // MakeMKV writes the segment map as a comma separated list of clip numbers with leading
+        // zeros removed, so "BDMV/STREAM/00250.m2ts" appears as "250". Matching that exactly keeps
+        // manifest-sourced discs comparable with log-sourced ones.
+        var clips = segments
+            .Select(segment => NormalizeClipId(segment.Clip))
+            .Where(clip => clip is not null)
+            .ToList();
+
+        return clips.Count == 0 ? string.Empty : string.Join(",", clips);
+    }
+
+    private static string? NormalizeClipId(string? clip)
+    {
+        string? name = FileName(clip);
+        if (name is null)
         {
             return null;
         }
 
-        var clips = segments
-            .Select(segment => segment.Clip)
-            .Where(clip => !string.IsNullOrWhiteSpace(clip))
-            .ToList();
+        int extension = name.LastIndexOf('.');
+        if (extension > 0)
+        {
+            name = name[..extension];
+        }
 
-        return clips.Count == 0 ? null : string.Join(",", clips);
+        string trimmed = name.TrimStart('0');
+
+        // A clip identified entirely by zeros still refers to clip 0.
+        return trimmed.Length == 0 ? (name.Length == 0 ? null : "0") : trimmed;
     }
 
     private static string? FormatDuration(double? durationSeconds)
