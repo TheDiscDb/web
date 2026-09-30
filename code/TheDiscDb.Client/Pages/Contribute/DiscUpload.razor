@@ -15,7 +15,7 @@
         <section class="contribute-hero compact">
             <p class="eyebrow">Upload Logs</p>
             <h1>@contribution.Title (@contribution.Year)</h1>
-            <p>Provide the MakeMKV log for this disc so we can analyze the structure and allow you to identify items.</p>
+            <p>Provide the MakeMKV log or an Optical Disc Manifest for this disc so we can analyze the structure and allow you to identify items.</p>
         </section>
 
         @if (!string.IsNullOrEmpty(uploadError))
@@ -75,21 +75,37 @@
                             </div>
                         </ContentTemplate>
                     </TabItem>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="Disc Manifest" />
+                        </ChildContent>
+                        <ContentTemplate>
+                            <div class="manual-upload">
+                                <p>Have an Optical Disc Manifest? Upload the <code>.odm.json</code> file instead of a MakeMKV log.</p>
+                                <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".json" ShowFileList="false">
+                                    <UploaderEvents ValueChange="ManifestValueChange" />
+                                </SfUploader>
+                            </div>
+                        </ContentTemplate>
+                    </TabItem>
                 </TabItems>
             </SfTab>
 
-            <button class="btn btn-primary copy-command" @onclick="CopyTextToClipboard" disabled="@state.IsDisabled">
-                <i class="@state.IconClassName"></i>
-                <span>@state.Text</span>
-            </button>
+            @if (IsCommandTab)
+            {
+                <button class="btn btn-primary copy-command" @onclick="CopyTextToClipboard" disabled="@state.IsDisabled">
+                    <i class="@state.IconClassName"></i>
+                    <span>@state.Text</span>
+                </button>
 
-            <section class="info-card">
-                <h2>Select drive</h2>
-                <p class="helper-text">If you have multiple drives, choose the index where the disc is mounted. This value is injected into the command below. Most users do not need to change this.</p>
-                <div class="form-control-block">
-                    <SfDropDownList TValue="string" TItem="string" DataSource="driveIndices" class="form-control" @bind-Value="DriveIndex" Placeholder="Select drive index" />
-                </div>
-            </section>
+                <section class="info-card">
+                    <h2>Select drive</h2>
+                    <p class="helper-text">If you have multiple drives, choose the index where the disc is mounted. This value is injected into the command below. Most users do not need to change this.</p>
+                    <div class="form-control-block">
+                        <SfDropDownList TValue="string" TItem="string" DataSource="driveIndices" class="form-control" @bind-Value="DriveIndex" Placeholder="Select drive index" />
+                    </div>
+                </section>
+            }
         </section>
     </div>
 }

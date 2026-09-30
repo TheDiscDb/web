@@ -5,9 +5,15 @@
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
     <ItemGroup>
+        <PackageReference Include="JsonSchema.Net" Version="9.4.0" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
         <PackageReference Include="Sqids" Version="3.2.1" />
+    </ItemGroup>
+    <ItemGroup>
+        <!-- Pinned copy of the Optical Disc Manifest v1 contract. Refresh it from the
+             optical-disc-manifest repository whenever the published v1 schema changes. -->
+        <EmbeddedResource Include="OpticalDiscManifest\optical-disc-manifest.v1.schema.json" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Data\TheDiscDb.Data.csproj" />

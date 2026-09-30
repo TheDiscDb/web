@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
+using System.Text;
 using System.Text.Json;
 using TheDiscDb.Client.Contributions;
 
@@ -49,7 +50,15 @@ public partial class DiscUpload : CancellableComponentBase
     int selectedIndex = 0;
     private readonly string[] driveIndices = Enumerable.Range(0, 8).Select(i => i.ToString()).ToArray();
 
+    // Only the PowerShell and Bash tabs produce a command, so the copy button and the drive
+    // selector that feeds it have nothing to act on anywhere else.
+    private bool IsCommandTab => selectedIndex is PowershellTabIndex or BashTabIndex;
+
+    private const int PowershellTabIndex = 0;
+    private const int BashTabIndex = 1;
+
     private string GetUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/discs/{DiscId}/logs";
+    private string GetManifestUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/discs/{DiscId}/manifest";
     private string GetClearErrorUri() => $"{GetUri()}/error";
 
     private string GetMakeMkvPath() => "C:\\Program Files (x86)\\MakeMKV\\makemkvcon64.exe";
@@ -126,7 +135,7 @@ public partial class DiscUpload : CancellableComponentBase
     {
         string currentCommand = selectedIndex switch
         {
-            1 => this.BashCommand ?? string.Empty,
+            BashTabIndex => this.BashCommand ?? string.Empty,
             _ => this.PowershellCommand ?? string.Empty,
         };
 
@@ -140,32 +149,38 @@ public partial class DiscUpload : CancellableComponentBase
         }
     }
 
-    private async Task ValueChange(UploadChangeEventArgs args)
+    private Task ValueChange(UploadChangeEventArgs args)
+        => Upload(args, GetUri(), "text/plain", "log file");
+
+    private Task ManifestValueChange(UploadChangeEventArgs args)
+        => Upload(args, GetManifestUri(), "application/json", "disc manifest");
+
+    private async Task Upload(UploadChangeEventArgs args, string uri, string contentType, string description)
     {
         try
         {
             var file = args.Files.FirstOrDefault();
-            if (file != null)
+            if (file == null)
             {
-                using (var stream = file.File.OpenReadStream(long.MaxValue))
-                {
-                    using var reader = new StreamReader(stream);
-                    string contents = await reader.ReadToEndAsync(this.CancellationToken);
-                    var response = await HttpClient.PostAsync(GetUri(), new StringContent(contents), this.CancellationToken);
+                return;
+            }
 
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        var body = await response.Content.ReadAsStringAsync(this.CancellationToken);
-                        uploadError = ExtractErrorDetail(body);
-                        StateHasChanged();
-                        return;
-                    }
-                }
+            using var stream = file.File.OpenReadStream(long.MaxValue);
+            using var reader = new StreamReader(stream);
+            string contents = await reader.ReadToEndAsync(this.CancellationToken);
+            var content = new StringContent(contents, Encoding.UTF8, contentType);
+            var response = await HttpClient.PostAsync(uri, content, this.CancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(this.CancellationToken);
+                uploadError = ExtractErrorDetail(body, description);
+                StateHasChanged();
             }
         }
         catch (Exception ex)
         {
-            uploadError = "An unexpected error occurred uploading the log file.";
+            uploadError = $"An unexpected error occurred uploading the {description}.";
             Console.WriteLine(ex.Message);
             StateHasChanged();
         }
@@ -184,9 +199,9 @@ public partial class DiscUpload : CancellableComponentBase
         this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
     }
 
-    private static string ExtractErrorDetail(string responseBody)
+    private static string ExtractErrorDetail(string responseBody, string description)
     {
-        const string fallback = "An error occurred uploading the log file.";
+        string fallback = $"An error occurred uploading the {description}.";
         try
         {
             using var doc = JsonDocument.Parse(responseBody);

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client;
+using TheDiscDb.Contributions.OpticalDiscManifest;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
@@ -21,6 +22,9 @@ public class ContributionEndpoints
         contribute.MapPost("{contributionId}/discs/{discId}/logs", SaveDiscLogs)
             .AllowAnonymous()
             .Accepts<string>("text/plain");
+        contribute.MapPost("{contributionId}/discs/{discId}/manifest", SaveDiscManifest)
+            .AllowAnonymous()
+            .Accepts<string>("application/json");
         contribute.MapDelete("{contributionId}/discs/{discId}/logs/error", ClearDiscLogError)
             .AllowAnonymous();
         contribute.MapGet("externalsearch/{type}", ExternalSearch);
@@ -203,6 +207,72 @@ public class ContributionEndpoints
         return Result.Ok();
 
         //TODO: Notify the client a disc has been added? (to prevent the client having to poll)
+    }
+
+    public async Task<IResult> SaveDiscManifest(IDbContextFactory<SqlServerDataContext> dbContextFactory, IdEncoder idEncoder, IStaticAssetStore assetStore, HttpRequest request, string contributionId, string discId, CancellationToken cancellationToken)
+    {
+        using var reader = new StreamReader(request.Body, Encoding.UTF8);
+        string manifest = await reader.ReadToEndAsync(cancellationToken);
+        var result = await SaveDiscManifestInternal(dbContextFactory, idEncoder, assetStore, contributionId, discId, manifest, cancellationToken);
+        return OkOrProblem(result, $"Unable to save the disc manifest for contribution {contributionId}, disc {discId}");
+    }
+
+    public async Task<Result> SaveDiscManifestInternal(IDbContextFactory<SqlServerDataContext> dbContextFactory, IdEncoder idEncoder, IStaticAssetStore assetStore, string contributionId, string discId, string manifest, CancellationToken cancellationToken)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        int id = idEncoder.Decode(contributionId);
+        var contribution = await dbContext.UserContributions
+            .Include(c => c.Discs)
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+        if (contribution == null)
+        {
+            return Result.Fail($"Contribution {contributionId} not found");
+        }
+
+        int realDiscId = idEncoder.Decode(discId);
+        var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
+
+        if (disc == null)
+        {
+            return Result.Fail($"Disc {discId} not found");
+        }
+
+        var parsed = new OpticalDiscManifestValidator().Parse(manifest);
+        if (!parsed.IsValid)
+        {
+            disc.LogsUploaded = false;
+            disc.LogUploadError = parsed.Error;
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return Result.Fail(parsed.Error!);
+        }
+
+        // Mapping now means a manifest that the identify flow cannot use is rejected at upload
+        // time rather than failing later, when the contributor has moved on.
+        try
+        {
+            OpticalDiscManifestMapper.ToDiscInfo(parsed.Document!);
+        }
+        catch (Exception)
+        {
+            disc.LogsUploaded = false;
+            disc.LogUploadError = "The manifest is valid but does not describe any titles that can be identified.";
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return Result.Fail(disc.LogUploadError);
+        }
+
+        byte[] bytes = Encoding.UTF8.GetBytes(manifest);
+        using (var memoryStream = new MemoryStream(bytes))
+        {
+            await assetStore.Save(memoryStream, ContributionDiscAssets.ManifestPath(contributionId, idEncoder.Encode(disc.Id)), ContentTypes.JsonContentType, cancellationToken);
+        }
+
+        disc.LogsUploaded = true;
+        disc.LogUploadError = null;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Result.Ok();
     }
 
     public async Task<IResult> ClearDiscLogError(IDbContextFactory<SqlServerDataContext> dbContextFactory, IdEncoder idEncoder, string contributionId, string discId, CancellationToken cancellationToken)

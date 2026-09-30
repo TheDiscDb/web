@@ -57,6 +57,19 @@ public class ContributionEndpointTests(AspireAppFixture fixture)
     }
 
     [Test]
+    public async Task UploadDiscManifest_WithAllowAnonymous_AcceptsRequest()
+    {
+        var content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json");
+
+        var response = await Client.PostAsync(
+            "/api/contribute/nonexistent/discs/nonexistent/manifest", content);
+
+        var status = (int)response.StatusCode;
+        await Assert.That(status).IsNotEqualTo(401);
+        await Assert.That(status).IsNotEqualTo(404);
+    }
+
+    [Test]
     public async Task DeleteLogError_WithAllowAnonymous_AcceptsRequest()
     {
         var fakeContributionId = "nonexistent";

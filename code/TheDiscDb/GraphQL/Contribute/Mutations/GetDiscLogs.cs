@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.GraphQL.Contribute.Models;
+using TheDiscDb.Contributions.OpticalDiscManifest;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.GraphQL.Contribute.Mutations;
@@ -46,16 +47,11 @@ public partial class ContributionMutations
             throw new DiscNotFoundException(discId);
         }
 
-        string logPath = $"{contributionId}/{discId}-logs.txt";
+        string logPath = ContributionDiscAssets.LogsPath(contributionId, discId);
         bool hasLogs = await this.assetStore.Exists(logPath, cancellationToken);
         if (!hasLogs)
         {
-            return new DiscLogs
-            {
-                Info = null,
-                Disc = disc,
-                Contribution = contribution
-            };
+            return await GetDiscLogsFromManifest(contributionId, discId, disc, contribution, cancellationToken);
         }
 
         var blob = await this.assetStore.Download(logPath, cancellationToken);
@@ -77,6 +73,45 @@ public partial class ContributionMutations
         return new DiscLogs
         {
             Info = organized,
+            Disc = disc,
+            Contribution = contribution
+        };
+    }
+
+    private async Task<DiscLogs> GetDiscLogsFromManifest(string contributionId, string discId, UserContributionDisc disc, UserContribution contribution, CancellationToken cancellationToken)
+    {
+        string manifestPath = ContributionDiscAssets.ManifestPath(contributionId, discId);
+        if (!await this.assetStore.Exists(manifestPath, cancellationToken))
+        {
+            return new DiscLogs
+            {
+                Info = null,
+                Disc = disc,
+                Contribution = contribution
+            };
+        }
+
+        var blob = await this.assetStore.Download(manifestPath, cancellationToken);
+
+        DiscInfo info;
+        try
+        {
+            var parsed = new OpticalDiscManifestValidator().Parse(blob.ToString());
+            if (!parsed.IsValid)
+            {
+                throw new InvalidOperationException(parsed.Error);
+            }
+
+            info = OpticalDiscManifestMapper.ToDiscInfo(parsed.Document!);
+        }
+        catch (Exception ex)
+        {
+            throw new CouldNotParseLogsException(discId, ex);
+        }
+
+        return new DiscLogs
+        {
+            Info = info,
             Disc = disc,
             Contribution = contribution
         };

@@ -1,0 +1,335 @@
+namespace TheDiscDb.UnitTests.OpticalDiscManifests;
+
+using MakeMkv;
+using TheDiscDb.Contributions.OpticalDiscManifest;
+
+public class OpticalDiscManifestValidatorTests
+{
+    private static readonly OpticalDiscManifestValidator Validator = new();
+
+    private const string MinimalManifest = """
+        {
+          "schemaVersion": 1,
+          "producer": { "name": "thediscdb", "version": "1.0.0" },
+          "disc": {
+            "format": "blu-ray",
+            "identifiers": [
+              { "kind": "thediscdb-content-hash", "value": "57B059114B517DF43BE4D05FCA0869FA" }
+            ]
+          }
+        }
+        """;
+
+    [Test]
+    public async Task Parse_MinimalValidManifest_Succeeds()
+    {
+        var result = Validator.Parse(MinimalManifest);
+
+        await Assert.That(result.Error).IsNull();
+        await Assert.That(result.IsValid).IsTrue();
+        await Assert.That(result.Document!.Disc!.Format).IsEqualTo("blu-ray");
+    }
+
+    [Test]
+    public async Task Parse_RealConverterOutput_Succeeds()
+    {
+        var result = Validator.Parse(await TestFiles.ReadManifestAsync());
+
+        await Assert.That(result.Error).IsNull();
+        await Assert.That(result.IsValid).IsTrue();
+    }
+
+    [Test]
+    public async Task Parse_EmptyContent_ReportsEmptyFile()
+    {
+        var result = Validator.Parse("   ");
+
+        await Assert.That(result.IsValid).IsFalse();
+        await Assert.That(result.Error).Contains("empty");
+    }
+
+    [Test]
+    public async Task Parse_Malformed_ReportsInvalidJson()
+    {
+        var result = Validator.Parse("{ not json");
+
+        await Assert.That(result.IsValid).IsFalse();
+        await Assert.That(result.Error).Contains("not valid JSON");
+    }
+
+    [Test]
+    public async Task Parse_WrongSchemaVersion_IsRejected()
+    {
+        var result = Validator.Parse(MinimalManifest.Replace("\"schemaVersion\": 1", "\"schemaVersion\": 2"));
+
+        await Assert.That(result.IsValid).IsFalse();
+        await Assert.That(result.Error).IsNotNull();
+    }
+
+    [Test]
+    public async Task Parse_MissingContentHash_IsRejected()
+    {
+        // TheDiscDb keys pressings off the content hash, so the schema requires one.
+        const string NoHash = """
+            {
+              "schemaVersion": 1,
+              "producer": { "name": "thediscdb", "version": "1.0.0" },
+              "disc": { "format": "blu-ray", "identifiers": [] }
+            }
+            """;
+
+        var result = Validator.Parse(NoHash);
+
+        await Assert.That(result.IsValid).IsFalse();
+        await Assert.That(result.Error).Contains("Optical Disc Manifest v1 schema");
+    }
+
+    [Test]
+    public async Task Parse_UnknownDiscFormat_IsRejected()
+    {
+        var result = Validator.Parse(MinimalManifest.Replace("\"blu-ray\"", "\"laserdisc\""));
+
+        await Assert.That(result.IsValid).IsFalse();
+        await Assert.That(result.Error).IsNotNull();
+    }
+
+    [Test]
+    public async Task Parse_MissingDisc_IsRejected()
+    {
+        const string NoDisc = """
+            { "schemaVersion": 1, "producer": { "name": "thediscdb", "version": "1.0.0" } }
+            """;
+
+        var result = Validator.Parse(NoDisc);
+
+        await Assert.That(result.IsValid).IsFalse();
+    }
+}
+
+public class OpticalDiscManifestMapperTests
+{
+    private static async Task<DiscInfo> MapSampleAsync()
+    {
+        var result = new OpticalDiscManifestValidator().Parse(await TestFiles.ReadManifestAsync());
+        await Assert.That(result.IsValid).IsTrue();
+        return OpticalDiscManifestMapper.ToDiscInfo(result.Document!);
+    }
+
+    private static async Task<DiscInfo> ParseSampleLogAsync()
+    {
+        // LogParser.Parse(string) takes a path, so feed it the lines instead.
+        string[] lines = await File.ReadAllLinesAsync(TestFiles.LogPath);
+        return LogParser.Organize(LogParser.Parse(lines));
+    }
+
+    [Test]
+    public async Task ToDiscInfo_ReproducesTheLogItWasConvertedFrom()
+    {
+        // The fixtures are the same disc: the .txt is a real MakeMKV log and the .odm.json is what
+        // the convert-makemkv-logs tool produced from it. Every title that survived conversion has
+        // to map back to exactly what the parser reports, or the identify flow would show different
+        // data depending on which file a contributor uploaded.
+        DiscInfo fromManifest = await MapSampleAsync();
+        DiscInfo fromLog = await ParseSampleLogAsync();
+
+        // Disc name is deliberately not compared. The converter prefers the name from the sibling
+        // disc*.json (TheDiscDb's own label, such as "Blu-ray") over MakeMKV's volume label, so the
+        // two disagree by design. Nothing in the identify flow reads DiscInfo.Name.
+        await Assert.That(fromManifest.Name).IsNotNull();
+        await Assert.That(fromManifest.Type).IsEqualTo(fromLog.Type);
+        await Assert.That(fromManifest.HashInfo.Count).IsEqualTo(fromLog.HashInfo.Count);
+
+        // Titles are matched on playlist rather than position. The converter only emits titles whose
+        // source it can express in the manifest, so a manifest holds a subset of the log's titles
+        // and the ordinals do not line up.
+        await Assert.That(fromManifest.Titles.Count).IsGreaterThan(0);
+        await Assert.That(fromManifest.Titles.Count).IsLessThanOrEqualTo(fromLog.Titles.Count);
+
+        var logTitlesByPlaylist = fromLog.Titles
+            .Where(title => !string.IsNullOrEmpty(title.Playlist))
+            .GroupBy(title => title.Playlist!)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+        foreach (Title actual in fromManifest.Titles)
+        {
+            await Assert.That(actual.Playlist).IsNotNull();
+            await Assert.That(logTitlesByPlaylist.ContainsKey(actual.Playlist!)).IsTrue();
+
+            Title expected = logTitlesByPlaylist[actual.Playlist!];
+
+            await Assert.That(actual.Length).IsEqualTo(expected.Length);
+            await Assert.That(actual.Size).IsEqualTo(expected.Size);
+            await Assert.That(actual.DisplaySize).IsEqualTo(expected.DisplaySize);
+            await Assert.That(actual.ChapterCount).IsEqualTo(expected.ChapterCount);
+            await Assert.That(actual.Segments.Count).IsEqualTo(expected.Segments.Count);
+
+            for (int s = 0; s < expected.Segments.Count; s++)
+            {
+                Segment expectedSegment = expected.Segments[s];
+                Segment actualSegment = actual.Segments[s];
+
+                await Assert.That(actualSegment.Type).IsEqualTo(expectedSegment.Type);
+                await Assert.That(actualSegment.Name).IsEqualTo(expectedSegment.Name);
+                await Assert.That(actualSegment.LanguageCode).IsEqualTo(expectedSegment.LanguageCode);
+                await Assert.That(actualSegment.Language).IsEqualTo(expectedSegment.Language);
+                await Assert.That(actualSegment.AudioType).IsEqualTo(expectedSegment.AudioType);
+                await Assert.That(actualSegment.Resolution).IsEqualTo(expectedSegment.Resolution);
+                await Assert.That(actualSegment.AspectRatio).IsEqualTo(expectedSegment.AspectRatio);
+            }
+        }
+
+        for (int i = 0; i < fromLog.HashInfo.Count; i++)
+        {
+            await Assert.That(fromManifest.HashInfo[i].Name).IsEqualTo(fromLog.HashInfo[i].Name);
+            await Assert.That(fromManifest.HashInfo[i].Size).IsEqualTo(fromLog.HashInfo[i].Size);
+        }
+    }
+
+    [Test]
+    public async Task ToDiscInfo_NumbersTitlesSequentially()
+    {
+        // The manifest carries no MakeMKV title index, so ordinals are the only stable numbering
+        // available. They just have to be dense and in order for the identify flow to address them.
+        DiscInfo info = await MapSampleAsync();
+
+        for (int i = 0; i < info.Titles.Count; i++)
+        {
+            await Assert.That(info.Titles[i].Index).IsEqualTo(i);
+        }
+    }
+
+    [Test]
+    public async Task ToDiscInfo_UsesTheSegmentTypeNamesTheIdentifyFlowMatchesOn()
+    {
+        // IdentifyDiscItems compares against these exact strings, and MakeMKV pluralizes
+        // "Subtitles" while the manifest uses the singular "subtitle".
+        DiscInfo info = await MapSampleAsync();
+        var types = info.Titles.SelectMany(t => t.Segments).Select(s => s.Type).Distinct().ToList();
+
+        await Assert.That(types).Contains("Video");
+        await Assert.That(types).Contains("Audio");
+        await Assert.That(types).Contains("Subtitles");
+        await Assert.That(types).DoesNotContain("subtitle");
+    }
+
+    [Test]
+    public async Task ToDiscInfo_DvdSourceBecomesTheTitleNumber()
+    {
+        var document = new OpticalDiscManifestDocument
+        {
+            SchemaVersion = 1,
+            Disc = new OpticalDiscManifestDisc
+            {
+                Format = "dvd",
+                Titles =
+                {
+                    new OpticalDiscManifestTitle { Source = new OpticalDiscManifestTitleSource { Title = 7 } }
+                }
+            }
+        };
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(document);
+
+        await Assert.That(info.Type).IsEqualTo("DVD disc");
+        await Assert.That(info.Titles[0].Playlist).IsEqualTo("7");
+    }
+
+    [Test]
+    public async Task ToDiscInfo_BluRaySourceBecomesThePlaylistFileName()
+    {
+        var document = new OpticalDiscManifestDocument
+        {
+            SchemaVersion = 1,
+            Disc = new OpticalDiscManifestDisc
+            {
+                Format = "uhd-blu-ray",
+                Titles =
+                {
+                    new OpticalDiscManifestTitle
+                    {
+                        Source = new OpticalDiscManifestTitleSource { Path = "BDMV/PLAYLIST/00800.mpls" }
+                    }
+                }
+            }
+        };
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(document);
+
+        // MakeMKV reports UHD pressings as Blu-ray, and records only the playlist file name.
+        await Assert.That(info.Type).IsEqualTo("Blu-ray disc");
+        await Assert.That(info.Titles[0].Playlist).IsEqualTo("00800.mpls");
+    }
+
+    [Test]
+    [Arguments(6214, "1:43:34")]
+    [Arguments(0, "0:00:00")]
+    [Arguments(59, "0:00:59")]
+    [Arguments(36000, "10:00:00")]
+    public async Task ToDiscInfo_FormatsDurationsTheWayMakeMkvDoes(double seconds, string expected)
+    {
+        var document = new OpticalDiscManifestDocument
+        {
+            SchemaVersion = 1,
+            Disc = new OpticalDiscManifestDisc
+            {
+                Format = "blu-ray",
+                Titles = { new OpticalDiscManifestTitle { DurationSeconds = seconds } }
+            }
+        };
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(document);
+
+        await Assert.That(info.Titles[0].Length).IsEqualTo(expected);
+        await Assert.That(info.Titles[0].LengthAsTimeSpan).IsEqualTo(TimeSpan.FromSeconds(seconds));
+    }
+
+    [Test]
+    public async Task ToDiscInfo_FallsBackToTheChapterListWhenChapterCountIsAbsent()
+    {
+        var document = new OpticalDiscManifestDocument
+        {
+            SchemaVersion = 1,
+            Disc = new OpticalDiscManifestDisc
+            {
+                Format = "blu-ray",
+                Titles =
+                {
+                    new OpticalDiscManifestTitle
+                    {
+                        Chapters =
+                        {
+                            new OpticalDiscManifestChapter { StartSeconds = 0 },
+                            new OpticalDiscManifestChapter { StartSeconds = 60 }
+                        }
+                    }
+                }
+            }
+        };
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(document);
+
+        await Assert.That(info.Titles[0].ChapterCount).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task GetContentHash_ReturnsTheHashTheDatabaseKeysOff()
+    {
+        var result = new OpticalDiscManifestValidator().Parse(await TestFiles.ReadManifestAsync());
+
+        await Assert.That(OpticalDiscManifestMapper.GetContentHash(result.Document!))
+            .IsEqualTo("57B059114B517DF43BE4D05FCA0869FA");
+        await Assert.That(OpticalDiscManifestMapper.GetGlobalDiscId(result.Document!))
+            .IsEqualTo("DBB9FE8101D750F7BEB240B247213D91D3B2CFA9");
+    }
+}
+
+internal static class TestFiles
+{
+    public static string ManifestPath { get; } =
+        Path.Combine(AppContext.BaseDirectory, "TestData", "sample-disc.odm.json");
+
+    public static string LogPath { get; } =
+        Path.Combine(AppContext.BaseDirectory, "TestData", "sample-disc-for-odm.txt");
+
+    public static Task<string> ReadManifestAsync() => File.ReadAllTextAsync(ManifestPath);
+}
