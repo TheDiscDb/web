@@ -160,6 +160,7 @@ public class OpticalDiscManifestMapperTests
             await Assert.That(actual.Size).IsEqualTo(expected.Size);
             await Assert.That(actual.DisplaySize).IsEqualTo(expected.DisplaySize);
             await Assert.That(actual.ChapterCount).IsEqualTo(expected.ChapterCount);
+            await Assert.That(actual.SegmentMap).IsEqualTo(expected.SegmentMap);
             await Assert.That(actual.Segments.Count).IsEqualTo(expected.Segments.Count);
 
             for (int s = 0; s < expected.Segments.Count; s++)
@@ -224,14 +225,27 @@ public class OpticalDiscManifestMapperTests
     [Test]
     public async Task ToDiscInfo_AlwaysProducesASegmentMap()
     {
-        // The identify flow sends SegmentMap to a non-null GraphQL input. Manifests produced by the
-        // current converter carry no segments at all, so a null here fails the mutation.
+        // The identify flow sends SegmentMap to a non-null GraphQL input, so a null here fails the
+        // mutation even for a title the producer described no segments for.
         DiscInfo info = await MapSampleAsync();
 
         foreach (Title title in info.Titles)
         {
             await Assert.That(title.SegmentMap).IsNotNull();
         }
+    }
+
+    [Test]
+    public async Task ToDiscInfo_KeepsTheSegmentMapInPlaybackOrder()
+    {
+        // The segment map is ordered by playback, not by clip number, and it is what tells two
+        // titles of the same length apart. Sorting it would quietly break that.
+        DiscInfo info = await MapSampleAsync();
+
+        Title? title = info.Titles.FirstOrDefault(t => t.Playlist == "00249.mpls");
+
+        await Assert.That(title).IsNotNull();
+        await Assert.That(title!.SegmentMap).IsEqualTo("250,1066,1067,1073,1068,1069,1070");
     }
 
     [Test]

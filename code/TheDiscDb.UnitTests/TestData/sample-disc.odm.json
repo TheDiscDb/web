@@ -313,6 +313,11 @@
         "sizeBytes": 28558835712,
         "displaySize": "26.5 GB",
         "chapterCount": 16,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00800.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -439,6 +444,11 @@
         "sizeBytes": 233472,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01012.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -456,6 +466,11 @@
         "sizeBytes": 301056,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01013.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -473,6 +488,11 @@
         "sizeBytes": 301056,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01014.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -490,6 +510,11 @@
         "sizeBytes": 331776,
         "displaySize": "0.3 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01015.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -507,6 +532,11 @@
         "sizeBytes": 288768,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01016.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -524,6 +554,11 @@
         "sizeBytes": 196608,
         "displaySize": "0.1 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01017.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -541,6 +576,11 @@
         "sizeBytes": 436224,
         "displaySize": "0.4 MB",
         "chapterCount": 3,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01018.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -558,6 +598,11 @@
         "sizeBytes": 337920,
         "displaySize": "0.3 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01019.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -575,6 +620,11 @@
         "sizeBytes": 307200,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01020.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -592,6 +642,11 @@
         "sizeBytes": 325632,
         "displaySize": "0.3 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01021.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -609,6 +664,11 @@
         "sizeBytes": 307200,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01022.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -626,6 +686,11 @@
         "sizeBytes": 528384,
         "displaySize": "0.5 MB",
         "chapterCount": 3,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01023.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -643,6 +708,11 @@
         "sizeBytes": 356352,
         "displaySize": "0.3 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01024.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -660,6 +730,11 @@
         "sizeBytes": 301056,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01025.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -677,6 +752,11 @@
         "sizeBytes": 270336,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01026.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -694,6 +774,11 @@
         "sizeBytes": 282624,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01027.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -711,6 +796,11 @@
         "sizeBytes": 282624,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01028.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -728,6 +818,11 @@
         "sizeBytes": 307200,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01029.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -745,6 +840,11 @@
         "sizeBytes": 307200,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01030.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -762,6 +862,11 @@
         "sizeBytes": 393216,
         "displaySize": "0.3 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01031.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -779,6 +884,11 @@
         "sizeBytes": 307200,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01032.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -796,6 +906,11 @@
         "sizeBytes": 276480,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01033.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -813,6 +928,11 @@
         "sizeBytes": 288768,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01034.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -830,6 +950,11 @@
         "sizeBytes": 301056,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01035.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -847,6 +972,11 @@
         "sizeBytes": 294912,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01036.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -864,6 +994,11 @@
         "sizeBytes": 251904,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01037.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -881,6 +1016,11 @@
         "sizeBytes": 301056,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01038.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -898,6 +1038,11 @@
         "sizeBytes": 307200,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01039.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -915,6 +1060,11 @@
         "sizeBytes": 215040,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01040.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -932,6 +1082,11 @@
         "sizeBytes": 337920,
         "displaySize": "0.3 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01041.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -949,6 +1104,11 @@
         "sizeBytes": 313344,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01042.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -966,6 +1126,11 @@
         "sizeBytes": 307200,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01043.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -983,6 +1148,11 @@
         "sizeBytes": 196608,
         "displaySize": "0.1 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01044.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1000,6 +1170,11 @@
         "sizeBytes": 313344,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01045.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1017,6 +1192,11 @@
         "sizeBytes": 319488,
         "displaySize": "0.3 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01046.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1034,6 +1214,11 @@
         "sizeBytes": 301056,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01047.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1051,6 +1236,11 @@
         "sizeBytes": 270336,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01048.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1068,6 +1258,11 @@
         "sizeBytes": 319488,
         "displaySize": "0.3 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01049.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1085,6 +1280,11 @@
         "sizeBytes": 301056,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01050.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1102,6 +1302,11 @@
         "sizeBytes": 313344,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01051.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1119,6 +1324,11 @@
         "sizeBytes": 374784,
         "displaySize": "0.3 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01052.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1136,6 +1346,11 @@
         "sizeBytes": 282624,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01053.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1153,6 +1368,11 @@
         "sizeBytes": 319488,
         "displaySize": "0.3 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01054.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1170,6 +1390,11 @@
         "sizeBytes": 301056,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01055.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1187,6 +1412,11 @@
         "sizeBytes": 301056,
         "displaySize": "0.2 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01056.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1204,6 +1434,11 @@
         "sizeBytes": 970752,
         "displaySize": "0.9 MB",
         "chapterCount": 3,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01057.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1221,6 +1456,11 @@
         "sizeBytes": 190464,
         "displaySize": "0.1 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01061.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1238,6 +1478,11 @@
         "sizeBytes": 970752,
         "displaySize": "0.9 MB",
         "chapterCount": 3,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01071.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1255,6 +1500,11 @@
         "sizeBytes": 970752,
         "displaySize": "0.9 MB",
         "chapterCount": 3,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01072.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1272,6 +1522,11 @@
         "sizeBytes": 22960128,
         "displaySize": "21.8 MB",
         "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00022.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1296,6 +1551,29 @@
         "sizeBytes": 10280067072,
         "displaySize": "9.5 GB",
         "chapterCount": 7,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00250.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01066.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01067.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01073.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01068.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01069.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01070.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1368,6 +1646,11 @@
         "sizeBytes": 2739793920,
         "displaySize": "2.5 GB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00250.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1440,6 +1723,11 @@
         "sizeBytes": 319488,
         "displaySize": "0.3 MB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00000.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1457,6 +1745,11 @@
         "sizeBytes": 36249600,
         "displaySize": "34.5 MB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01007.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1481,6 +1774,11 @@
         "sizeBytes": 36249600,
         "displaySize": "34.5 MB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01008.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1505,6 +1803,11 @@
         "sizeBytes": 36249600,
         "displaySize": "34.5 MB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01009.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1529,6 +1832,11 @@
         "sizeBytes": 106168320,
         "displaySize": "101.2 MB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01010.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1546,6 +1854,11 @@
         "sizeBytes": 106168320,
         "displaySize": "101.2 MB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01011.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1563,6 +1876,11 @@
         "sizeBytes": 26376192,
         "displaySize": "25.1 MB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00051.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1587,6 +1905,11 @@
         "sizeBytes": 26572800,
         "displaySize": "25.3 MB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00053.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1611,6 +1934,11 @@
         "sizeBytes": 1137014784,
         "displaySize": "1.0 GB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01066.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1683,6 +2011,11 @@
         "sizeBytes": 516808704,
         "displaySize": "492.8 MB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01067.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1755,6 +2088,11 @@
         "sizeBytes": 1830144000,
         "displaySize": "1.7 GB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01068.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1827,6 +2165,11 @@
         "sizeBytes": 2006980608,
         "displaySize": "1.8 GB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01069.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1899,6 +2242,11 @@
         "sizeBytes": 893718528,
         "displaySize": "852.3 MB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01070.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
@@ -1971,6 +2319,11 @@
         "sizeBytes": 1155606528,
         "displaySize": "1.0 GB",
         "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01073.m2ts"
+          }
+        ],
         "streams": [
           {
             "type": "video",
