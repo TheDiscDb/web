@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0;net10.0;net8.0-browser</TargetFrameworks>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
@@ -13,6 +13,7 @@
                       LogicalName="TheDiscDb.OpticalDiscManifest.Schema.optical-disc-manifest-v1.schema.json" />
     <PackageReference Include="JsonSchema.Net" Version="9.4.0" />
     <ProjectReference Include="..\TheDiscDb.OpticalDiscParsers\TheDiscDb.OpticalDiscParsers.csproj" />
+    <ProjectReference Include="..\TheDiscDb.Core\TheDiscDb.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

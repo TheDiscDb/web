@@ -1,11 +1,11 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
+using TheDiscDb.Core.DiscHash;
 using TheDiscDb.OpticalDiscManifest.Models;
 using TheDiscDb.OpticalDiscManifest.Serialization;
 using TheDiscDb.OpticalDiscManifest.Validation;
@@ -223,7 +223,9 @@ public sealed partial class OpticalDiscManifestGenerator
             .Where(item => IsContentHashInput(item.Path, format))
             .OrderBy(item => Path.GetFileName(item.Path), StringComparer.Ordinal);
 
-        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
+        // System.Security.Cryptography.MD5 throws Cryptography_UnknownHashAlgorithm in
+        // Blazor WebAssembly, where the crypto backend only exposes SubtleCrypto's SHA family.
+        var hash = new Md5Digest();
         Span<byte> sizeBytes = stackalloc byte[sizeof(long)];
         foreach (var file in payloadFiles)
         {
@@ -233,10 +235,10 @@ public sealed partial class OpticalDiscManifestGenerator
             }
 
             BinaryPrimitives.WriteInt64LittleEndian(sizeBytes, file.File.Size);
-            hash.AppendData(sizeBytes);
+            hash.Append(sizeBytes);
         }
 
-        return Convert.ToHexString(hash.GetHashAndReset());
+        return Convert.ToHexString(hash.Finish());
     }
 
     private static bool IsContentHashInput(string path, string format)
