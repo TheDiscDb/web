@@ -3,9 +3,13 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.Client.Interop;
+using TheDiscDb.Client.Services;
+using TheDiscDb.OpticalDiscManifest.Models;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -34,6 +38,12 @@ public partial class DiscUpload : CancellableComponentBase
 
     [Inject]
     private HttpClient HttpClient { get; set; } = null!;
+
+    [Inject]
+    private DiscDirectoryPicker DiscDirectoryPicker { get; set; } = default!;
+
+    [Inject]
+    private BrowserOpticalDiscManifestScanner ManifestScanner { get; set; } = default!;
 
     private readonly string powershellCommandTemplate = "Invoke-WebRequest -Uri \"{0}\" -Method POST -UseBasicParsing -ContentType \"text/plain\" -Body ((& '{1}' --minlength=0 --robot info disc:{2}) | Out-String)";
     private readonly string bashCommandTemplate = "makemkvcon --minlength=0 --robot info disc:{1} 2>&1 | curl -X POST -H \"Content-Type: text/plain\" --data-binary @- {0}";
@@ -68,6 +78,10 @@ public partial class DiscUpload : CancellableComponentBase
 
     private bool showSpinner;
     private string? uploadError;
+
+    private bool isScanning;
+    private string? scanProgress;
+    private IReadOnlyList<string> scanWarnings = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -154,6 +168,102 @@ public partial class DiscUpload : CancellableComponentBase
 
     private Task ManifestValueChange(UploadChangeEventArgs args)
         => Upload(args, GetManifestUri(), "application/json", "disc manifest");
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Warm the interop module up front. An awaited import inside the click handler yields
+            // the event loop and drops the browser's transient user activation, which makes the
+            // directory picker silently refuse to open.
+            await this.DiscDirectoryPicker.PreloadAsync(this.CancellationToken);
+        }
+    }
+
+    private async Task ScanDiscAsync()
+    {
+        this.uploadError = null;
+        this.scanWarnings = [];
+        this.scanProgress = null;
+
+        try
+        {
+            await using var selection = await this.DiscDirectoryPicker.PickAsync(
+                this.CancellationToken,
+                onSelectionCommitted: MarkScanning);
+            if (selection is null)
+            {
+                return;
+            }
+
+            // Let the busy state paint before the enumeration blocks the renderer.
+            await Task.Yield();
+
+            ManifestGenerationResult result = await this.ManifestScanner.ScanAsync(
+                selection.Files,
+                ReportScanProgress,
+                this.CancellationToken);
+
+            if (!result.Validation.IsValid)
+            {
+                // The generator validates against the same schema bytes the upload endpoint
+                // enforces, so posting this would only fail again server-side.
+                this.uploadError =
+                    "The scan produced a manifest that does not satisfy the disc manifest schema: "
+                    + string.Join(" ", result.Validation.Errors.Take(3));
+                return;
+            }
+
+            this.scanWarnings = result.Diagnostics
+                .Where(diagnostic => diagnostic.Severity is "error" or "warning")
+                .Select(diagnostic => diagnostic.Message)
+                .Distinct(StringComparer.Ordinal)
+                .Take(10)
+                .ToArray();
+
+            this.scanProgress = "Uploading disc manifest";
+            this.StateHasChanged();
+
+            using var content = new ByteArrayContent(result.Json);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            var response = await this.HttpClient.PostAsync(
+                GetManifestUri(),
+                content,
+                this.CancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string body = await response.Content.ReadAsStringAsync(this.CancellationToken);
+                this.uploadError = ExtractErrorDetail(body, "disc manifest");
+            }
+        }
+        catch (OperationCanceledException) when (this.CancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            this.uploadError = $"Could not scan the selected disc folder: {ex.Message}";
+        }
+        finally
+        {
+            this.isScanning = false;
+            this.scanProgress = null;
+            this.StateHasChanged();
+        }
+    }
+
+    private void MarkScanning()
+    {
+        this.isScanning = true;
+        this.StateHasChanged();
+    }
+
+    private void ReportScanProgress(string message)
+    {
+        this.scanProgress = message;
+        this.InvokeAsync(this.StateHasChanged);
+    }
 
     private async Task Upload(UploadChangeEventArgs args, string uri, string contentType, string description)
     {

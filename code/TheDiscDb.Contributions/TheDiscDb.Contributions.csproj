@@ -11,9 +11,13 @@
         <PackageReference Include="Sqids" Version="3.2.1" />
     </ItemGroup>
     <ItemGroup>
-        <!-- Pinned copy of the Optical Disc Manifest v1 contract. Refresh it from the
-             optical-disc-manifest repository whenever the published v1 schema changes. -->
-        <EmbeddedResource Include="OpticalDiscManifest\optical-disc-manifest.v1.schema.json" />
+        <!-- The single pinned copy of the Optical Disc Manifest v1 contract lives in
+             TheDiscDb.OpticalDiscManifest and is linked here rather than duplicated. The browser
+             generator validates against the same bytes this assembly enforces on upload, so a
+             manifest produced in the browser cannot be rejected by the server over a schema skew.
+             LogicalName preserves the resource name OpticalDiscManifestValidator looks up. -->
+        <EmbeddedResource Include="..\TheDiscDb.OpticalDiscManifest\Schema\optical-disc-manifest-v1.schema.json"
+                          LogicalName="TheDiscDb.Contributions.OpticalDiscManifest.optical-disc-manifest.v1.schema.json" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Data\TheDiscDb.Data.csproj" />

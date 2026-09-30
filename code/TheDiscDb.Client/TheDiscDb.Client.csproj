@@ -64,6 +64,7 @@
     <ItemGroup>
         <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />
         <ProjectReference Include="..\TheDiscDb.Naming\TheDiscDb.Naming.csproj" />
+        <ProjectReference Include="..\TheDiscDb.OpticalDiscManifest\TheDiscDb.OpticalDiscManifest.csproj" />
     </ItemGroup>
     <ItemGroup>
         <InternalsVisibleTo Include="TheDiscDb.UnitTests" />

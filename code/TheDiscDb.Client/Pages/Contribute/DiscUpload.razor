@@ -15,7 +15,7 @@
         <section class="contribute-hero compact">
             <p class="eyebrow">Upload Logs</p>
             <h1>@contribution.Title (@contribution.Year)</h1>
-            <p>Provide the MakeMKV log or an Optical Disc Manifest for this disc so we can analyze the structure and allow you to identify items.</p>
+            <p>Provide a disc scan, a MakeMKV log, or an Optical Disc Manifest for this disc so we can analyze the structure and allow you to identify items.</p>
         </section>
 
         @if (!string.IsNullOrEmpty(uploadError))
@@ -85,6 +85,45 @@
                                 <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".json" ShowFileList="false">
                                     <UploaderEvents ValueChange="ManifestValueChange" />
                                 </SfUploader>
+                            </div>
+                        </ContentTemplate>
+                    </TabItem>
+                    <TabItem>
+                        <ChildContent>
+                            <TabHeader Text="Scan Disc" />
+                        </ChildContent>
+                        <ContentTemplate>
+                            <div class="manual-upload disc-scan">
+                                <p>
+                                    Put the disc in your drive and select its root folder. We read the disc structure
+                                    in your browser and build the manifest here &mdash; no MakeMKV and no file to upload.
+                                    Chrome and Edge use direct file-system access; Firefox and Safari use a folder
+                                    selection fallback.
+                                </p>
+                                <button class="btn btn-primary" @onclick="ScanDiscAsync" disabled="@isScanning">
+                                    @(isScanning ? "Scanning Disc..." : "Select Disc Root Folder")
+                                </button>
+                                @if (isScanning)
+                                {
+                                    <div class="scan-status">
+                                        <LoadingIndicator Message="@(scanProgress ?? "Reading disc…")" />
+                                    </div>
+                                }
+                                @if (scanWarnings.Count > 0)
+                                {
+                                    <div class="alert alert-warning scan-warnings">
+                                        <p>
+                                            The disc was scanned, but some of its structure could not be read. You can
+                                            still continue, or upload a MakeMKV log instead for a more complete result.
+                                        </p>
+                                        <ul>
+                                            @foreach (var warning in scanWarnings)
+                                            {
+                                                <li>@warning</li>
+                                            }
+                                        </ul>
+                                    </div>
+                                }
                             </div>
                         </ContentTemplate>
                     </TabItem>
