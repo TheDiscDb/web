@@ -1359,6 +1359,681 @@
             "languageName": "Portuguese"
           }
         ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/00250.m2ts"
+        },
+        "durationSeconds": 547,
+        "sizeBytes": 2739793920,
+        "displaySize": "2.5 GB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/00000.m2ts"
+        },
+        "durationSeconds": 0,
+        "sizeBytes": 319488,
+        "displaySize": "0.3 MB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01007.m2ts"
+        },
+        "durationSeconds": 14,
+        "sizeBytes": 36249600,
+        "displaySize": "34.5 MB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Surround 5.1"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01008.m2ts"
+        },
+        "durationSeconds": 14,
+        "sizeBytes": 36249600,
+        "displaySize": "34.5 MB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Surround 5.1"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01009.m2ts"
+        },
+        "durationSeconds": 14,
+        "sizeBytes": 36249600,
+        "displaySize": "34.5 MB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Surround 5.1"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01010.m2ts"
+        },
+        "durationSeconds": 45,
+        "sizeBytes": 106168320,
+        "displaySize": "101.2 MB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01011.m2ts"
+        },
+        "durationSeconds": 45,
+        "sizeBytes": 106168320,
+        "displaySize": "101.2 MB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/00051.m2ts"
+        },
+        "durationSeconds": 11,
+        "sizeBytes": 26376192,
+        "displaySize": "25.1 MB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/00053.m2ts"
+        },
+        "durationSeconds": 11,
+        "sizeBytes": 26572800,
+        "displaySize": "25.3 MB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01066.m2ts"
+        },
+        "durationSeconds": 228,
+        "sizeBytes": 1137014784,
+        "displaySize": "1.0 GB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01067.m2ts"
+        },
+        "durationSeconds": 104,
+        "sizeBytes": 516808704,
+        "displaySize": "492.8 MB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01068.m2ts"
+        },
+        "durationSeconds": 367,
+        "sizeBytes": 1830144000,
+        "displaySize": "1.7 GB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01069.m2ts"
+        },
+        "durationSeconds": 402,
+        "sizeBytes": 2006980608,
+        "displaySize": "1.8 GB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01070.m2ts"
+        },
+        "durationSeconds": 199,
+        "sizeBytes": 893718528,
+        "displaySize": "852.3 MB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01073.m2ts"
+        },
+        "durationSeconds": 232,
+        "sizeBytes": 1155606528,
+        "displaySize": "1.0 GB",
+        "chapterCount": 0,
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
       }
     ]
   }

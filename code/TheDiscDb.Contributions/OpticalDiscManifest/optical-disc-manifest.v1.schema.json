@@ -234,7 +234,7 @@
               "$ref": "#/$defs/path"
             },
             {
-              "pattern": "^BDMV/(BACKUP/)?PLAYLIST/[^/]+\\.[Mm][Pp][Ll][Ss]$"
+              "pattern": "^BDMV/(BACKUP/)?(PLAYLIST/[^/]+\\.[Mm][Pp][Ll][Ss]|STREAM/[^/]+\\.[Mm]2[Tt][Ss])$"
             }
           ]
         },

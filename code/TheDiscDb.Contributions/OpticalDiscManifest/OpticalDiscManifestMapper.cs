@@ -174,7 +174,8 @@ public static class OpticalDiscManifestMapper
             return null;
         }
 
-        // MakeMKV records only the playlist file name, not the full BDMV path.
+        // MakeMKV records only the file name, not the full BDMV path. The source is a playlist for
+        // most titles and a stream file for titles backed directly by a clip.
         return FileName(path);
     }
 

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Sqids;
 using TheDiscDb.Client;
+using TheDiscDb.Contributions.OpticalDiscManifest;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Import;
@@ -476,7 +477,9 @@ public class ContributionGeneratorService
         string summaryFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}-summary.txt");
         string makeMkvLogPath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.txt");
 
-        string discLogBlobPath = $"{this.idEncoder.Encode(contribution.Id)}/{this.idEncoder.Encode(disc.Id)}-logs.txt";
+        string encodedContributionId = this.idEncoder.Encode(contribution.Id);
+        string encodedDiscId = this.idEncoder.Encode(disc.Id);
+        string discLogBlobPath = ContributionDiscAssets.LogsPath(encodedContributionId, encodedDiscId);
 
         if (!await this.fileSystem.File.Exists(makeMkvLogPath) || overwrite)
         {
@@ -506,6 +509,20 @@ public class ContributionGeneratorService
 
                     await this.TryAppendHashInfo(makeMkvLogPath, hashInfo, generatedFiles, cancellationToken);
                 }
+            }
+            else
+            {
+                // A contributor can describe a disc with an Optical Disc Manifest instead of a
+                // MakeMKV log. Publish the manifest itself rather than synthesizing a log, and map
+                // it so the disc file is populated the same way either upload would populate it.
+                discInfo = await this.TryGenerateManifestFiles(
+                    encodedContributionId,
+                    encodedDiscId,
+                    releaseFolder,
+                    discName,
+                    generatedFiles,
+                    log,
+                    cancellationToken);
             }
 
             var discItems = await dbContext.UserContributionDiscItems
@@ -552,6 +569,44 @@ public class ContributionGeneratorService
             generatedFiles.Add(discJsonFilePath);
             log($"Generated disc files: {discName.Name}");
         }
+    }
+
+    /// <summary>
+    /// Writes the contributor's Optical Disc Manifest into the release folder and maps it to disc
+    /// info, or returns null when the disc has no manifest.
+    /// </summary>
+    private async Task<MakeMkv.DiscInfo?> TryGenerateManifestFiles(
+        string encodedContributionId,
+        string encodedDiscId,
+        string releaseFolder,
+        DiscName discName,
+        ICollection<string> generatedFiles,
+        Action<string> log,
+        CancellationToken cancellationToken)
+    {
+        string manifestBlobPath = ContributionDiscAssets.ManifestPath(encodedContributionId, encodedDiscId);
+        if (!await this.contributionsAssetStore.Exists(manifestBlobPath, cancellationToken))
+        {
+            return null;
+        }
+
+        var data = await this.contributionsAssetStore.Download(manifestBlobPath, cancellationToken);
+        string manifestJson = Encoding.UTF8.GetString(data.ToArray());
+
+        var parsed = new OpticalDiscManifestValidator().Parse(manifestJson);
+        if (!parsed.IsValid)
+        {
+            // The upload endpoint already validated this, so a failure here means the stored blob
+            // is unusable. Publishing it would put an invalid manifest in the data repository.
+            log($"Skipped the manifest for {discName.Name}: {parsed.Error}");
+            return null;
+        }
+
+        string manifestFilePath = this.fileSystem.Path.Combine(releaseFolder, $"{discName.Name}.odm.json");
+        await this.fileSystem.File.WriteAllText(manifestFilePath, manifestJson);
+        generatedFiles.Add(manifestFilePath);
+
+        return OpticalDiscManifestMapper.ToDiscInfo(parsed.Document!);
     }
 
     private async Task TryAppendHashInfo(string logFile, DiscHashInfo hashInfo, ICollection<string> generatedFiles, CancellationToken cancellationToken)

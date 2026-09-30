@@ -139,11 +139,10 @@ public class OpticalDiscManifestMapperTests
         await Assert.That(fromManifest.Type).IsEqualTo(fromLog.Type);
         await Assert.That(fromManifest.HashInfo.Count).IsEqualTo(fromLog.HashInfo.Count);
 
-        // Titles are matched on playlist rather than position. The converter only emits titles whose
-        // source it can express in the manifest, so a manifest holds a subset of the log's titles
-        // and the ordinals do not line up.
+        // Titles are matched on playlist rather than position, since the manifest carries no MakeMKV
+        // title index. Every log title is representable in the manifest, so the counts agree.
         await Assert.That(fromManifest.Titles.Count).IsGreaterThan(0);
-        await Assert.That(fromManifest.Titles.Count).IsLessThanOrEqualTo(fromLog.Titles.Count);
+        await Assert.That(fromManifest.Titles.Count).IsEqualTo(fromLog.Titles.Count);
 
         var logTitlesByPlaylist = fromLog.Titles
             .Where(title => !string.IsNullOrEmpty(title.Playlist))
@@ -233,6 +232,39 @@ public class OpticalDiscManifestMapperTests
         {
             await Assert.That(title.SegmentMap).IsNotNull();
         }
+    }
+
+    [Test]
+    public async Task ToDiscInfo_StreamSourceBecomesTheClipFileName()
+    {
+        // Titles backed directly by a clip rather than a playlist are real extras on retail discs.
+        // MakeMKV records the bare file name in the playlist field for these, exactly as it does
+        // for a playlist-backed title, so the mapper must not treat the two differently.
+        DiscInfo info = await MapSampleAsync();
+
+        var streamTitles = info.Titles
+            .Where(t => t.Playlist != null && t.Playlist.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        await Assert.That(streamTitles).IsNotEmpty();
+
+        foreach (Title title in streamTitles)
+        {
+            await Assert.That(title.Playlist).DoesNotContain("/");
+            await Assert.That(title.Playlist).DoesNotContain("BDMV");
+        }
+    }
+
+    [Test]
+    public async Task ToDiscInfo_KeepsEveryTitleTheLogDescribes()
+    {
+        // A title whose source cannot be expressed in the manifest has to be dropped outright,
+        // because the manifest requires a source. That silently loses real content, so the sample
+        // disc - which mixes playlist-backed and stream-backed titles - must survive intact.
+        DiscInfo fromLog = await ParseSampleLogAsync();
+        DiscInfo fromManifest = await MapSampleAsync();
+
+        await Assert.That(fromManifest.Titles.Count).IsEqualTo(fromLog.Titles.Count);
     }
 
     [Test]
