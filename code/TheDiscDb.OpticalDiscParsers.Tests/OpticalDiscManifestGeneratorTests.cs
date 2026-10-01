@@ -3,7 +3,9 @@ using System.Security.Cryptography;
 using System.Text;
 using TheDiscDb.OpticalDiscManifest.Generation;
 using TheDiscDb.OpticalDiscManifest.Models;
+using TheDiscDb.OpticalDiscParsers.Bdmv;
 using TheDiscDb.OpticalDiscParsers.Bdmv.Models;
+using TheDiscDb.OpticalDiscParsers.Input;
 
 namespace TheDiscDb.OpticalDiscParsers.Tests;
 
@@ -555,6 +557,38 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         Assert.Same(seamless, Assert.Single(OpticalDiscManifestGenerator.SplitBluRayPlaylist(seamless)));
         Assert.Same(stills, Assert.Single(OpticalDiscManifestGenerator.SplitBluRayPlaylist(stills)));
+    }
+
+    [Fact]
+    public async Task CollapseRepeatedPlayItems_ListsLoopedClipOnceLikeMakeMkv()
+    {
+        // 1917's 00149.mpls plays clip 174 then loops clip 175 251 times, one mark per
+        // play item. MakeMKV 1.16.4 lists it as segments "174,175" with 2 chapters.
+        var bytes = await File.ReadAllBytesAsync(
+            Path.Combine(fixturesPath, "MPLS", "UHD-A", "00149.mpls"),
+            TestContext.Current.CancellationToken);
+        var playlist = (await new MplsParser(new MemoryOpticalDiscReader(bytes)).ParseAsync()).Value!;
+
+        var collapsed = OpticalDiscManifestGenerator.CollapseRepeatedPlayItems(playlist);
+
+        Assert.Equal(252, playlist.PlayItems.Count);
+        Assert.Equal(["00174", "00175"], collapsed.PlayItems.Select(item => item.ClipId));
+        Assert.Equal([0, 1], collapsed.PlayItems.Select(item => item.Index));
+        Assert.Equal([0, 1], collapsed.Marks.Select(mark => mark.PlayItemReference));
+    }
+
+    [Fact]
+    public void CollapseRepeatedPlayItems_KeepsDistinctAndNonConsecutivePlayItems()
+    {
+        var distinct = CreateMultiItemPlaylist([("00010", 1, 0), ("00011", 1, 0), ("00010", 1, 0)], [(0, 0u), (2, 0u)]);
+        var loop = CreateMultiItemPlaylist([("00006", 1, 0), ("00010", 5, 0), ("00010", 5, 0), ("00010", 5, 0)], [(0, 0u), (0, 90u), (1, 0u), (3, 0u)]);
+
+        var collapsed = OpticalDiscManifestGenerator.CollapseRepeatedPlayItems(loop);
+
+        Assert.Same(distinct, OpticalDiscManifestGenerator.CollapseRepeatedPlayItems(distinct));
+        Assert.Equal(["00006", "00010"], collapsed.PlayItems.Select(item => item.ClipId));
+        Assert.Equal([0, 0, 1], collapsed.Marks.Select(mark => mark.PlayItemReference));
+        Assert.Equal([0, 1, 2], collapsed.Marks.Select(mark => mark.Index));
     }
 
     private static MplsPlaylist CreateMultiItemPlaylist(

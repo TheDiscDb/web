@@ -673,7 +673,19 @@ public sealed partial class OpticalDiscManifestGenerator
 
             parsedPlaylists++;
             isUhd |= result.Value.Version == "0300";
-            var parts = SplitBluRayPlaylist(result.Value);
+            var playlist = CollapseRepeatedPlayItems(result.Value);
+            if (playlist.PlayItems.Count < result.Value.PlayItems.Count)
+            {
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_BD_PLAYLIST_LOOP",
+                    Message = $"Playlist repeats play items back to back; {result.Value.PlayItems.Count - playlist.PlayItems.Count} repeated play item(s) are not emitted.",
+                    Path = result.Path,
+                });
+            }
+
+            var parts = SplitBluRayPlaylist(playlist);
             if (parts.Count > 1)
             {
                 diagnostics.Add(new ManifestDiagnostic
@@ -1210,6 +1222,62 @@ public sealed partial class OpticalDiscManifestGenerator
             Streams = streams.Count > 0 ? streams : null,
             Stereoscopic3D = stereoscopic3D,
             Extensions = CreateUnsupportedExtensionEvidence(playlist),
+        };
+    }
+
+    /// <summary>
+    /// Drops play items that repeat the play item immediately before them: same clip,
+    /// same in-time and same out-time. Discs loop background video this way, and MakeMKV
+    /// lists each repeat once: Spartacus' <c>00020.mpls</c> plays clip 6 then clip 10 122
+    /// times and MakeMKV reports segments <c>6,10</c> lasting 2:01; 1917's
+    /// <c>00149.mpls</c> plays clip 174 then clip 175 251 times and MakeMKV reports
+    /// <c>174,175</c>. Marks on dropped play items are dropped too. Stereoscopic
+    /// playlists are left alone, because their pairing is declared per play item.
+    /// </summary>
+    internal static MplsPlaylist CollapseRepeatedPlayItems(MplsPlaylist playlist)
+    {
+        var items = playlist.PlayItems.OrderBy(item => item.Index).ToArray();
+        if (items.Length < 2 || playlist.StereoVideoRelationships.Count > 0)
+        {
+            return playlist;
+        }
+
+        var kept = new List<MplsPlayItem>(items.Length) { items[0] };
+        for (int index = 1; index < items.Length; index++)
+        {
+            var previous = kept[^1];
+            var item = items[index];
+            bool repeats = item.Clips.Count <= 1
+                && previous.Clips.Count <= 1
+                && string.Equals(item.ClipId, previous.ClipId, StringComparison.OrdinalIgnoreCase)
+                && item.InTime == previous.InTime
+                && item.OutTime == previous.OutTime;
+            if (!repeats)
+            {
+                kept.Add(item);
+            }
+        }
+
+        if (kept.Count == items.Length)
+        {
+            return playlist;
+        }
+
+        var indexMap = kept
+            .Select((item, newIndex) => (item.Index, newIndex))
+            .ToDictionary(pair => pair.Index, pair => pair.newIndex);
+        return playlist with
+        {
+            PlayItems = kept.Select((item, newIndex) => item with { Index = newIndex }).ToArray(),
+            Marks = playlist.Marks
+                .Where(mark => indexMap.ContainsKey(mark.PlayItemReference))
+                .OrderBy(mark => mark.Index)
+                .Select((mark, newIndex) => mark with
+                {
+                    Index = newIndex,
+                    PlayItemReference = indexMap[mark.PlayItemReference],
+                })
+                .ToArray(),
         };
     }
 
