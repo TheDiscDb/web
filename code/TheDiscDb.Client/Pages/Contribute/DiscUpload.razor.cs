@@ -64,8 +64,14 @@ public partial class DiscUpload : CancellableComponentBase
     // selector that feeds it have nothing to act on anywhere else.
     private bool IsCommandTab => selectedIndex is PowershellTabIndex or BashTabIndex;
 
+    // Scanning reads the disc in the browser and reports its own progress, so the banner that
+    // waits on an upload from somewhere else would only compete with it. Polling continues
+    // underneath either way, which is what carries a finished scan on to the next page.
+    private bool IsScanTab => selectedIndex == ScanTabIndex;
+
     private const int PowershellTabIndex = 0;
     private const int BashTabIndex = 1;
+    private const int ScanTabIndex = 4;
 
     private string GetUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/discs/{DiscId}/logs";
     private string GetManifestUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/discs/{DiscId}/manifest";

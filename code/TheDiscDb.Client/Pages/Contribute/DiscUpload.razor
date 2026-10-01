@@ -27,7 +27,7 @@
                 <button class="btn btn-secondary" @onclick="ResetError">Try again</button>
             </div>
         }
-        else if (showSpinner)
+        else if (showSpinner && !IsScanTab)
         {
             <div class="log-status">
                 <div class="lds-ripple" title="Checking for logs"><div></div><div></div></div>
