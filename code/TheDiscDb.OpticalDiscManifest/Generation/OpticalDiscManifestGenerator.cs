@@ -179,7 +179,7 @@ public sealed partial class OpticalDiscManifestGenerator
                 continue;
             }
 
-            files.Add(new NormalizedFile(path, file));
+            files.Add(new NormalizedFile(path, file, files.Count));
         }
 
         return files.OrderBy(item => item.Path, StringComparer.Ordinal).ToArray();
@@ -848,7 +848,18 @@ public sealed partial class OpticalDiscManifestGenerator
             titles.Add(CreateBluRayTitle(result.Path, playlist, files, clpiByClip, diagnostics, null));
         }
 
+        // MakeMKV walks playlists in on-disc directory order, so that order decides which of
+        // two equivalent playlists survives and the sequence titles are listed in.
+        var enumerationIndexByPath = files.ToDictionary(
+            item => item.Path,
+            item => item.EnumerationIndex,
+            StringComparer.OrdinalIgnoreCase);
+        int EnumerationIndexOf(string? path)
+            => path is not null && enumerationIndexByPath.TryGetValue(path, out int index) ? index : int.MaxValue;
+
+        titles = titles.OrderBy(title => EnumerationIndexOf(title.Source?.Path)).ToList();
         titles = ReconcileBluRayTitles(titles, files, clpiByClip, dolbyVisionClips, subPathClips, diagnostics);
+        titles = OrderBluRayTitles(titles, EnumerationIndexOf);
 
         string? discName = await ReadBluRayDiscNameAsync(files, diagnostics, metrics, cancellationToken);
         if (playlistCandidates == 0)
@@ -953,11 +964,11 @@ public sealed partial class OpticalDiscManifestGenerator
     /// same titles a MakeMKV log of that disc would describe. Three reconciliations run,
     /// in order: a playlist that plays exactly like an earlier one and selects no stream
     /// it lacks collapses into it; stream files no retained playlist references, or that a Dolby Vision playlist plays,
-        /// are promoted to titles of their own, except clips a non-Dolby-Vision subpath (such
-        /// as a popup menu) plays, which are never playback candidates; and a title whose only content is a single unchaptered clip,
+    /// are promoted to titles of their own, except clips a non-Dolby-Vision subpath (such
+    /// as a popup menu) plays, which are never playback candidates; and a title whose only content is a single unchaptered clip,
     /// played in full, is attributed to that clip's stream file, because the playlist adds
-    /// nothing the stream does not already state. The result is then ordered with
-    /// playlist-sourced titles ahead of stream-sourced ones. Each reconciliation is
+    /// nothing the stream does not already state. Earlier titles win every collapse, so
+    /// callers pass playlist titles in disc order. Each reconciliation is
     /// evidence-driven and never discards a distinct playback candidate.
     /// </summary>
     private static List<ManifestTitle> ReconcileBluRayTitles(
@@ -1075,27 +1086,33 @@ public sealed partial class OpticalDiscManifestGenerator
             return true;
         });
 
-        return OrderBluRayTitles(retained);
+        return retained;
     }
 
     /// <summary>
     /// Orders titles the way MakeMKV presents them, so contributors labelling a disc see
     /// the same sequence they know from MakeMKV. Across the TheDiscDb log corpus MakeMKV
     /// lists every playlist-sourced title before every stream-sourced title, without
-    /// exception. Playlist titles keep their playlist order; stream titles follow in
-    /// clip order. MakeMKV's order within each block depends on evidence a manifest does
-    /// not carry, so it is not reproduced.
+    /// exception. Within each block MakeMKV follows the disc's directory order (verified
+    /// against the raw UDF directory listings of 2001: A Space Odyssey's feature and bonus
+    /// discs), so each block is ordered by <paramref name="enumerationIndexOf"/>, the
+    /// position of the title's source file in the caller's enumeration of the disc, with
+    /// the path as tie-breaker when the enumeration carries no order.
     /// </summary>
-    internal static List<ManifestTitle> OrderBluRayTitles(IReadOnlyList<ManifestTitle> titles)
+    internal static List<ManifestTitle> OrderBluRayTitles(
+        IReadOnlyList<ManifestTitle> titles,
+        Func<string?, int> enumerationIndexOf)
     {
         static bool IsStreamSourced(ManifestTitle title)
             => title.Source?.Path?.StartsWith("BDMV/STREAM/", StringComparison.OrdinalIgnoreCase) == true;
 
         return titles
             .Where(title => !IsStreamSourced(title))
+            .OrderBy(title => enumerationIndexOf(title.Source?.Path))
             .Concat(titles
                 .Where(IsStreamSourced)
-                .OrderBy(title => title.Source!.Path, StringComparer.OrdinalIgnoreCase))
+                .OrderBy(title => enumerationIndexOf(title.Source!.Path))
+                .ThenBy(title => title.Source!.Path, StringComparer.OrdinalIgnoreCase))
             .ToList();
     }
 
@@ -2148,7 +2165,11 @@ public sealed partial class OpticalDiscManifestGenerator
     [GeneratedRegex(@"^VIDEO_TS/VTS_(\d{2})_0\.(IFO|BUP)$", RegexOptions.IgnoreCase)]
     private static partial Regex VtsControlPattern();
 
-    private sealed record NormalizedFile(string Path, IManifestDiscFile File);
+    /// <param name="EnumerationIndex">
+    /// Position of the file in the caller's enumeration. Directory pickers enumerate a disc
+    /// in its on-disc directory order, which is the order MakeMKV lists titles in.
+    /// </param>
+    private sealed record NormalizedFile(string Path, IManifestDiscFile File, int EnumerationIndex);
 
     private sealed record DvdTitleSetCandidate(int TitleSetNumber, string PrimaryPath, string BackupPath);
 

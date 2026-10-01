@@ -514,7 +514,39 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
-    public void OrderBluRayTitles_PlacesPlaylistTitlesBeforeStreamTitles()
+    public void OrderBluRayTitles_PlacesPlaylistTitlesBeforeStreamTitlesInDiscOrder()
+    {
+        static ManifestTitle At(string path) => new() { Source = new ManifestTitleSource { Path = path } };
+
+        // On-disc directory order of 2001: A Space Odyssey's bonus disc, as MakeMKV lists it.
+        string[] discOrder =
+        [
+            "BDMV/PLAYLIST/00054.mpls",
+            "BDMV/PLAYLIST/00053.mpls",
+            "BDMV/PLAYLIST/00055.mpls",
+            "BDMV/PLAYLIST/00017.mpls",
+            "BDMV/STREAM/00004.m2ts",
+            "BDMV/STREAM/00050.m2ts",
+            "BDMV/STREAM/00003.m2ts",
+        ];
+
+        var ordered = OpticalDiscManifestGenerator.OrderBluRayTitles(
+        [
+            At("BDMV/PLAYLIST/00017.mpls"),
+            At("BDMV/STREAM/00003.m2ts"),
+            At("BDMV/PLAYLIST/00053.mpls"),
+            At("BDMV/STREAM/00050.m2ts"),
+            At("BDMV/PLAYLIST/00054.mpls"),
+            At("BDMV/STREAM/00004.m2ts"),
+            At("BDMV/PLAYLIST/00055.mpls"),
+        ],
+            path => Array.IndexOf(discOrder, path));
+
+        Assert.Equal(discOrder, ordered.Select(title => title.Source!.Path));
+    }
+
+    [Fact]
+    public void OrderBluRayTitles_FallsBackToClipOrderForStreamsWithoutDiscOrder()
     {
         static ManifestTitle At(string path) => new() { Source = new ManifestTitleSource { Path = path } };
 
@@ -524,15 +556,14 @@ public sealed class OpticalDiscManifestGeneratorTests
             At("BDMV/STREAM/00012.m2ts"),
             At("BDMV/PLAYLIST/00000.mpls"),
             At("BDMV/STREAM/00002.m2ts"),
-            At("BDMV/PLAYLIST/00006.mpls"),
-        ]);
+        ],
+            _ => int.MaxValue);
 
         // Playlist titles keep their incoming order; stream titles follow in clip order.
         Assert.Equal(
             [
                 "BDMV/PLAYLIST/00004.mpls",
                 "BDMV/PLAYLIST/00000.mpls",
-                "BDMV/PLAYLIST/00006.mpls",
                 "BDMV/STREAM/00002.m2ts",
                 "BDMV/STREAM/00012.m2ts",
             ],
