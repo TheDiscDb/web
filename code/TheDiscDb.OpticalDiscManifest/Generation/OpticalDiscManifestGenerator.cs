@@ -833,8 +833,12 @@ public sealed partial class OpticalDiscManifestGenerator
             // University (UHD) 00002.mpls (stills 150, 151) and 00015.mpls (150, then still
             // 57) are listed, and so are 00150.m2ts, 00151.m2ts and 00057.m2ts. Clips of
             // looping playlists without stills are not: 00020.mpls plays 40 then 41 on
-            // repeat and neither 00040.m2ts nor 00041.m2ts is listed.
-            if (collapsed.PlayItems.Count > 1 && collapsed.PlayItems.Any(item => item.StillMode == InfiniteStillMode))
+            // repeat and neither 00040.m2ts nor 00041.m2ts is listed. A still gallery cut
+            // from one clip is that clip's playlist, and the clip is not listed again: on the
+            // Monsters University bonus disc 00100.mpls holds 366 stills of clip 914, and
+            // 00914.m2ts is not listed.
+            if (collapsed.PlayItems.Any(item => item.StillMode == InfiniteStillMode)
+                && collapsed.PlayItems.Select(item => item.ClipId).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
             {
                 foreach (var item in collapsed.PlayItems)
                 {
@@ -1444,9 +1448,32 @@ public sealed partial class OpticalDiscManifestGenerator
         var dependentClipByPlayItem = playlist.StereoVideoRelationships
             .GroupBy(relationship => relationship.BasePlayItemIndex)
             .ToDictionary(group => group.Key, group => group.First().DependentClipId);
+        MplsPlayItem? previous = null;
         foreach (var item in playlist.PlayItems.OrderBy(item => item.Index))
         {
             long durationTicks = item.OutTime >= item.InTime ? item.OutTime - item.InTime : 0;
+
+            // A play item that resumes its clip exactly where the previous play item stopped
+            // continues that segment: MakeMKV reports the Monsters University bonus disc's
+            // 00100.mpls, 366 consecutive slices of clip 914, as the one segment 914.
+            if (previous is not null
+                && item.Clips.Count <= 1
+                && previous.Clips.Count <= 1
+                && string.Equals(item.ClipId, previous.ClipId, StringComparison.OrdinalIgnoreCase)
+                && item.InTime == previous.OutTime
+                && !dependentClipByPlayItem.ContainsKey(item.Index)
+                && !dependentClipByPlayItem.ContainsKey(previous.Index))
+            {
+                segments[^1] = segments[^1] with
+                {
+                    DurationSeconds = TicksToSeconds(cumulativeTicks + durationTicks) - (segments[^1].StartSeconds ?? 0),
+                };
+                cumulativeTicks += durationTicks;
+                previous = item;
+                continue;
+            }
+
+            previous = item;
             var clips = item.Clips.Count > 0
                 ? item.Clips
                 : new[]
@@ -1519,17 +1546,21 @@ public sealed partial class OpticalDiscManifestGenerator
     private const int InfiniteStillMode = 2;
 
     /// <summary>
-    /// Drops play items that repeat the play item immediately before them: same clip,
-    /// same in-time and same out-time. Discs loop background video this way, and MakeMKV
-    /// lists each repeat once: Spartacus' <c>00020.mpls</c> plays clip 6 then clip 10 122
-    /// times and MakeMKV reports segments <c>6,10</c> lasting 2:01; 1917's
-    /// <c>00149.mpls</c> plays clip 174 then clip 175 251 times and MakeMKV reports
-    /// <c>174,175</c>. A still frame held indefinitely is shown once too, so an infinite
-    /// still repeating an earlier infinite still is dropped wherever it occurs: Monsters
-    /// University (UHD) <c>00002.mpls</c> plays stills 150, 151, 151, 151, 150 and MakeMKV
-    /// reports <c>150,151</c>. Other non-adjacent repeats are kept, as MakeMKV keeps
-    /// Stranger Things' <c>12,0,14,12,1,14</c>. Marks on dropped play items are dropped too. Stereoscopic
-    /// playlists are left alone, because their pairing is declared per play item.
+    /// Ends the playlist at the first play item that repeats the play item immediately
+    /// before it: same clip, same in-time and same out-time. Discs loop background video
+    /// this way, and MakeMKV lists the playlist only up to the loop: Spartacus'
+    /// <c>00020.mpls</c> plays clip 6 then clip 10 122 times and MakeMKV reports segments
+    /// <c>6,10</c> lasting 2:01; 1917's <c>00149.mpls</c> plays clip 174 then clip 175 251
+    /// times and MakeMKV reports <c>174,175</c>. Play items after the loop are not listed
+    /// either: Monsters University (Blu-ray bonus disc) <c>00000.mpls</c> plays clip 2 103
+    /// times then the still clip 1, and MakeMKV lists only <c>00002.m2ts</c> and
+    /// <c>00001.m2ts</c>, so the playlist is clip 2 alone. A still frame held indefinitely
+    /// is shown once too, so an infinite still repeating an earlier infinite still is
+    /// dropped wherever it occurs: Monsters University (UHD) <c>00002.mpls</c> plays stills
+    /// 150, 151, 151, 151, 150 and MakeMKV reports <c>150,151</c>. Other non-adjacent
+    /// repeats are kept, as MakeMKV keeps Stranger Things' <c>12,0,14,12,1,14</c>. Marks on
+    /// dropped play items are dropped too. Stereoscopic playlists are left alone, because
+    /// their pairing is declared per play item.
     /// </summary>
     internal static MplsPlaylist CollapseRepeatedPlayItems(MplsPlaylist playlist)
     {
@@ -1550,10 +1581,14 @@ public sealed partial class OpticalDiscManifestGenerator
         for (int index = 1; index < items.Length; index++)
         {
             var item = items[index];
-            bool repeats = SamePlayback(item, kept[^1])
-                || (item.StillMode == InfiniteStillMode
-                    && kept.Any(earlier => earlier.StillMode == InfiniteStillMode && SamePlayback(item, earlier)));
-            if (!repeats)
+            if (SamePlayback(item, kept[^1]))
+            {
+                break;
+            }
+
+            bool repeatsStill = item.StillMode == InfiniteStillMode
+                && kept.Any(earlier => earlier.StillMode == InfiniteStillMode && SamePlayback(item, earlier));
+            if (!repeatsStill)
             {
                 kept.Add(item);
             }
