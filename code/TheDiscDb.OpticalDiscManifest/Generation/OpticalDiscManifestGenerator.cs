@@ -781,10 +781,11 @@ public sealed partial class OpticalDiscManifestGenerator
     /// same titles a MakeMKV log of that disc would describe. Three reconciliations run,
     /// in order: playlists with an identical segment composition collapse to one title;
     /// stream files no retained playlist references are promoted to titles of their own so
-    /// they stay reachable; and a title whose only content is a single unchaptered clip is
-    /// attributed to that clip's stream file, because the playlist adds nothing the stream
-    /// does not already state. Each reconciliation is evidence-driven and never discards a
-    /// distinct playback candidate.
+    /// they stay reachable; and a title whose only content is a single unchaptered clip,
+    /// played in full, is attributed to that clip's stream file, because the playlist adds
+    /// nothing the stream does not already state. The result is then ordered with
+    /// playlist-sourced titles ahead of stream-sourced ones. Each reconciliation is
+    /// evidence-driven and never discards a distinct playback candidate.
     /// </summary>
     private static List<ManifestTitle> ReconcileBluRayTitles(
         IReadOnlyList<ManifestTitle> titles,
@@ -861,10 +862,34 @@ public sealed partial class OpticalDiscManifestGenerator
 
         for (int index = 0; index < retained.Count; index++)
         {
-            retained[index] = AttributeSingleClipTitleToStream(retained[index], streamPaths);
+            retained[index] = AttributeSingleClipTitleToStream(
+                retained[index],
+                streamPaths,
+                clipId => GetClipDurationSeconds(clipId, clpiByClip));
         }
 
-        return retained;
+        return OrderBluRayTitles(retained);
+    }
+
+    /// <summary>
+    /// Orders titles the way MakeMKV presents them, so contributors labelling a disc see
+    /// the same sequence they know from MakeMKV. Across the TheDiscDb log corpus MakeMKV
+    /// lists every playlist-sourced title before every stream-sourced title, without
+    /// exception. Playlist titles keep their playlist order; stream titles follow in
+    /// clip order. MakeMKV's order within each block depends on evidence a manifest does
+    /// not carry, so it is not reproduced.
+    /// </summary>
+    internal static List<ManifestTitle> OrderBluRayTitles(IReadOnlyList<ManifestTitle> titles)
+    {
+        static bool IsStreamSourced(ManifestTitle title)
+            => title.Source?.Path?.StartsWith("BDMV/STREAM/", StringComparison.OrdinalIgnoreCase) == true;
+
+        return titles
+            .Where(title => !IsStreamSourced(title))
+            .Concat(titles
+                .Where(IsStreamSourced)
+                .OrderBy(title => title.Source!.Path, StringComparer.OrdinalIgnoreCase))
+            .ToList();
     }
 
     private static ClpiFile? GetClip(string clipId, IReadOnlyDictionary<string, ClpiFile> clpiByClip)
@@ -890,9 +915,12 @@ public sealed partial class OpticalDiscManifestGenerator
 
     /// <summary>
     /// Builds a comparison key describing what a title actually plays: its ordered
-    /// segments with their angle and timing, its stereoscopic pairing, and how many
-    /// chapter marks it declares. Two playlists sharing this key are indistinguishable
-    /// during playback, so only the first is emitted.
+    /// segments with their angle and timing, its stereoscopic pairing, how many chapter
+    /// marks it declares, and the streams its playlist selects. Two playlists sharing
+    /// this key are indistinguishable during playback, so only the first is emitted.
+    /// Streams are part of the key because discs routinely author playlists over the
+    /// same clips that differ only in their audio or subtitle selection (for example a
+    /// commentary variant), and MakeMKV lists those separately.
     /// </summary>
     internal static string CreateBluRayCompositionKey(ManifestTitle title)
     {
@@ -909,23 +937,40 @@ public sealed partial class OpticalDiscManifestGenerator
                 .Append(';');
         }
 
-        return builder
+        builder
             .Append('|')
             .Append(title.Stereoscopic3D?.DependentClipId ?? "-")
             .Append('|')
             .Append((title.Chapters?.Count ?? 0).ToString(CultureInfo.InvariantCulture))
-            .ToString();
+            .Append('|');
+
+        foreach (var stream in title.Streams ?? [])
+        {
+            builder.Append(stream.Type)
+                .Append(':').Append(stream.Codec)
+                .Append(':').Append(stream.Pid?.ToString(CultureInfo.InvariantCulture) ?? "-")
+                .Append(':').Append(stream.Language ?? "-")
+                .Append(':').Append(stream.Category ?? "-")
+                .Append(':').Append(stream.AudioLayout ?? "-")
+                .Append(';');
+        }
+
+        return builder.ToString();
     }
 
     /// <summary>
     /// Re-attributes a title to its stream file when the playlist contributes nothing
-    /// beyond the clip itself: exactly one segment, no alternate angle, no stereoscopic
-    /// pairing, and at most one chapter mark. The segments are left untouched, so the
-    /// clip the title plays is still stated explicitly.
+    /// beyond the clip itself: exactly one segment that plays the whole clip, no
+    /// alternate angle, no stereoscopic pairing, and at most one chapter mark. A playlist
+    /// that trims its clip is a different presentation, so it keeps its playlist
+    /// attribution, as MakeMKV does. When the clip's duration is unknown, coverage cannot
+    /// be shown and the playlist attribution is kept. The segments are left untouched, so
+    /// the clip the title plays is still stated explicitly.
     /// </summary>
     internal static ManifestTitle AttributeSingleClipTitleToStream(
         ManifestTitle title,
-        IReadOnlySet<string> streamPaths)
+        IReadOnlySet<string> streamPaths,
+        Func<string, double?> clipDurationSeconds)
     {
         if (title.Segments is not { Count: 1 }
             || title.Stereoscopic3D is not null
@@ -942,6 +987,13 @@ public sealed partial class OpticalDiscManifestGenerator
 
         string streamPath = $"BDMV/STREAM/{segment.Clip}.m2ts";
         if (!streamPaths.Contains(streamPath))
+        {
+            return title;
+        }
+
+        if (segment.DurationSeconds is not { } played
+            || clipDurationSeconds(segment.Clip) is not { } clipDuration
+            || Math.Abs(clipDuration - played) > SingleFrameSeconds)
         {
             return title;
         }
