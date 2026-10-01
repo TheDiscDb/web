@@ -794,6 +794,7 @@ public sealed partial class OpticalDiscManifestGenerator
         var titles = new List<ManifestTitle>();
         var dolbyVisionClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var subPathClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var stillPlaylistClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         int playlistCandidates = 0;
         int parsedPlaylists = 0;
         foreach (var candidate in GetBluRayControlCandidates(files, "BDMV/PLAYLIST", "BDMV/BACKUP/PLAYLIST", ".mpls"))
@@ -822,9 +823,23 @@ public sealed partial class OpticalDiscManifestGenerator
                 {
                     Severity = "info",
                     Code = "ODM_BD_PLAYLIST_LOOP",
-                    Message = $"Playlist repeats play items back to back; {result.Value.PlayItems.Count - collapsed.PlayItems.Count} repeated play item(s) are not emitted.",
+                    Message = $"Playlist repeats play items; {result.Value.PlayItems.Count - collapsed.PlayItems.Count} repeated play item(s) are not emitted.",
                     Path = result.Path,
                 });
+            }
+
+            // A playlist that holds a still frame indefinitely waits on the viewer, like a
+            // menu, and MakeMKV still lists each of its clips as a stream title: on Monsters
+            // University (UHD) 00002.mpls (stills 150, 151) and 00015.mpls (150, then still
+            // 57) are listed, and so are 00150.m2ts, 00151.m2ts and 00057.m2ts. Clips of
+            // looping playlists without stills are not: 00020.mpls plays 40 then 41 on
+            // repeat and neither 00040.m2ts nor 00041.m2ts is listed.
+            if (collapsed.PlayItems.Count > 1 && collapsed.PlayItems.Any(item => item.StillMode == InfiniteStillMode))
+            {
+                foreach (var item in collapsed.PlayItems)
+                {
+                    stillPlaylistClips.Add(item.ClipId);
+                }
             }
 
             var playlist = TrimTrailingNarrowerPlayItems(collapsed);
@@ -870,7 +885,7 @@ public sealed partial class OpticalDiscManifestGenerator
             => path is not null && enumerationIndexByPath.TryGetValue(path, out int index) ? index : int.MaxValue;
 
         titles = titles.OrderBy(title => EnumerationIndexOf(title.Source?.Path)).ToList();
-        titles = ReconcileBluRayTitles(titles, files, clpiByClip, dolbyVisionClips, subPathClips, diagnostics);
+        titles = ReconcileBluRayTitles(titles, files, clpiByClip, dolbyVisionClips, subPathClips, stillPlaylistClips, diagnostics);
         titles = OrderBluRayTitles(titles, EnumerationIndexOf);
 
         string? discName = await ReadBluRayDiscNameAsync(files, diagnostics, metrics, cancellationToken);
@@ -974,12 +989,14 @@ public sealed partial class OpticalDiscManifestGenerator
     /// Aligns the playlist-derived title list with the set of playback candidates an
     /// optical disc actually offers, so a manifest produced from the disc describes the
     /// same titles a MakeMKV log of that disc would describe. Three reconciliations run,
-    /// in order: a playlist that plays exactly like an earlier one and selects no stream
-    /// it lacks collapses into it; stream files no retained playlist references, or that a Dolby Vision playlist plays,
+    /// in order: a playlist that plays exactly like another and selects no stream the
+    /// other lacks collapses into it (the earlier one wins when both select the same
+    /// streams); stream files no retained playlist references, or that a Dolby Vision
+    /// playlist or a playlist holding a still plays,
     /// are promoted to titles of their own, except clips a non-Dolby-Vision subpath (such
     /// as a popup menu) plays, which are never playback candidates; and a title whose only content is a single unchaptered clip,
     /// played in full, is attributed to that clip's stream file, because the playlist adds
-    /// nothing the stream does not already state. Earlier titles win every collapse, so
+    /// nothing the stream does not already state. Earlier titles win ties, so
     /// callers pass playlist titles in disc order. Each reconciliation is
     /// evidence-driven and never discards a distinct playback candidate.
     /// </summary>
@@ -989,6 +1006,7 @@ public sealed partial class OpticalDiscManifestGenerator
         IReadOnlyDictionary<string, ClpiFile> clpiByClip,
         IReadOnlySet<string> dolbyVisionClips,
         IReadOnlySet<string> subPathClips,
+        IReadOnlySet<string> stillPlaylistClips,
         ICollection<ManifestDiagnostic> diagnostics)
     {
         var retained = new List<ManifestTitle>(titles.Count);
@@ -1012,6 +1030,22 @@ public sealed partial class OpticalDiscManifestGenerator
                     Path = title.Source?.Path,
                 });
                 continue;
+            }
+
+            // MakeMKV keeps the playlist selecting more streams even when it comes later:
+            // on Monsters University (UHD) 00004.mpls (HEVC and one AC-3 track) is reported
+            // as equal to the later 00800.mpls, which plays the same clips with every track.
+            foreach (var narrower in samePlayback.Where(earlier => SelectsNoStreamBeyond(earlier, title)).ToArray())
+            {
+                samePlayback.Remove(narrower);
+                retained.Remove(narrower);
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_BD_TITLE_DUPLICATE",
+                    Message = $"Playlist plays the same as {title.Source?.Path ?? "a later playlist"} and selects no stream it lacks, so it is not emitted as a separate title.",
+                    Path = narrower.Source?.Path,
+                });
             }
 
             samePlayback.Add(title);
@@ -1082,7 +1116,8 @@ public sealed partial class OpticalDiscManifestGenerator
         var promoted = files
             .Where(item => IsControlFile(item.Path, "BDMV/STREAM", ".m2ts"))
             .Where(item => !referenced.Contains(Path.GetFileNameWithoutExtension(item.Path))
-                || dolbyVisionClips.Contains(Path.GetFileNameWithoutExtension(item.Path)))
+                || dolbyVisionClips.Contains(Path.GetFileNameWithoutExtension(item.Path))
+                || stillPlaylistClips.Contains(Path.GetFileNameWithoutExtension(item.Path)))
             .Where(item => IsPlayableStreamCandidate(
                 GetClipDurationSeconds(Path.GetFileNameWithoutExtension(item.Path), clpiByClip)))
             .OrderBy(item => item.Path, StringComparer.OrdinalIgnoreCase)
@@ -1099,7 +1134,7 @@ public sealed partial class OpticalDiscManifestGenerator
             {
                 Severity = "info",
                 Code = "ODM_BD_STREAM_TITLES",
-                Message = $"Promoted {promoted.Length} stream file(s) to titles because no playlist references them or a Dolby Vision playlist plays them.",
+                Message = $"Promoted {promoted.Length} stream file(s) to titles because no playlist references them, a Dolby Vision playlist plays them or a playlist holding a still plays them.",
             });
         }
 
@@ -1481,13 +1516,19 @@ public sealed partial class OpticalDiscManifestGenerator
         };
     }
 
+    private const int InfiniteStillMode = 2;
+
     /// <summary>
     /// Drops play items that repeat the play item immediately before them: same clip,
     /// same in-time and same out-time. Discs loop background video this way, and MakeMKV
     /// lists each repeat once: Spartacus' <c>00020.mpls</c> plays clip 6 then clip 10 122
     /// times and MakeMKV reports segments <c>6,10</c> lasting 2:01; 1917's
     /// <c>00149.mpls</c> plays clip 174 then clip 175 251 times and MakeMKV reports
-    /// <c>174,175</c>. Marks on dropped play items are dropped too. Stereoscopic
+    /// <c>174,175</c>. A still frame held indefinitely is shown once too, so an infinite
+    /// still repeating an earlier infinite still is dropped wherever it occurs: Monsters
+    /// University (UHD) <c>00002.mpls</c> plays stills 150, 151, 151, 151, 150 and MakeMKV
+    /// reports <c>150,151</c>. Other non-adjacent repeats are kept, as MakeMKV keeps
+    /// Stranger Things' <c>12,0,14,12,1,14</c>. Marks on dropped play items are dropped too. Stereoscopic
     /// playlists are left alone, because their pairing is declared per play item.
     /// </summary>
     internal static MplsPlaylist CollapseRepeatedPlayItems(MplsPlaylist playlist)
@@ -1498,16 +1539,20 @@ public sealed partial class OpticalDiscManifestGenerator
             return playlist;
         }
 
+        static bool SamePlayback(MplsPlayItem item, MplsPlayItem other)
+            => item.Clips.Count <= 1
+                && other.Clips.Count <= 1
+                && string.Equals(item.ClipId, other.ClipId, StringComparison.OrdinalIgnoreCase)
+                && item.InTime == other.InTime
+                && item.OutTime == other.OutTime;
+
         var kept = new List<MplsPlayItem>(items.Length) { items[0] };
         for (int index = 1; index < items.Length; index++)
         {
-            var previous = kept[^1];
             var item = items[index];
-            bool repeats = item.Clips.Count <= 1
-                && previous.Clips.Count <= 1
-                && string.Equals(item.ClipId, previous.ClipId, StringComparison.OrdinalIgnoreCase)
-                && item.InTime == previous.InTime
-                && item.OutTime == previous.OutTime;
+            bool repeats = SamePlayback(item, kept[^1])
+                || (item.StillMode == InfiniteStillMode
+                    && kept.Any(earlier => earlier.StillMode == InfiniteStillMode && SamePlayback(item, earlier)));
             if (!repeats)
             {
                 kept.Add(item);

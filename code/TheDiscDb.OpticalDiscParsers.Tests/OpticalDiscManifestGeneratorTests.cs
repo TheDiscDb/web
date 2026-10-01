@@ -325,7 +325,7 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
         var titles = result.Manifest.Disc.Titles!;
-        Assert.Equal(2, titles.Count);
+        Assert.Equal(4, titles.Count);
 
         // 00051 duplicates 00050 exactly, so only the first survives.
         Assert.Equal("BDMV/PLAYLIST/00050.mpls", titles[0].Source!.Path);
@@ -333,8 +333,13 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Equal("BDMV/PLAYLIST/00051.mpls", duplicate.Path);
         Assert.Equal("info", duplicate.Severity);
 
-        // 00135 and 00007 are reachable through the playlist; only 00999 is orphaned.
-        var promoted = titles[1];
+        // 00999 is orphaned. 00135 and 00007 are reachable through the playlist, but it
+        // holds both as infinite stills, so they are listed too, as MakeMKV lists the
+        // clips of Monsters University's still playlists.
+        Assert.Equal(
+            ["BDMV/STREAM/00135.m2ts", "BDMV/STREAM/00007.m2ts", "BDMV/STREAM/00999.m2ts"],
+            titles.Skip(1).Select(title => title.Source!.Path));
+        var promoted = titles[3];
         Assert.Equal("BDMV/STREAM/00999.m2ts", promoted.Source!.Path);
         Assert.Equal(16384, promoted.SizeBytes);
         Assert.Equal("00999", Assert.Single(promoted.Segments!).Clip);
@@ -701,6 +706,48 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateAsync_BluRay_ReproducesMakeMkvTitlesForMonstersUniversityStillsAndAudioVariants()
+    {
+        // Real control files from Monsters University (UHD) (fixture set UHD-D), compared
+        // with a MakeMKV 1.18.3 log of the same disc. 00002.mpls plays stills 150, 151,
+        // 151, 151, 150 and is listed as "150,151"; 00016.mpls (150, then still 151 twice)
+        // is reported equal to it. 00004.mpls plays 00800.mpls' clips with only one audio
+        // track and is reported equal to the later 00800.mpls. The still playlists' clips
+        // are listed as 00057.m2ts, 00150.m2ts and 00151.m2ts, while the looping
+        // 00020.mpls (40, then 41 repeated) leaves 00040.m2ts and 00041.m2ts unlisted.
+        var files = new List<RecordingFile>();
+        AddDirectory(files, Path.Combine(fixturesPath, "MPLS", "UHD-D"), "BDMV/PLAYLIST");
+        AddDirectory(files, Path.Combine(fixturesPath, "CLPI", "UHD-D"), "BDMV/CLIPINF");
+        files.AddRange(Directory.EnumerateFiles(Path.Combine(fixturesPath, "CLPI", "UHD-D"))
+            .Select(path => RecordingFile.Payload($"BDMV/STREAM/{Path.GetFileNameWithoutExtension(path)}.m2ts", 6144)));
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('6', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title => (
+                Path.GetFileName(title.Source!.Path!),
+                title.Chapters?.Count ?? 0,
+                string.Join(",", title.Segments!.Select(segment => segment.Clip).Take(3))))
+            .ToArray();
+
+        Assert.Equal<(string, int, string)>(
+            [
+                ("00002.mpls", 2, "00150,00151"),
+                ("00015.mpls", 2, "00150,00057"),
+                ("00020.mpls", 3, "00040,00041"),
+                ("00800.mpls", 32, "00055,00056,00086"),
+                ("00057.m2ts", 0, "00057"),
+                ("00150.m2ts", 0, "00150"),
+                ("00151.m2ts", 0, "00151"),
+            ],
+            actual);
+    }
+
+    [Fact]
     public async Task CollapseRepeatedPlayItems_ListsLoopedClipOnceLikeMakeMkv()
     {
         // 1917's 00149.mpls plays clip 174 then loops clip 175 251 times, one mark per
@@ -751,6 +798,24 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Equal(["00006", "00010"], collapsed.PlayItems.Select(item => item.ClipId));
         Assert.Equal([0, 0, 1], collapsed.Marks.Select(mark => mark.PlayItemReference));
         Assert.Equal([0, 1, 2], collapsed.Marks.Select(mark => mark.Index));
+    }
+
+    [Fact]
+    public void CollapseRepeatedPlayItems_DropsInfiniteStillRepeatingAnEarlierStill()
+    {
+        // Monsters University (UHD) 00002.mpls: stills 150, 151, 151, 151, 150 are listed
+        // by MakeMKV as "150,151". A repeat that is not an infinite still is kept, as
+        // MakeMKV keeps Stranger Things' "12,0,14,12,1,14".
+        var stills = CreateMultiItemPlaylist(
+            [("00150", 1, 2), ("00151", 1, 2), ("00151", 1, 2), ("00151", 1, 2), ("00150", 1, 2)],
+            [(0, 0u), (1, 0u), (4, 0u)]);
+        var mixed = CreateMultiItemPlaylist([("00150", 1, 0), ("00151", 1, 2), ("00150", 1, 2)], [(0, 0u)]);
+
+        var collapsed = OpticalDiscManifestGenerator.CollapseRepeatedPlayItems(stills);
+
+        Assert.Equal(["00150", "00151"], collapsed.PlayItems.Select(item => item.ClipId));
+        Assert.Equal([0, 1], collapsed.Marks.Select(mark => mark.PlayItemReference));
+        Assert.Same(mixed, OpticalDiscManifestGenerator.CollapseRepeatedPlayItems(mixed));
     }
 
     private static MplsPlaylist CreateMultiItemPlaylist(
