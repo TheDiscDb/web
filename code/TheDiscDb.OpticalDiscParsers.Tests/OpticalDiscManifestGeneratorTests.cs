@@ -347,6 +347,33 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateAsync_BluRay_DoesNotPromoteStreamsOnlyASubPathPlays()
+    {
+        // 2001: A Space Odyssey (UHD) 00100.mpls plays 00316 with popup-menu subpaths
+        // (type 3) over 00327-00329. MakeMKV never lists those menu clips as titles.
+        string fixture = Path.Combine(fixturesPath, "MPLS", "UHD-C", "00100.mpls");
+        var files = new[]
+        {
+            RecordingFile.FromDisk("BDMV/PLAYLIST/00100.mpls", fixture),
+            RecordingFile.Payload("BDMV/STREAM/00316.m2ts", 4096),
+            RecordingFile.Payload("BDMV/STREAM/00327.m2ts", 8192),
+            RecordingFile.Payload("BDMV/STREAM/00328.m2ts", 8192),
+            RecordingFile.Payload("BDMV/STREAM/00329.m2ts", 8192),
+            RecordingFile.Payload("BDMV/STREAM/00999.m2ts", 16384),
+        };
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('4', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        Assert.Equal(
+            ["BDMV/PLAYLIST/00100.mpls", "BDMV/STREAM/00999.m2ts"],
+            result.Manifest.Disc.Titles!.Select(title => title.Source!.Path));
+    }
+
+    [Fact]
     public void CreateBluRayCompositionKey_DistinguishesTitlesThatPlayDifferently()
     {
         var baseline = CreateSegmentTitle(("00001", 0d, 10d, null));

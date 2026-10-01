@@ -35,3 +35,4 @@ sha256  66200a126c6117e6a69284b9637426a5c34c3f50a874ec919bda593acb2c26c1  TheDis
 sha256  2c1a73ef1f7139ec11a8fed0b0a77253cab14ce9a8c37b77c50ba67038273933  TheDiscDb.OpticalDiscParsers.Tests/fixtures/MPLS/UHD-A/00149.mpls
 sha256  fe00765dc6d34a7c7aef5994344d655139356fa9b62254ffe5ec4f1037dcf6e1  TheDiscDb.OpticalDiscParsers.Tests/fixtures/MPLS/UHD-B/00800.mpls
 sha256  a44f752cafdc82593cd94f3912fd053923874ef87e0d0458c485f6e5560d8aab  TheDiscDb.OpticalDiscParsers.Tests/fixtures/MPLS/UHD-B/00801.mpls
+sha256  b47b5a1df1477f7892fc26a1d4975db843b26d87143859fa5440af4017df5389  TheDiscDb.OpticalDiscParsers.Tests/fixtures/MPLS/UHD-C/00100.mpls

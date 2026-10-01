@@ -793,6 +793,7 @@ public sealed partial class OpticalDiscManifestGenerator
 
         var titles = new List<ManifestTitle>();
         var dolbyVisionClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var subPathClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         int playlistCandidates = 0;
         int parsedPlaylists = 0;
         foreach (var candidate in GetBluRayControlCandidates(files, "BDMV/PLAYLIST", "BDMV/BACKUP/PLAYLIST", ".mpls"))
@@ -834,10 +835,20 @@ public sealed partial class OpticalDiscManifestGenerator
                 }
             }
 
+            // Clips a playlist only plays alongside its main path (popup menus, secondary
+            // audio or video) are not playback candidates of their own; MakeMKV never lists them.
+            foreach (var subPath in playlist.SubPaths.Where(item => item.Type != DolbyVisionEnhancementLayerSubPathType))
+            {
+                foreach (var subPlayItem in subPath.SubPlayItems)
+                {
+                    subPathClips.Add(subPlayItem.ClipId);
+                }
+            }
+
             titles.Add(CreateBluRayTitle(result.Path, playlist, files, clpiByClip, diagnostics, null));
         }
 
-        titles = ReconcileBluRayTitles(titles, files, clpiByClip, dolbyVisionClips, diagnostics);
+        titles = ReconcileBluRayTitles(titles, files, clpiByClip, dolbyVisionClips, subPathClips, diagnostics);
 
         string? discName = await ReadBluRayDiscNameAsync(files, diagnostics, metrics, cancellationToken);
         if (playlistCandidates == 0)
@@ -942,7 +953,8 @@ public sealed partial class OpticalDiscManifestGenerator
     /// same titles a MakeMKV log of that disc would describe. Three reconciliations run,
     /// in order: a playlist that plays exactly like an earlier one and selects no stream
     /// it lacks collapses into it; stream files no retained playlist references, or that a Dolby Vision playlist plays,
-    /// are promoted to titles of their own; and a title whose only content is a single unchaptered clip,
+        /// are promoted to titles of their own, except clips a non-Dolby-Vision subpath (such
+        /// as a popup menu) plays, which are never playback candidates; and a title whose only content is a single unchaptered clip,
     /// played in full, is attributed to that clip's stream file, because the playlist adds
     /// nothing the stream does not already state. The result is then ordered with
     /// playlist-sourced titles ahead of stream-sourced ones. Each reconciliation is
@@ -953,6 +965,7 @@ public sealed partial class OpticalDiscManifestGenerator
         IReadOnlyList<NormalizedFile> files,
         IReadOnlyDictionary<string, ClpiFile> clpiByClip,
         IReadOnlySet<string> dolbyVisionClips,
+        IReadOnlySet<string> subPathClips,
         ICollection<ManifestDiagnostic> diagnostics)
     {
         var retained = new List<ManifestTitle>(titles.Count);
@@ -982,7 +995,7 @@ public sealed partial class OpticalDiscManifestGenerator
             retained.Add(title);
         }
 
-        var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var referenced = new HashSet<string>(subPathClips, StringComparer.OrdinalIgnoreCase);
         foreach (var title in retained)
         {
             foreach (var segment in title.Segments ?? [])
