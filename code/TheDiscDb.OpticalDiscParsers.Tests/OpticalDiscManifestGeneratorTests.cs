@@ -274,6 +274,150 @@ public sealed class OpticalDiscManifestGeneratorTests
             file => Assert.Equal(0, file.ReadCount));
     }
 
+    [Fact]
+    public async Task GenerateAsync_BluRay_CollapsesDuplicatePlaylistsAndPromotesUnreferencedStreams()
+    {
+        // The same playlist authored twice is one playback candidate, and a stream file
+        // no playlist reaches would otherwise never reach the identify flow at all.
+        string fixture = Path.Combine(fixturesPath, "MPLS", "BD-B", "00050.mpls");
+        var files = new[]
+        {
+            RecordingFile.FromDisk("BDMV/PLAYLIST/00050.mpls", fixture),
+            RecordingFile.FromDisk("BDMV/PLAYLIST/00051.mpls", fixture),
+            RecordingFile.Payload("BDMV/STREAM/00135.m2ts", 4096),
+            RecordingFile.Payload("BDMV/STREAM/00007.m2ts", 8192),
+            RecordingFile.Payload("BDMV/STREAM/00999.m2ts", 16384),
+        };
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('3', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var titles = result.Manifest.Disc.Titles!;
+        Assert.Equal(2, titles.Count);
+
+        // 00051 duplicates 00050 exactly, so only the first survives.
+        Assert.Equal("BDMV/PLAYLIST/00050.mpls", titles[0].Source!.Path);
+        var duplicate = Assert.Single(result.Diagnostics, item => item.Code == "ODM_BD_TITLE_DUPLICATE");
+        Assert.Equal("BDMV/PLAYLIST/00051.mpls", duplicate.Path);
+        Assert.Equal("info", duplicate.Severity);
+
+        // 00135 and 00007 are reachable through the playlist; only 00999 is orphaned.
+        var promoted = titles[1];
+        Assert.Equal("BDMV/STREAM/00999.m2ts", promoted.Source!.Path);
+        Assert.Equal(16384, promoted.SizeBytes);
+        Assert.Equal("00999", Assert.Single(promoted.Segments!).Clip);
+        Assert.Contains(result.Diagnostics, item => item.Code == "ODM_BD_STREAM_TITLES");
+
+        // Promotion is backed by file-size metadata alone; payload bytes stay unread.
+        Assert.All(
+            files.Where(file => file.Path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)),
+            file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public void CreateBluRayCompositionKey_DistinguishesTitlesThatPlayDifferently()
+    {
+        var baseline = CreateSegmentTitle(("00001", 0d, 10d, null));
+
+        Assert.Equal(
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(baseline),
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(
+                CreateSegmentTitle(("00001", 0d, 10d, null))));
+
+        Assert.NotEqual(
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(baseline),
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(
+                CreateSegmentTitle(("00002", 0d, 10d, null))));
+        Assert.NotEqual(
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(baseline),
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(
+                CreateSegmentTitle(("00001", 0d, 11d, null))));
+        Assert.NotEqual(
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(baseline),
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(
+                CreateSegmentTitle(("00001", 0d, 10d, 2))));
+        Assert.NotEqual(
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(baseline),
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(
+                CreateSegmentTitle(("00001", 0d, 10d, null), ("00002", 10d, 5d, null))));
+
+        // Two playlists over the same clips still differ when their chapter marks do.
+        var chaptered = baseline with
+        {
+            Chapters = [new ManifestChapter { StartSeconds = 0 }, new ManifestChapter { StartSeconds = 5 }],
+        };
+        Assert.NotEqual(
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(baseline),
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(chaptered));
+    }
+
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData(12.012, true)]
+    [InlineData(0.500489, true)]
+    [InlineData(0.041689, false)]
+    [InlineData(0d, false)]
+    public void IsPlayableStreamCandidate_RejectsOnlySingleFrameStubs(double? duration, bool expected)
+    {
+        // 0.041689s is one frame at 23.976fps: BD-J filler, not a playback candidate.
+        Assert.Equal(expected, OpticalDiscManifestGenerator.IsPlayableStreamCandidate(duration));
+    }
+
+    [Fact]
+    public void AttributeSingleClipTitleToStream_UsesStreamPathOnlyWhenThePlaylistAddsNothing()
+    {
+        IReadOnlySet<string> streams = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "BDMV/STREAM/00001.m2ts",
+            "BDMV/STREAM/00002.m2ts",
+        };
+
+        var single = CreateSegmentTitle(("00001", 0d, 10d, null));
+        Assert.Equal(
+            "BDMV/STREAM/00001.m2ts",
+            OpticalDiscManifestGenerator.AttributeSingleClipTitleToStream(single, streams).Source!.Path);
+
+        // A lone chapter mark is just the title's start, so it still adds nothing.
+        var oneChapter = single with { Chapters = [new ManifestChapter { StartSeconds = 0 }] };
+        Assert.Equal(
+            "BDMV/STREAM/00001.m2ts",
+            OpticalDiscManifestGenerator.AttributeSingleClipTitleToStream(oneChapter, streams).Source!.Path);
+
+        // Everything the playlist genuinely contributes keeps the playlist attribution.
+        var chaptered = single with
+        {
+            Chapters = [new ManifestChapter { StartSeconds = 0 }, new ManifestChapter { StartSeconds = 5 }],
+        };
+        var multiSegment = CreateSegmentTitle(("00001", 0d, 10d, null), ("00002", 10d, 5d, null));
+        var angled = CreateSegmentTitle(("00001", 0d, 10d, 1));
+        var missingStream = CreateSegmentTitle(("00777", 0d, 10d, null));
+        foreach (var title in new[] { chaptered, multiSegment, angled, missingStream })
+        {
+            Assert.Equal(
+                "BDMV/PLAYLIST/00050.mpls",
+                OpticalDiscManifestGenerator.AttributeSingleClipTitleToStream(title, streams).Source!.Path);
+        }
+    }
+
+    private static ManifestTitle CreateSegmentTitle(
+        params (string Clip, double Start, double Duration, int? Angle)[] segments)
+        => new()
+        {
+            Source = new ManifestTitleSource { Path = "BDMV/PLAYLIST/00050.mpls" },
+            Segments = segments
+                .Select(segment => new ManifestSegment
+                {
+                    Clip = segment.Clip,
+                    StartSeconds = segment.Start,
+                    DurationSeconds = segment.Duration,
+                    Angle = segment.Angle,
+                })
+                .ToArray(),
+        };
+
     /// <summary>
     /// Real long-playlist evidence captured from a mounted disc and cross-checked against its
     /// stored manifest. Clip byte sizes and segment ordering are retained as regression data;

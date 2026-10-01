@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -436,6 +437,13 @@ public sealed partial class OpticalDiscManifestGenerator
 
     private const long DvdSectorSizeBytes = 2048;
 
+    /// <summary>
+    /// The longest duration that can still be a single video frame, taken from the
+    /// slowest frame rate a BD-ROM stream may declare (23.976 fps, one frame every
+    /// ~0.0417 seconds) with a small tolerance.
+    /// </summary>
+    private const double SingleFrameSeconds = 0.05;
+
     private static bool TryGetProgramDurationSeconds(
         ProgramChain pgc,
         int programNumber,
@@ -668,6 +676,8 @@ public sealed partial class OpticalDiscManifestGenerator
             titles.Add(CreateBluRayTitle(result.Path, result.Value, files, clpiByClip, diagnostics));
         }
 
+        titles = ReconcileBluRayTitles(titles, files, clpiByClip, diagnostics);
+
         string? discName = await ReadBluRayDiscNameAsync(files, diagnostics, metrics, cancellationToken);
         if (playlistCandidates == 0)
         {
@@ -763,6 +773,218 @@ public sealed partial class OpticalDiscManifestGenerator
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Aligns the playlist-derived title list with the set of playback candidates an
+    /// optical disc actually offers, so a manifest produced from the disc describes the
+    /// same titles a MakeMKV log of that disc would describe. Three reconciliations run,
+    /// in order: playlists with an identical segment composition collapse to one title;
+    /// stream files no retained playlist references are promoted to titles of their own so
+    /// they stay reachable; and a title whose only content is a single unchaptered clip is
+    /// attributed to that clip's stream file, because the playlist adds nothing the stream
+    /// does not already state. Each reconciliation is evidence-driven and never discards a
+    /// distinct playback candidate.
+    /// </summary>
+    private static List<ManifestTitle> ReconcileBluRayTitles(
+        IReadOnlyList<ManifestTitle> titles,
+        IReadOnlyList<NormalizedFile> files,
+        IReadOnlyDictionary<string, ClpiFile> clpiByClip,
+        ICollection<ManifestDiagnostic> diagnostics)
+    {
+        var retained = new List<ManifestTitle>(titles.Count);
+        var compositions = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var title in titles)
+        {
+            string composition = CreateBluRayCompositionKey(title);
+            if (compositions.TryGetValue(composition, out string? original))
+            {
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_BD_TITLE_DUPLICATE",
+                    Message = $"Playlist has the same segment composition as {original ?? "an earlier playlist"} and is not emitted as a separate title.",
+                    Path = title.Source?.Path,
+                });
+                continue;
+            }
+
+            compositions[composition] = title.Source?.Path;
+            retained.Add(title);
+        }
+
+        var referenced = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var title in retained)
+        {
+            foreach (var segment in title.Segments ?? [])
+            {
+                referenced.Add(segment.Clip);
+            }
+
+            // A stereoscopic dependent view is carried by the title it pairs with rather
+            // than by a segment, so it is already reachable and is not its own candidate.
+            if (title.Stereoscopic3D is { } view)
+            {
+                referenced.Add(view.BaseClipId);
+                referenced.Add(view.DependentClipId);
+            }
+        }
+
+        var streamPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in files.Where(item => IsControlFile(item.Path, "BDMV/STREAM", ".m2ts")))
+        {
+            streamPaths.Add(file.Path);
+        }
+
+        var promoted = files
+            .Where(item => IsControlFile(item.Path, "BDMV/STREAM", ".m2ts"))
+            .Where(item => !referenced.Contains(Path.GetFileNameWithoutExtension(item.Path)))
+            .Where(item => IsPlayableStreamCandidate(
+                GetClipDurationSeconds(Path.GetFileNameWithoutExtension(item.Path), clpiByClip)))
+            .OrderBy(item => item.Path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        foreach (var file in promoted)
+        {
+            string clipId = Path.GetFileNameWithoutExtension(file.Path);
+            retained.Add(CreateBluRayStreamTitle(file, clipId, GetClip(clipId, clpiByClip)));
+        }
+
+        if (promoted.Length > 0)
+        {
+            diagnostics.Add(new ManifestDiagnostic
+            {
+                Severity = "info",
+                Code = "ODM_BD_STREAM_TITLES",
+                Message = $"Promoted {promoted.Length} stream file(s) to titles because no playlist references them.",
+            });
+        }
+
+        for (int index = 0; index < retained.Count; index++)
+        {
+            retained[index] = AttributeSingleClipTitleToStream(retained[index], streamPaths);
+        }
+
+        return retained;
+    }
+
+    private static ClpiFile? GetClip(string clipId, IReadOnlyDictionary<string, ClpiFile> clpiByClip)
+        => clpiByClip.TryGetValue(clipId, out var clpi) ? clpi : null;
+
+    private static double? GetClipDurationSeconds(
+        string clipId,
+        IReadOnlyDictionary<string, ClpiFile> clpiByClip)
+    {
+        var summary = GetClip(clipId, clpiByClip)?.PresentationSummary;
+        return summary is not null ? TicksToSeconds(summary.DurationTicks45k) : null;
+    }
+
+    /// <summary>
+    /// Decides whether a stream file no playlist references is worth promoting to a
+    /// title. A stream whose CLPI declares a duration no longer than a single video
+    /// frame is a BD-J placeholder or filler asset rather than a playback candidate, so
+    /// it stays a clip. A stream with no CLPI evidence is promoted, because there is
+    /// nothing on which to rule it out.
+    /// </summary>
+    internal static bool IsPlayableStreamCandidate(double? clipDurationSeconds)
+        => clipDurationSeconds is not { } duration || duration > SingleFrameSeconds;
+
+    /// <summary>
+    /// Builds a comparison key describing what a title actually plays: its ordered
+    /// segments with their angle and timing, its stereoscopic pairing, and how many
+    /// chapter marks it declares. Two playlists sharing this key are indistinguishable
+    /// during playback, so only the first is emitted.
+    /// </summary>
+    internal static string CreateBluRayCompositionKey(ManifestTitle title)
+    {
+        var builder = new StringBuilder();
+        foreach (var segment in title.Segments ?? [])
+        {
+            builder.Append(segment.Clip)
+                .Append('@')
+                .Append(segment.StartSeconds?.ToString("R", CultureInfo.InvariantCulture) ?? "-")
+                .Append('+')
+                .Append(segment.DurationSeconds?.ToString("R", CultureInfo.InvariantCulture) ?? "-")
+                .Append('#')
+                .Append(segment.Angle?.ToString(CultureInfo.InvariantCulture) ?? "-")
+                .Append(';');
+        }
+
+        return builder
+            .Append('|')
+            .Append(title.Stereoscopic3D?.DependentClipId ?? "-")
+            .Append('|')
+            .Append((title.Chapters?.Count ?? 0).ToString(CultureInfo.InvariantCulture))
+            .ToString();
+    }
+
+    /// <summary>
+    /// Re-attributes a title to its stream file when the playlist contributes nothing
+    /// beyond the clip itself: exactly one segment, no alternate angle, no stereoscopic
+    /// pairing, and at most one chapter mark. The segments are left untouched, so the
+    /// clip the title plays is still stated explicitly.
+    /// </summary>
+    internal static ManifestTitle AttributeSingleClipTitleToStream(
+        ManifestTitle title,
+        IReadOnlySet<string> streamPaths)
+    {
+        if (title.Segments is not { Count: 1 }
+            || title.Stereoscopic3D is not null
+            || title.Chapters is { Count: > 1 })
+        {
+            return title;
+        }
+
+        var segment = title.Segments[0];
+        if (segment.Angle is not null)
+        {
+            return title;
+        }
+
+        string streamPath = $"BDMV/STREAM/{segment.Clip}.m2ts";
+        if (!streamPaths.Contains(streamPath))
+        {
+            return title;
+        }
+
+        return title with
+        {
+            Source = (title.Source ?? new ManifestTitleSource()) with { Path = streamPath },
+        };
+    }
+
+    /// <summary>
+    /// Creates a title for a stream file that no playlist references. Its duration and
+    /// streams come from the matching CLPI control file when one exists; nothing is
+    /// inferred from the M2TS payload, which is never read.
+    /// </summary>
+    private static ManifestTitle CreateBluRayStreamTitle(
+        NormalizedFile file,
+        string clipId,
+        ClpiFile? clpi)
+    {
+        double? duration = clpi?.PresentationSummary is not null
+            ? TicksToSeconds(clpi.PresentationSummary.DurationTicks45k)
+            : null;
+        var streams = clpi is not null ? CreateClpiStreams(clpi) : [];
+        return new ManifestTitle
+        {
+            Source = new ManifestTitleSource
+            {
+                Path = file.Path,
+            },
+            DurationSeconds = duration,
+            SizeBytes = file.File.Size,
+            Segments =
+            [
+                new ManifestSegment
+                {
+                    Clip = clipId,
+                    StartSeconds = 0,
+                    DurationSeconds = duration,
+                },
+            ],
+            Streams = streams.Count > 0 ? streams : null,
+        };
     }
 
     /// <summary>
