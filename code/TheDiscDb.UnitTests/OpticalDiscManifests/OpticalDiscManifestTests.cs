@@ -464,6 +464,29 @@ public class OpticalDiscManifestMapperTests
     }
 
     [Test]
+    [Arguments(82825216L, "78.9 MB")]
+    [Arguments(13604864L, "12.9 MB")]
+    [Arguments(442368L, "0.4 MB")]
+    [Arguments(2164613120L, "2.0 GB")]
+    [Arguments(5815142400L, "5.4 GB")]
+    public async Task ToDiscInfo_TruncatesDisplaySizeLikeMakeMkv(long sizeBytes, string expected)
+    {
+        var document = new OpticalDiscManifestDocument
+        {
+            SchemaVersion = 1,
+            Disc = new OpticalDiscManifestDisc
+            {
+                Format = "dvd",
+                Titles = { new OpticalDiscManifestTitle { SizeBytes = sizeBytes } }
+            }
+        };
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(document);
+
+        await Assert.That(info.Titles[0].DisplaySize).IsEqualTo(expected);
+    }
+
+    [Test]
     public async Task ToDiscInfo_FallsBackToTheChapterListWhenChapterCountIsAbsent()
     {
         var document = new OpticalDiscManifestDocument

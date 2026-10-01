@@ -314,11 +314,12 @@ public static class OpticalDiscManifestMapper
             return null;
         }
 
-        const double Gigabyte = 1024d * 1024d * 1024d;
-        const double Megabyte = 1024d * 1024d;
+        const long Gigabyte = 1024L * 1024L * 1024L;
+        const long Megabyte = 1024L * 1024L;
 
-        return sizeBytes >= Gigabyte
-            ? string.Create(CultureInfo.InvariantCulture, $"{sizeBytes / Gigabyte:0.0} GB")
-            : string.Create(CultureInfo.InvariantCulture, $"{sizeBytes / Megabyte:0.0} MB");
+        // MakeMKV truncates (not rounds) to one decimal: 82,825,216 bytes (78.99 MiB) reads "78.9 MB".
+        var (divisor, unit) = sizeBytes >= Gigabyte ? (Gigabyte, "GB") : (Megabyte, "MB");
+        var tenths = sizeBytes * 10 / divisor;
+        return string.Create(CultureInfo.InvariantCulture, $"{tenths / 10}.{tenths % 10} {unit}");
     }
 }
