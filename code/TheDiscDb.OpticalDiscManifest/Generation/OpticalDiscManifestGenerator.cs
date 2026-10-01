@@ -940,8 +940,8 @@ public sealed partial class OpticalDiscManifestGenerator
     /// Aligns the playlist-derived title list with the set of playback candidates an
     /// optical disc actually offers, so a manifest produced from the disc describes the
     /// same titles a MakeMKV log of that disc would describe. Three reconciliations run,
-    /// in order: playlists with an identical segment composition collapse to one title;
-    /// stream files no retained playlist references, or that a Dolby Vision playlist plays,
+    /// in order: a playlist that plays exactly like an earlier one and selects no stream
+    /// it lacks collapses into it; stream files no retained playlist references, or that a Dolby Vision playlist plays,
     /// are promoted to titles of their own; and a title whose only content is a single unchaptered clip,
     /// played in full, is attributed to that clip's stream file, because the playlist adds
     /// nothing the stream does not already state. The result is then ordered with
@@ -956,23 +956,29 @@ public sealed partial class OpticalDiscManifestGenerator
         ICollection<ManifestDiagnostic> diagnostics)
     {
         var retained = new List<ManifestTitle>(titles.Count);
-        var compositions = new Dictionary<string, string?>(StringComparer.Ordinal);
+        var compositions = new Dictionary<string, List<ManifestTitle>>(StringComparer.Ordinal);
         foreach (var title in titles)
         {
             string composition = CreateBluRayCompositionKey(title);
-            if (compositions.TryGetValue(composition, out string? original))
+            if (!compositions.TryGetValue(composition, out var samePlayback))
+            {
+                compositions[composition] = samePlayback = [];
+            }
+
+            var original = samePlayback.FirstOrDefault(earlier => SelectsNoStreamBeyond(title, earlier));
+            if (original is not null)
             {
                 diagnostics.Add(new ManifestDiagnostic
                 {
                     Severity = "info",
                     Code = "ODM_BD_TITLE_DUPLICATE",
-                    Message = $"Playlist has the same segment composition as {original ?? "an earlier playlist"} and is not emitted as a separate title.",
+                    Message = $"Playlist plays the same as {original.Source?.Path ?? "an earlier playlist"} and selects no stream it lacks, so it is not emitted as a separate title.",
                     Path = title.Source?.Path,
                 });
                 continue;
             }
 
-            compositions[composition] = title.Source?.Path;
+            samePlayback.Add(title);
             retained.Add(title);
         }
 
@@ -1102,13 +1108,11 @@ public sealed partial class OpticalDiscManifestGenerator
         => clipDurationSeconds is not { } duration || duration > SingleFrameSeconds;
 
     /// <summary>
-    /// Builds a comparison key describing what a title actually plays: its ordered
-    /// segments with their angle and timing, its stereoscopic pairing, how many chapter
-    /// marks it declares, and the streams its playlist selects. Two playlists sharing
-    /// this key are indistinguishable during playback, so only the first is emitted.
-    /// Streams are part of the key because discs routinely author playlists over the
-    /// same clips that differ only in their audio or subtitle selection (for example a
-    /// commentary variant), and MakeMKV lists those separately.
+    /// Builds a comparison key describing how a title plays: its ordered segments with
+    /// their angle and timing, its stereoscopic pairing, and where its chapter marks
+    /// fall. Streams are deliberately left out; <see cref="SelectsNoStreamBeyond"/>
+    /// compares them separately, because MakeMKV only skips a same-playback playlist when
+    /// its stream selection adds nothing.
     /// </summary>
     internal static string CreateBluRayCompositionKey(ManifestTitle title)
     {
@@ -1128,23 +1132,41 @@ public sealed partial class OpticalDiscManifestGenerator
         builder
             .Append('|')
             .Append(title.Stereoscopic3D?.DependentClipId ?? "-")
-            .Append('|')
-            .Append((title.Chapters?.Count ?? 0).ToString(CultureInfo.InvariantCulture))
             .Append('|');
 
-        foreach (var stream in title.Streams ?? [])
+        foreach (var chapter in title.Chapters ?? [])
         {
-            builder.Append(stream.Type)
-                .Append(':').Append(stream.Codec)
-                .Append(':').Append(stream.Pid?.ToString(CultureInfo.InvariantCulture) ?? "-")
-                .Append(':').Append(stream.Language ?? "-")
-                .Append(':').Append(stream.Category ?? "-")
-                .Append(':').Append(stream.AudioLayout ?? "-")
-                .Append(';');
+            builder.Append(chapter.StartSeconds.ToString("R", CultureInfo.InvariantCulture)).Append(';');
         }
 
         return builder.ToString();
     }
+
+    /// <summary>
+    /// Decides whether a playlist that plays exactly like an earlier one selects any
+    /// stream the earlier one lacks. MakeMKV reports such a playlist as "equal to" the
+    /// earlier title and skips it: on 2001: A Space Odyssey (UHD) 00090.mpls and
+    /// 00103.mpls are byte-identical to 00089.mpls apart from selecting 40 and 9 of its
+    /// 44 streams, and both are skipped. A playlist that adds a stream (a commentary
+    /// track, say) is a distinct presentation and MakeMKV lists it, as it does for the
+    /// 986 kept same-playback pairs in the TheDiscDb log corpus whose stream sets are
+    /// not nested.
+    /// </summary>
+    internal static bool SelectsNoStreamBeyond(ManifestTitle title, ManifestTitle earlier)
+    {
+        var available = new HashSet<string>((earlier.Streams ?? []).Select(CreateStreamKey), StringComparer.Ordinal);
+        return (title.Streams ?? []).All(stream => available.Contains(CreateStreamKey(stream)));
+    }
+
+    private static string CreateStreamKey(ManifestStream stream)
+        => string.Join(
+            ':',
+            stream.Type,
+            stream.Codec,
+            stream.Pid?.ToString(CultureInfo.InvariantCulture) ?? "-",
+            stream.Language ?? "-",
+            stream.Category ?? "-",
+            stream.AudioLayout ?? "-");
 
     /// <summary>
     /// Re-attributes a title to its stream file when the playlist contributes nothing

@@ -373,7 +373,8 @@ public sealed class OpticalDiscManifestGeneratorTests
             OpticalDiscManifestGenerator.CreateBluRayCompositionKey(
                 CreateSegmentTitle(("00001", 0d, 10d, null), ("00002", 10d, 5d, null))));
 
-        // Two playlists over the same clips still differ when their chapter marks do.
+        // Two playlists over the same clips still differ when their chapter marks do,
+        // in number or in position.
         var chaptered = baseline with
         {
             Chapters = [new ManifestChapter { StartSeconds = 0 }, new ManifestChapter { StartSeconds = 5 }],
@@ -381,9 +382,18 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.NotEqual(
             OpticalDiscManifestGenerator.CreateBluRayCompositionKey(baseline),
             OpticalDiscManifestGenerator.CreateBluRayCompositionKey(chaptered));
+        Assert.NotEqual(
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(chaptered),
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(baseline with
+            {
+                Chapters = [new ManifestChapter { StartSeconds = 0 }, new ManifestChapter { StartSeconds = 6 }],
+            }));
+    }
 
-        // Playlists over the same clips that select different audio (a commentary
-        // variant, say) are distinct presentations.
+    [Fact]
+    public void SelectsNoStreamBeyond_SkipsOnlyPlaylistsThatAddNoStream()
+    {
+        var baseline = CreateSegmentTitle(("00001", 0d, 10d, null));
         var english = baseline with
         {
             Streams = [new ManifestStream { Type = "audio", Codec = "ac3", Pid = 0x1100, Language = "eng" }],
@@ -396,12 +406,19 @@ public sealed class OpticalDiscManifestGeneratorTests
                 new ManifestStream { Type = "audio", Codec = "ac3", Pid = 0x1101, Language = "eng" },
             ],
         };
-        Assert.NotEqual(
-            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(english),
-            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(commentary));
+
+        // Stream selection does not change how a title plays.
         Assert.Equal(
             OpticalDiscManifestGenerator.CreateBluRayCompositionKey(english),
-            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(english with { }));
+            OpticalDiscManifestGenerator.CreateBluRayCompositionKey(commentary));
+
+        // A later playlist adding a commentary track is a distinct presentation...
+        Assert.False(OpticalDiscManifestGenerator.SelectsNoStreamBeyond(commentary, english));
+
+        // ...but one selecting a subset of an earlier playlist's streams is the same
+        // title to MakeMKV ("Title 00090.mpls is equal to title 00089.mpls").
+        Assert.True(OpticalDiscManifestGenerator.SelectsNoStreamBeyond(english, commentary));
+        Assert.True(OpticalDiscManifestGenerator.SelectsNoStreamBeyond(english, english with { }));
     }
 
     [Theory]
