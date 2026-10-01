@@ -175,8 +175,12 @@ public static class OpticalDiscManifestMapper
         }
 
         // MakeMKV records only the file name, not the full BDMV path. The source is a playlist for
-        // most titles and a stream file for titles backed directly by a clip.
-        return FileName(path);
+        // most titles and a stream file for titles backed directly by a clip. MakeMKV names the
+        // later parts of a playlist it splits "00005.mpls(1)", "00005.mpls(2)" and so on.
+        string? name = FileName(path);
+        return source.Part is > 0 && name is not null
+            ? $"{name}({source.Part.Value.ToString(CultureInfo.InvariantCulture)})"
+            : name;
     }
 
     private static string? FileName(string? path)
@@ -233,8 +237,9 @@ public static class OpticalDiscManifestMapper
             return null;
         }
 
-        // MakeMKV writes durations as h:mm:ss, which is what Title.LengthAsTimeSpan parses back.
-        return TimeSpan.FromSeconds(Math.Round(seconds)).ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture);
+        // MakeMKV writes durations as h:mm:ss, truncating partial seconds (a 2557.76 second title
+        // reads 0:42:37), which is what Title.LengthAsTimeSpan parses back.
+        return TimeSpan.FromSeconds(Math.Floor(seconds)).ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture);
     }
 
     private static string? FormatDisplaySize(long sizeBytes)

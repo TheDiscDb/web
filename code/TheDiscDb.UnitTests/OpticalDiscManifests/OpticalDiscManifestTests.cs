@@ -223,6 +223,39 @@ public class OpticalDiscManifestMapperTests
     }
 
     [Test]
+    public async Task ToDiscInfo_NamesSplitPlaylistPartsAndTruncatesLengthsLikeMakeMkv()
+    {
+        // MakeMKV splits a playlist at a non-seamless connection and names the later parts
+        // "00005.mpls(1)". It also truncates lengths: a 92.9s title shows as 0:01:32.
+        const string WithParts = """
+            {
+              "schemaVersion": 1,
+              "producer": { "name": "thediscdb", "version": "1.0.0" },
+              "disc": {
+                "format": "blu-ray",
+                "identifiers": [
+                  { "kind": "thediscdb-content-hash", "value": "57B059114B517DF43BE4D05FCA0869FA" }
+                ],
+                "titles": [
+                  { "source": { "path": "BDMV/PLAYLIST/00005.mpls", "part": 0 }, "durationSeconds": 2557.764 },
+                  { "source": { "path": "BDMV/PLAYLIST/00005.mpls", "part": 1 }, "durationSeconds": 92.9 }
+                ]
+              }
+            }
+            """;
+
+        var result = new OpticalDiscManifestValidator().Parse(WithParts);
+        await Assert.That(result.Error).IsNull();
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(result.Document!);
+
+        await Assert.That(info.Titles[0].Playlist).IsEqualTo("00005.mpls");
+        await Assert.That(info.Titles[0].Length).IsEqualTo("0:42:37");
+        await Assert.That(info.Titles[1].Playlist).IsEqualTo("00005.mpls(1)");
+        await Assert.That(info.Titles[1].Length).IsEqualTo("0:01:32");
+    }
+
+    [Test]
     public async Task ToDiscInfo_AlwaysProducesASegmentMap()
     {
         // The identify flow sends SegmentMap to a non-null GraphQL input, so a null here fails the

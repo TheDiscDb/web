@@ -81,6 +81,7 @@ public sealed class OpticalDiscManifestTitleSource
     public int? Title { get; set; }
     public int? TitleSet { get; set; }
     public int? TitleSetTitle { get; set; }
+    public int? Part { get; set; }
 }
 
 public sealed class OpticalDiscManifestChapter

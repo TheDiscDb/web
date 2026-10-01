@@ -409,11 +409,12 @@ public sealed class OpticalDiscManifestGeneratorTests
             "BDMV/STREAM/00001.m2ts",
             OpticalDiscManifestGenerator.AttributeSingleClipTitleToStream(single, streams, durationOf).Source!.Path);
 
-        // A lone chapter mark is just the title's start, so it still adds nothing.
+        // A lone chapter mark is just the title's start, so it still adds nothing, and a
+        // stream-sourced title carries no chapters, as in MakeMKV.
         var oneChapter = single with { Chapters = [new ManifestChapter { StartSeconds = 0 }] };
-        Assert.Equal(
-            "BDMV/STREAM/00001.m2ts",
-            OpticalDiscManifestGenerator.AttributeSingleClipTitleToStream(oneChapter, streams, durationOf).Source!.Path);
+        var attributed = OpticalDiscManifestGenerator.AttributeSingleClipTitleToStream(oneChapter, streams, durationOf);
+        Assert.Equal("BDMV/STREAM/00001.m2ts", attributed.Source!.Path);
+        Assert.Null(attributed.Chapters);
 
         // Everything the playlist genuinely contributes keeps the playlist attribution.
         var chaptered = single with
@@ -463,6 +464,129 @@ public sealed class OpticalDiscManifestGeneratorTests
                 "BDMV/STREAM/00012.m2ts",
             ],
             ordered.Select(title => title.Source!.Path));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_MatchesMakeMkvTitleListForHellOnWheelsDisc()
+    {
+        // Real control files from Hell on Wheels Season 1 Disc 1 (fixture set BD-C),
+        // compared with a MakeMKV 1.18.3 log of the same disc. MakeMKV lists exactly these
+        // titles, with these chapter counts and h:mm:ss lengths (partial seconds truncated).
+        (string Clip, long Size)[] streams =
+        [
+            ("00000", 7910012928), ("00001", 15003648), ("00002", 5812224), ("00003", 5407795200),
+            ("00004", 5895487488), ("00005", 7580424192), ("00006", 110592), ("00007", 1013760),
+            ("00008", 119734272), ("00009", 2328576), ("00010", 6936576), ("00011", 405504),
+            ("00012", 4294656), ("00013", 243701760), ("00014", 246521856), ("00015", 61022208),
+            ("00016", 2476032), ("00017", 24576), ("00018", 325570560),
+        ];
+        var files = new List<RecordingFile>();
+        AddDirectory(files, Path.Combine(fixturesPath, "MPLS", "BD-C"), "BDMV/PLAYLIST");
+        AddDirectory(files, Path.Combine(fixturesPath, "CLPI", "BD-C"), "BDMV/CLIPINF");
+        files.AddRange(streams.Select(stream => RecordingFile.Payload($"BDMV/STREAM/{stream.Clip}.m2ts", stream.Size)));
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('4', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title =>
+            {
+                string name = Path.GetFileName(title.Source!.Path!);
+                if (title.Source.Part is > 0)
+                {
+                    name += $"({title.Source.Part})";
+                }
+
+                return (name, title.Chapters?.Count ?? 0, (int)Math.Floor(title.DurationSeconds!.Value), title.SizeBytes);
+            })
+            .ToArray();
+
+        Assert.Equal<(string, int, int, long?)>(
+            [
+                ("00000.mpls", 6, 2535, 5407795200),
+                ("00004.mpls", 6, 2694, 7910012928),
+                ("00005.mpls(1)", 2, 92, 243701760),
+                ("00006.mpls", 2, 93, 246521856),
+                ("00012.mpls", 6, 2571, 7580424192),
+                ("00013.mpls", 6, 2557, 5895487488),
+                ("00001.m2ts", 0, 15, 15003648),
+                ("00002.m2ts", 0, 12, 5812224),
+                ("00006.m2ts", 0, 0, 110592),
+                ("00007.m2ts", 0, 5, 1013760),
+                ("00008.m2ts", 0, 30, 119734272),
+                ("00010.m2ts", 0, 9, 6936576),
+                ("00011.m2ts", 0, 0, 405504),
+                ("00012.m2ts", 0, 7, 4294656),
+                ("00015.m2ts", 0, 80, 61022208),
+                ("00017.m2ts", 0, 1, 24576),
+                ("00018.m2ts", 0, 100, 325570560),
+            ],
+            actual);
+    }
+
+    [Fact]
+    public void SplitBluRayPlaylist_SplitsOnlyAtNonSeamlessConnections()
+    {
+        var playlist = CreateMultiItemPlaylist(
+            [("00010", 1, 0), ("00011", 5, 0), ("00013", 1, 0)],
+            [(0, 0u), (1, 0u), (2, 0u), (2, 900u)]);
+
+        var parts = OpticalDiscManifestGenerator.SplitBluRayPlaylist(playlist);
+
+        Assert.Equal(2, parts.Count);
+        Assert.Equal(["00010", "00011"], parts[0].PlayItems.Select(item => item.ClipId));
+        Assert.Equal([0, 1], parts[0].PlayItems.Select(item => item.Index));
+        Assert.Equal([0, 1], parts[0].Marks.Select(mark => mark.PlayItemReference));
+        Assert.Equal(["00013"], parts[1].PlayItems.Select(item => item.ClipId));
+        Assert.Equal([0], parts[1].PlayItems.Select(item => item.Index));
+        Assert.Equal([0, 0], parts[1].Marks.Select(mark => mark.PlayItemReference));
+        Assert.Equal([0, 1], parts[1].Marks.Select(mark => mark.Index));
+    }
+
+    [Fact]
+    public void SplitBluRayPlaylist_KeepsSeamlessAndStillPlaylistsWhole()
+    {
+        var seamless = CreateMultiItemPlaylist([("00010", 1, 0), ("00011", 6, 0)], [(0, 0u)]);
+        // Mirrors Avengers: Age of Ultron's 00050.mpls, which MakeMKV lists as one title.
+        var stills = CreateMultiItemPlaylist([("00135", 1, 2), ("00007", 1, 2)], [(0, 0u), (1, 0u)]);
+
+        Assert.Same(seamless, Assert.Single(OpticalDiscManifestGenerator.SplitBluRayPlaylist(seamless)));
+        Assert.Same(stills, Assert.Single(OpticalDiscManifestGenerator.SplitBluRayPlaylist(stills)));
+    }
+
+    private static MplsPlaylist CreateMultiItemPlaylist(
+        IReadOnlyList<(string Clip, int ConnectionCondition, int StillMode)> items,
+        IReadOnlyList<(int PlayItem, uint Time)> marks)
+    {
+        var template = CreateSyntheticPlaylist(45_000, []);
+        var playItem = template.PlayItems[0];
+        return template with
+        {
+            PlayItems = items
+                .Select((item, index) => playItem with
+                {
+                    Index = index,
+                    ClipId = item.Clip,
+                    ConnectionCondition = item.ConnectionCondition,
+                    StillMode = item.StillMode,
+                    Clips = [new MplsClipReference { ClipId = item.Clip, CodecId = "M2TS", StcId = 0 }],
+                })
+                .ToArray(),
+            Marks = marks
+                .Select((mark, index) => new MplsPlaylistMark
+                {
+                    Index = index,
+                    MarkType = MplsPlaylistMark.EntryMarkType,
+                    PlayItemReference = mark.PlayItem,
+                    Time = mark.Time,
+                    EntryElementaryStreamPid = 0,
+                    Duration = 0,
+                })
+                .ToArray(),
+        };
     }
 
     private static ManifestTitle CreateSegmentTitle(

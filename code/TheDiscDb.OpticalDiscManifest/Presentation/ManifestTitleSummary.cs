@@ -37,8 +37,9 @@ public static class ManifestTitleSummaryBuilder
         return new ManifestTitleSummaryRow
         {
             Index = index,
-            SourcePath = title.Source.Path
-                ?? (title.Source.Title is int number ? $"DVD title {number}" : "Disc title"),
+            SourcePath = title.Source.Path is { } path
+                ? title.Source.Part is > 0 ? $"{path} (part {title.Source.Part})" : path
+                : (title.Source.Title is int number ? $"DVD title {number}" : "Disc title"),
             DurationSeconds = title.DurationSeconds,
             DurationDisplay = ManifestSummaryFormatting.FormatDuration(title.DurationSeconds),
             ChapterCount = title.Chapters?.Count,

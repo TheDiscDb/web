@@ -673,7 +673,28 @@ public sealed partial class OpticalDiscManifestGenerator
 
             parsedPlaylists++;
             isUhd |= result.Value.Version == "0300";
-            titles.Add(CreateBluRayTitle(result.Path, result.Value, files, clpiByClip, diagnostics));
+            var parts = SplitBluRayPlaylist(result.Value);
+            if (parts.Count > 1)
+            {
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_BD_PLAYLIST_SPLIT",
+                    Message = $"Playlist has {parts.Count - 1} non-seamless connection(s) and is emitted as {parts.Count} separately playable parts.",
+                    Path = result.Path,
+                });
+            }
+
+            for (int part = 0; part < parts.Count; part++)
+            {
+                titles.Add(CreateBluRayTitle(
+                    result.Path,
+                    parts[part],
+                    files,
+                    clpiByClip,
+                    diagnostics,
+                    parts.Count > 1 ? part : null));
+            }
         }
 
         titles = ReconcileBluRayTitles(titles, files, clpiByClip, diagnostics);
@@ -868,6 +889,31 @@ public sealed partial class OpticalDiscManifestGenerator
                 clipId => GetClipDurationSeconds(clipId, clpiByClip));
         }
 
+        // Attribution can leave two titles naming the same stream file, for example a
+        // playlist part and a playlist that both play one clip in full but declare
+        // different streams. A stream file is one playback candidate, so only the first
+        // title naming it is kept.
+        var streamSources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        retained.RemoveAll(title =>
+        {
+            string? path = title.Source?.Path;
+            if (path is null
+                || !path.StartsWith("BDMV/STREAM/", StringComparison.OrdinalIgnoreCase)
+                || streamSources.Add(path))
+            {
+                return false;
+            }
+
+            diagnostics.Add(new ManifestDiagnostic
+            {
+                Severity = "info",
+                Code = "ODM_BD_TITLE_DUPLICATE",
+                Message = $"Title plays the same stream file as an earlier title and is not emitted separately.",
+                Path = path,
+            });
+            return true;
+        });
+
         return OrderBluRayTitles(retained);
     }
 
@@ -965,7 +1011,8 @@ public sealed partial class OpticalDiscManifestGenerator
     /// that trims its clip is a different presentation, so it keeps its playlist
     /// attribution, as MakeMKV does. When the clip's duration is unknown, coverage cannot
     /// be shown and the playlist attribution is kept. The segments are left untouched, so
-    /// the clip the title plays is still stated explicitly.
+    /// the clip the title plays is still stated explicitly; the chapters are dropped,
+    /// because a stream file carries no chapter marks of its own.
     /// </summary>
     internal static ManifestTitle AttributeSingleClipTitleToStream(
         ManifestTitle title,
@@ -1000,7 +1047,12 @@ public sealed partial class OpticalDiscManifestGenerator
 
         return title with
         {
-            Source = (title.Source ?? new ManifestTitleSource()) with { Path = streamPath },
+            Source = (title.Source ?? new ManifestTitleSource()) with { Path = streamPath, Part = null },
+            // MakeMKV never reports chapters for a title sourced from a stream file (none
+            // of the 138,304 stream titles in the TheDiscDb log corpus carry a chapter
+            // count), and the at most one mark a re-attributed title can have only marks
+            // the start of the clip.
+            Chapters = null,
         };
     }
 
@@ -1088,7 +1140,8 @@ public sealed partial class OpticalDiscManifestGenerator
         MplsPlaylist playlist,
         IReadOnlyList<NormalizedFile> files,
         IReadOnlyDictionary<string, ClpiFile> clpiByClip,
-        ICollection<ManifestDiagnostic> diagnostics)
+        ICollection<ManifestDiagnostic> diagnostics,
+        int? part = null)
     {
         long cumulativeTicks = 0;
         var segments = new List<ManifestSegment>(playlist.PlayItems.Count);
@@ -1134,17 +1187,23 @@ public sealed partial class OpticalDiscManifestGenerator
             }
         }
 
-        var chapters = CreateBluRayChapters(playlist, diagnostics, path);
+        long presentationTicks = cumulativeTicks + GetTrailingClipTicks(playlist, clpiByClip);
+        var chapters = CreateBluRayChapters(playlist, diagnostics, path, presentationTicks);
         var streams = CreateBluRayStreams(playlist, clpiByClip);
         var stereoscopic3D = CreateStereoscopicView(playlist, diagnostics, path);
-        AddUnsupportedExtensionDiagnostics(playlist, diagnostics, path);
+        if (part is null or 0)
+        {
+            AddUnsupportedExtensionDiagnostics(playlist, diagnostics, path);
+        }
+
         return new ManifestTitle
         {
             Source = new ManifestTitleSource
             {
                 Path = path,
+                Part = part,
             },
-            DurationSeconds = TicksToSeconds(cumulativeTicks),
+            DurationSeconds = TicksToSeconds(presentationTicks),
             SizeBytes = ComputeTitleSizeBytes(segments, stereoscopic3D, files),
             Chapters = chapters.Count > 0 ? chapters : null,
             Segments = segments,
@@ -1152,6 +1211,97 @@ public sealed partial class OpticalDiscManifestGenerator
             Stereoscopic3D = stereoscopic3D,
             Extensions = CreateUnsupportedExtensionEvidence(playlist),
         };
+    }
+
+    /// <summary>
+    /// Splits a playlist into the parts MakeMKV presents as separate titles. MakeMKV
+    /// starts a new part at every play item whose connection condition is 1
+    /// (non-seamless); seamless connections (5 and 6) stay within one part. The later
+    /// parts appear in MakeMKV as <c>00005.mpls(1)</c>, <c>00005.mpls(2)</c> and so on.
+    /// Each part is returned as a playlist of its own, with play items re-indexed and
+    /// marks re-referenced to them, so title creation is unchanged. Stereoscopic
+    /// playlists are never split, because their base/dependent pairing is declared
+    /// against the whole playlist. Playlists with still-frame play items are never split
+    /// either: Avengers: Age of Ultron's <c>00050.mpls</c> joins two still items with a
+    /// non-seamless connection, and MakeMKV lists it as one title.
+    /// </summary>
+    internal static IReadOnlyList<MplsPlaylist> SplitBluRayPlaylist(MplsPlaylist playlist)
+    {
+        const int NonSeamlessConnection = 1;
+
+        var items = playlist.PlayItems.OrderBy(item => item.Index).ToArray();
+        if (items.Length < 2
+            || playlist.StereoVideoRelationships.Count > 0
+            || items.Any(item => item.StillMode != 0))
+        {
+            return [playlist];
+        }
+
+        var groups = new List<List<MplsPlayItem>> { new() { items[0] } };
+        for (int index = 1; index < items.Length; index++)
+        {
+            if (items[index].ConnectionCondition == NonSeamlessConnection)
+            {
+                groups.Add([]);
+            }
+
+            groups[^1].Add(items[index]);
+        }
+
+        if (groups.Count == 1)
+        {
+            return [playlist];
+        }
+
+        var parts = new List<MplsPlaylist>(groups.Count);
+        foreach (var group in groups)
+        {
+            var indexMap = group
+                .Select((item, newIndex) => (item.Index, newIndex))
+                .ToDictionary(pair => pair.Index, pair => pair.newIndex);
+            parts.Add(playlist with
+            {
+                PlayItems = group.Select((item, newIndex) => item with { Index = newIndex }).ToArray(),
+                Marks = playlist.Marks
+                    .Where(mark => indexMap.ContainsKey(mark.PlayItemReference))
+                    .OrderBy(mark => mark.Index)
+                    .Select((mark, newIndex) => mark with
+                    {
+                        Index = newIndex,
+                        PlayItemReference = indexMap[mark.PlayItemReference],
+                    })
+                    .ToArray(),
+            });
+        }
+
+        return parts;
+    }
+
+    /// <summary>
+    /// Returns how much of the last play item's clip the playlist leaves unplayed after
+    /// its out-time. MakeMKV reports such a title with the clip's full length, and
+    /// places its last chapter accordingly: a playlist ending 4.4 s before its clip ends
+    /// reads 1:33 in MakeMKV where the play item alone lasts 1:29. Only a single-angle
+    /// last play item over a clip with one STC sequence is extended, because only then
+    /// is the clip's presentation end on the same timeline as the out-time.
+    /// </summary>
+    internal static long GetTrailingClipTicks(
+        MplsPlaylist playlist,
+        IReadOnlyDictionary<string, ClpiFile> clpiByClip)
+    {
+        var last = playlist.PlayItems.OrderBy(item => item.Index).LastOrDefault();
+        if (last is null
+            || last.Clips.Count > 1
+            || !clpiByClip.TryGetValue(last.ClipId, out var clpi)
+            || clpi.PresentationSummary is not { StcSequenceCount: 1 } summary
+            || last.OutTime < last.InTime
+            || last.OutTime < summary.StartTime
+            || summary.EndTime <= last.OutTime)
+        {
+            return 0;
+        }
+
+        return summary.EndTime - last.OutTime;
     }
 
     /// <summary>
@@ -1353,7 +1503,8 @@ public sealed partial class OpticalDiscManifestGenerator
     internal static IReadOnlyList<ManifestChapter> CreateBluRayChapters(
         MplsPlaylist playlist,
         ICollection<ManifestDiagnostic> diagnostics,
-        string path)
+        string path,
+        long? presentationTicks45k = null)
     {
         var itemStarts = new long[playlist.PlayItems.Count];
         long cumulative = 0;
@@ -1367,7 +1518,7 @@ public sealed partial class OpticalDiscManifestGenerator
             cumulative += item.OutTime >= item.InTime ? item.OutTime - item.InTime : 0;
         }
 
-        long totalDurationTicks45k = cumulative;
+        long totalDurationTicks45k = Math.Max(cumulative, presentationTicks45k ?? 0);
 
         var resolved = new List<(MplsPlaylistMark Mark, long StartTicks)>();
         foreach (var mark in playlist.Marks.Where(item => item.IsEntryMark).OrderBy(item => item.Index))

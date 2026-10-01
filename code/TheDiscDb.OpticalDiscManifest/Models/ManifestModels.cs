@@ -105,6 +105,12 @@ public sealed record ManifestTitleSource
     public int? Title { get; init; }
 
     public int? TitleSetTitle { get; init; }
+
+    /// <summary>
+    /// Zero-based part of a Blu-ray playlist that was split into separately playable
+    /// parts at a non-seamless connection. Absent when the playlist was not split.
+    /// </summary>
+    public int? Part { get; init; }
 }
 
 public sealed record ManifestChapter
