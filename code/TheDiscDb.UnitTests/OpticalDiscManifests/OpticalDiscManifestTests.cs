@@ -392,6 +392,29 @@ public class OpticalDiscManifestMapperTests
     }
 
     [Test]
+    public async Task ToDiscInfo_DvdSegmentMapKeepsPgcCellNumbersOfTrimmedTitles()
+    {
+        // United 93 title 3 plays cells 3 (VOB 3), 4 (VOB 4) and 5 (VOB 5) of its PGC; MakeMKV
+        // skips cells 1-2 and keeps their numbering, reporting "3,4,5" and no chapters.
+        var title = new OpticalDiscManifestTitle { Source = new OpticalDiscManifestTitleSource { Title = 3 } };
+        foreach (var (clip, cell) in new[] { ("3.1", 3), ("4.1", 4), ("5.1", 5) })
+        {
+            title.Segments.Add(new OpticalDiscManifestSegment { Clip = clip, Cell = cell, DurationSeconds = 1 });
+        }
+
+        var document = new OpticalDiscManifestDocument
+        {
+            SchemaVersion = 1,
+            Disc = new OpticalDiscManifestDisc { Format = "dvd", Titles = { title } }
+        };
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(document);
+
+        await Assert.That(info.Titles[0].SegmentMap).IsEqualTo("3,4,5");
+        await Assert.That(info.Titles[0].ChapterCount).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task ToDiscInfo_BluRaySourceBecomesThePlaylistFileName()
     {
         var document = new OpticalDiscManifestDocument

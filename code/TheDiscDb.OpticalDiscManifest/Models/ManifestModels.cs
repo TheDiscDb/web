@@ -129,6 +129,13 @@ public sealed record ManifestSegment
     public double? DurationSeconds { get; init; }
 
     public int? Angle { get; init; }
+
+    /// <summary>
+    /// Gets the 1-based PGC cell number of a DVD segment. MakeMKV numbers its DVD segment map by
+    /// these, so a title whose leading cells are never played still starts its map at the first
+    /// cell that is.
+    /// </summary>
+    public int? Cell { get; init; }
 }
 
 public sealed record ManifestStream

@@ -314,6 +314,7 @@ public sealed partial class OpticalDiscManifestGenerator
         }
 
         var titles = new List<ManifestTitle>(vmgi.Titles.Count);
+        int skippedTitles = 0;
         foreach (var title in vmgi.Titles.OrderBy(item => item.Number))
         {
             if (!titleSets.TryGetValue(title.TitleSetNumber, out var vtsi))
@@ -359,6 +360,8 @@ public sealed partial class OpticalDiscManifestGenerator
             long sizeBytes = 0;
             bool sizeComplete = timingSupported;
             bool timingComplete = timingSupported;
+            bool anyChapterMark = false;
+            bool anyCells = false;
             foreach (var part in titleMap.Parts.OrderBy(item => item.Number))
             {
                 var pgc = vtsi.ProgramChains.SingleOrDefault(
@@ -373,7 +376,25 @@ public sealed partial class OpticalDiscManifestGenerator
                     continue;
                 }
 
-                if (sizeComplete && TryGetProgramSizeBytes(pgc, part.ProgramNumber, out long programBytes))
+                if (!TryGetProgramCells(pgc, part.ProgramNumber, out var programCells))
+                {
+                    timingComplete = false;
+                    sizeComplete = false;
+                    chapters.Add(new ManifestChapter { StartSeconds = 0 });
+                    continue;
+                }
+
+                anyCells = true;
+                var (firstPlayedCell, lastPlayedCell) = GetPlayedCellRange(pgc);
+                var playedCells = programCells
+                    .Where(cell => cell.Number >= firstPlayedCell && cell.Number <= lastPlayedCell)
+                    .ToList();
+                if (playedCells.Count == 0)
+                {
+                    continue;
+                }
+
+                if (sizeComplete && TryGetCellSizeBytes(playedCells, out long programBytes))
                 {
                     sizeBytes += programBytes;
                 }
@@ -382,37 +403,57 @@ public sealed partial class OpticalDiscManifestGenerator
                     sizeComplete = false;
                 }
 
-                if (!timingComplete || !TryGetProgramDurationSeconds(pgc, part.ProgramNumber, out double duration))
+                if (!timingComplete)
                 {
-                    timingComplete = false;
-                    chapters.Add(new ManifestChapter { StartSeconds = 0 });
                     continue;
                 }
 
+                double duration = playedCells.Sum(cell => cell.PlaybackTime.ToTimeSpan().TotalSeconds);
+                anyChapterMark |= playedCells[0].Number == programCells[0].Number;
                 chapters.Add(new ManifestChapter
                 {
                     StartSeconds = RoundSeconds(elapsedSeconds),
                     DurationSeconds = RoundSeconds(duration),
                 });
 
-                if (TryGetProgramCells(pgc, part.ProgramNumber, out var programCells))
+                double cellStart = elapsedSeconds;
+                foreach (var cell in playedCells)
                 {
-                    double cellStart = elapsedSeconds;
-                    foreach (var cell in programCells)
+                    var position = pgc.CellPositions[cell.Number - 1];
+                    double cellSeconds = cell.PlaybackTime.ToTimeSpan().TotalSeconds;
+                    segments.Add(new ManifestSegment
                     {
-                        var position = pgc.CellPositions[cell.Number - 1];
-                        double cellSeconds = cell.PlaybackTime.ToTimeSpan().TotalSeconds;
-                        segments.Add(new ManifestSegment
-                        {
-                            Clip = FormatDvdCellClip(position),
-                            StartSeconds = RoundSeconds(cellStart),
-                            DurationSeconds = RoundSeconds(cellSeconds),
-                        });
-                        cellStart += cellSeconds;
-                    }
+                        Clip = FormatDvdCellClip(position),
+                        StartSeconds = RoundSeconds(cellStart),
+                        DurationSeconds = RoundSeconds(cellSeconds),
+                        Cell = cell.Number,
+                    });
+                    cellStart += cellSeconds;
                 }
 
                 elapsedSeconds += duration;
+            }
+
+            if (timingSupported && !anyCells)
+            {
+                // MakeMKV does not list a title none of whose programs resolve to cells, such as
+                // United 93's PGC 2 titles whose program map reads [1, 0].
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_DVD_TITLE_SKIPPED",
+                    Message = $"Logical title {title.Number} is omitted because none of its programs resolve to cells.",
+                });
+                skippedTitles++;
+                continue;
+            }
+
+            // A chapter starts where a program does. When every played program had its first cells
+            // skipped there is no chapter mark at all, and MakeMKV reports no chapters (United 93
+            // title 3); otherwise the title start counts as one.
+            if (!anyChapterMark)
+            {
+                chapters.Clear();
             }
 
             if (timingSupported && !timingComplete)
@@ -446,7 +487,7 @@ public sealed partial class OpticalDiscManifestGenerator
             });
         }
 
-        if (titles.Count != vmgi.Titles.Count)
+        if (titles.Count + skippedTitles != vmgi.Titles.Count)
         {
             diagnostics.Add(DvdPartial(
                 $"Only {titles.Count} of {vmgi.Titles.Count} VMGI logical titles were joined successfully."));
@@ -472,37 +513,101 @@ public sealed partial class OpticalDiscManifestGenerator
     /// </summary>
     private const int DolbyVisionEnhancementLayerSubPathType = 10;
 
-    private static bool TryGetProgramDurationSeconds(
-        ProgramChain pgc,
-        int programNumber,
-        out double durationSeconds)
+    /// <summary>
+    /// Finds the cells of a PGC that sequential playback actually reaches, following the cell
+    /// commands the way MakeMKV does when it reports "Cells 1-2 were removed from title start"
+    /// and "Cells 26-26 were removed from title end". On United 93 the feature's cell 1 runs
+    /// <c>LinkCN 3</c>, skipping a 3,324-sector cell that claims to play for half a second, and
+    /// cell 25 runs <c>LinkTailPGC</c>, so cell 26 is never played. This reproduces all six
+    /// MakeMKV titles of that disc.
+    /// </summary>
+    internal static (int First, int Last) GetPlayedCellRange(ProgramChain pgc)
     {
-        durationSeconds = 0;
-        if (!TryGetProgramCells(pgc, programNumber, out var cells))
+        int cellCount = pgc.CellPlayback.Count;
+        int first = 1;
+        while (first <= cellCount
+            && TryGetCellCommand(pgc, first, out ulong command)
+            && GetLinkedCell(command) is int target
+            && target > first + 1
+            && target <= cellCount)
+        {
+            first = target;
+        }
+
+        int last = cellCount;
+        for (int cell = first; cell < cellCount; cell++)
+        {
+            if (TryGetCellCommand(pgc, cell, out ulong command) && LeavesProgramChain(command))
+            {
+                last = cell;
+                break;
+            }
+        }
+
+        return first <= cellCount ? (first, last) : (1, cellCount);
+    }
+
+    private static bool TryGetCellCommand(ProgramChain pgc, int cellNumber, out ulong command)
+    {
+        command = 0;
+        int commandNumber = pgc.CellPlayback[cellNumber - 1].CellCommandNumber;
+        if (commandNumber < 1 || commandNumber > pgc.CellCommands.Count)
         {
             return false;
         }
 
-        durationSeconds = cells.Sum(item => item.PlaybackTime.ToTimeSpan().TotalSeconds);
+        command = pgc.CellCommands[commandNumber - 1];
         return true;
     }
 
-    /// <summary>
-    /// Sums the authored VOBU sector ranges (C_PBIT first/last sector) of the program's cells.
-    /// This is IFO-only evidence and matches MakeMKV title sizes exactly for sequential PGC titles
-    /// (Reservoir Dogs 2002 SE disc 1: 17/17 titles; Fight Club 1999 DVD main feature).
-    /// </summary>
-    private static bool TryGetProgramSizeBytes(
-        ProgramChain pgc,
-        int programNumber,
-        out long sizeBytes)
+    // Link commands have 0b0010 in their top nibble and the link kind in the low nibble of the
+    // second byte (DVD-Video navigation command set, as implemented by libdvdnav).
+    private static bool IsLinkCommand(ulong command) => (command >> 60) == 0x2;
+
+    private static int LinkKind(ulong command) => (int)((command >> 48) & 0x0F);
+
+    private static int? GetLinkedCell(ulong command)
     {
-        sizeBytes = 0;
-        if (!TryGetProgramCells(pgc, programNumber, out var cells))
+        const int LinkCN = 7;
+        return IsLinkCommand(command) && LinkKind(command) == LinkCN ? (int)(command & 0xFF) : null;
+    }
+
+    private static bool LeavesProgramChain(ulong command)
+    {
+        const int LinkSIns = 1;
+        const int LinkPGCN = 4;
+        if ((command >> 60) == 0x3)
+        {
+            // Jump and call commands always leave the PGC.
+            return true;
+        }
+
+        if (!IsLinkCommand(command))
         {
             return false;
         }
 
+        int kind = LinkKind(command);
+        if (kind == LinkPGCN)
+        {
+            return true;
+        }
+
+        // LinkSIns 0x09-0x0D are LinkTopPGC, LinkNextPGC, LinkPrevPGC, LinkGoUpPGC and
+        // LinkTailPGC; each ends sequential playback of the PGC's cells.
+        int instruction = (int)(command & 0x1F);
+        return kind == LinkSIns && instruction is >= 0x09 and <= 0x0D;
+    }
+
+    /// <summary>
+    /// Sums the authored VOBU sector ranges (C_PBIT first/last sector) of the cells. This is
+    /// IFO-only evidence and matches MakeMKV title sizes exactly for sequential PGC titles
+    /// (Reservoir Dogs 2002 SE disc 1: 17/17 titles; Fight Club 1999 DVD main feature; United 93,
+    /// counting only the cells playback reaches).
+    /// </summary>
+    private static bool TryGetCellSizeBytes(IEnumerable<CellPlaybackInfo> cells, out long sizeBytes)
+    {
+        sizeBytes = 0;
         foreach (var cell in cells)
         {
             if (cell.LastSector < cell.FirstSector)

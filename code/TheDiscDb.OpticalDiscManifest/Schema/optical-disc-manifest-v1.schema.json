@@ -300,6 +300,10 @@
         "angle": {
           "type": "integer",
           "minimum": 1
+        },
+        "cell": {
+          "type": "integer",
+          "minimum": 1
         }
       }
     },

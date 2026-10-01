@@ -249,6 +249,12 @@ public record ProgramChain
     /// <summary>Gets cell position records for this PGC.</summary>
     public required IReadOnlyList<CellPositionInfo> CellPositions { get; init; }
 
+    /// <summary>
+    /// Gets the raw eight-byte cell commands from the PGC command table. A cell's
+    /// <see cref="CellPlaybackInfo.CellCommandNumber"/> is a 1-based index into this list.
+    /// </summary>
+    public IReadOnlyList<ulong> CellCommands { get; init; } = Array.Empty<ulong>();
+
     /// <summary>Gets the next PGC number, or zero when absent.</summary>
     public required int NextProgramChainNumber { get; init; }
 

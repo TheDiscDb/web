@@ -212,36 +212,41 @@ public static class OpticalDiscManifestMapper
 
     private static string MapDvdSegmentMap(IList<OpticalDiscManifestSegment> segments)
     {
-        // A DVD segment is a cell named "{vobId}.{cellId}". MakeMKV numbers a title's cells from 1
-        // in play order and joins consecutive cells from the same VOB ID into a range, so a title
-        // playing VOB 6 cells 1-21 then VOB 7 cells 1-19 reads "1-21,22-40". This reproduces every
-        // title of Reservoir Dogs (2002 SE) and Alexander disc 1.
+        // A DVD segment is a cell named "{vobId}.{cellId}". MakeMKV numbers a title's cells by
+        // their PGC cell number and joins consecutive cells from the same VOB ID into a range, so
+        // a title playing VOB 6 cells 1-21 then VOB 7 cells 1-19 reads "1-21,22-40", and United
+        // 93's feature, whose first two cells are never played, reads "3,4,5-25". Older manifests
+        // without cell numbers count from 1 in play order.
         var ranges = new List<string>();
         int start = 0;
+        int previous = 0;
         string? startVob = null;
-        for (int number = 1; number <= segments.Count; number++)
+        for (int index = 0; index < segments.Count; index++)
         {
-            string? vob = DvdVobId(segments[number - 1].Clip);
+            string? vob = DvdVobId(segments[index].Clip);
             if (vob is null)
             {
                 return string.Empty;
             }
 
-            if (number == 1 || vob != startVob)
+            int number = segments[index].Cell ?? index + 1;
+            if (index == 0 || vob != startVob || number != previous + 1)
             {
-                if (number > 1)
+                if (index > 0)
                 {
-                    ranges.Add(FormatCellRange(start, number - 1));
+                    ranges.Add(FormatCellRange(start, previous));
                 }
 
                 start = number;
                 startVob = vob;
             }
+
+            previous = number;
         }
 
-        if (start > 0)
+        if (segments.Count > 0)
         {
-            ranges.Add(FormatCellRange(start, segments.Count));
+            ranges.Add(FormatCellRange(start, previous));
         }
 
         return string.Join(",", ranges);

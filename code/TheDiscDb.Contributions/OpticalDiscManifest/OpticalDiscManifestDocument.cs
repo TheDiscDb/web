@@ -96,6 +96,7 @@ public sealed class OpticalDiscManifestSegment
     public double? StartSeconds { get; set; }
     public double? DurationSeconds { get; set; }
     public int? Angle { get; set; }
+    public int? Cell { get; set; }
 }
 
 public sealed class OpticalDiscManifestStream

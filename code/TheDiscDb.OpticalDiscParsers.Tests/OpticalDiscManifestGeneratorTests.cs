@@ -952,6 +952,67 @@ public sealed class OpticalDiscManifestGeneratorTests
         }
     }
 
+    [Fact]
+    public async Task GenerateAsync_Dvd_SkipsCellsPlaybackNeverReachesLikeMakeMkv()
+    {
+        // DVD-E is United 93 (2006). MakeMKV 1.18.3 logged "Cells 1-2 were removed from title
+        // start" and "Cells 26-26 were removed from title end" for title 1, trimmed titles 2-6 the
+        // same way, and did not list titles 7 and 8, whose PGCs have no valid program map. These
+        // are its TINFO:9 lengths, TINFO:11 sizes, TINFO:8 chapter counts (absent, so 0, for
+        // title 3) and TINFO:26 segment maps.
+        (int Title, string Length, long Size, int Chapters, string SegmentMap)[] expected =
+        [
+            (1, "1:50:42", 5815142400, 20, "3,4,5-25"),
+            (2, "0:02:14", 82825216, 1, "1"),
+            (3, "0:59:48", 2164613120, 0, "3,4,5"),
+            (4, "0:00:23", 17776640, 1, "1"),
+            (5, "0:00:13", 12242944, 1, "1"),
+            (6, "0:00:13", 13604864, 1, "1"),
+        ];
+        var files = CreateDvdIfoFiles("DVD-E");
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "dvd-disc-id", new string('E', 32)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title =>
+            {
+                var segments = title.Segments!;
+                var wholeSeconds = TimeSpan.FromSeconds(segments.Sum(segment => Math.Floor(segment.DurationSeconds!.Value)));
+                return (
+                    title.Source.Title!.Value,
+                    wholeSeconds.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture),
+                    title.SizeBytes!.Value,
+                    title.Chapters?.Count ?? 0,
+                    GroupCellsByVob(segments));
+            })
+            .ToArray();
+        Assert.Equal(expected, actual);
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Code == "ODM_DVD_TIMING_PARTIAL");
+        Assert.Equal(2, result.Diagnostics.Count(diagnostic => diagnostic.Code == "ODM_DVD_TITLE_SKIPPED"));
+
+        static string GroupCellsByVob(IReadOnlyList<ManifestSegment> segments)
+        {
+            var ranges = new List<string>();
+            int start = 0;
+            for (int index = 0; index <= segments.Count; index++)
+            {
+                if (index == segments.Count
+                    || (index > start && segments[index].Clip.Split('.')[0] != segments[start].Clip.Split('.')[0]))
+                {
+                    int first = segments[start].Cell!.Value;
+                    int last = segments[index - 1].Cell!.Value;
+                    ranges.Add(first == last ? $"{first}" : $"{first}-{last}");
+                    start = index;
+                }
+            }
+
+            return string.Join(",", ranges);
+        }
+    }
+
     private RecordingFile[] CreateDvdIfoFiles(string fixture)
         => Directory.GetFiles(Path.Combine(fixturesPath, fixture), "*.IFO")
             .Select(path => RecordingFile.FromDisk($"VIDEO_TS/{Path.GetFileName(path)}", path))
