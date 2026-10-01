@@ -444,6 +444,14 @@ public sealed partial class OpticalDiscManifestGenerator
     /// </summary>
     private const double SingleFrameSeconds = 0.05;
 
+    /// <summary>
+    /// The MPLS subpath type of a Dolby Vision enhancement layer. MakeMKV also lists every
+    /// clip that a playlist with such a subpath plays as a stream title. On Spartacus (UHD)
+    /// this rule, with no playlist splitting, reproduces all 136 MakeMKV 1.18.3 titles. An
+    /// older MakeMKV 1.16.4 log of 1917 does not list such clips.
+    /// </summary>
+    private const int DolbyVisionEnhancementLayerSubPathType = 10;
+
     private static bool TryGetProgramDurationSeconds(
         ProgramChain pgc,
         int programNumber,
@@ -652,6 +660,7 @@ public sealed partial class OpticalDiscManifestGenerator
         }
 
         var titles = new List<ManifestTitle>();
+        var dolbyVisionClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         int playlistCandidates = 0;
         int parsedPlaylists = 0;
         foreach (var candidate in GetBluRayControlCandidates(files, "BDMV/PLAYLIST", "BDMV/BACKUP/PLAYLIST", ".mpls"))
@@ -685,31 +694,18 @@ public sealed partial class OpticalDiscManifestGenerator
                 });
             }
 
-            var parts = SplitBluRayPlaylist(playlist);
-            if (parts.Count > 1)
+            if (playlist.SubPaths.Any(subPath => subPath.Type == DolbyVisionEnhancementLayerSubPathType))
             {
-                diagnostics.Add(new ManifestDiagnostic
+                foreach (var item in playlist.PlayItems)
                 {
-                    Severity = "info",
-                    Code = "ODM_BD_PLAYLIST_SPLIT",
-                    Message = $"Playlist has {parts.Count - 1} non-seamless connection(s) and is emitted as {parts.Count} separately playable parts.",
-                    Path = result.Path,
-                });
+                    dolbyVisionClips.Add(item.ClipId);
+                }
             }
 
-            for (int part = 0; part < parts.Count; part++)
-            {
-                titles.Add(CreateBluRayTitle(
-                    result.Path,
-                    parts[part],
-                    files,
-                    clpiByClip,
-                    diagnostics,
-                    parts.Count > 1 ? part : null));
-            }
+            titles.Add(CreateBluRayTitle(result.Path, playlist, files, clpiByClip, diagnostics, null));
         }
 
-        titles = ReconcileBluRayTitles(titles, files, clpiByClip, diagnostics);
+        titles = ReconcileBluRayTitles(titles, files, clpiByClip, dolbyVisionClips, diagnostics);
 
         string? discName = await ReadBluRayDiscNameAsync(files, diagnostics, metrics, cancellationToken);
         if (playlistCandidates == 0)
@@ -813,8 +809,8 @@ public sealed partial class OpticalDiscManifestGenerator
     /// optical disc actually offers, so a manifest produced from the disc describes the
     /// same titles a MakeMKV log of that disc would describe. Three reconciliations run,
     /// in order: playlists with an identical segment composition collapse to one title;
-    /// stream files no retained playlist references are promoted to titles of their own so
-    /// they stay reachable; and a title whose only content is a single unchaptered clip,
+    /// stream files no retained playlist references, or that a Dolby Vision playlist plays,
+    /// are promoted to titles of their own; and a title whose only content is a single unchaptered clip,
     /// played in full, is attributed to that clip's stream file, because the playlist adds
     /// nothing the stream does not already state. The result is then ordered with
     /// playlist-sourced titles ahead of stream-sourced ones. Each reconciliation is
@@ -824,6 +820,7 @@ public sealed partial class OpticalDiscManifestGenerator
         IReadOnlyList<ManifestTitle> titles,
         IReadOnlyList<NormalizedFile> files,
         IReadOnlyDictionary<string, ClpiFile> clpiByClip,
+        IReadOnlySet<string> dolbyVisionClips,
         ICollection<ManifestDiagnostic> diagnostics)
     {
         var retained = new List<ManifestTitle>(titles.Count);
@@ -872,7 +869,8 @@ public sealed partial class OpticalDiscManifestGenerator
 
         var promoted = files
             .Where(item => IsControlFile(item.Path, "BDMV/STREAM", ".m2ts"))
-            .Where(item => !referenced.Contains(Path.GetFileNameWithoutExtension(item.Path)))
+            .Where(item => !referenced.Contains(Path.GetFileNameWithoutExtension(item.Path))
+                || dolbyVisionClips.Contains(Path.GetFileNameWithoutExtension(item.Path)))
             .Where(item => IsPlayableStreamCandidate(
                 GetClipDurationSeconds(Path.GetFileNameWithoutExtension(item.Path), clpiByClip)))
             .OrderBy(item => item.Path, StringComparer.OrdinalIgnoreCase)
@@ -889,7 +887,7 @@ public sealed partial class OpticalDiscManifestGenerator
             {
                 Severity = "info",
                 Code = "ODM_BD_STREAM_TITLES",
-                Message = $"Promoted {promoted.Length} stream file(s) to titles because no playlist references them.",
+                Message = $"Promoted {promoted.Length} stream file(s) to titles because no playlist references them or a Dolby Vision playlist plays them.",
             });
         }
 
@@ -1279,70 +1277,6 @@ public sealed partial class OpticalDiscManifestGenerator
                 })
                 .ToArray(),
         };
-    }
-
-    /// <summary>
-    /// Splits a playlist into the parts MakeMKV presents as separate titles. MakeMKV
-    /// starts a new part at every play item whose connection condition is 1
-    /// (non-seamless); seamless connections (5 and 6) stay within one part. The later
-    /// parts appear in MakeMKV as <c>00005.mpls(1)</c>, <c>00005.mpls(2)</c> and so on.
-    /// Each part is returned as a playlist of its own, with play items re-indexed and
-    /// marks re-referenced to them, so title creation is unchanged. Stereoscopic
-    /// playlists are never split, because their base/dependent pairing is declared
-    /// against the whole playlist. Playlists with still-frame play items are never split
-    /// either: Avengers: Age of Ultron's <c>00050.mpls</c> joins two still items with a
-    /// non-seamless connection, and MakeMKV lists it as one title.
-    /// </summary>
-    internal static IReadOnlyList<MplsPlaylist> SplitBluRayPlaylist(MplsPlaylist playlist)
-    {
-        const int NonSeamlessConnection = 1;
-
-        var items = playlist.PlayItems.OrderBy(item => item.Index).ToArray();
-        if (items.Length < 2
-            || playlist.StereoVideoRelationships.Count > 0
-            || items.Any(item => item.StillMode != 0))
-        {
-            return [playlist];
-        }
-
-        var groups = new List<List<MplsPlayItem>> { new() { items[0] } };
-        for (int index = 1; index < items.Length; index++)
-        {
-            if (items[index].ConnectionCondition == NonSeamlessConnection)
-            {
-                groups.Add([]);
-            }
-
-            groups[^1].Add(items[index]);
-        }
-
-        if (groups.Count == 1)
-        {
-            return [playlist];
-        }
-
-        var parts = new List<MplsPlaylist>(groups.Count);
-        foreach (var group in groups)
-        {
-            var indexMap = group
-                .Select((item, newIndex) => (item.Index, newIndex))
-                .ToDictionary(pair => pair.Index, pair => pair.newIndex);
-            parts.Add(playlist with
-            {
-                PlayItems = group.Select((item, newIndex) => item with { Index = newIndex }).ToArray(),
-                Marks = playlist.Marks
-                    .Where(mark => indexMap.ContainsKey(mark.PlayItemReference))
-                    .OrderBy(mark => mark.Index)
-                    .Select((mark, newIndex) => mark with
-                    {
-                        Index = newIndex,
-                        PlayItemReference = indexMap[mark.PlayItemReference],
-                    })
-                    .ToArray(),
-            });
-        }
-
-        return parts;
     }
 
     /// <summary>

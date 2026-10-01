@@ -143,6 +143,32 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateAsync_Uhd_ListsClipsOfDolbyVisionPlaylistsAsStreamTitles()
+    {
+        // 1917's 00149.mpls carries a Dolby Vision enhancement-layer subpath (type 10) and
+        // plays clips 174 and 175. MakeMKV 1.18.3 lists the clips of such playlists as
+        // stream titles too (all 90 on Spartacus), so both the playlist and its clips appear.
+        var files = CreateBluRayFiles("UHD-A")
+            .Concat(
+            [
+                RecordingFile.Payload("BDMV/STREAM/00174.m2ts", 1_000_000),
+                RecordingFile.Payload("BDMV/STREAM/00175.m2ts", 1_000_000),
+            ])
+            .ToList();
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('D', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var sources = result.Manifest.Disc.Titles!.Select(title => title.Source!.Path).ToArray();
+        Assert.Contains("BDMV/PLAYLIST/00149.mpls", sources);
+        Assert.Contains("BDMV/STREAM/00174.m2ts", sources);
+        Assert.Contains("BDMV/STREAM/00175.m2ts", sources);
+    }
+
+    [Fact]
     public async Task GenerateAsync_Uhd_SurfacesHevcDynamicRangeAndColorSpaceEvidence()
     {
         // Real UHD CLPI evidence (00589.clpi), already verified at the parser layer:
@@ -469,11 +495,15 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
-    public async Task GenerateAsync_BluRay_MatchesMakeMkvTitleListForHellOnWheelsDisc()
+    public async Task GenerateAsync_BluRay_ReproducesMakeMkvTitleListForHellOnWheelsDisc()
     {
         // Real control files from Hell on Wheels Season 1 Disc 1 (fixture set BD-C),
-        // compared with a MakeMKV 1.18.3 log of the same disc. MakeMKV lists exactly these
-        // titles, with these chapter counts and h:mm:ss lengths (partial seconds truncated).
+        // compared with a MakeMKV 1.18.3 log of the same disc. The chapter counts and
+        // h:mm:ss lengths (partial seconds truncated) match MakeMKV's. One known difference
+        // remains: MakeMKV splits 00005.mpls and 00009.mpls at their non-seamless
+        // connections, listing 00005.mpls(1) and 00010.m2ts where 00005.mpls appears here,
+        // and nothing where 00009.mpls appears. Playlists are not split, because Spartacus
+        // (UHD) has 21 playlists with the same connections that MakeMKV lists whole.
         (string Clip, long Size)[] streams =
         [
             ("00000", 7910012928), ("00001", 15003648), ("00002", 5812224), ("00003", 5407795200),
@@ -510,8 +540,9 @@ public sealed class OpticalDiscManifestGeneratorTests
             [
                 ("00000.mpls", 6, 2535, 5407795200),
                 ("00004.mpls", 6, 2694, 7910012928),
-                ("00005.mpls(1)", 2, 92, 243701760),
+                ("00005.mpls", 3, 101, 250638336),
                 ("00006.mpls", 2, 93, 246521856),
+                ("00009.mpls", 2, 16, 15028224),
                 ("00012.mpls", 6, 2571, 7580424192),
                 ("00013.mpls", 6, 2557, 5895487488),
                 ("00001.m2ts", 0, 15, 15003648),
@@ -519,7 +550,6 @@ public sealed class OpticalDiscManifestGeneratorTests
                 ("00006.m2ts", 0, 0, 110592),
                 ("00007.m2ts", 0, 5, 1013760),
                 ("00008.m2ts", 0, 30, 119734272),
-                ("00010.m2ts", 0, 9, 6936576),
                 ("00011.m2ts", 0, 0, 405504),
                 ("00012.m2ts", 0, 7, 4294656),
                 ("00015.m2ts", 0, 80, 61022208),
@@ -527,36 +557,6 @@ public sealed class OpticalDiscManifestGeneratorTests
                 ("00018.m2ts", 0, 100, 325570560),
             ],
             actual);
-    }
-
-    [Fact]
-    public void SplitBluRayPlaylist_SplitsOnlyAtNonSeamlessConnections()
-    {
-        var playlist = CreateMultiItemPlaylist(
-            [("00010", 1, 0), ("00011", 5, 0), ("00013", 1, 0)],
-            [(0, 0u), (1, 0u), (2, 0u), (2, 900u)]);
-
-        var parts = OpticalDiscManifestGenerator.SplitBluRayPlaylist(playlist);
-
-        Assert.Equal(2, parts.Count);
-        Assert.Equal(["00010", "00011"], parts[0].PlayItems.Select(item => item.ClipId));
-        Assert.Equal([0, 1], parts[0].PlayItems.Select(item => item.Index));
-        Assert.Equal([0, 1], parts[0].Marks.Select(mark => mark.PlayItemReference));
-        Assert.Equal(["00013"], parts[1].PlayItems.Select(item => item.ClipId));
-        Assert.Equal([0], parts[1].PlayItems.Select(item => item.Index));
-        Assert.Equal([0, 0], parts[1].Marks.Select(mark => mark.PlayItemReference));
-        Assert.Equal([0, 1], parts[1].Marks.Select(mark => mark.Index));
-    }
-
-    [Fact]
-    public void SplitBluRayPlaylist_KeepsSeamlessAndStillPlaylistsWhole()
-    {
-        var seamless = CreateMultiItemPlaylist([("00010", 1, 0), ("00011", 6, 0)], [(0, 0u)]);
-        // Mirrors Avengers: Age of Ultron's 00050.mpls, which MakeMKV lists as one title.
-        var stills = CreateMultiItemPlaylist([("00135", 1, 2), ("00007", 1, 2)], [(0, 0u), (1, 0u)]);
-
-        Assert.Same(seamless, Assert.Single(OpticalDiscManifestGenerator.SplitBluRayPlaylist(seamless)));
-        Assert.Same(stills, Assert.Single(OpticalDiscManifestGenerator.SplitBluRayPlaylist(stills)));
     }
 
     [Fact]
