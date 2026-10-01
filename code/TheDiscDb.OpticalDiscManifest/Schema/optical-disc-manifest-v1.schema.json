@@ -304,6 +304,11 @@
         "cell": {
           "type": "integer",
           "minimum": 1
+        },
+        "dependentClip": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
         }
       }
     },

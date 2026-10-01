@@ -136,6 +136,13 @@ public sealed record ManifestSegment
     /// cell that is.
     /// </summary>
     public int? Cell { get; init; }
+
+    /// <summary>
+    /// Gets the stereoscopic 3D (MVC) dependent-view clip a Blu-ray segment plays alongside
+    /// its base-view <see cref="Clip"/>. MakeMKV writes such a segment as
+    /// <c>base/dependent</c> in its segment map.
+    /// </summary>
+    public string? DependentClip { get; init; }
 }
 
 public sealed record ManifestStream

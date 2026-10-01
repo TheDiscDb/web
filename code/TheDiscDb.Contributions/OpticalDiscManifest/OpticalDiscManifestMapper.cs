@@ -201,9 +201,12 @@ public static class OpticalDiscManifestMapper
     {
         // MakeMKV writes the segment map as a comma separated list of clip numbers with leading
         // zeros removed, so "BDMV/STREAM/00250.m2ts" appears as "250". Matching that exactly keeps
-        // manifest-sourced discs comparable with log-sourced ones.
+        // manifest-sourced discs comparable with log-sourced ones. A stereoscopic 3D segment is
+        // written as "base/dependent", for example "7/8".
         var clips = segments
-            .Select(segment => NormalizeClipId(segment.Clip))
+            .Select(segment => NormalizeClipId(segment.Clip) is { } clip
+                ? NormalizeClipId(segment.DependentClip) is { } dependent ? $"{clip}/{dependent}" : clip
+                : null)
             .Where(clip => clip is not null)
             .ToList();
 

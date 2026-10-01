@@ -223,6 +223,42 @@ public class OpticalDiscManifestMapperTests
     }
 
     [Test]
+    public async Task ToDiscInfo_WritesStereoscopicSegmentsAsBaseSlashDependent()
+    {
+        // MakeMKV writes a 3D segment as "base/dependent": Super Mario Bros (3D Blu-ray)
+        // 01005.mpls reads "7/8", and multi-segment 3D titles read "30/31,32/33".
+        const string With3D = """
+            {
+              "schemaVersion": 1,
+              "producer": { "name": "thediscdb", "version": "1.0.0" },
+              "disc": {
+                "format": "blu-ray",
+                "identifiers": [
+                  { "kind": "thediscdb-content-hash", "value": "57B059114B517DF43BE4D05FCA0869FA" }
+                ],
+                "titles": [
+                  {
+                    "source": { "path": "BDMV/PLAYLIST/01005.mpls" },
+                    "segments": [
+                      { "clip": "00030", "dependentClip": "00031" },
+                      { "clip": "00032", "dependentClip": "00033" },
+                      { "clip": "00012" }
+                    ]
+                  }
+                ]
+              }
+            }
+            """;
+
+        var result = new OpticalDiscManifestValidator().Parse(With3D);
+        await Assert.That(result.Error).IsNull();
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(result.Document!);
+
+        await Assert.That(info.Titles[0].SegmentMap).IsEqualTo("30/31,32/33,12");
+    }
+
+    [Test]
     public async Task ToDiscInfo_NamesSplitPlaylistPartsAndTruncatesLengthsLikeMakeMkv()
     {
         // MakeMKV splits a playlist at a non-seamless connection and names the later parts

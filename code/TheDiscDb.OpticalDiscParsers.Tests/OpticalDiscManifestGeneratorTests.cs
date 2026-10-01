@@ -636,6 +636,71 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateAsync_BluRay3D_ReproducesMakeMkvTitleListForSuperMarioBrosDisc()
+    {
+        // Real control files from Super Mario Bros (3D Blu-ray) (fixture set BD-3D-B),
+        // compared with a MakeMKV 1.18.3 log of the same disc, which lists these 17 titles
+        // in this order. 01000.mpls and 01003.mpls end with the 0.42 s clip 13,
+        // which selects no audio, so it is trimmed; 01003.mpls then plays clip 3 alone and
+        // is listed as 00003.m2ts. 00006.mpls is 01005.mpls without chapters. 01009.mpls
+        // differs from 00005.mpls only by a menu stream. MakeMKV does not list 00012.mpls
+        // (a single-frame still of clip 14), but it lists Hell on Wheels' single-frame
+        // still 00006.m2ts and thousands of 0:00:00 titles across the corpus, so no rule
+        // explains the omission and the still is kept as an 18th title.
+        (string Clip, long Size)[] streams =
+        [
+            ("00000", 110893056), ("00001", 12288), ("00002", 12288), ("00003", 68567040),
+            ("00004", 12288), ("00005", 238571520), ("00006", 86538240), ("00007", 24956436480),
+            ("00008", 8754653184), ("00009", 2322432), ("00010", 2371584), ("00011", 1880064),
+            ("00012", 12288), ("00013", 12288), ("00014", 276480), ("00015", 331776),
+            ("00016", 331776),
+        ];
+        var files = new List<RecordingFile>();
+        AddDirectory(files, Path.Combine(fixturesPath, "MPLS", "BD-3D-B"), "BDMV/PLAYLIST");
+        AddDirectory(files, Path.Combine(fixturesPath, "CLPI", "BD-3D-B"), "BDMV/CLIPINF");
+        files.AddRange(streams.Select(stream => RecordingFile.Payload($"BDMV/STREAM/{stream.Clip}.m2ts", stream.Size)));
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('5', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title => (
+                Path.GetFileName(title.Source!.Path!),
+                title.Chapters?.Count ?? 0,
+                title.SizeBytes,
+                string.Join(",", title.Segments!.Select(segment => segment.DependentClip is null
+                    ? segment.Clip
+                    : $"{segment.Clip}/{segment.DependentClip}"))))
+            .ToArray();
+
+        Assert.Equal<(string, int, long?, string)>(
+            [
+                ("00005.mpls", 1, 325109760, "00005/00006"),
+                ("01000.mpls", 3, 110893056, "00000"),
+                ("01001.mpls", 2, 24576, "00001,00012"),
+                ("01002.mpls", 2, 24576, "00002,00012"),
+                ("01005.mpls", 35, 33711089664, "00007/00008"),
+                ("01006.mpls", 1, 2334720, "00009,00012"),
+                ("01007.mpls", 1, 2383872, "00010,00012"),
+                ("01008.mpls", 1, 1892352, "00011,00012"),
+                ("00001.m2ts", 0, 12288, "00001"),
+                ("00002.m2ts", 0, 12288, "00002"),
+                ("00003.m2ts", 0, 68567040, "00003"),
+                ("00004.m2ts", 0, 12288, "00004"),
+                ("00009.m2ts", 0, 2322432, "00009"),
+                ("00010.m2ts", 0, 2371584, "00010"),
+                ("00011.m2ts", 0, 1880064, "00011"),
+                ("00012.m2ts", 0, 12288, "00012"),
+                ("00013.m2ts", 0, 12288, "00013"),
+                ("00014.m2ts", 0, 276480, "00014"),
+            ],
+            actual);
+    }
+
+    [Fact]
     public async Task CollapseRepeatedPlayItems_ListsLoopedClipOnceLikeMakeMkv()
     {
         // 1917's 00149.mpls plays clip 174 then loops clip 175 251 times, one mark per
@@ -651,6 +716,27 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Equal(["00174", "00175"], collapsed.PlayItems.Select(item => item.ClipId));
         Assert.Equal([0, 1], collapsed.PlayItems.Select(item => item.Index));
         Assert.Equal([0, 1], collapsed.Marks.Select(mark => mark.PlayItemReference));
+    }
+
+    [Theory]
+    [InlineData("BD-3D-B", "01000.mpls", new[] { "00000" })]
+    [InlineData("BD-3D-B", "01003.mpls", new[] { "00003" })]
+    [InlineData("BD-3D-B", "01001.mpls", new[] { "00001", "00012" })]
+    [InlineData("BD-C", "00009.mpls", new[] { "00001", "00017" })]
+    public async Task TrimTrailingNarrowerPlayItems_DropsOnlyShortTailsSelectingFewerStreams(string set, string file, string[] expected)
+    {
+        // Mario's 0.42 s video-only clip 13 after a video-and-audio clip is dropped by
+        // MakeMKV; its 0.42 s clip 12 after another video-only clip, and Hell on Wheels'
+        // 1.04 s video-only clip 17 after a video-and-audio clip, are kept.
+        var bytes = await File.ReadAllBytesAsync(
+            Path.Combine(fixturesPath, "MPLS", set, file),
+            TestContext.Current.CancellationToken);
+        var playlist = (await new MplsParser(new MemoryOpticalDiscReader(bytes)).ParseAsync()).Value!;
+
+        var trimmed = OpticalDiscManifestGenerator.TrimTrailingNarrowerPlayItems(playlist);
+
+        Assert.Equal(expected, trimmed.PlayItems.Select(item => item.ClipId));
+        Assert.All(trimmed.Marks, mark => Assert.True(mark.PlayItemReference < expected.Length));
     }
 
     [Fact]

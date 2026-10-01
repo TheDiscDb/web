@@ -120,7 +120,12 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
     {
         var files = new List<DiscScanFile>();
         await AddFilesAsync(files, root, string.Empty);
-        return files;
+
+        // Chromium's directory handle iterator does not preserve the on-disc directory
+        // order the manifest generator uses to order titles like MakeMKV (it returned
+        // locally shuffled entries for the Super Mario Bros 3D Blu-ray), so fall back to
+        // a deterministic file name order.
+        return files.OrderBy(file => file.Path, StringComparer.Ordinal).ToList();
     }
 
     private static async Task AddFilesAsync(

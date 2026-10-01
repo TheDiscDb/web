@@ -815,14 +815,26 @@ public sealed partial class OpticalDiscManifestGenerator
 
             parsedPlaylists++;
             isUhd |= result.Value.Version == "0300";
-            var playlist = CollapseRepeatedPlayItems(result.Value);
-            if (playlist.PlayItems.Count < result.Value.PlayItems.Count)
+            var collapsed = CollapseRepeatedPlayItems(result.Value);
+            if (collapsed.PlayItems.Count < result.Value.PlayItems.Count)
             {
                 diagnostics.Add(new ManifestDiagnostic
                 {
                     Severity = "info",
                     Code = "ODM_BD_PLAYLIST_LOOP",
-                    Message = $"Playlist repeats play items back to back; {result.Value.PlayItems.Count - playlist.PlayItems.Count} repeated play item(s) are not emitted.",
+                    Message = $"Playlist repeats play items back to back; {result.Value.PlayItems.Count - collapsed.PlayItems.Count} repeated play item(s) are not emitted.",
+                    Path = result.Path,
+                });
+            }
+
+            var playlist = TrimTrailingNarrowerPlayItems(collapsed);
+            if (playlist.PlayItems.Count < collapsed.PlayItems.Count)
+            {
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_BD_PLAYLIST_NARROW_TAIL",
+                    Message = $"Playlist ends with {collapsed.PlayItems.Count - playlist.PlayItems.Count} play item(s) selecting fewer streams than its first play item; they are not emitted.",
                     Path = result.Path,
                 });
             }
@@ -1006,12 +1018,50 @@ public sealed partial class OpticalDiscManifestGenerator
             retained.Add(title);
         }
 
+        // An unchaptered playlist that plays like a chaptered one, and selects no stream
+        // it lacks, is the chaptered presentation without its chapters. MakeMKV skips it
+        // even when it comes first: on Super Mario Bros (3D Blu-ray) 00006.mpls (one
+        // chapter) is reported as equal to the later 01005.mpls (35 chapters). No listed
+        // pair in the TheDiscDb log corpus contradicts this.
+        var chaptered = retained
+            .Where(title => (title.Chapters?.Count ?? 0) > 1)
+            .GroupBy(title => CreateBluRayCompositionKey(title, includeChapters: false), StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.Ordinal);
+        retained.RemoveAll(title =>
+        {
+            if ((title.Chapters?.Count ?? 0) > 1
+                || title.Chapters is [{ StartSeconds: > 0 }]
+                || !chaptered.TryGetValue(CreateBluRayCompositionKey(title, includeChapters: false), out var candidates))
+            {
+                return false;
+            }
+
+            var original = candidates.FirstOrDefault(candidate => SelectsNoStreamBeyond(title, candidate));
+            if (original is null)
+            {
+                return false;
+            }
+
+            diagnostics.Add(new ManifestDiagnostic
+            {
+                Severity = "info",
+                Code = "ODM_BD_TITLE_DUPLICATE",
+                Message = $"Playlist plays the same as {original.Source?.Path ?? "another playlist"} without its chapters and selects no stream it lacks, so it is not emitted as a separate title.",
+                Path = title.Source?.Path,
+            });
+            return true;
+        });
+
         var referenced = new HashSet<string>(subPathClips, StringComparer.OrdinalIgnoreCase);
         foreach (var title in retained)
         {
             foreach (var segment in title.Segments ?? [])
             {
                 referenced.Add(segment.Clip);
+                if (segment.DependentClip is not null)
+                {
+                    referenced.Add(segment.DependentClip);
+                }
             }
 
             // A stereoscopic dependent view is carried by the title it pairs with rather
@@ -1145,6 +1195,9 @@ public sealed partial class OpticalDiscManifestGenerator
     /// its stream selection adds nothing.
     /// </summary>
     internal static string CreateBluRayCompositionKey(ManifestTitle title)
+        => CreateBluRayCompositionKey(title, includeChapters: true);
+
+    private static string CreateBluRayCompositionKey(ManifestTitle title, bool includeChapters)
     {
         var builder = new StringBuilder();
         foreach (var segment in title.Segments ?? [])
@@ -1156,6 +1209,8 @@ public sealed partial class OpticalDiscManifestGenerator
                 .Append(segment.DurationSeconds?.ToString("R", CultureInfo.InvariantCulture) ?? "-")
                 .Append('#')
                 .Append(segment.Angle?.ToString(CultureInfo.InvariantCulture) ?? "-")
+                .Append('/')
+                .Append(segment.DependentClip ?? "-")
                 .Append(';');
         }
 
@@ -1163,6 +1218,11 @@ public sealed partial class OpticalDiscManifestGenerator
             .Append('|')
             .Append(title.Stereoscopic3D?.DependentClipId ?? "-")
             .Append('|');
+
+        if (!includeChapters)
+        {
+            return builder.ToString();
+        }
 
         foreach (var chapter in title.Chapters ?? [])
         {
@@ -1180,13 +1240,20 @@ public sealed partial class OpticalDiscManifestGenerator
     /// 44 streams, and both are skipped. A playlist that adds a stream (a commentary
     /// track, say) is a distinct presentation and MakeMKV lists it, as it does for the
     /// 986 kept same-playback pairs in the TheDiscDb log corpus whose stream sets are
-    /// not nested.
+    /// not nested. Interactive graphics (menu) streams are not compared: MakeMKV never
+    /// extracts them, and on Super Mario Bros (3D Blu-ray) it reports 01009.mpls as equal
+    /// to 00005.mpls although only 01009.mpls selects a menu stream.
     /// </summary>
     internal static bool SelectsNoStreamBeyond(ManifestTitle title, ManifestTitle earlier)
     {
-        var available = new HashSet<string>((earlier.Streams ?? []).Select(CreateStreamKey), StringComparer.Ordinal);
-        return (title.Streams ?? []).All(stream => available.Contains(CreateStreamKey(stream)));
+        var available = new HashSet<string>(
+            (earlier.Streams ?? []).Where(IsComparedStream).Select(CreateStreamKey),
+            StringComparer.Ordinal);
+        return (title.Streams ?? []).Where(IsComparedStream).All(stream => available.Contains(CreateStreamKey(stream)));
     }
+
+    private static bool IsComparedStream(ManifestStream stream)
+        => !string.Equals(stream.Type, "menu", StringComparison.Ordinal);
 
     private static string CreateStreamKey(ManifestStream stream)
         => string.Join(
@@ -1339,6 +1406,9 @@ public sealed partial class OpticalDiscManifestGenerator
     {
         long cumulativeTicks = 0;
         var segments = new List<ManifestSegment>(playlist.PlayItems.Count);
+        var dependentClipByPlayItem = playlist.StereoVideoRelationships
+            .GroupBy(relationship => relationship.BasePlayItemIndex)
+            .ToDictionary(group => group.Key, group => group.First().DependentClipId);
         foreach (var item in playlist.PlayItems.OrderBy(item => item.Index))
         {
             long durationTicks = item.OutTime >= item.InTime ? item.OutTime - item.InTime : 0;
@@ -1361,6 +1431,10 @@ public sealed partial class OpticalDiscManifestGenerator
                     StartSeconds = TicksToSeconds(cumulativeTicks),
                     DurationSeconds = TicksToSeconds(durationTicks),
                     Angle = clips.Count > 1 ? clip.angleIndex + 1 : null,
+                    DependentClip = clip.angleIndex == 0
+                        && dependentClipByPlayItem.TryGetValue(item.Index, out string? dependentClip)
+                        ? dependentClip
+                        : null,
                 });
             }
 
@@ -1464,6 +1538,74 @@ public sealed partial class OpticalDiscManifestGenerator
     }
 
     /// <summary>
+    /// Drops trailing play items, each shorter than half a second, whose stream table is
+    /// narrower than the first play item's: no category holds more streams and at least
+    /// one holds fewer. MakeMKV does not carry such a tail into the title. On Super Mario
+    /// Bros (3D Blu-ray) <c>01000.mpls</c> plays clip 0 (video and audio) then the 0.42 s
+    /// clip 13 (video only), and MakeMKV reports segment map <c>0</c> with clip 0's size
+    /// alone, and lists <c>00000.m2ts</c> as equal to it; <c>01003.mpls</c> plays clip 3
+    /// then clip 13, and MakeMKV lists only <c>00003.m2ts</c>. A longer tail is kept: Hell
+    /// on Wheels Season 1 Disc 1 <c>00009.mpls</c> ends with the 1.04 s, video-only clip
+    /// 17, and MakeMKV reports segments <c>1,17</c>. Trailing play items with the same
+    /// stream table (<c>01001.mpls</c>, clips 1 and 12, both video only) are kept too.
+    /// Marks on dropped play items are dropped, and the first play item is always kept.
+    /// Stereoscopic playlists are left alone, because their pairing is declared per play
+    /// item.
+    /// </summary>
+    internal static MplsPlaylist TrimTrailingNarrowerPlayItems(MplsPlaylist playlist)
+    {
+        const uint MaximumTrimmedTicks = 45000 / 2;
+        var items = playlist.PlayItems.OrderBy(item => item.Index).ToArray();
+        if (items.Length < 2 || playlist.StereoVideoRelationships.Count > 0)
+        {
+            return playlist;
+        }
+
+        int[] first = CountStreams(items[0].StreamTable);
+        int keep = items.Length;
+        while (keep > 1)
+        {
+            var item = items[keep - 1];
+            int[] counts = CountStreams(item.StreamTable);
+            bool narrower = counts.Zip(first).All(pair => pair.First <= pair.Second)
+                && counts.Sum() < first.Sum();
+            if (!narrower || item.OutTime < item.InTime || item.OutTime - item.InTime >= MaximumTrimmedTicks)
+            {
+                break;
+            }
+
+            keep--;
+        }
+
+        if (keep == items.Length)
+        {
+            return playlist;
+        }
+
+        return playlist with
+        {
+            PlayItems = items.Take(keep).ToArray(),
+            Marks = playlist.Marks
+                .Where(mark => mark.PlayItemReference < keep)
+                .OrderBy(mark => mark.Index)
+                .Select((mark, newIndex) => mark with { Index = newIndex })
+                .ToArray(),
+        };
+
+        static int[] CountStreams(MplsStreamTable table) =>
+        [
+            table.VideoStreams.Count,
+            table.AudioStreams.Count,
+            table.PresentationGraphicsStreams.Count,
+            table.InteractiveGraphicsStreams.Count,
+            table.SecondaryAudioStreams.Count,
+            table.SecondaryVideoStreams.Count,
+            table.PictureInPicturePresentationGraphicsStreams.Count,
+            table.DolbyVisionVideoStreams.Count,
+        ];
+    }
+
+    /// <summary>
     /// Returns how much of the last play item's clip the playlist leaves unplayed after
     /// its out-time. MakeMKV reports such a title with the clip's full length, and
     /// places its last chapter accordingly: a playlist ending 4.4 s before its clip ends
@@ -1560,6 +1702,10 @@ public sealed partial class OpticalDiscManifestGenerator
         foreach (var segment in segments)
         {
             clipIds.Add(segment.Clip);
+            if (segment.DependentClip is not null)
+            {
+                clipIds.Add(segment.DependentClip);
+            }
         }
 
         if (stereoscopic3D is not null)
