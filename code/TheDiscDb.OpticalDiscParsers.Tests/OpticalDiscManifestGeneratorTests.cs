@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using TheDiscDb.OpticalDiscManifest.Generation;
@@ -898,6 +899,57 @@ public sealed class OpticalDiscManifestGeneratorTests
             Assert.Null(title.SizeBytes);
         });
         Assert.All(files.Where(file => file.Path.EndsWith(".VOB", StringComparison.OrdinalIgnoreCase)), file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Dvd_EmitsCellSegmentsThatReproduceMakeMkvLengthsAndSegmentMaps()
+    {
+        // MakeMKV 1.x TINFO:9 lengths and TINFO:26 segment maps for the same DVD-B disc
+        // (Reservoir Dogs 2002 SE disc 1). MakeMKV sums whole cell seconds, so the 23-cell
+        // feature reads 1:38:50 although its frame-accurate playback time is 1:38:59.
+        (string Length, string SegmentMap)[] expected =
+        [
+            ("1:38:50", "1-23"), ("0:04:39", "1,2"), ("0:02:57", "1,2"), ("0:02:31", "1,2"),
+            ("0:00:58", "1,2"), ("0:01:20", "1,2"), ("0:12:25", "1,2,3,4,5,6,7,8,9,10"),
+            ("0:06:54", "1"), ("0:06:49", "1"), ("0:11:16", "1"), ("0:06:08", "1"),
+            ("0:09:07", "1"), ("0:14:45", "1"), ("0:54:59", "1,2,3,4,5,6"), ("0:01:34", "1"),
+            ("0:00:11", "1"), ("0:00:36", "1,2"),
+        ];
+        var files = CreateDvdIfoFiles("DVD-B");
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "dvd-disc-id", new string('E', 32)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title =>
+            {
+                var segments = title.Segments!;
+                Assert.All(segments, segment => Assert.Matches(@"^\d+\.\d+$", segment.Clip));
+                Assert.Equal(title.DurationSeconds!.Value, segments.Sum(segment => segment.DurationSeconds!.Value), 3);
+                var wholeSeconds = TimeSpan.FromSeconds(segments.Sum(segment => Math.Floor(segment.DurationSeconds!.Value)));
+                return (wholeSeconds.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture), GroupCellsByVob(segments));
+            })
+            .ToArray();
+        Assert.Equal(expected, actual);
+
+        static string GroupCellsByVob(IReadOnlyList<ManifestSegment> segments)
+        {
+            var ranges = new List<string>();
+            int start = 1;
+            for (int number = 2; number <= segments.Count + 1; number++)
+            {
+                if (number > segments.Count
+                    || segments[number - 1].Clip.Split('.')[0] != segments[start - 1].Clip.Split('.')[0])
+                {
+                    ranges.Add(start == number - 1 ? $"{start}" : $"{start}-{number - 1}");
+                    start = number;
+                }
+            }
+
+            return string.Join(",", ranges);
+        }
     }
 
     private RecordingFile[] CreateDvdIfoFiles(string fixture)

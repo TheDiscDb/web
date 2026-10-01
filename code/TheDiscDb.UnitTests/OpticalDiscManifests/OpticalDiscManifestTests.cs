@@ -364,6 +364,34 @@ public class OpticalDiscManifestMapperTests
     }
 
     [Test]
+    public async Task ToDiscInfo_DvdCellsBecomeMakeMkvSegmentMapAndWholeSecondLength()
+    {
+        // Alexander disc 1 title 1: VOB 6 cells 1-3 then VOB 7 cell 1, as "{vobId}.{cellId}".
+        // MakeMKV numbers cells in play order, joins runs from the same VOB and sums whole
+        // cell seconds (197 + 152 + 208 + 5 = 562 s), ignoring the frame-accurate total.
+        var title = new OpticalDiscManifestTitle
+        {
+            Source = new OpticalDiscManifestTitleSource { Title = 1 },
+            DurationSeconds = 564.997,
+        };
+        foreach (var (clip, seconds) in new[] { ("6.1", 197.834), ("6.2", 152.5), ("6.3", 208.701), ("7.1", 5.968) })
+        {
+            title.Segments.Add(new OpticalDiscManifestSegment { Clip = clip, DurationSeconds = seconds });
+        }
+
+        var document = new OpticalDiscManifestDocument
+        {
+            SchemaVersion = 1,
+            Disc = new OpticalDiscManifestDisc { Format = "dvd", Titles = { title } }
+        };
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(document);
+
+        await Assert.That(info.Titles[0].SegmentMap).IsEqualTo("1-3,4");
+        await Assert.That(info.Titles[0].Length).IsEqualTo("0:09:22");
+    }
+
+    [Test]
     public async Task ToDiscInfo_BluRaySourceBecomesThePlaylistFileName()
     {
         var document = new OpticalDiscManifestDocument

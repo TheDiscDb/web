@@ -91,10 +91,10 @@ public static class OpticalDiscManifestMapper
             Index = index,
             Size = size,
             ChapterCount = source.ChapterCount ?? source.Chapters.Count,
-            Length = FormatDuration(source.DurationSeconds),
+            Length = FormatDuration(isDvd ? DvdLengthSeconds(source) : source.DurationSeconds),
             DisplaySize = source.DisplaySize ?? FormatDisplaySize(size),
             Playlist = MapPlaylist(source.Source, isDvd),
-            SegmentMap = MapSegmentMap(source.Segments)
+            SegmentMap = isDvd ? MapDvdSegmentMap(source.Segments) : MapSegmentMap(source.Segments)
         };
 
         int streamIndex = 0;
@@ -208,6 +208,66 @@ public static class OpticalDiscManifestMapper
             .ToList();
 
         return clips.Count == 0 ? string.Empty : string.Join(",", clips);
+    }
+
+    private static string MapDvdSegmentMap(IList<OpticalDiscManifestSegment> segments)
+    {
+        // A DVD segment is a cell named "{vobId}.{cellId}". MakeMKV numbers a title's cells from 1
+        // in play order and joins consecutive cells from the same VOB ID into a range, so a title
+        // playing VOB 6 cells 1-21 then VOB 7 cells 1-19 reads "1-21,22-40". This reproduces every
+        // title of Reservoir Dogs (2002 SE) and Alexander disc 1.
+        var ranges = new List<string>();
+        int start = 0;
+        string? startVob = null;
+        for (int number = 1; number <= segments.Count; number++)
+        {
+            string? vob = DvdVobId(segments[number - 1].Clip);
+            if (vob is null)
+            {
+                return string.Empty;
+            }
+
+            if (number == 1 || vob != startVob)
+            {
+                if (number > 1)
+                {
+                    ranges.Add(FormatCellRange(start, number - 1));
+                }
+
+                start = number;
+                startVob = vob;
+            }
+        }
+
+        if (start > 0)
+        {
+            ranges.Add(FormatCellRange(start, segments.Count));
+        }
+
+        return string.Join(",", ranges);
+    }
+
+    private static string FormatCellRange(int first, int last)
+        => first == last
+            ? first.ToString(CultureInfo.InvariantCulture)
+            : string.Create(CultureInfo.InvariantCulture, $"{first}-{last}");
+
+    private static string? DvdVobId(string? clip)
+    {
+        int separator = clip?.IndexOf('.') ?? -1;
+        return separator > 0 ? clip![..separator] : null;
+    }
+
+    private static double? DvdLengthSeconds(OpticalDiscManifestTitle source)
+    {
+        // MakeMKV adds up each cell's playback time in whole seconds, dropping the frames, so
+        // Alexander's 40-cell feature (10002.02 s) reads 2:46:22 rather than 2:46:42.
+        if (source.Segments.Count > 0 && source.Segments.All(segment => segment.DurationSeconds is >= 0))
+        {
+            return source.Segments.Sum(segment => Math.Floor(segment.DurationSeconds!.Value));
+        }
+
+        return source.DurationSeconds;
     }
 
     private static string? NormalizeClipId(string? clip)

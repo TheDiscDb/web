@@ -354,6 +354,7 @@ public sealed partial class OpticalDiscManifestGenerator
             }
 
             var chapters = new List<ManifestChapter>(titleMap.Parts.Count);
+            var segments = new List<ManifestSegment>();
             double elapsedSeconds = 0;
             long sizeBytes = 0;
             bool sizeComplete = timingSupported;
@@ -393,6 +394,24 @@ public sealed partial class OpticalDiscManifestGenerator
                     StartSeconds = RoundSeconds(elapsedSeconds),
                     DurationSeconds = RoundSeconds(duration),
                 });
+
+                if (TryGetProgramCells(pgc, part.ProgramNumber, out var programCells))
+                {
+                    double cellStart = elapsedSeconds;
+                    foreach (var cell in programCells)
+                    {
+                        var position = pgc.CellPositions[cell.Number - 1];
+                        double cellSeconds = cell.PlaybackTime.ToTimeSpan().TotalSeconds;
+                        segments.Add(new ManifestSegment
+                        {
+                            Clip = FormatDvdCellClip(position),
+                            StartSeconds = RoundSeconds(cellStart),
+                            DurationSeconds = RoundSeconds(cellSeconds),
+                        });
+                        cellStart += cellSeconds;
+                    }
+                }
+
                 elapsedSeconds += duration;
             }
 
@@ -422,6 +441,7 @@ public sealed partial class OpticalDiscManifestGenerator
                 DurationSeconds = timingComplete ? RoundSeconds(elapsedSeconds) : null,
                 SizeBytes = sizeComplete && completeParts && titleMap.Parts.Count > 0 ? sizeBytes : null,
                 Chapters = chapters.Count > 0 && timingComplete ? chapters : null,
+                Segments = segments.Count > 0 && timingComplete ? segments : null,
                 Streams = streams.Count > 0 ? streams : null,
             });
         }
@@ -531,6 +551,13 @@ public sealed partial class OpticalDiscManifestGenerator
             .ToList();
         return true;
     }
+
+    /// <summary>
+    /// Names a DVD cell by its VOB ID and cell ID (C_POSIT), written as <c>"{vobId}.{cellId}"</c>.
+    /// This is the cell's address on disc, the DVD counterpart of a Blu-ray clip.
+    /// </summary>
+    internal static string FormatDvdCellClip(CellPositionInfo position)
+        => string.Create(CultureInfo.InvariantCulture, $"{position.VobId}.{position.CellId}");
 
     private static ManifestDiagnostic DvdPartial(string message)
         => new()
