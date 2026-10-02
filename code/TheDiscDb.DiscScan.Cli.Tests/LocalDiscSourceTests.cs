@@ -99,6 +99,55 @@ public sealed class LocalDiscSourceTests
     }
 
     [Fact]
+    public async Task Cli_StdoutAndQuiet_KeepJsonSeparateFromProgress()
+    {
+        string root = CreateDvdFixtureDiscRoot("DVD-B");
+        try
+        {
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = await Program.RunAsync(
+                [root, "--stdout", "-q"], stdout, stderr, TestContext.Current.CancellationToken);
+
+            Assert.Equal(Program.Success, exitCode);
+            using var json = System.Text.Json.JsonDocument.Parse(stdout.ToString());
+            Assert.Equal("dvd", json.RootElement.GetProperty("disc").GetProperty("format").GetString());
+            Assert.Empty(stderr.ToString());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData("-o")]
+    [InlineData("--output")]
+    public async Task Cli_OutputAliasAndForce_OverwriteExistingFile(string option)
+    {
+        string outputPath = Path.GetTempFileName();
+        string root = CreateDvdFixtureDiscRoot("DVD-B");
+        try
+        {
+            using var stdout = new StringWriter();
+            using var stderr = new StringWriter();
+
+            int exitCode = await Program.RunAsync(
+                [root, option, outputPath, "--force", "-v"], stdout, stderr, TestContext.Current.CancellationToken);
+
+            Assert.Equal(Program.Success, exitCode);
+            Assert.Contains("Scanning ", stderr.ToString());
+            Assert.Contains("\"format\": \"dvd\"", await File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            File.Delete(outputPath);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void EnumerateCandidateRoots_Linux_IncludesExpectedMountPatterns()
     {
         var roots = LocalDiscSource.EnumerateCandidateRootsForTest(

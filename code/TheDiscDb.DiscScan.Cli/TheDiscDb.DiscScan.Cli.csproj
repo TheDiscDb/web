@@ -14,6 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="2.0.5" />
     <InternalsVisibleTo Include="TheDiscDb.DiscScan.Cli.Tests" />
     <ProjectReference Include="..\TheDiscDb.OpticalDiscManifest\TheDiscDb.OpticalDiscManifest.csproj" />
   </ItemGroup>

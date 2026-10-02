@@ -15,7 +15,7 @@
         <section class="contribute-hero compact">
             <p class="eyebrow">Upload Logs</p>
             <h1>@contribution.Title (@contribution.Year)</h1>
-            <p>Provide a disc scan, a MakeMKV log, or an Optical Disc Manifest for this disc so we can analyze the structure and allow you to identify items.</p>
+            <p>Upload a MakeMKV log for this disc so we can analyze its structure and allow you to identify items.</p>
         </section>
 
         @if (!string.IsNullOrEmpty(uploadError))
@@ -106,37 +106,6 @@
                                         <UploaderEvents ValueChange="ValueChange" />
                                     </SfUploader>
                                 </div>
-                            </ContentTemplate>
-                        </TabItem>
-                        <TabItem>
-                            <ChildContent>
-                                <TabHeader Text="Disc Manifest" />
-                            </ChildContent>
-                            <ContentTemplate>
-                                <div class="manual-upload">
-                                    <p>Have an Optical Disc Manifest? Upload the <code>.odm.json</code> file.</p>
-                                    <p class="small text-muted">
-                                        Can't scan in this browser? Create a manifest on your own computer with
-                                        <a href="https://github.com/TheDiscDb/web/releases?q=scan-cli" target="_blank" rel="noopener noreferrer">thediscdb-scan</a>
-                                        (Windows, macOS and Linux), for example <code>thediscdb-scan D:\ -o disc01.odm.json</code>, then upload the file here.
-                                    </p>
-                                    <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".json" ShowFileList="false">
-                                        <UploaderEvents ValueChange="ManifestValueChange" />
-                                    </SfUploader>
-                                </div>
-                            </ContentTemplate>
-                        </TabItem>
-                        <TabItem>
-                            <ChildContent>
-                                <TabHeader Text="Scan Disc" />
-                            </ChildContent>
-                            <ContentTemplate>
-                                <DiscScanPanel IsScanning="isScanning"
-                                               ScanProgress="@scanProgress"
-                                               ScanWarnings="scanWarnings"
-                                               ScanUploadSucceeded="scanUploadSucceeded"
-                                               IsDefaultMode="IsDefaultMode"
-                                               OnScanDisc="ScanDiscAsync" />
                             </ContentTemplate>
                         </TabItem>
                     }

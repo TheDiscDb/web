@@ -29,15 +29,16 @@ else
     <div class="contribute-layout disc-scan-offer-page">
         <section class="contribute-hero compact">
             <p class="eyebrow">MakeMKV log uploaded</p>
-            <h1><span class="optional-badge">Optional</span> Help us test disc scanning</h1>
+            <h1><span class="optional-badge">New</span> Help us test disc scanning</h1>
             <p class="optional-callout">
                 <strong>This step is optional.</strong> Your contribution is complete without it &mdash; you can skip
                 straight to identifying the titles on @(disc.Name ?? "this disc").
             </p>
             <p>
-                If you have a moment, scanning the disc helps us compare each scan with its MakeMKV log so that,
-                in the future, contributing won't need MakeMKV at all. The scan only reads the disc's structure
-                files &mdash; none of your video is uploaded.
+                We are developing a new browser only disc scan method (no MakeMKV requirement!). Scanning the disc
+                helps us compare each scan with its MakeMKV log so that we can test the
+                <a href="https://github.com/TheDiscDb/optical-disc-manifest" target="_blank" rel="noopener noreferrer">new log format</a>.
+                The scan only reads the disc's structure files &mdash; none of your video is uploaded.
             </p>
             <div class="scan-cta">
                 <button class="btn btn-light btn-lg" @onclick="ScanDiscAsync" disabled="@isBusy">

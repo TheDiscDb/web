@@ -1,4 +1,4 @@
-using System.Diagnostics.CodeAnalysis;
+using System.CommandLine;
 using System.Reflection;
 using TheDiscDb.OpticalDiscManifest.Generation;
 using TheDiscDb.OpticalDiscManifest.Models;
@@ -26,37 +26,90 @@ public static class Program
         TextWriter error,
         CancellationToken cancellationToken = default)
     {
-        if (!CommandLineOptions.TryParse(args, out CommandLineOptions? options, out string parseError))
+        var path = new Argument<string?>("path")
         {
-            error.WriteLine(parseError);
-            error.WriteLine();
-            WriteHelp(error);
-            return BadArguments;
+            Description = "Disc root containing VIDEO_TS or BDMV, a drive letter, or a mounted volume.",
+            Arity = ArgumentArity.ZeroOrOne
+        };
+        var outputPath = new Option<string?>("--output", "-o")
+        {
+            Description = "Output .odm.json path. Defaults to <volume-label-or-folder-name>.odm.json in the current directory.",
+            HelpName = "file"
+        };
+        var stdout = new Option<bool>("--stdout") { Description = "Write JSON to stdout instead of a file." };
+        var force = new Option<bool>("--force") { Description = "Overwrite an existing output file." };
+        var list = new Option<bool>("--list") { Description = "Detect mounted DVD/Blu-ray discs and print path, label, and format." };
+        var quiet = new Option<bool>("--quiet", "-q") { Description = "Suppress progress and warning output." };
+        var verbose = new Option<bool>("--verbose", "-v") { Description = "Print extra scan details." };
+
+        var command = new RootCommand(
+            $"TheDiscDb optical disc manifest scanner. Exit codes: {Success} success, {BadArguments} bad arguments, " +
+            $"{NoDiscFound} no disc found, {GenerationFailure} generation failure, {ValidationFailure} validation failure.");
+        command.Arguments.Add(path);
+        command.Options.Add(list);
+        var listCommand = new Command("list", list.Description!);
+        command.Subcommands.Add(listCommand);
+
+        foreach (var target in new Command[] { command, listCommand })
+        {
+            target.Options.Add(outputPath);
+            target.Options.Add(stdout);
+            target.Options.Add(force);
+            target.Options.Add(quiet);
+            target.Options.Add(verbose);
+            target.Validators.Add(result =>
+            {
+                if (result.GetValue(stdout) && result.GetValue(outputPath) is not null)
+                {
+                    result.AddError("--stdout cannot be combined with --output.");
+                }
+
+                if (result.GetValue(quiet) && result.GetValue(verbose))
+                {
+                    result.AddError("--quiet cannot be combined with --verbose.");
+                }
+            });
         }
 
-        if (options.ShowHelp)
+        command.Validators.Add(result =>
         {
-            WriteHelp(output);
-            return Success;
-        }
+            if (result.GetValue(path) is { } value && value.StartsWith('-'))
+            {
+                result.AddError($"Unknown option: {value}");
+            }
 
-        if (options.ShowVersion)
+            if (result.GetValue(path) is null && !result.GetValue(list))
+            {
+                result.AddError("A disc path is required unless --list, --help, or --version is specified.");
+            }
+        });
+        command.SetAction((result, token) => result.GetValue(list)
+            ? Task.FromResult(ListDiscs(output, error))
+            : ScanAsync(new CommandLineOptions(
+                result.GetValue(path)!,
+                result.GetValue(outputPath),
+                result.GetValue(stdout),
+                result.GetValue(force),
+                result.GetValue(quiet),
+                result.GetValue(verbose)), output, error, token));
+        listCommand.SetAction(_ => ListDiscs(output, error));
+
+        var parsed = command.Parse(args);
+        int exitCode = await parsed.InvokeAsync(new InvocationConfiguration
         {
-            output.WriteLine(GetVersion());
-            return Success;
-        }
+            Output = output,
+            Error = error,
+            EnableDefaultExceptionHandler = false
+        }, cancellationToken);
+        return parsed.Errors.Count > 0 ? BadArguments : exitCode;
+    }
 
-        if (options.List)
-        {
-            return ListDiscs(output, error);
-        }
-
-        if (options.Path is null)
-        {
-            error.WriteLine("A disc path is required unless --list, --help, or --version is specified.");
-            return BadArguments;
-        }
-
+    private static async Task<int> ScanAsync(
+        CommandLineOptions options,
+        TextWriter output,
+        TextWriter error,
+        CancellationToken cancellationToken)
+    {
         if (!LocalDiscSource.TryOpen(options.Path, out LocalDiscSource? source, out string sourceError)
             || source is null)
         {
@@ -208,134 +261,11 @@ public static class Program
         return string.IsNullOrWhiteSpace(sanitized) ? "disc" : sanitized;
     }
 
-    private static void WriteHelp(TextWriter writer)
-    {
-        writer.WriteLine($"""
-            TheDiscDb optical disc manifest scanner
-
-            Usage:
-              thediscdb-scan <path> [-o|--output <file>] [--stdout] [--force] [-q|--quiet] [-v|--verbose]
-              thediscdb-scan --list
-              thediscdb-scan --help
-              thediscdb-scan --version
-
-            Arguments:
-              <path>                Disc root containing VIDEO_TS or BDMV, a drive letter, or a mounted volume.
-
-            Options:
-              -o, --output <file>   Output .odm.json path. Defaults to <volume-label-or-folder-name>.odm.json in the current directory.
-              --stdout              Write JSON to stdout instead of a file.
-              --force               Overwrite an existing output file.
-              --list, list          Detect mounted DVD/Blu-ray discs and print path, label, and format.
-              -q, --quiet           Suppress progress and warning output.
-              -v, --verbose         Print extra scan details.
-              --help, -h, -?        Show help.
-              --version             Show version.
-
-            Exit codes:
-              {Success} success, {BadArguments} bad arguments, {NoDiscFound} no disc found, {GenerationFailure} generation failure, {ValidationFailure} validation failure.
-            """);
-    }
-
     private sealed record CommandLineOptions(
-        string? Path,
+        string Path,
         string? OutputPath,
         bool Stdout,
         bool Force,
-        bool List,
         bool Quiet,
-        bool Verbose,
-        bool ShowHelp,
-        bool ShowVersion)
-    {
-        public static bool TryParse(
-            string[] args,
-            [NotNullWhen(true)] out CommandLineOptions? options,
-            out string error)
-        {
-            string? path = null;
-            string? outputPath = null;
-            bool stdout = false;
-            bool force = false;
-            bool list = false;
-            bool quiet = false;
-            bool verbose = false;
-            bool help = false;
-            bool version = false;
-            error = string.Empty;
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                string arg = args[i];
-                switch (arg)
-                {
-                    case "--help" or "-h" or "-?":
-                        help = true;
-                        break;
-                    case "--version":
-                        version = true;
-                        break;
-                    case "--list" or "list":
-                        list = true;
-                        break;
-                    case "--stdout":
-                        stdout = true;
-                        break;
-                    case "--force":
-                        force = true;
-                        break;
-                    case "--quiet" or "-q":
-                        quiet = true;
-                        break;
-                    case "--verbose" or "-v":
-                        verbose = true;
-                        break;
-                    case "--output" or "-o":
-                        if (i + 1 >= args.Length)
-                        {
-                            options = null;
-                            error = $"{arg} requires a file path.";
-                            return false;
-                        }
-
-                        outputPath = args[++i];
-                        break;
-                    default:
-                        if (arg.StartsWith('-'))
-                        {
-                            options = null;
-                            error = $"Unknown option: {arg}";
-                            return false;
-                        }
-
-                        if (path is not null)
-                        {
-                            options = null;
-                            error = $"Unexpected argument: {arg}";
-                            return false;
-                        }
-
-                        path = arg;
-                        break;
-                }
-            }
-
-            if (stdout && outputPath is not null)
-            {
-                options = null;
-                error = "--stdout cannot be combined with --output.";
-                return false;
-            }
-
-            if (quiet && verbose)
-            {
-                options = null;
-                error = "--quiet cannot be combined with --verbose.";
-                return false;
-            }
-
-            options = new CommandLineOptions(path, outputPath, stdout, force, list, quiet, verbose, help, version);
-            return true;
-        }
-    }
+        bool Verbose);
 }
