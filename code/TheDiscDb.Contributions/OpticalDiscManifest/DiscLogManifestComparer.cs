@@ -238,7 +238,17 @@ public static partial class DiscLogManifestComparer
         return new TitleCollection(byKey, orderedKeys, duplicateKeys);
     }
 
-    private static string? SourceKey(Title title) => string.IsNullOrWhiteSpace(title.Playlist) ? null : title.Playlist.Trim();
+    // DVD titles are keyed by title number, which MakeMKV may zero-pad ("01") and the scan does not ("1").
+    private static string? SourceKey(Title title)
+    {
+        if (string.IsNullOrWhiteSpace(title.Playlist))
+        {
+            return null;
+        }
+
+        string key = title.Playlist.Trim();
+        return key.All(char.IsAsciiDigit) ? key.TrimStart('0') is { Length: > 0 } trimmed ? trimmed : "0" : key;
+    }
 
     private static string? NormalizeHash(string? hash) => string.IsNullOrWhiteSpace(hash) ? null : hash.Trim();
 

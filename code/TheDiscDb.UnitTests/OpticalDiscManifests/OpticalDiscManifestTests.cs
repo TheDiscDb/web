@@ -641,6 +641,24 @@ public class DiscLogManifestComparerTests
     }
 
     [Test]
+    public async Task Compare_ZeroPaddedDvdTitleNumbers_Match()
+    {
+        var manifest = CreateManifest();
+        DiscInfo manifestInfo = CreateDiscInfo(
+            CreateLogTitle("1", chapters: 1, size: 100, length: "0:00:10", segmentMap: "1"),
+            CreateLogTitle("10", chapters: 1, size: 100, length: "0:00:10", segmentMap: "2"));
+        DiscInfo logInfo = CreateDiscInfo(
+            CreateLogTitle("01", chapters: 1, size: 100, length: "0:00:10", segmentMap: "1"),
+            CreateLogTitle("10", chapters: 1, size: 100, length: "0:00:10", segmentMap: "2"));
+
+        var result = DiscLogManifestComparer.Compare(logInfo, string.Empty, manifest, manifestInfo, "HASH");
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Match);
+        await Assert.That(result.Differences.LogOnlyTitles).IsEmpty();
+        await Assert.That(result.Differences.ManifestOnlyTitles).IsEmpty();
+    }
+
+    [Test]
     public async Task Compare_DifferentContentHash_IsDifferentDisc()
     {
         var manifest = CreateManifest(
