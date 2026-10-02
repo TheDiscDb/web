@@ -39,16 +39,33 @@ else
                 in the future, contributing won't need MakeMKV at all. The scan only reads the disc's structure
                 files &mdash; none of your video is uploaded.
             </p>
+            <div class="scan-cta">
+                <button class="btn btn-light btn-lg" @onclick="ScanDiscAsync" disabled="@isBusy">
+                    @(isScanning ? "Scanning disc…" : "Scan Disc in Browser")
+                </button>
+                <span class="scan-hint">Put the disc in your drive, then select its root folder when prompted.</span>
+            </div>
         </section>
 
-        <section class="info-card scan-primary">
-            <h2>Scan in your browser</h2>
-            <DiscScanPanel IsScanning="isScanning"
-                           ScanProgress="@scanProgress"
-                           ScanWarnings="scanWarnings"
-                           ButtonText="Scan disc"
-                           OnScanDisc="ScanDiscAsync" />
-        </section>
+        @if (isScanning)
+        {
+            <div class="info-card scan-status">
+                <LoadingIndicator Message="@(scanProgress ?? "Reading disc…")" />
+            </div>
+        }
+
+        @if (scanWarnings.Count > 0)
+        {
+            <div class="alert alert-warning" role="status">
+                <p>The disc was scanned, but some of its structure could not be read:</p>
+                <ul>
+                    @foreach (var warning in scanWarnings)
+                    {
+                        <li>@warning</li>
+                    }
+                </ul>
+            </div>
+        }
 
         @if (!string.IsNullOrEmpty(error))
         {
