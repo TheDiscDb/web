@@ -90,18 +90,6 @@
     }
     else
     {
-        @if (ShouldShowMissingManifestBanner())
-        {
-            <div class="alert alert-info missing-manifest-banner">
-                <div>
-                    <strong>Optional:</strong> this disc has a MakeMKV log but no browser disc scan yet.
-                    A scan helps us compare results and move toward log-free contributions.
-                    <a href="/contribution/@ContributionId/discs/@DiscId?scan=1">Scan this disc</a>.
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="DismissMissingManifestBanner">Dismiss</button>
-            </div>
-        }
-
         <div class="filter-panel">
             <h3 class="filter-panel-heading">Filters</h3>
             <div class="filter-controls">

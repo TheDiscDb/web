@@ -199,7 +199,6 @@ public partial class IdentifyDiscItems : CancellableComponentBase
 
     private bool commentColumnVisible = false;
     private string? loadError;
-    private bool showMissingManifestBanner = true;
 
     bool showEpisodeDialog = false;
     SfDialog? episodeDialog;
@@ -1192,17 +1191,6 @@ public partial class IdentifyDiscItems : CancellableComponentBase
     private void SubmitIdentifications(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
     {
         this.NavigationManager.NavigateTo($"/contribution/{this.ContributionId}");
-    }
-
-    private bool ShouldShowMissingManifestBanner()
-        => this.showMissingManifestBanner
-            && this.disc?.LogsUploaded == true
-            && this.disc.ManifestUploaded == false
-            && string.IsNullOrEmpty(this.disc.ExistingDiscPath);
-
-    private void DismissMissingManifestBanner()
-    {
-        this.showMissingManifestBanner = false;
     }
 
     private void SeasonChanged(ChangeEventArgs args)

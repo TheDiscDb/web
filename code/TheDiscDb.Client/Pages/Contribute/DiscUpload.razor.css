@@ -31,17 +31,10 @@
     padding-left: 1.25rem;
 }
 
-.optional-scan-panel,
 .advanced-log-upload {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-}
-
-.optional-scan-panel .cta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
 }
 
 .advanced-log-upload section {

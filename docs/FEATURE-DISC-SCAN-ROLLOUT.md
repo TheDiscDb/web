@@ -8,7 +8,7 @@ phases so that MakeMKV logs can eventually be retired.
 
 | Phase | State | Description |
 |---|---|---|
-| 1. Collect both | 🟢 Built | The MakeMKV log is required and drives identification. After the log uploads, contributors can optionally scan the disc. The server stores both and compares them. |
+| 1. Collect both | 🟢 Built | The MakeMKV log is required and drives identification. After the log uploads, an interstitial page (`/contribution/{id}/discs/{discId}/scan`) offers a browser scan or a scan-file upload, or lets contributors skip to identify. The server stores both and compares them. |
 | 2. Scan by default | 🟢 Built, switched off | Set `Contributions:DiscScanMode` to `Default`. The scan becomes the first upload option and the identification source, and MakeMKV logs move to "Advanced". |
 | 3. Scan first, no logs | 🔵 Proposed | The scan becomes the first contribution step, replacing the TMDB lookup, and MakeMKV logs are no longer accepted. |
 

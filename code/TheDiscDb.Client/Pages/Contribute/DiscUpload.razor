@@ -38,40 +38,6 @@
             </div>
         }
 
-        @if (showOptionalScanPanel)
-        {
-            <section class="info-card optional-scan-panel">
-                <p class="eyebrow">Optional</p>
-                <h2>Also scan this disc</h2>
-                <p>
-                    Your MakeMKV log is uploaded. If you can also scan the disc in your browser,
-                    we can compare both results and use that data to replace MakeMKV logs in the future.
-                    Scan warnings never block your contribution.
-                </p>
-                @if (!string.IsNullOrEmpty(scanNotice))
-                {
-                    <div class="alert alert-info">@scanNotice</div>
-                }
-                <div class="cta-row">
-                    <button class="btn btn-primary" @onclick="ScanDiscAsync" disabled="@isScanning">
-                        @(isScanning ? "Scanning Disc..." : "Scan disc")
-                    </button>
-                    <button class="btn btn-secondary" @onclick="SkipAndIdentify" disabled="@isScanning">Skip and identify</button>
-                    @if (showContinueToIdentify)
-                    {
-                        <button class="btn btn-outline-primary" @onclick="ContinueToIdentify">Continue to identify</button>
-                    }
-                </div>
-                <DiscScanPanel IsScanning="isScanning"
-                               ScanProgress="@scanProgress"
-                               ScanWarnings="scanWarnings"
-                               ScanUploadSucceeded="scanUploadSucceeded"
-                               IsDefaultMode="IsDefaultMode"
-                               ButtonText="Scan disc"
-                               OnScanDisc="ScanDiscAsync" />
-            </section>
-        }
-
         <section class="info-card upload-instructions">
             <h2>Choose how you want to upload</h2>
             <SfTab @bind-SelectedItem="selectedIndex">

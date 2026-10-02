@@ -190,6 +190,24 @@ public class LowercaseUrlMiddlewareTests
     }
 
     [Test]
+    public async Task Regression_ContributionDiscScanOfferUrl_PreservesSqidCase()
+    {
+        // After a log upload in Optional mode, DiscUpload.razor.cs redirects to:
+        //   /contribution/{ContributionId}/discs/{DiscId}/scan
+        const string originalPath = "/contribution/AbCdEf/discs/XyZaBc/scan";
+        var wasCalled = false;
+        RequestDelegate next = _ => { wasCalled = true; return Task.CompletedTask; };
+        var middleware = new LowercaseUrlMiddleware(next);
+        var context = CreateHttpContext("GET", originalPath);
+
+        await middleware.InvokeAsync(context);
+
+        await Assert.That(wasCalled).IsTrue();
+        await Assert.That(context.Request.Path.Value).IsEqualTo(originalPath);
+        await Assert.That(context.Response.StatusCode is < 300 or > 399).IsTrue();
+    }
+
+    [Test]
     public async Task Regression_ContributionDetailUrl_PreservesSqidCase()
     {
         // BreadCrumbHelper generates: /contribution/{encodedId}

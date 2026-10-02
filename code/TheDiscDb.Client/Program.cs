@@ -53,6 +53,7 @@ builder.Services.AddScoped<DiscDirectoryPicker>();
 builder.Services.AddSingleton<OpticalDiscManifestSchemaValidator>();
 builder.Services.AddScoped<OpticalDiscManifestGenerator>();
 builder.Services.AddScoped<BrowserOpticalDiscManifestScanner>();
+builder.Services.AddScoped<DiscScanUploader>();
 
 builder.Services.AddScoped<IExternalSearchService, ExternalSearchService>();
 

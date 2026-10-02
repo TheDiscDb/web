@@ -1,0 +1,87 @@
+@inherits CancellableComponentBase
+@page "/contribution/{contributionId}/discs/{discId}/scan"
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@if (isLoading)
+{
+    <div class="contribute-layout">
+        <LoadingIndicator Message="Loading disc…" />
+    </div>
+}
+else if (contribution is null || disc is null)
+{
+    <div class="contribute-layout">
+        <section class="contribute-hero compact">
+            <h1>Disc not found</h1>
+            <p>We couldn’t load the requested disc. Please return to the contribution overview.</p>
+            <a class="btn btn-secondary" href="/contribution/@ContributionId">Back to contribution</a>
+        </section>
+    </div>
+}
+else
+{
+    <Breadcrumb PrimaryText="Scan Disc" Items="[
+        GetRootContributionLink(),
+        GetContributionLink(contribution)
+    ]" />
+
+    <div class="contribute-layout disc-scan-offer-page">
+        <section class="contribute-hero compact">
+            <p class="eyebrow">Optional</p>
+            <h1>Your MakeMKV log is uploaded</h1>
+            <p>
+                You can continue to identify the titles on @(disc.Name ?? "this disc") now. If you have a moment,
+                please also scan the disc. We compare each scan with its MakeMKV log so that, in the future,
+                contributing won't need MakeMKV at all. The scan only reads the disc's structure files &mdash;
+                none of your video is uploaded.
+            </p>
+            <div class="cta-row">
+                <button class="btn btn-primary" @onclick="NavigateToIdentify" disabled="@isBusy">
+                    @(scanUploaded ? "Continue to identify" : "Skip and identify")
+                </button>
+            </div>
+        </section>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-warning" role="alert">
+                <strong>The scan could not be uploaded:</strong> @error
+                <div>You can try again or skip this step &mdash; your contribution is not affected.</div>
+            </div>
+        }
+
+        @if (scanUploaded)
+        {
+            <div class="alert alert-success" role="status">
+                Thanks! The scan was uploaded. Review any warnings below, then continue to identify this disc.
+            </div>
+        }
+
+        <div class="scan-options">
+            <section class="info-card">
+                <h2>Scan in your browser</h2>
+                <DiscScanPanel IsScanning="isScanning"
+                               ScanProgress="@scanProgress"
+                               ScanWarnings="scanWarnings"
+                               ButtonText="Scan disc"
+                               OnScanDisc="ScanDiscAsync" />
+            </section>
+
+            <section class="info-card">
+                <h2>Upload a scan file</h2>
+                <div class="manual-upload">
+                    <p>
+                        Can't scan in this browser? Create a scan file (<code>.odm.json</code>) on your computer with
+                        <a href="https://github.com/TheDiscDb/web/releases?q=scan-cli" target="_blank" rel="noopener noreferrer">thediscdb-scan</a>
+                        for Windows, macOS or Linux, then upload it here.
+                    </p>
+                    <pre><code>thediscdb-scan D:\ -o disc.odm.json</code></pre>
+                    <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".json" ShowFileList="false">
+                        <UploaderEvents ValueChange="ManifestFileChange" />
+                    </SfUploader>
+                </div>
+            </section>
+        </div>
+    </div>
+}
