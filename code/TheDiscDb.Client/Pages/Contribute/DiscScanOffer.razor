@@ -82,6 +82,8 @@ else
             </div>
         }
 
+        @if (ShowScanFileUpload)
+        {
         <section class="info-card scan-file">
             <h2>Or upload a scan file</h2>
             <div class="manual-upload">
@@ -96,6 +98,7 @@ else
                 </SfUploader>
             </div>
         </section>
+        }
 
         <div class="skip-row">
             @if (scanUploaded)

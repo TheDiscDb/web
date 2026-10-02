@@ -21,6 +21,7 @@ public class WasmConfigMiddleware
         var apiKeyAuthEnabled = configuration.GetValue<bool>("GraphQL:ApiKeyAuthentication:Enabled");
         var discScanMode = configuration.GetValue<string>($"{DiscScanOptions.SectionName}:DiscScanMode")
             ?? DiscScanMode.Optional.ToString();
+        var showScanFileUpload = configuration.GetValue<bool>($"{DiscScanOptions.SectionName}:{nameof(DiscScanOptions.ShowScanFileUpload)}");
         if ((apiKeyAuthEnabled && !string.IsNullOrEmpty(publicApiKey))
             || !string.IsNullOrEmpty(discScanMode))
         {
@@ -47,6 +48,7 @@ public class WasmConfigMiddleware
 
             var contributions = json[DiscScanOptions.SectionName] as JsonObject ?? new JsonObject();
             contributions[nameof(DiscScanOptions.DiscScanMode)] = discScanMode;
+            contributions[nameof(DiscScanOptions.ShowScanFileUpload)] = showScanFileUpload;
             json[DiscScanOptions.SectionName] = contributions;
 
             augmentedJson = JsonSerializer.SerializeToUtf8Bytes(json, new JsonSerializerOptions { WriteIndented = true });

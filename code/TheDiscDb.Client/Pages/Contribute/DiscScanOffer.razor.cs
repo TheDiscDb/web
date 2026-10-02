@@ -36,6 +36,12 @@ public partial class DiscScanOffer : CancellableComponentBase
     [Inject]
     private IJSRuntime JSRuntime { get; set; } = default!;
 
+    [Inject]
+    private IConfiguration Configuration { get; set; } = default!;
+
+    // Hidden at launch; set Contributions:ShowScanFileUpload to offer the thediscdb-scan file upload.
+    private bool ShowScanFileUpload => this.Configuration.GetValue<bool>("Contributions:ShowScanFileUpload");
+
     private IDiscUploadPageData_MyContributions_Nodes? contribution;
     private IDiscUploadPageData_MyContributions_Nodes_Discs? disc;
     private bool isLoading = true;
