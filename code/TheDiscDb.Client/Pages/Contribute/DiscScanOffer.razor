@@ -39,11 +39,15 @@ else
                 in the future, contributing won't need MakeMKV at all. The scan only reads the disc's structure
                 files &mdash; none of your video is uploaded.
             </p>
-            <div class="cta-row">
-                <button class="btn btn-primary" @onclick="NavigateToIdentify" disabled="@isBusy">
-                    @(scanUploaded ? "Continue to identify" : "Skip and identify")
-                </button>
-            </div>
+        </section>
+
+        <section class="info-card scan-primary">
+            <h2>Scan in your browser</h2>
+            <DiscScanPanel IsScanning="isScanning"
+                           ScanProgress="@scanProgress"
+                           ScanWarnings="scanWarnings"
+                           ButtonText="Scan disc"
+                           OnScanDisc="ScanDiscAsync" />
         </section>
 
         @if (!string.IsNullOrEmpty(error))
@@ -57,34 +61,35 @@ else
         @if (scanUploaded)
         {
             <div class="alert alert-success" role="status">
-                Thanks! The scan was uploaded. Review any warnings below, then continue to identify this disc.
+                Thanks! The scan was uploaded. Review any warnings above, then continue to identify this disc.
             </div>
         }
 
-        <div class="scan-options">
-            <section class="info-card">
-                <h2>Optional: scan in your browser</h2>
-                <DiscScanPanel IsScanning="isScanning"
-                               ScanProgress="@scanProgress"
-                               ScanWarnings="scanWarnings"
-                               ButtonText="Scan disc"
-                               OnScanDisc="ScanDiscAsync" />
-            </section>
+        <section class="info-card scan-file">
+            <h2>Or upload a scan file</h2>
+            <div class="manual-upload">
+                <p>
+                    Can't scan in this browser? Create a scan file (<code>.odm.json</code>) on your computer with
+                    <a href="https://github.com/TheDiscDb/web/releases?q=scan-cli" target="_blank" rel="noopener noreferrer">thediscdb-scan</a>
+                    for Windows, macOS or Linux, then upload it here.
+                </p>
+                <pre><code>thediscdb-scan D:\ -o disc.odm.json</code></pre>
+                <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".json" ShowFileList="false">
+                    <UploaderEvents ValueChange="ManifestFileChange" />
+                </SfUploader>
+            </div>
+        </section>
 
-            <section class="info-card">
-                <h2>Optional: upload a scan file</h2>
-                <div class="manual-upload">
-                    <p>
-                        Can't scan in this browser? Create a scan file (<code>.odm.json</code>) on your computer with
-                        <a href="https://github.com/TheDiscDb/web/releases?q=scan-cli" target="_blank" rel="noopener noreferrer">thediscdb-scan</a>
-                        for Windows, macOS or Linux, then upload it here.
-                    </p>
-                    <pre><code>thediscdb-scan D:\ -o disc.odm.json</code></pre>
-                    <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".json" ShowFileList="false">
-                        <UploaderEvents ValueChange="ManifestFileChange" />
-                    </SfUploader>
-                </div>
-            </section>
+        <div class="skip-row">
+            @if (scanUploaded)
+            {
+                <button class="btn btn-primary" @onclick="NavigateToIdentify" disabled="@isBusy">Continue to identify</button>
+            }
+            else
+            {
+                <span class="text-muted">Don't want to scan?</span>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="NavigateToIdentify" disabled="@isBusy">Skip and identify</button>
+            }
         </div>
     </div>
 }
