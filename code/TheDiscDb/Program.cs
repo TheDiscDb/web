@@ -18,7 +18,6 @@ using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb;
 using TheDiscDb.Client;
-using TheDiscDb.Contributions.OpticalDiscManifest;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Data.Import.Pipeline;
@@ -476,48 +475,6 @@ app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema")
 
 app.MapControllers();
 app.UseAntiforgery();
-
-app.MapGet(
-    "/api/admin/contribution-discs/{discId:int}/assets/{kind}",
-    async (
-        int discId,
-        string kind,
-        IDbContextFactory<SqlServerDataContext> dbContextFactory,
-        IStaticAssetStore assetStore,
-        IdEncoder idEncoder,
-        CancellationToken cancellationToken) =>
-    {
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-        var disc = await dbContext.UserContributionDiscs
-            .AsNoTracking()
-            .Include(item => item.UserContribution)
-            .FirstOrDefaultAsync(item => item.Id == discId, cancellationToken);
-
-        if (disc is null)
-        {
-            return Results.NotFound();
-        }
-
-        string contributionId = idEncoder.Encode(disc.UserContribution.Id);
-        string encodedDiscId = idEncoder.Encode(disc.Id);
-        string discLabel = $"disc{disc.Index ?? disc.Id:00}";
-        (string remotePath, string fileName, string contentType) = kind.ToLowerInvariant() switch
-        {
-            "manifest" => (ContributionDiscAssets.ManifestPath(contributionId, encodedDiscId), $"{discLabel}.odm.json", ContentTypes.JsonContentType),
-            "log" => (ContributionDiscAssets.LogsPath(contributionId, encodedDiscId), $"{discLabel}.txt", ContentTypes.TextContentType),
-            "comparison" => (ContributionDiscAssets.ComparisonPath(contributionId, encodedDiscId), $"{discLabel}-comparison.json", ContentTypes.JsonContentType),
-            _ => (string.Empty, string.Empty, string.Empty)
-        };
-
-        if (string.IsNullOrEmpty(remotePath) || !await assetStore.Exists(remotePath, cancellationToken))
-        {
-            return Results.NotFound();
-        }
-
-        var data = await assetStore.Download(remotePath, cancellationToken);
-        return Results.File(data.ToArray(), contentType, fileName);
-    })
-    .RequireAuthorization("Admin");
 
 app.MapRazorComponents<TheDiscDb.Components.App>()
     .AddInteractiveServerRenderMode()

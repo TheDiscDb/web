@@ -17,6 +17,9 @@ public class ContributionEndpoints
 {
     public void MapEndpoints(WebApplication app)
     {
+        app.MapGet("/api/admin/contribution-discs/{discId:int}/assets/{kind}", DownloadDiscAsset)
+            .RequireAuthorization("Admin");
+
         var contribute = app.MapGroup("/api/contribute").RequireAuthorization();
 
         contribute.MapPost("{contributionId}/discs/{discId}/logs", SaveDiscLogs)
@@ -62,6 +65,47 @@ public class ContributionEndpoints
 
         contribute.MapGet("images/{**path}", ServeContributionImage);
     }
+
+    private static async Task<IResult> DownloadDiscAsset(
+        int discId,
+        string kind,
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
+        IStaticAssetStore assetStore,
+        IdEncoder idEncoder,
+        CancellationToken cancellationToken)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var disc = await dbContext.UserContributionDiscs
+            .AsNoTracking()
+            .Include(item => item.UserContribution)
+            .FirstOrDefaultAsync(item => item.Id == discId, cancellationToken);
+
+        if (disc is null)
+        {
+            return Results.NotFound();
+        }
+
+        string contributionId = idEncoder.Encode(disc.UserContribution.Id);
+        string encodedDiscId = idEncoder.Encode(disc.Id);
+        string discLabel = $"disc{disc.Index ?? disc.Id:00}";
+        DiscAssetDownload? asset = kind.ToLowerInvariant() switch
+        {
+            "manifest" => new(ContributionDiscAssets.ManifestPath(contributionId, encodedDiscId), $"{discLabel}.odm.json", ContentTypes.JsonContentType),
+            "log" => new(ContributionDiscAssets.LogsPath(contributionId, encodedDiscId), $"{discLabel}.txt", ContentTypes.TextContentType),
+            "comparison" => new(ContributionDiscAssets.ComparisonPath(contributionId, encodedDiscId), $"{discLabel}-comparison.json", ContentTypes.JsonContentType),
+            _ => null
+        };
+
+        if (asset is null || !await assetStore.Exists(asset.RemotePath, cancellationToken))
+        {
+            return Results.NotFound();
+        }
+
+        var data = await assetStore.Download(asset.RemotePath, cancellationToken);
+        return Results.File(data.ToArray(), asset.ContentType, asset.FileName);
+    }
+
+    private sealed record DiscAssetDownload(string RemotePath, string FileName, string ContentType);
 
     public async Task<IResult> ExternalSearch(IExternalSearchService service, string type, [FromQuery] string query, CancellationToken cancellationToken)
     {
