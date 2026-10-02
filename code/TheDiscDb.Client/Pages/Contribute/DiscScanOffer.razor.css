@@ -10,6 +10,27 @@
     gap: 0.75rem;
 }
 
+.optional-badge {
+    display: inline-block;
+    margin-right: 0.5rem;
+    padding: 0.15em 0.6em;
+    border-radius: 999px;
+    background: var(--bs-info-bg-subtle, #cff4fc);
+    color: var(--bs-info-text-emphasis, #055160);
+    font-size: 0.55em;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.optional-callout {
+    padding: 0.75rem 1rem;
+    border-left: 4px solid var(--bs-info, #0dcaf0);
+    background: var(--bs-info-bg-subtle, #cff4fc);
+    border-radius: 0.25rem;
+}
+
 .cta-row {
     display: flex;
     flex-wrap: wrap;

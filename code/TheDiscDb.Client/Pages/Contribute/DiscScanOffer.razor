@@ -28,13 +28,16 @@ else
 
     <div class="contribute-layout disc-scan-offer-page">
         <section class="contribute-hero compact">
-            <p class="eyebrow">Optional</p>
-            <h1>Your MakeMKV log is uploaded</h1>
+            <p class="eyebrow">MakeMKV log uploaded</p>
+            <h1><span class="optional-badge">Optional</span> Help us test disc scanning</h1>
+            <p class="optional-callout">
+                <strong>This step is optional.</strong> Your contribution is complete without it &mdash; you can skip
+                straight to identifying the titles on @(disc.Name ?? "this disc").
+            </p>
             <p>
-                You can continue to identify the titles on @(disc.Name ?? "this disc") now. If you have a moment,
-                please also scan the disc. We compare each scan with its MakeMKV log so that, in the future,
-                contributing won't need MakeMKV at all. The scan only reads the disc's structure files &mdash;
-                none of your video is uploaded.
+                If you have a moment, scanning the disc helps us compare each scan with its MakeMKV log so that,
+                in the future, contributing won't need MakeMKV at all. The scan only reads the disc's structure
+                files &mdash; none of your video is uploaded.
             </p>
             <div class="cta-row">
                 <button class="btn btn-primary" @onclick="NavigateToIdentify" disabled="@isBusy">
@@ -60,7 +63,7 @@ else
 
         <div class="scan-options">
             <section class="info-card">
-                <h2>Scan in your browser</h2>
+                <h2>Optional: scan in your browser</h2>
                 <DiscScanPanel IsScanning="isScanning"
                                ScanProgress="@scanProgress"
                                ScanWarnings="scanWarnings"
@@ -69,7 +72,7 @@ else
             </section>
 
             <section class="info-card">
-                <h2>Upload a scan file</h2>
+                <h2>Optional: upload a scan file</h2>
                 <div class="manual-upload">
                     <p>
                         Can't scan in this browser? Create a scan file (<code>.odm.json</code>) on your computer with
