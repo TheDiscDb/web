@@ -1331,25 +1331,63 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Equal(expected, actual);
         Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Code == "ODM_DVD_TIMING_PARTIAL");
         Assert.Equal(2, result.Diagnostics.Count(diagnostic => diagnostic.Code == "ODM_DVD_TITLE_SKIPPED"));
+    }
 
-        static string GroupCellsByVob(IReadOnlyList<ManifestSegment> segments)
-        {
-            var ranges = new List<string>();
-            int start = 0;
-            for (int index = 0; index <= segments.Count; index++)
+    [Fact]
+    public async Task GenerateAsync_Dvd_SkipsZeroLengthFakeTitlesLikeMakeMkv()
+    {
+        // DVD-F is Avatar (2009). MakeMKV 1.18.3 logged "Title #N declared length is 0:00:00 ...
+        // assuming fake title" and listed only titles 1, 5, 10 and 11; titles 2-4 and 6-9 are
+        // built from 0.52 s cells. These are its TINFO:9 lengths, TINFO:11 sizes, TINFO:8 chapter
+        // counts and TINFO:26 segment maps.
+        (int Title, string Length, long Size, int Chapters, string SegmentMap)[] expected =
+        [
+            (1, "2:34:40", 7034075136, 36, "1-21,22-46,47"),
+            (5, "0:00:27", 22016000, 2, "1,2"),
+            (10, "0:00:41", 40779776, 2, "1,2"),
+            (11, "0:00:42", 20209664, 7, "1,2,3,4,5,6,7"),
+        ];
+        var files = CreateDvdIfoFiles("DVD-F");
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "dvd-disc-id", new string('F', 32)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title =>
             {
-                if (index == segments.Count
-                    || (index > start && segments[index].Clip.Split('.')[0] != segments[start].Clip.Split('.')[0]))
-                {
-                    int first = segments[start].Cell!.Value;
-                    int last = segments[index - 1].Cell!.Value;
-                    ranges.Add(first == last ? $"{first}" : $"{first}-{last}");
-                    start = index;
-                }
-            }
+                var segments = title.Segments!;
+                var wholeSeconds = TimeSpan.FromSeconds(segments.Sum(segment => Math.Floor(segment.DurationSeconds!.Value)));
+                return (
+                    title.Source.Title!.Value,
+                    wholeSeconds.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture),
+                    title.SizeBytes!.Value,
+                    title.Chapters?.Count ?? 0,
+                    GroupCellsByVob(segments));
+            })
+            .ToArray();
+        Assert.Equal(expected, actual);
+        Assert.Equal(7, result.Diagnostics.Count(diagnostic => diagnostic.Code == "ODM_DVD_TITLE_SKIPPED"));
+    }
 
-            return string.Join(",", ranges);
+    private static string GroupCellsByVob(IReadOnlyList<ManifestSegment> segments)
+    {
+        var ranges = new List<string>();
+        int start = 0;
+        for (int index = 0; index <= segments.Count; index++)
+        {
+            if (index == segments.Count
+                || (index > start && segments[index].Clip.Split('.')[0] != segments[start].Clip.Split('.')[0]))
+            {
+                int first = segments[start].Cell!.Value;
+                int last = segments[index - 1].Cell!.Value;
+                ranges.Add(first == last ? $"{first}" : $"{first}-{last}");
+                start = index;
+            }
         }
+
+        return string.Join(",", ranges);
     }
 
     private RecordingFile[] CreateDvdIfoFiles(string fixture)

@@ -448,6 +448,25 @@ public sealed partial class OpticalDiscManifestGenerator
                 continue;
             }
 
+            // MakeMKV declares a DVD title's length as the sum of its cells' whole seconds and
+            // treats a title declared 0:00:00 as fake ("declared length is 0:00:00 ... assuming
+            // fake title", MSG 3026, about 1,500 times across the TheDiscDb log corpus), so it is
+            // not listed: Avatar's titles 2-4 and 6-9 are built from 0.52 s cells. Only old
+            // MakeMKV builds falling back to CellTrim ever listed 0:00:00 DVD titles.
+            if (timingComplete
+                && segments.Count > 0
+                && segments.Sum(segment => Math.Floor(segment.DurationSeconds ?? 0)) == 0)
+            {
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_DVD_TITLE_SKIPPED",
+                    Message = $"Logical title {title.Number} is omitted because its cells declare no whole seconds, which MakeMKV treats as a fake title.",
+                });
+                skippedTitles++;
+                continue;
+            }
+
             // A chapter starts where a program does. When every played program had its first cells
             // skipped there is no chapter mark at all, and MakeMKV reports no chapters (United 93
             // title 3); otherwise the title start counts as one.
