@@ -64,6 +64,20 @@ keeps the log as its source, so that title indices don't shift.
    `TheDiscDb.OpticalDiscParsers.Tests` and fix `OpticalDiscManifestGenerator`, then Re-compare once
    a fixed scan is uploaded.
 
+## Generator maintenance
+
+`OpticalDiscManifestGenerator` is the public orchestration entry point. Internal DVD and
+Blu-ray builders own format-specific assembly; Blu-ray playlist rules, chapter/segment
+mapping, stream projection and ordered title reconciliation are separate collaborators.
+`DiscFileCatalog` retains directory enumeration order alongside a sorted manifest inventory
+and case-insensitive file lookup. `ControlFileReader` owns bounded reads and backup selection:
+a backup without parsed evidence must not replace a usable partial primary or be reported
+as used. A usable partial backup remains eligible when the primary is unsuccessful.
+
+Preserve reconciliation stage order, stream-evidence precedence, diagnostics and read metrics
+when changing these collaborators. The parser fixture suite and characterization tests cover
+directory order, backup failures, partial DVD joins and MPLS/CLPI stream precedence.
+
 ## Phase 3 (future)
 
 - Move the disc scan before the TMDB lookup so that the content hash can find existing releases
