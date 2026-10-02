@@ -1,0 +1,2393 @@
+{
+  "schemaVersion": 1,
+  "producer": {
+    "name": "thediscdb",
+    "version": "1.0.0",
+    "uri": "https://thediscdb.com/"
+  },
+  "disc": {
+    "format": "blu-ray",
+    "name": "Blu-ray",
+    "identifiers": [
+      {
+        "kind": "thediscdb-content-hash",
+        "value": "57B059114B517DF43BE4D05FCA0869FA"
+      },
+      {
+        "kind": "aacs-disc-id",
+        "value": "DBB9FE8101D750F7BEB240B247213D91D3B2CFA9"
+      }
+    ],
+    "files": [
+      {
+        "path": "BDMV/STREAM/00000.m2ts",
+        "sizeBytes": 319488
+      },
+      {
+        "path": "BDMV/STREAM/00022.m2ts",
+        "sizeBytes": 22960128
+      },
+      {
+        "path": "BDMV/STREAM/00051.m2ts",
+        "sizeBytes": 26376192
+      },
+      {
+        "path": "BDMV/STREAM/00053.m2ts",
+        "sizeBytes": 26572800
+      },
+      {
+        "path": "BDMV/STREAM/00250.m2ts",
+        "sizeBytes": 2739793920
+      },
+      {
+        "path": "BDMV/STREAM/00800.m2ts",
+        "sizeBytes": 28558835712
+      },
+      {
+        "path": "BDMV/STREAM/01007.m2ts",
+        "sizeBytes": 36249600
+      },
+      {
+        "path": "BDMV/STREAM/01008.m2ts",
+        "sizeBytes": 36249600
+      },
+      {
+        "path": "BDMV/STREAM/01009.m2ts",
+        "sizeBytes": 36249600
+      },
+      {
+        "path": "BDMV/STREAM/01010.m2ts",
+        "sizeBytes": 106168320
+      },
+      {
+        "path": "BDMV/STREAM/01011.m2ts",
+        "sizeBytes": 106168320
+      },
+      {
+        "path": "BDMV/STREAM/01012.m2ts",
+        "sizeBytes": 233472
+      },
+      {
+        "path": "BDMV/STREAM/01013.m2ts",
+        "sizeBytes": 301056
+      },
+      {
+        "path": "BDMV/STREAM/01014.m2ts",
+        "sizeBytes": 301056
+      },
+      {
+        "path": "BDMV/STREAM/01015.m2ts",
+        "sizeBytes": 331776
+      },
+      {
+        "path": "BDMV/STREAM/01016.m2ts",
+        "sizeBytes": 288768
+      },
+      {
+        "path": "BDMV/STREAM/01017.m2ts",
+        "sizeBytes": 196608
+      },
+      {
+        "path": "BDMV/STREAM/01018.m2ts",
+        "sizeBytes": 436224
+      },
+      {
+        "path": "BDMV/STREAM/01019.m2ts",
+        "sizeBytes": 337920
+      },
+      {
+        "path": "BDMV/STREAM/01020.m2ts",
+        "sizeBytes": 307200
+      },
+      {
+        "path": "BDMV/STREAM/01021.m2ts",
+        "sizeBytes": 325632
+      },
+      {
+        "path": "BDMV/STREAM/01022.m2ts",
+        "sizeBytes": 307200
+      },
+      {
+        "path": "BDMV/STREAM/01023.m2ts",
+        "sizeBytes": 528384
+      },
+      {
+        "path": "BDMV/STREAM/01024.m2ts",
+        "sizeBytes": 356352
+      },
+      {
+        "path": "BDMV/STREAM/01025.m2ts",
+        "sizeBytes": 301056
+      },
+      {
+        "path": "BDMV/STREAM/01026.m2ts",
+        "sizeBytes": 270336
+      },
+      {
+        "path": "BDMV/STREAM/01027.m2ts",
+        "sizeBytes": 282624
+      },
+      {
+        "path": "BDMV/STREAM/01028.m2ts",
+        "sizeBytes": 282624
+      },
+      {
+        "path": "BDMV/STREAM/01029.m2ts",
+        "sizeBytes": 307200
+      },
+      {
+        "path": "BDMV/STREAM/01030.m2ts",
+        "sizeBytes": 307200
+      },
+      {
+        "path": "BDMV/STREAM/01031.m2ts",
+        "sizeBytes": 393216
+      },
+      {
+        "path": "BDMV/STREAM/01032.m2ts",
+        "sizeBytes": 307200
+      },
+      {
+        "path": "BDMV/STREAM/01033.m2ts",
+        "sizeBytes": 276480
+      },
+      {
+        "path": "BDMV/STREAM/01034.m2ts",
+        "sizeBytes": 288768
+      },
+      {
+        "path": "BDMV/STREAM/01035.m2ts",
+        "sizeBytes": 301056
+      },
+      {
+        "path": "BDMV/STREAM/01036.m2ts",
+        "sizeBytes": 294912
+      },
+      {
+        "path": "BDMV/STREAM/01037.m2ts",
+        "sizeBytes": 251904
+      },
+      {
+        "path": "BDMV/STREAM/01038.m2ts",
+        "sizeBytes": 301056
+      },
+      {
+        "path": "BDMV/STREAM/01039.m2ts",
+        "sizeBytes": 307200
+      },
+      {
+        "path": "BDMV/STREAM/01040.m2ts",
+        "sizeBytes": 215040
+      },
+      {
+        "path": "BDMV/STREAM/01041.m2ts",
+        "sizeBytes": 337920
+      },
+      {
+        "path": "BDMV/STREAM/01042.m2ts",
+        "sizeBytes": 313344
+      },
+      {
+        "path": "BDMV/STREAM/01043.m2ts",
+        "sizeBytes": 307200
+      },
+      {
+        "path": "BDMV/STREAM/01044.m2ts",
+        "sizeBytes": 196608
+      },
+      {
+        "path": "BDMV/STREAM/01045.m2ts",
+        "sizeBytes": 313344
+      },
+      {
+        "path": "BDMV/STREAM/01046.m2ts",
+        "sizeBytes": 319488
+      },
+      {
+        "path": "BDMV/STREAM/01047.m2ts",
+        "sizeBytes": 301056
+      },
+      {
+        "path": "BDMV/STREAM/01048.m2ts",
+        "sizeBytes": 270336
+      },
+      {
+        "path": "BDMV/STREAM/01049.m2ts",
+        "sizeBytes": 319488
+      },
+      {
+        "path": "BDMV/STREAM/01050.m2ts",
+        "sizeBytes": 301056
+      },
+      {
+        "path": "BDMV/STREAM/01051.m2ts",
+        "sizeBytes": 313344
+      },
+      {
+        "path": "BDMV/STREAM/01052.m2ts",
+        "sizeBytes": 374784
+      },
+      {
+        "path": "BDMV/STREAM/01053.m2ts",
+        "sizeBytes": 282624
+      },
+      {
+        "path": "BDMV/STREAM/01054.m2ts",
+        "sizeBytes": 319488
+      },
+      {
+        "path": "BDMV/STREAM/01055.m2ts",
+        "sizeBytes": 301056
+      },
+      {
+        "path": "BDMV/STREAM/01056.m2ts",
+        "sizeBytes": 301056
+      },
+      {
+        "path": "BDMV/STREAM/01057.m2ts",
+        "sizeBytes": 970752
+      },
+      {
+        "path": "BDMV/STREAM/01058.m2ts",
+        "sizeBytes": 288768
+      },
+      {
+        "path": "BDMV/STREAM/01059.m2ts",
+        "sizeBytes": 270336
+      },
+      {
+        "path": "BDMV/STREAM/01060.m2ts",
+        "sizeBytes": 190464
+      },
+      {
+        "path": "BDMV/STREAM/01061.m2ts",
+        "sizeBytes": 190464
+      },
+      {
+        "path": "BDMV/STREAM/01062.m2ts",
+        "sizeBytes": 147456
+      },
+      {
+        "path": "BDMV/STREAM/01063.m2ts",
+        "sizeBytes": 423936
+      },
+      {
+        "path": "BDMV/STREAM/01066.m2ts",
+        "sizeBytes": 1137014784
+      },
+      {
+        "path": "BDMV/STREAM/01067.m2ts",
+        "sizeBytes": 516808704
+      },
+      {
+        "path": "BDMV/STREAM/01068.m2ts",
+        "sizeBytes": 1830144000
+      },
+      {
+        "path": "BDMV/STREAM/01069.m2ts",
+        "sizeBytes": 2006980608
+      },
+      {
+        "path": "BDMV/STREAM/01070.m2ts",
+        "sizeBytes": 893718528
+      },
+      {
+        "path": "BDMV/STREAM/01071.m2ts",
+        "sizeBytes": 970752
+      },
+      {
+        "path": "BDMV/STREAM/01072.m2ts",
+        "sizeBytes": 970752
+      },
+      {
+        "path": "BDMV/STREAM/01073.m2ts",
+        "sizeBytes": 1155606528
+      }
+    ],
+    "titles": [
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00800.mpls"
+        },
+        "durationSeconds": 6214,
+        "sizeBytes": 28558835712,
+        "displaySize": "26.5 GB",
+        "chapterCount": 16,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00800.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "TrueHD Atmos",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Surround 7.1"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Surround 5.1"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "fra",
+            "languageName": "French",
+            "audioLayout": "Surround 5.1"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "spa",
+            "languageName": "Spanish",
+            "audioLayout": "Surround 5.1"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "por",
+            "languageName": "Portuguese",
+            "audioLayout": "Surround 5.1"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Surround 5.1"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00055.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 233472,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01012.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00056.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 301056,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01013.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00057.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 301056,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01014.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00086.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 331776,
+        "displaySize": "0.3 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01015.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00058.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 288768,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01016.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00060.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 196608,
+        "displaySize": "0.1 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01017.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00095.mpls"
+        },
+        "durationSeconds": 15,
+        "sizeBytes": 436224,
+        "displaySize": "0.4 MB",
+        "chapterCount": 3,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01018.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00094.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 337920,
+        "displaySize": "0.3 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01019.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00061.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 307200,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01020.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00062.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 325632,
+        "displaySize": "0.3 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01021.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00063.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 307200,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01022.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00073.mpls"
+        },
+        "durationSeconds": 15,
+        "sizeBytes": 528384,
+        "displaySize": "0.5 MB",
+        "chapterCount": 3,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01023.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00064.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 356352,
+        "displaySize": "0.3 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01024.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00066.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 301056,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01025.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00087.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 270336,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01026.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00067.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 282624,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01027.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00068.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 282624,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01028.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00072.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 307200,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01029.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00071.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 307200,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01030.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00070.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 393216,
+        "displaySize": "0.3 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01031.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00069.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 307200,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01032.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00074.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 276480,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01033.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00075.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 288768,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01034.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00076.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 301056,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01035.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00077.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 294912,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01036.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00078.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 251904,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01037.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00079.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 301056,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01038.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00080.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 307200,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01039.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00081.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 215040,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01040.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00093.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 337920,
+        "displaySize": "0.3 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01041.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00082.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 313344,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01042.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00083.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 307200,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01043.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00059.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 196608,
+        "displaySize": "0.1 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01044.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00084.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 313344,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01045.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00085.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 319488,
+        "displaySize": "0.3 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01046.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00088.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 301056,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01047.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00089.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 270336,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01048.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00091.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 319488,
+        "displaySize": "0.3 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01049.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00092.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 301056,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01050.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00090.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 313344,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01051.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00096.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 374784,
+        "displaySize": "0.3 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01052.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00097.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 282624,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01053.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00098.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 319488,
+        "displaySize": "0.3 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01054.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00065.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 301056,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01055.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00099.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 301056,
+        "displaySize": "0.2 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01056.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00103.mpls"
+        },
+        "durationSeconds": 15,
+        "sizeBytes": 970752,
+        "displaySize": "0.9 MB",
+        "chapterCount": 3,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01057.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00054.mpls"
+        },
+        "durationSeconds": 10,
+        "sizeBytes": 190464,
+        "displaySize": "0.1 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01061.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00104.mpls"
+        },
+        "durationSeconds": 15,
+        "sizeBytes": 970752,
+        "displaySize": "0.9 MB",
+        "chapterCount": 3,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01071.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00105.mpls"
+        },
+        "durationSeconds": 15,
+        "sizeBytes": 970752,
+        "displaySize": "0.9 MB",
+        "chapterCount": 3,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01072.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00020.mpls"
+        },
+        "durationSeconds": 69,
+        "sizeBytes": 22960128,
+        "displaySize": "21.8 MB",
+        "chapterCount": 2,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00022.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/PLAYLIST/00249.mpls"
+        },
+        "durationSeconds": 2082,
+        "sizeBytes": 10280067072,
+        "displaySize": "9.5 GB",
+        "chapterCount": 7,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00250.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01066.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01067.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01073.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01068.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01069.m2ts"
+          },
+          {
+            "clip": "BDMV/STREAM/01070.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/00250.m2ts"
+        },
+        "durationSeconds": 547,
+        "sizeBytes": 2739793920,
+        "displaySize": "2.5 GB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00250.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/00000.m2ts"
+        },
+        "durationSeconds": 0,
+        "sizeBytes": 319488,
+        "displaySize": "0.3 MB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00000.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01007.m2ts"
+        },
+        "durationSeconds": 14,
+        "sizeBytes": 36249600,
+        "displaySize": "34.5 MB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01007.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Surround 5.1"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01008.m2ts"
+        },
+        "durationSeconds": 14,
+        "sizeBytes": 36249600,
+        "displaySize": "34.5 MB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01008.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Surround 5.1"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01009.m2ts"
+        },
+        "durationSeconds": 14,
+        "sizeBytes": 36249600,
+        "displaySize": "34.5 MB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01009.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Surround 5.1"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01010.m2ts"
+        },
+        "durationSeconds": 45,
+        "sizeBytes": 106168320,
+        "displaySize": "101.2 MB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01010.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01011.m2ts"
+        },
+        "durationSeconds": 45,
+        "sizeBytes": 106168320,
+        "displaySize": "101.2 MB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01011.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/00051.m2ts"
+        },
+        "durationSeconds": 11,
+        "sizeBytes": 26376192,
+        "displaySize": "25.1 MB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00051.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/00053.m2ts"
+        },
+        "durationSeconds": 11,
+        "sizeBytes": 26572800,
+        "displaySize": "25.3 MB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/00053.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01066.m2ts"
+        },
+        "durationSeconds": 228,
+        "sizeBytes": 1137014784,
+        "displaySize": "1.0 GB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01066.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01067.m2ts"
+        },
+        "durationSeconds": 104,
+        "sizeBytes": 516808704,
+        "displaySize": "492.8 MB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01067.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01068.m2ts"
+        },
+        "durationSeconds": 367,
+        "sizeBytes": 1830144000,
+        "displaySize": "1.7 GB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01068.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01069.m2ts"
+        },
+        "durationSeconds": 402,
+        "sizeBytes": 2006980608,
+        "displaySize": "1.8 GB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01069.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01070.m2ts"
+        },
+        "durationSeconds": 199,
+        "sizeBytes": 893718528,
+        "displaySize": "852.3 MB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01070.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      },
+      {
+        "source": {
+          "path": "BDMV/STREAM/01073.m2ts"
+        },
+        "durationSeconds": 232,
+        "sizeBytes": 1155606528,
+        "displaySize": "1.0 GB",
+        "chapterCount": 0,
+        "segments": [
+          {
+            "clip": "BDMV/STREAM/01073.m2ts"
+          }
+        ],
+        "streams": [
+          {
+            "type": "video",
+            "codec": "Mpeg4 AVC High@L4.1",
+            "resolution": "1920x1080",
+            "aspectRatio": "16:9"
+          },
+          {
+            "type": "audio",
+            "codec": "Dolby Digital",
+            "language": "eng",
+            "languageName": "English",
+            "audioLayout": "Stereo"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "eng",
+            "languageName": "English"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "fra",
+            "languageName": "French"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "spa",
+            "languageName": "Spanish"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          },
+          {
+            "type": "subtitle",
+            "codec": "HDMV PGS Subtitles",
+            "language": "por",
+            "languageName": "Portuguese"
+          }
+        ]
+      }
+    ]
+  }
+}

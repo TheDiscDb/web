@@ -1,0 +1,79 @@
+@page "/admin/disc-scan-parity"
+@using TheDiscDb.Services.Admin
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Disc scan parity</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink()]" PrimaryText="Disc scan parity" />
+
+<h1>Disc scan parity</h1>
+<p class="text-muted">Latest MakeMKV log vs browser disc scan comparison per contribution disc.</p>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-4">
+        <label for="producer-version" class="form-label">Producer version</label>
+        <select id="producer-version" class="form-select" @bind="selectedProducerVersion">
+            <option value="">All versions</option>
+            @if (dashboard != null)
+            {
+                @foreach (var version in dashboard.ProducerVersions)
+                {
+                    <option value="@version">@version</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-md-8 parity-actions">
+        <button type="button" class="btn btn-primary" @onclick="ApplyFilterAsync">Apply filter</button>
+        <button type="button" class="btn btn-outline-primary ms-2" @onclick="RecompareAllAsync" disabled="@isRecompareAllRunning">
+            @(isRecompareAllRunning ? "Re-comparing..." : "Re-compare all")
+        </button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info">@statusMessage</div>
+}
+
+@if (dashboard == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <section class="info-card mb-3">
+        <h2>Overall</h2>
+        <p class="parity-rate">@FormatRate(dashboard.Overall) match rate</p>
+        <p>@dashboard.Overall.Matches of @dashboard.Overall.Total latest comparisons match.</p>
+    </section>
+
+    <div class="parity-breakdowns">
+        <DiscScanParityBreakdownTable Title="By format" Rows="dashboard.ByFormat" />
+        <DiscScanParityBreakdownTable Title="By producer version" Rows="dashboard.ByProducerVersion" />
+        <DiscScanParityBreakdownTable Title="By MakeMKV version" Rows="dashboard.ByMakeMkvVersion" />
+        <DiscScanParityBreakdownTable Title="By browser" Rows="dashboard.ByBrowser" />
+    </div>
+
+    <section class="info-card mt-3">
+        <h2>Non-matching latest comparisons</h2>
+        @if (dashboard.NonMatches.Count == 0)
+        {
+            <p>All latest comparisons match.</p>
+        }
+        else
+        {
+            <QuickGrid Items="dashboard.NonMatches.AsQueryable()" Class="striped-grid">
+                <TemplateColumn Title="Disc">
+                    <a href="/admin/disc-scan-parity/@context.DiscId">@context.ReleaseTitle - @context.DiscName</a>
+                </TemplateColumn>
+                <PropertyColumn Property="@(item => item.Status)" Title="Status" />
+                <PropertyColumn Property="@(item => item.Format)" Title="Format" />
+                <PropertyColumn Property="@(item => item.ProducerVersion)" Title="Producer" />
+                <PropertyColumn Property="@(item => item.MakeMkvVersion)" Title="MakeMKV" />
+                <PropertyColumn Property="@(item => item.ComparedAt)" Title="Compared" Format="yyyy-MM-dd HH:mm" />
+            </QuickGrid>
+        }
+    </section>
+}

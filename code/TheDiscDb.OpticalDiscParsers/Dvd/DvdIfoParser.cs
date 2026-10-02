@@ -379,9 +379,14 @@ internal sealed class DvdIfoParseSession
         IReadOnlyList<DvdSubpictureStreamControl> subpictureControls = ParseSubpictureControls(pgc);
         IReadOnlyList<CellPlaybackInfo> cellPlayback = ParseCellPlaybackTable(pgc, tableOffset + pgcStart, cellPlaybackOffset, numberOfCells);
         IReadOnlyList<CellPositionInfo> cellPositions = ParseCellPositionTable(pgc, tableOffset + pgcStart, cellPositionOffset, numberOfCells);
+        IReadOnlyList<ulong> cellCommands = Array.Empty<ulong>();
         if (commandTableOffset != 0 && commandTableOffset < PgcHeaderSize)
         {
             diagnostics.Warning(tableOffset + pgcStart + commandTableOffset, "VD045", $"PGC {number} command table offset points inside the fixed PGC header");
+        }
+        else if (commandTableOffset != 0)
+        {
+            cellCommands = ParseCellCommands(pgc, tableOffset + pgcStart, commandTableOffset);
         }
 
         return new ProgramChain
@@ -402,10 +407,46 @@ internal sealed class DvdIfoParseSession
             SubpictureControls = subpictureControls,
             CellPlayback = cellPlayback,
             CellPositions = cellPositions,
+            CellCommands = cellCommands,
             NextProgramChainNumber = nextPgc,
             PreviousProgramChainNumber = previousPgc,
             GoUpProgramChainNumber = goUpPgc
         };
+    }
+
+    private IReadOnlyList<ulong> ParseCellCommands(ReadOnlySpan<byte> pgc, long pgcOffset, int offset)
+    {
+        // The PGC command table starts with the pre-, post- and cell command counts, then two
+        // bytes for the table's end address, then the eight-byte commands in that order.
+        const int CommandSize = 8;
+        if (!HasRange(pgc, offset, 8))
+        {
+            diagnostics.Warning(pgcOffset + offset, "VD055", "PGC command table is truncated");
+            return Array.Empty<ulong>();
+        }
+
+        int preCount = BinaryPrimitives.ReadUInt16BigEndian(pgc.Slice(offset, 2));
+        int postCount = BinaryPrimitives.ReadUInt16BigEndian(pgc.Slice(offset + 2, 2));
+        int cellCount = BinaryPrimitives.ReadUInt16BigEndian(pgc.Slice(offset + 4, 2));
+        int cellStart = offset + 8 + ((preCount + postCount) * CommandSize);
+        if (cellCount == 0)
+        {
+            return Array.Empty<ulong>();
+        }
+
+        if (!HasRange(pgc, cellStart, cellCount * CommandSize))
+        {
+            diagnostics.Warning(pgcOffset + offset, "VD055", "PGC command table is truncated");
+            return Array.Empty<ulong>();
+        }
+
+        var commands = new ulong[cellCount];
+        for (int i = 0; i < cellCount; i++)
+        {
+            commands[i] = BinaryPrimitives.ReadUInt64BigEndian(pgc.Slice(cellStart + (i * CommandSize), CommandSize));
+        }
+
+        return commands;
     }
 
     private IReadOnlyList<ProgramMapEntry> ParseProgramMap(ReadOnlySpan<byte> pgc, long pgcOffset, int offset, int count)
@@ -493,19 +534,23 @@ internal sealed class DvdIfoParseSession
         for (int i = 0; i < count; i++)
         {
             ReadOnlySpan<byte> entry = pgc.Slice(offset + (i * CellPlaybackRecordSize), CellPlaybackRecordSize);
+            // C_PBI byte 0 holds, from the most significant bit: block mode (2 bits), block type
+            // (2 bits), seamless playback, interleaved, STC discontinuity and seamless angle.
+            // Byte 1 holds the VOBU still, restricted and cell type flags, byte 2 the still time
+            // and byte 3 the cell command number.
             byte firstFlagByte = entry[0];
             cells.Add(new CellPlaybackInfo
             {
                 Number = i + 1,
-                BlockMode = (DvdCellBlockMode)(firstFlagByte & 0x03),
-                BlockType = ToBlockType((firstFlagByte >> 2) & 0x03),
-                IsSeamlessPlayback = (firstFlagByte & 0x10) != 0,
-                IsInterleaved = (firstFlagByte & 0x20) != 0,
-                HasStcDiscontinuity = (firstFlagByte & 0x40) != 0,
-                IsSeamlessAngle = (firstFlagByte & 0x80) != 0,
-                HasStillTime = entry[1] != 0,
-                StillTime = entry[1],
-                CellCommandNumber = entry[2],
+                BlockMode = (DvdCellBlockMode)((firstFlagByte >> 6) & 0x03),
+                BlockType = ToBlockType((firstFlagByte >> 4) & 0x03),
+                IsSeamlessPlayback = (firstFlagByte & 0x08) != 0,
+                IsInterleaved = (firstFlagByte & 0x04) != 0,
+                HasStcDiscontinuity = (firstFlagByte & 0x02) != 0,
+                IsSeamlessAngle = (firstFlagByte & 0x01) != 0,
+                HasStillTime = entry[2] != 0,
+                StillTime = entry[2],
+                CellCommandNumber = entry[3],
                 PlaybackTime = ParsePlaybackTime(entry.Slice(4, 4)),
                 FirstSector = BinaryPrimitives.ReadUInt32BigEndian(entry[8..12]),
                 FirstInterleavedUnitEndSector = BinaryPrimitives.ReadUInt32BigEndian(entry[12..16]),

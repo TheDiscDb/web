@@ -14,8 +14,15 @@
         <None Include="TestData\sample-disc-log.txt">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+        <None Include="TestData\sample-disc.odm.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="TestData\sample-disc-for-odm.txt">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
     <ItemGroup>
+      <ProjectReference Include="..\TheDiscDb.Contributions\TheDiscDb.Contributions.csproj" />
       <ProjectReference Include="..\TheDiscDb.Search\TheDiscDb.Search.csproj" />
       <ProjectReference Include="..\TheDiscDb.Data.Import\TheDiscDb.Data.Import.csproj" />
       <ProjectReference Include="..\TheDiscDb.Data\TheDiscDb.Data.csproj" />

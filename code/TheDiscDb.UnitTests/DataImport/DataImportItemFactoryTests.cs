@@ -149,6 +149,19 @@ public class DataImportItemFactoryTests
     }
 
     [Test]
+    [Arguments("disc01.odm.json", true)]
+    [Arguments("DISC02.ODM.JSON", true)]
+    [Arguments("disc01.json", false)]
+    [Arguments("disc01.placeholder.json", false)]
+    [Arguments("disc01.ref", false)]
+    public async Task IsOpticalDiscManifestFile_RecognizesOnlyManifests(string fileName, bool expected)
+    {
+        var result = TheDiscDb.Data.Import.DataImporter.IsOpticalDiscManifestFile(fileName);
+
+        await Assert.That(result).IsEqualTo(expected);
+    }
+
+    [Test]
     public async Task MatchBoxsetDisc_SingleReferencedDiscWithDifferentSlug_ReturnsDisc()
     {
         var disc = new Disc

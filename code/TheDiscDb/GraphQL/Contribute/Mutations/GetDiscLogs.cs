@@ -3,8 +3,11 @@ using HotChocolate.Authorization;
 using MakeMkv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.GraphQL.Contribute.Models;
+using TheDiscDb.Contributions.OpticalDiscManifest;
+using TheDiscDb.Services.Contributions;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.GraphQL.Contribute.Mutations;
@@ -19,7 +22,13 @@ public partial class ContributionMutations
     [Error(typeof(InvalidIdException))]
     [Error(typeof(InvalidOwnershipException))]
     [Authorize]
-    public async Task<DiscLogs> GetDiscLogs(string contributionId, string discId, SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
+    public async Task<DiscLogs> GetDiscLogs(
+        string contributionId,
+        string discId,
+        SqlServerDataContext database,
+        UserManager<TheDiscDbUser> userManager,
+        IOptions<DiscScanOptions> discScanOptions,
+        CancellationToken cancellationToken)
     {
         var decodedContributionId = this.idEncoder.Decode(contributionId);
         var decodedDiscId = this.idEncoder.Decode(discId);
@@ -46,16 +55,24 @@ public partial class ContributionMutations
             throw new DiscNotFoundException(discId);
         }
 
-        string logPath = $"{contributionId}/{discId}-logs.txt";
+        string logPath = ContributionDiscAssets.LogsPath(contributionId, discId);
+        string manifestPath = ContributionDiscAssets.ManifestPath(contributionId, discId);
         bool hasLogs = await this.assetStore.Exists(logPath, cancellationToken);
+        bool hasManifest = await this.assetStore.Exists(manifestPath, cancellationToken);
+        var preference = DiscLogSourceSelector.Select(disc, discScanOptions.Value.DiscScanMode, hasLogs, hasManifest);
+
+        if (preference == DiscLogSourcePreference.ManifestFirst)
+        {
+            var manifestLogs = await GetDiscLogsFromManifest(manifestPath, disc, contribution, cancellationToken);
+            if (manifestLogs.Info is not null || !hasLogs)
+            {
+                return manifestLogs;
+            }
+        }
+
         if (!hasLogs)
         {
-            return new DiscLogs
-            {
-                Info = null,
-                Disc = disc,
-                Contribution = contribution
-            };
+            return await GetDiscLogsFromManifest(manifestPath, disc, contribution, cancellationToken);
         }
 
         var blob = await this.assetStore.Download(logPath, cancellationToken);
@@ -71,12 +88,50 @@ public partial class ContributionMutations
         }
         catch (Exception ex)
         {
-            throw new CouldNotParseLogsException(discId, ex);
+            throw new CouldNotParseLogsException(disc.Id.ToString(), ex);
         }
 
         return new DiscLogs
         {
             Info = organized,
+            Disc = disc,
+            Contribution = contribution
+        };
+    }
+
+    private async Task<DiscLogs> GetDiscLogsFromManifest(string manifestPath, UserContributionDisc disc, UserContribution contribution, CancellationToken cancellationToken)
+    {
+        if (!await this.assetStore.Exists(manifestPath, cancellationToken))
+        {
+            return new DiscLogs
+            {
+                Info = null,
+                Disc = disc,
+                Contribution = contribution
+            };
+        }
+
+        var blob = await this.assetStore.Download(manifestPath, cancellationToken);
+
+        DiscInfo info;
+        try
+        {
+            var parsed = new OpticalDiscManifestValidator().Parse(blob.ToString());
+            if (!parsed.IsValid)
+            {
+                throw new InvalidOperationException(parsed.Error);
+            }
+
+            info = OpticalDiscManifestMapper.ToDiscInfo(parsed.Document!);
+        }
+        catch (Exception ex)
+        {
+            throw new CouldNotParseLogsException(disc.Id.ToString(), ex);
+        }
+
+        return new DiscLogs
+        {
+            Info = info,
             Disc = disc,
             Contribution = contribution
         };

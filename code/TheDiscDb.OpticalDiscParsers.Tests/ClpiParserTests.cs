@@ -133,6 +133,24 @@ public class ClpiParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_EmptyExtensionDataAtEndOfFile_DoesNotWarn()
+    {
+        var bytes = File.ReadAllBytes(Path.Combine(fixturesPath, "UHD-A", "00589.clpi"));
+        int extensionStart = bytes.Length;
+        Array.Resize(ref bytes, bytes.Length + 4);
+        bytes[24] = (byte)(extensionStart >> 24);
+        bytes[25] = (byte)(extensionStart >> 16);
+        bytes[26] = (byte)(extensionStart >> 8);
+        bytes[27] = (byte)extensionStart;
+
+        var result = await CreateParser(bytes).ParseAsync();
+
+        Assert.NotNull(result.Value);
+        Assert.Empty(result.Value!.ExtensionStreams);
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Code is "CL012" or "CL013");
+    }
+
+    [Fact]
     public async Task ParseAsync_AllFixtures_ParseWithoutCriticalErrors()
     {
         var files = Directory.GetFiles(fixturesPath, "*.clpi", SearchOption.AllDirectories);

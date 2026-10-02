@@ -501,7 +501,8 @@ public class DataImportItemFactory
     private bool IsDiscBundleFile(string path)
     {
         string fileName = this.fileSystem.Path.GetFileName(path);
-        if (!fileName.StartsWith("disc", StringComparison.OrdinalIgnoreCase))
+        if (!fileName.StartsWith("disc", StringComparison.OrdinalIgnoreCase)
+            || DataImporter.IsOpticalDiscManifestFile(fileName))
         {
             return false;
         }

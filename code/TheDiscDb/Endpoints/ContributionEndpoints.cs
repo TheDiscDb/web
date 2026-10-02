@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client;
+using TheDiscDb.Contributions.OpticalDiscManifest;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
 using TheDiscDb.Services.Server;
@@ -16,11 +17,17 @@ public class ContributionEndpoints
 {
     public void MapEndpoints(WebApplication app)
     {
+        app.MapGet("/api/admin/contribution-discs/{discId:int}/assets/{kind}", DownloadDiscAsset)
+            .RequireAuthorization("Admin");
+
         var contribute = app.MapGroup("/api/contribute").RequireAuthorization();
 
         contribute.MapPost("{contributionId}/discs/{discId}/logs", SaveDiscLogs)
             .AllowAnonymous()
             .Accepts<string>("text/plain");
+        contribute.MapPost("{contributionId}/discs/{discId}/manifest", SaveDiscManifest)
+            .AllowAnonymous()
+            .Accepts<string>("application/json");
         contribute.MapDelete("{contributionId}/discs/{discId}/logs/error", ClearDiscLogError)
             .AllowAnonymous();
         contribute.MapGet("externalsearch/{type}", ExternalSearch);
@@ -59,6 +66,47 @@ public class ContributionEndpoints
         contribute.MapGet("images/{**path}", ServeContributionImage);
     }
 
+    private static async Task<IResult> DownloadDiscAsset(
+        int discId,
+        string kind,
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
+        IStaticAssetStore assetStore,
+        IdEncoder idEncoder,
+        CancellationToken cancellationToken)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var disc = await dbContext.UserContributionDiscs
+            .AsNoTracking()
+            .Include(item => item.UserContribution)
+            .FirstOrDefaultAsync(item => item.Id == discId, cancellationToken);
+
+        if (disc is null)
+        {
+            return Results.NotFound();
+        }
+
+        string contributionId = idEncoder.Encode(disc.UserContribution.Id);
+        string encodedDiscId = idEncoder.Encode(disc.Id);
+        string discLabel = $"disc{disc.Index ?? disc.Id:00}";
+        DiscAssetDownload? asset = kind.ToLowerInvariant() switch
+        {
+            "manifest" => new(ContributionDiscAssets.ManifestPath(contributionId, encodedDiscId), $"{discLabel}.odm.json", ContentTypes.JsonContentType),
+            "log" => new(ContributionDiscAssets.LogsPath(contributionId, encodedDiscId), $"{discLabel}.txt", ContentTypes.TextContentType),
+            "comparison" => new(ContributionDiscAssets.ComparisonPath(contributionId, encodedDiscId), $"{discLabel}-comparison.json", ContentTypes.JsonContentType),
+            _ => null
+        };
+
+        if (asset is null || !await assetStore.Exists(asset.RemotePath, cancellationToken))
+        {
+            return Results.NotFound();
+        }
+
+        var data = await assetStore.Download(asset.RemotePath, cancellationToken);
+        return Results.File(data.ToArray(), asset.ContentType, asset.FileName);
+    }
+
+    private sealed record DiscAssetDownload(string RemotePath, string FileName, string ContentType);
+
     public async Task<IResult> ExternalSearch(IExternalSearchService service, string type, [FromQuery] string query, CancellationToken cancellationToken)
     {
         if (type.Equals("movie", StringComparison.OrdinalIgnoreCase))
@@ -75,12 +123,21 @@ public class ContributionEndpoints
         return TypedResults.BadRequest($"Unknown external search type {type}");
     }
 
-    public async Task<IResult> SaveDiscLogs(IDbContextFactory<SqlServerDataContext> dbContextFactory, IdEncoder idEncoder, IStaticAssetStore assetStore, HttpRequest request, string contributionId, string discId, CancellationToken cancellationToken)
+    public async Task<IResult> SaveDiscLogs(
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
+        IdEncoder idEncoder,
+        IStaticAssetStore assetStore,
+        IDiscScanComparisonService comparisonService,
+        ILogger<ContributionEndpoints> logger,
+        HttpRequest request,
+        string contributionId,
+        string discId,
+        CancellationToken cancellationToken)
     {
         using (StreamReader reader = new StreamReader(request.Body, Encoding.UTF8))
         {
             string logs = await reader.ReadToEndAsync();
-            var result = await SaveDiscLogsInternal(dbContextFactory, idEncoder, assetStore, contributionId, discId, logs, cancellationToken);
+            var result = await SaveDiscLogsInternal(dbContextFactory, idEncoder, assetStore, contributionId, discId, logs, cancellationToken, comparisonService, logger);
             // TODO: include a traceid people can share to look up problem later
             return OkOrProblem(result, $"Unable to save disc logs for contribution {contributionId}, disc {discId}");
         }
@@ -126,8 +183,19 @@ public class ContributionEndpoints
         }
     }
 
-    public async Task<Result> SaveDiscLogsInternal(IDbContextFactory<SqlServerDataContext> dbContextFactory, IdEncoder idEncoder, IStaticAssetStore assetStore, string contributionId, string discId, string logs, CancellationToken cancellationToken)
+    public async Task<Result> SaveDiscLogsInternal(
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
+        IdEncoder idEncoder,
+        IStaticAssetStore assetStore,
+        string contributionId,
+        string discId,
+        string logs,
+        CancellationToken cancellationToken,
+        IDiscScanComparisonService? comparisonService = null,
+        ILogger<ContributionEndpoints>? logger = null)
     {
+        int savedDiscId;
+        bool manifestExists;
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         {
             int id = idEncoder.Decode(contributionId);
@@ -198,11 +266,159 @@ public class ContributionEndpoints
             disc.LogsUploaded = true;
             disc.LogUploadError = null;
             await dbContext.SaveChangesAsync(cancellationToken);
+            savedDiscId = disc.Id;
+            manifestExists = await assetStore.Exists(ContributionDiscAssets.ManifestPath(contributionId, idEncoder.Encode(disc.Id)), cancellationToken);
+        }
+
+        if (manifestExists)
+        {
+            await TryCompareDiscAsync(comparisonService, logger, savedDiscId, cancellationToken);
         }
 
         return Result.Ok();
 
         //TODO: Notify the client a disc has been added? (to prevent the client having to poll)
+    }
+
+    public async Task<IResult> SaveDiscManifest(
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
+        IdEncoder idEncoder,
+        IStaticAssetStore assetStore,
+        IDiscScanComparisonService comparisonService,
+        ILogger<ContributionEndpoints> logger,
+        HttpRequest request,
+        string contributionId,
+        string discId,
+        CancellationToken cancellationToken)
+    {
+        using var reader = new StreamReader(request.Body, Encoding.UTF8);
+        string manifest = await reader.ReadToEndAsync(cancellationToken);
+        var result = await SaveDiscManifestInternal(
+            dbContextFactory,
+            idEncoder,
+            assetStore,
+            contributionId,
+            discId,
+            manifest,
+            cancellationToken,
+            request.Headers["User-Agent"].ToString(),
+            comparisonService,
+            logger);
+        return OkOrProblem(result, $"Unable to save the disc manifest for contribution {contributionId}, disc {discId}");
+    }
+
+    public async Task<Result> SaveDiscManifestInternal(
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
+        IdEncoder idEncoder,
+        IStaticAssetStore assetStore,
+        string contributionId,
+        string discId,
+        string manifest,
+        CancellationToken cancellationToken,
+        string? userAgent = null,
+        IDiscScanComparisonService? comparisonService = null,
+        ILogger<ContributionEndpoints>? logger = null)
+    {
+        int savedDiscId;
+        bool logExists;
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        int id = idEncoder.Decode(contributionId);
+        var contribution = await dbContext.UserContributions
+            .Include(c => c.Discs)
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+        if (contribution == null)
+        {
+            return Result.Fail($"Contribution {contributionId} not found");
+        }
+
+        int realDiscId = idEncoder.Decode(discId);
+        var disc = contribution.Discs.FirstOrDefault(d => d.Id == realDiscId);
+
+        if (disc == null)
+        {
+            return Result.Fail($"Disc {discId} not found");
+        }
+
+        logExists = await assetStore.Exists(ContributionDiscAssets.LogsPath(contributionId, idEncoder.Encode(disc.Id)), cancellationToken);
+
+        var parsed = new OpticalDiscManifestValidator().Parse(manifest);
+        if (!parsed.IsValid)
+        {
+            if (!logExists)
+            {
+                disc.LogsUploaded = false;
+                disc.LogUploadError = parsed.Error;
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            return Result.Fail(parsed.Error!);
+        }
+
+        // Mapping now means a manifest that the identify flow cannot use is rejected at upload
+        // time rather than failing later, when the contributor has moved on.
+        try
+        {
+            OpticalDiscManifestMapper.ToDiscInfo(parsed.Document!);
+        }
+        catch (Exception)
+        {
+            const string error = "The manifest is valid but does not describe any titles that can be identified.";
+            if (!logExists)
+            {
+                disc.LogsUploaded = false;
+                disc.LogUploadError = error;
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+
+            return Result.Fail(error);
+        }
+
+        byte[] bytes = Encoding.UTF8.GetBytes(manifest);
+        using (var memoryStream = new MemoryStream(bytes))
+        {
+            await assetStore.Save(memoryStream, ContributionDiscAssets.ManifestPath(contributionId, idEncoder.Encode(disc.Id)), ContentTypes.JsonContentType, cancellationToken);
+        }
+
+        disc.ManifestUploaded = true;
+        disc.ManifestUserAgent = string.IsNullOrWhiteSpace(userAgent) ? null : userAgent;
+        if (!logExists)
+        {
+            disc.LogsUploaded = true;
+            disc.LogUploadError = null;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        savedDiscId = disc.Id;
+
+        if (logExists)
+        {
+            await TryCompareDiscAsync(comparisonService, logger, savedDiscId, cancellationToken);
+        }
+
+        return Result.Ok();
+    }
+
+    private static async Task TryCompareDiscAsync(
+        IDiscScanComparisonService? comparisonService,
+        ILogger<ContributionEndpoints>? logger,
+        int discId,
+        CancellationToken cancellationToken)
+    {
+        if (comparisonService is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await comparisonService.RecompareDiscAsync(discId, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "Unable to compare MakeMKV log and ODM manifest for contribution disc {DiscId}", discId);
+        }
     }
 
     public async Task<IResult> ClearDiscLogError(IDbContextFactory<SqlServerDataContext> dbContextFactory, IdEncoder idEncoder, string contributionId, string discId, CancellationToken cancellationToken)

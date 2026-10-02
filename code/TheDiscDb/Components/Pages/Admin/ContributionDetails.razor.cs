@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using TheDiscDb.Contributions.OpticalDiscManifest;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client;
 using TheDiscDb.Services;
+using TheDiscDb.Services.Admin;
 using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 
@@ -31,6 +33,9 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
     private IContributionNotificationService NotificationService { get; set; } = null!;
 
     [Inject]
+    private IContributionDiscComparisonAdminService ComparisonAdminService { get; set; } = null!;
+
+    [Inject]
     private IMessageService MessageService { get; set; } = null!;
 
     [Inject]
@@ -47,6 +52,7 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
     private CancellationToken ComponentCt => this.cts.Token;
     private UserContribution? Contribution { get; set; }
     private List<UserContributionDisc>? discList;
+    private IReadOnlyDictionary<int, ContributionDiscComparisonListItem> latestComparisonsByDisc = new Dictionary<int, ContributionDiscComparisonListItem>();
     private TheDiscDbUser? User { get; set; }
 
     private UserContributionDisc? draggedDisc;
@@ -61,7 +67,7 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
 
             this.Contribution = await database.UserContributions
                 .Include(c => c.Discs)
-                .ThenInclude(d => d.Items)
+                    .ThenInclude(d => d.Items)
                 .FirstOrDefaultAsync(uc => uc.Id.ToString() == ContributionId);
 
             this.IdEncoder.EncodeInPlace(this.Contribution);
@@ -72,6 +78,9 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
                     .OrderBy(d => d.Index ?? int.MaxValue)
                     .ThenBy(d => d.Id)
                     .ToList();
+                this.latestComparisonsByDisc = await ComparisonAdminService.GetLatestComparisonsForDiscsAsync(
+                    this.discList.Select(disc => disc.Id).ToArray(),
+                    this.ComponentCt);
             }
 
             if (!string.IsNullOrEmpty(this.Contribution?.UserId))
@@ -248,4 +257,20 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
             discs[i].Index = i + 1;
         }
     }
+
+    private ContributionDiscComparisonListItem? GetLatestComparison(UserContributionDisc disc)
+        => latestComparisonsByDisc.TryGetValue(disc.Id, out var comparison) ? comparison : null;
+
+    private static string GetComparisonBadgeClass(ContributionDiscComparisonListItem? comparison)
+        => comparison?.Status switch
+        {
+            DiscLogManifestComparisonStatus.Match => "badge bg-success",
+            DiscLogManifestComparisonStatus.Mismatch => "badge bg-warning text-dark",
+            DiscLogManifestComparisonStatus.DifferentDisc => "badge bg-danger",
+            DiscLogManifestComparisonStatus.Error => "badge bg-danger",
+            _ => "badge bg-secondary",
+        };
+
+    private static string GetComparisonText(ContributionDiscComparisonListItem? comparison)
+        => comparison?.Status.ToString() ?? "Not compared";
 }

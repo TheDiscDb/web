@@ -1,0 +1,52 @@
+.disc-scan-offer-page .info-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.scan-file h2 {
+    font-size: 1.1rem;
+}
+
+.optional-badge {
+    display: inline-block;
+    margin-right: 0.5rem;
+    padding: 0.15em 0.6em;
+    border-radius: 999px;
+    background: #ffc107;
+    color: #212529;
+    font-size: 0.55em;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.optional-callout {
+    padding: 0.75rem 1rem;
+    border-left: 4px solid #ffc107;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-radius: 0.25rem;
+}
+
+.skip-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.scan-cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.scan-hint {
+    opacity: 0.85;
+    font-size: 0.9rem;
+}

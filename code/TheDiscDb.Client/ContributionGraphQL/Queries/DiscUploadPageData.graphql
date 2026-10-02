@@ -28,6 +28,7 @@ query DiscUploadPageData($contribtionId: EncodedIdFilter) {
         name
         existingDiscPath
         logsUploaded
+        manifestUploaded
         format
         slug
       }

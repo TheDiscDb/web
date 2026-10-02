@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
-using System.Text.Json;
+using System.Text;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.Client.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -34,6 +35,12 @@ public partial class DiscUpload : CancellableComponentBase
     [Inject]
     private HttpClient HttpClient { get; set; } = null!;
 
+    [Inject]
+    private DiscScanUploader ScanUploader { get; set; } = default!;
+
+    [Inject]
+    private IConfiguration Configuration { get; set; } = null!;
+
     private readonly string powershellCommandTemplate = "Invoke-WebRequest -Uri \"{0}\" -Method POST -UseBasicParsing -ContentType \"text/plain\" -Body ((& '{1}' --minlength=0 --robot info disc:{2}) | Out-String)";
     private readonly string bashCommandTemplate = "makemkvcon --minlength=0 --robot info disc:{1} 2>&1 | curl -X POST -H \"Content-Type: text/plain\" --data-binary @- {0}";
     //private readonly string powershellLocalCommandTempalte = "Invoke-WebRequest -Uri \"{0}\" -Method POST -ContentType \"text/plain\" -Body ((Get-Content -Path '{1}') | Out-String)";
@@ -49,7 +56,19 @@ public partial class DiscUpload : CancellableComponentBase
     int selectedIndex = 0;
     private readonly string[] driveIndices = Enumerable.Range(0, 8).Select(i => i.ToString()).ToArray();
 
+    // Only the PowerShell and Bash tabs produce a command, so the copy button and the drive
+    // selector that feeds it have nothing to act on anywhere else.
+    private bool IsCommandTab => !IsDefaultMode && selectedIndex is PowershellTabIndex or BashTabIndex;
+
+    // Scanning reads the disc in the browser and reports its own progress, so the banner that
+    // waits on an upload from somewhere else would only compete with it. Polling continues
+    // underneath either way, which is what carries a finished scan on to the next page.
+    private bool IsScanTab => IsDefaultMode && selectedIndex == 0;
+
+    private const int PowershellTabIndex = 0;
+    private const int BashTabIndex = 1;
     private string GetUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/discs/{DiscId}/logs";
+    private string GetManifestUri() => $"{NavigationManager.BaseUri}api/contribute/{ContributionId}/discs/{DiscId}/manifest";
     private string GetClearErrorUri() => $"{GetUri()}/error";
 
     private string GetMakeMkvPath() => "C:\\Program Files (x86)\\MakeMKV\\makemkvcon64.exe";
@@ -60,9 +79,23 @@ public partial class DiscUpload : CancellableComponentBase
     private bool showSpinner;
     private string? uploadError;
 
+    private bool isScanning;
+    private string? scanProgress;
+    private IReadOnlyList<string> scanWarnings = [];
+    private bool scanUploadSucceeded;
+
+    private bool IsDefaultMode => string.Equals(
+        Configuration.GetValue<string>("Contributions:DiscScanMode"),
+        "Default",
+        StringComparison.OrdinalIgnoreCase);
+
     protected override async Task OnInitializedAsync()
     {
-        //this.pollUploadedTimer = new Timer(PollTimerTick!, null, 0, 2000);
+        if (IsDefaultMode)
+        {
+            this.selectedIndex = 0;
+        }
+
         this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
         
         var response = await this.ContributionClient.DiscUploadPageData.ExecuteAsync(this.ContributionId ?? string.Empty, this.CancellationToken);
@@ -106,7 +139,14 @@ public partial class DiscUpload : CancellableComponentBase
                 InvokeAsync(() =>
                 {
                     this.pollUploadedTimer?.Dispose();
-                    JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
+                    if (!IsDefaultMode && !status.ManifestUploaded)
+                    {
+                        NavigateToScanOffer();
+                    }
+                    else
+                    {
+                        NavigateToIdentify();
+                    }
                 });
             }
             else if (!string.IsNullOrEmpty(status.LogUploadError))
@@ -126,7 +166,7 @@ public partial class DiscUpload : CancellableComponentBase
     {
         string currentCommand = selectedIndex switch
         {
-            1 => this.BashCommand ?? string.Empty,
+            BashTabIndex => this.BashCommand ?? string.Empty,
             _ => this.PowershellCommand ?? string.Empty,
         };
 
@@ -140,32 +180,114 @@ public partial class DiscUpload : CancellableComponentBase
         }
     }
 
-    private async Task ValueChange(UploadChangeEventArgs args)
+    private Task ValueChange(UploadChangeEventArgs args)
+        => Upload(args, GetUri(), "text/plain", "log file");
+
+    private Task ManifestValueChange(UploadChangeEventArgs args)
+        => Upload(args, GetManifestUri(), "application/json", "disc manifest");
+
+    private async Task CopyCommandToClipboard(string command)
+    {
+        if (!string.IsNullOrEmpty(command))
+        {
+            await Clipboard.WriteTextAsync(command);
+        }
+    }
+
+    private Task CopyPowerShellCommand() => CopyCommandToClipboard(PowershellCommand ?? string.Empty);
+
+    private Task CopyBashCommand() => CopyCommandToClipboard(BashCommand ?? string.Empty);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Warm the interop module up front. An awaited import inside the click handler yields
+            // the event loop and drops the browser's transient user activation, which makes the
+            // directory picker silently refuse to open.
+            await this.ScanUploader.PreloadAsync(this.CancellationToken);
+        }
+    }
+
+    private async Task ScanDiscAsync()
+    {
+        this.uploadError = null;
+        this.scanWarnings = [];
+        this.scanProgress = null;
+        this.scanUploadSucceeded = false;
+
+        try
+        {
+            var result = await this.ScanUploader.ScanAndUploadAsync(
+                GetManifestUri(),
+                MarkScanning,
+                ReportScanProgress,
+                this.CancellationToken);
+
+            this.scanWarnings = result.Warnings;
+            if (result.Uploaded)
+            {
+                this.scanUploadSucceeded = true;
+                NavigateToIdentify();
+            }
+            else if (result.Error is not null)
+            {
+                this.uploadError = result.Error;
+            }
+        }
+        finally
+        {
+            this.isScanning = false;
+            this.scanProgress = null;
+            this.StateHasChanged();
+        }
+    }
+
+    private void NavigateToIdentify()
+        => JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
+
+    // Phase 1 of the disc scan rollout: once the MakeMKV log is in, offer an optional scan on its own page.
+    private void NavigateToScanOffer()
+        => JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/scan");
+
+    private void MarkScanning()
+    {
+        this.isScanning = true;
+        this.StateHasChanged();
+    }
+
+    private void ReportScanProgress(string message)
+    {
+        this.scanProgress = message;
+        this.InvokeAsync(this.StateHasChanged);
+    }
+
+    private async Task Upload(UploadChangeEventArgs args, string uri, string contentType, string description)
     {
         try
         {
             var file = args.Files.FirstOrDefault();
-            if (file != null)
+            if (file == null)
             {
-                using (var stream = file.File.OpenReadStream(long.MaxValue))
-                {
-                    using var reader = new StreamReader(stream);
-                    string contents = await reader.ReadToEndAsync(this.CancellationToken);
-                    var response = await HttpClient.PostAsync(GetUri(), new StringContent(contents), this.CancellationToken);
+                return;
+            }
 
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        var body = await response.Content.ReadAsStringAsync(this.CancellationToken);
-                        uploadError = ExtractErrorDetail(body);
-                        StateHasChanged();
-                        return;
-                    }
-                }
+            using var stream = file.File.OpenReadStream(long.MaxValue);
+            using var reader = new StreamReader(stream);
+            string contents = await reader.ReadToEndAsync(this.CancellationToken);
+            var content = new StringContent(contents, Encoding.UTF8, contentType);
+            var response = await HttpClient.PostAsync(uri, content, this.CancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(this.CancellationToken);
+                uploadError = DiscScanUploader.ExtractErrorDetail(body, description);
+                StateHasChanged();
             }
         }
         catch (Exception ex)
         {
-            uploadError = "An unexpected error occurred uploading the log file.";
+            uploadError = $"An unexpected error occurred uploading the {description}.";
             Console.WriteLine(ex.Message);
             StateHasChanged();
         }
@@ -182,44 +304,5 @@ public partial class DiscUpload : CancellableComponentBase
         await HttpClient.DeleteAsync(GetClearErrorUri(), this.CancellationToken);
 
         this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
-    }
-
-    private static string ExtractErrorDetail(string responseBody)
-    {
-        const string fallback = "An error occurred uploading the log file.";
-        try
-        {
-            using var doc = JsonDocument.Parse(responseBody);
-            if (doc.RootElement.TryGetProperty("detail", out var detail))
-            {
-                var text = detail.GetString();
-                if (string.IsNullOrEmpty(text))
-                {
-                    return fallback;
-                }
-
-                // The ProblemDetails detail contains a wrapper like:
-                // "Unable to save disc logs...\r\nErrors:\r\n- Actual error message"
-                // Extract just the error line(s) after "Errors:" for a cleaner message.
-                var errorsIndex = text.IndexOf("Errors:", StringComparison.OrdinalIgnoreCase);
-                if (errorsIndex >= 0)
-                {
-                    var errorLines = text[(errorsIndex + "Errors:".Length)..]
-                        .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                        .Select(l => l.TrimStart('-', ' '))
-                        .Where(l => !string.IsNullOrEmpty(l));
-                    var joined = string.Join(" ", errorLines);
-                    return string.IsNullOrEmpty(joined) ? fallback : joined;
-                }
-
-                return text;
-            }
-        }
-        catch
-        {
-            // Not valid JSON, fall through
-        }
-
-        return fallback;
     }
 }

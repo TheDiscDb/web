@@ -261,6 +261,25 @@ public class DvdIfoParserTests
         Assert.Equal(ccField2, video.HasLine21ClosedCaptionField2);
     }
 
+    [Fact]
+    public async Task ParseVtsiAsync_CellPlayback_DecodesCellCommandsAndFlagsFromSpecLayout()
+    {
+        // United 93's feature PGC: cell 1 (C_PBI bytes 02 20 00 02) runs cell command 2, which is
+        // "if (g13 >= 0) LinkCN 3"; cell 25 (08 00 00 01) runs command 1, LinkTailPGC.
+        var bytes = File.ReadAllBytes(Path.Combine(fixturesPath, "DVD-E", "VTS_01_0.IFO"));
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
+
+        var pgc = (await parser.ParseVtsiAsync(1)).Value!.ProgramChains[0];
+
+        Assert.Equal([0x200100000000040DUL, 0x20C7000D00000003UL, 0x2007000000000004UL], pgc.CellCommands);
+        Assert.Equal(2, pgc.CellPlayback[0].CellCommandNumber);
+        Assert.True(pgc.CellPlayback[0].HasStcDiscontinuity);
+        Assert.Equal(TheDiscDb.OpticalDiscParsers.Dvd.Models.DvdCellBlockMode.NotInBlock, pgc.CellPlayback[0].BlockMode);
+        Assert.Equal(0, pgc.CellPlayback[0].StillTime);
+        Assert.Equal(1, pgc.CellPlayback[24].CellCommandNumber);
+        Assert.True(pgc.CellPlayback[24].IsSeamlessPlayback);
+    }
+
     [Theory]
     [InlineData("DVD-D", 2)]
     [InlineData("DVD-D", 3)]

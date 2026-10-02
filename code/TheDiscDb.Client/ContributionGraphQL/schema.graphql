@@ -379,6 +379,7 @@ type DiscNotFoundError implements Error {
 
 type DiscUploadStatus {
   logsUploaded: Boolean!
+  manifestUploaded: Boolean!
   logUploadError: String
 }
 
@@ -684,6 +685,8 @@ type UserContributionDisc {
   name: String!
   slug: String!
   logsUploaded: Boolean!
+  manifestUploaded: Boolean!
+  manifestUserAgent: String
   existingDiscPath: String
   index: Int
   items(where: UserContributionDiscItemFilterInput @cost(weight: "10") order: [UserContributionDiscItemSortInput!] @cost(weight: "10")): [UserContributionDiscItem!]!
@@ -1200,6 +1203,8 @@ input UserContributionDiscFilterInput {
   name: StringOperationFilterInput
   slug: StringOperationFilterInput
   logsUploaded: BooleanOperationFilterInput
+  manifestUploaded: BooleanOperationFilterInput
+  manifestUserAgent: StringOperationFilterInput
   existingDiscPath: StringOperationFilterInput
   index: IntOperationFilterInput
   items: ListEncodedIdFilterTypeOfUserContributionDiscItemFilterInput
@@ -1272,6 +1277,8 @@ input UserContributionDiscSortInput {
   name: SortEnumType @cost(weight: "10")
   slug: SortEnumType @cost(weight: "10")
   logsUploaded: SortEnumType @cost(weight: "10")
+  manifestUploaded: SortEnumType @cost(weight: "10")
+  manifestUserAgent: SortEnumType @cost(weight: "10")
   existingDiscPath: SortEnumType @cost(weight: "10")
   index: SortEnumType @cost(weight: "10")
 }

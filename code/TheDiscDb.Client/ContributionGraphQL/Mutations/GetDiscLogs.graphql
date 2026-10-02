@@ -25,6 +25,7 @@ mutation GetDiscLogs($input: DiscLogsInput!) {
         name
         slug
         logsUploaded
+        manifestUploaded
         existingDiscPath
         encodedId
         items {

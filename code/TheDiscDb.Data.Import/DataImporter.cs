@@ -1295,7 +1295,8 @@
         private bool IsDiscBundleFile(string path)
         {
             var fileName = this.fileSystem.Path.GetFileName(path);
-            if (!fileName.StartsWith("disc", StringComparison.OrdinalIgnoreCase))
+            if (!fileName.StartsWith("disc", StringComparison.OrdinalIgnoreCase)
+                || IsOpticalDiscManifestFile(fileName))
             {
                 return false;
             }
@@ -1304,6 +1305,13 @@
             return extension.Equals(".json", StringComparison.OrdinalIgnoreCase)
                 || extension.Equals(".ref", StringComparison.OrdinalIgnoreCase);
         }
+
+        /// <summary>
+        /// A release folder can hold a disc's Optical Disc Manifest (<c>discNN.odm.json</c>) next to
+        /// its disc file (<c>discNN.json</c>). The manifest is a source file, not a disc bundle.
+        /// </summary>
+        public static bool IsOpticalDiscManifestFile(string fileName)
+            => fileName.EndsWith(".odm.json", StringComparison.OrdinalIgnoreCase);
 
         private async Task<Disc?> LoadDiscFromBundleFile(string path, string dataRoot, CancellationToken cancellationToken)
         {

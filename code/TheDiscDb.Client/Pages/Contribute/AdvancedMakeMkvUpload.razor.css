@@ -1,0 +1,11 @@
+.advanced-log-upload {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.advanced-log-upload section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}

@@ -1,0 +1,116 @@
+@inherits CancellableComponentBase
+@page "/contribution/{contributionId}/discs/{discId}/scan"
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@if (isLoading)
+{
+    <div class="contribute-layout">
+        <LoadingIndicator Message="Loading disc…" />
+    </div>
+}
+else if (contribution is null || disc is null)
+{
+    <div class="contribute-layout">
+        <section class="contribute-hero compact">
+            <h1>Disc not found</h1>
+            <p>We couldn’t load the requested disc. Please return to the contribution overview.</p>
+            <a class="btn btn-secondary" href="/contribution/@ContributionId">Back to contribution</a>
+        </section>
+    </div>
+}
+else
+{
+    <Breadcrumb PrimaryText="Scan Disc" Items="[
+        GetRootContributionLink(),
+        GetContributionLink(contribution)
+    ]" />
+
+    <div class="contribute-layout disc-scan-offer-page">
+        <section class="contribute-hero compact">
+            <p class="eyebrow">MakeMKV log uploaded</p>
+            <h1><span class="optional-badge">New</span> Help us test disc scanning</h1>
+            <p class="optional-callout">
+                <strong>This step is optional.</strong> Your contribution is complete without it &mdash; you can skip
+                straight to identifying the titles on @(disc.Name ?? "this disc").
+            </p>
+            <p>
+                We are developing a new browser only disc scan method (no MakeMKV requirement!). Scanning the disc
+                helps us compare each scan with its MakeMKV log so that we can test the
+                <a href="https://github.com/TheDiscDb/optical-disc-manifest" target="_blank" rel="noopener noreferrer">new log format</a>.
+                The scan only reads the disc's structure files &mdash; none of your video is uploaded.
+            </p>
+            <div class="scan-cta">
+                <button class="btn btn-light btn-lg" @onclick="ScanDiscAsync" disabled="@isBusy">
+                    @(isScanning ? "Scanning disc…" : "Scan Disc in Browser")
+                </button>
+                <span class="scan-hint">Put the disc in your drive, then select its root folder when prompted.</span>
+            </div>
+        </section>
+
+        @if (isScanning)
+        {
+            <div class="info-card scan-status">
+                <LoadingIndicator Message="@(scanProgress ?? "Reading disc…")" />
+            </div>
+        }
+
+        @if (scanWarnings.Count > 0)
+        {
+            <div class="alert alert-warning" role="status">
+                <p>The disc was scanned, but some of its structure could not be read:</p>
+                <ul>
+                    @foreach (var warning in scanWarnings)
+                    {
+                        <li>@warning</li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="alert alert-warning" role="alert">
+                <strong>The scan could not be uploaded:</strong> @error
+                <div>You can try again or skip this step &mdash; your contribution is not affected.</div>
+            </div>
+        }
+
+        @if (scanUploaded)
+        {
+            <div class="alert alert-success" role="status">
+                Thanks! The scan was uploaded. Review any warnings above, then continue to identify this disc.
+            </div>
+        }
+
+        @if (ShowScanFileUpload)
+        {
+        <section class="info-card scan-file">
+            <h2>Or upload a scan file</h2>
+            <div class="manual-upload">
+                <p>
+                    Can't scan in this browser? Create a scan file (<code>.odm.json</code>) on your computer with
+                    <a href="https://github.com/TheDiscDb/web/releases?q=scan-cli" target="_blank" rel="noopener noreferrer">thediscdb-scan</a>
+                    for Windows, macOS or Linux, then upload it here.
+                </p>
+                <pre><code>thediscdb-scan D:\ -o disc.odm.json</code></pre>
+                <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".json" ShowFileList="false">
+                    <UploaderEvents ValueChange="ManifestFileChange" />
+                </SfUploader>
+            </div>
+        </section>
+        }
+
+        <div class="skip-row">
+            @if (scanUploaded)
+            {
+                <button class="btn btn-primary" @onclick="NavigateToIdentify" disabled="@isBusy">Continue to identify</button>
+            }
+            else
+            {
+                <span class="text-muted">Don't want to scan?</span>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="NavigateToIdentify" disabled="@isBusy">Skip and identify</button>
+            }
+        </div>
+    </div>
+}

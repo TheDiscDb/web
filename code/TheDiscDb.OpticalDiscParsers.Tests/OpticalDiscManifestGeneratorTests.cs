@@ -1,0 +1,2056 @@
+using System.Buffers.Binary;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
+using TheDiscDb.OpticalDiscManifest.Generation;
+using TheDiscDb.OpticalDiscManifest.Models;
+using TheDiscDb.OpticalDiscParsers.Bdmv;
+using TheDiscDb.OpticalDiscParsers.Bdmv.Models;
+using TheDiscDb.OpticalDiscParsers.Input;
+
+namespace TheDiscDb.OpticalDiscParsers.Tests;
+
+public sealed class OpticalDiscManifestGeneratorTests
+{
+    private readonly string fixturesPath = Path.Combine(AppContext.BaseDirectory, "fixtures");
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_IsValidDeterministicAndDoesNotReadPayload()
+    {
+        var files = CreateBluRayFiles("BD-A");
+        var request = CreateRequest(files, "aacs-disc-id", new string('A', 40));
+        var generator = new OpticalDiscManifestGenerator();
+
+        var first = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
+        var second = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.True(first.Validation.IsValid, string.Join(Environment.NewLine, first.Validation.Errors));
+        Assert.Equal("blu-ray", first.Manifest.Disc.Format);
+        Assert.Contains(first.Diagnostics, item => item.Code == "ODM_BD_TITLES_PARTIAL");
+        Assert.Equal(1, first.Manifest.Disc.Identifiers.Count(item => item.Kind == "thediscdb-content-hash"));
+        Assert.DoesNotContain("\"capabilities\"", System.Text.Encoding.UTF8.GetString(first.Json));
+        Assert.DoesNotContain("\"diagnostics\"", System.Text.Encoding.UTF8.GetString(first.Json));
+        Assert.NotEmpty(first.Manifest.Disc.Titles!);
+        Assert.Equal(first.Json, second.Json);
+        Assert.All(
+            files.Where(file => file.Path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)),
+            file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public void SchemaValidator_RejectsRemovedPropertiesAndMissingContentHash()
+    {
+        const string documentPrefix =
+            """{"schemaVersion":1,"producer":{"name":"test","version":"1"},"disc":{"format":"unknown","identifiers":[{"kind":"thediscdb-content-hash","value":"0123456789ABCDEF0123456789ABCDEF"}],"files":[]""";
+        var validator = new TheDiscDb.OpticalDiscManifest.Validation.OpticalDiscManifestSchemaValidator();
+        string[] invalidDocuments =
+        [
+            """{"schemaVersion":1,"producer":{"name":"test","version":"1"},"capabilities":[],"disc":{"format":"unknown","identifiers":[{"kind":"thediscdb-content-hash","value":"0123456789ABCDEF0123456789ABCDEF"}],"files":[]}}""",
+            documentPrefix + ""","titles":[{"source":{"title":1},"index":0}]}}""",
+            """{"schemaVersion":1,"producer":{"name":"test","version":"1"},"disc":{"format":"unknown","files":[]}}""",
+        ];
+
+        Assert.All(invalidDocuments, json =>
+            Assert.False(validator.Validate(Encoding.UTF8.GetBytes(json)).IsValid));
+        Assert.True(validator.Validate(Encoding.UTF8.GetBytes(documentPrefix + "}}")).IsValid);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_ContentHashUsesOrdinalBareNamesAndExcludesBackupAndSsifFiles()
+    {
+        var files = new[]
+        {
+            RecordingFile.Payload("BDMV/STREAM/2.m2ts", 2),
+            RecordingFile.Payload("BDMV/STREAM/10.M2TS", 1),
+            RecordingFile.Payload("BDMV/BACKUP/STREAM/01.m2ts", 99),
+            RecordingFile.Payload("BDMV/STREAM/00001.ssif", 77),
+        };
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('A', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var contentHash = Assert.Single(
+            result.Manifest.Disc.Identifiers,
+            item => item.Kind == "thediscdb-content-hash");
+        Span<byte> sizes = stackalloc byte[16];
+        BinaryPrimitives.WriteInt64LittleEndian(sizes[..8], 1);
+        BinaryPrimitives.WriteInt64LittleEndian(sizes[8..], 2);
+        Assert.Equal(Convert.ToHexString(MD5.HashData(sizes)), contentHash.Value);
+        Assert.All(files, file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_UsesDiscNameFromDlXml()
+    {
+        const string Xml =
+            """<di:discinfo xmlns:di="urn:BDA:bdmv;discinfo"><di:title><di:name>Example Disc Name</di:name></di:title></di:discinfo>""";
+        var xmlFile = RecordingFile.FromBytes(
+            "BDMV/META/DL/bdmv_dl.xml",
+            Encoding.UTF8.GetBytes(Xml));
+        var files = CreateBluRayFiles("BD-A").Append(xmlFile).ToArray();
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('A', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        Assert.Equal("Example Disc Name", result.Manifest.Disc.Name);
+        Assert.Equal(1, xmlFile.ReadCount);
+        Assert.All(
+            files.Where(file => file.Path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)),
+            file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_UsesBackupControlFileWhenPrimaryIsMissing()
+    {
+        var files = CreateBluRayFiles("BD-A")
+            .Where(file => !file.Path.Equals("BDMV/index.bdmv", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        var indexSource = Path.Combine(fixturesPath, "BDMV", "BD-A", "index.bdmv");
+        files.Add(RecordingFile.FromDisk("BDMV/BACKUP/index.bdmv", indexSource));
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('E', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        Assert.Equal("blu-ray", result.Manifest.Disc.Format);
+        Assert.Contains(result.Manifest.Disc.Files, item => item.Path == "BDMV/BACKUP/index.bdmv");
+        Assert.Contains(result.Diagnostics, item =>
+            item.Code == "ODM_CONTROL_FILE_BACKUP_USED"
+            && item.Path == "BDMV/BACKUP/index.bdmv");
+        Assert.DoesNotContain(result.Diagnostics, item =>
+            item.Code == "ODM_CONTROL_FILE_MISSING"
+            && item.Path == "BDMV/index.bdmv");
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Uhd_UsesVersion0300Signal()
+    {
+        var files = CreateBluRayFiles("UHD-A");
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('B', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        Assert.Equal("uhd-blu-ray", result.Manifest.Disc.Format);
+        Assert.NotEmpty(result.Manifest.Disc.Titles!);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Uhd_ListsClipsOfDolbyVisionPlaylistsAsStreamTitles()
+    {
+        // 1917's 00149.mpls carries a Dolby Vision enhancement-layer subpath (type 10) and
+        // plays clips 174 and 175. MakeMKV 1.18.3 lists the clips of such playlists as
+        // stream titles too (all 90 on Spartacus), so both the playlist and its clips appear.
+        var files = CreateBluRayFiles("UHD-A")
+            .Concat(
+            [
+                RecordingFile.Payload("BDMV/STREAM/00174.m2ts", 1_000_000),
+                RecordingFile.Payload("BDMV/STREAM/00175.m2ts", 1_000_000),
+            ])
+            .ToList();
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('D', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var sources = result.Manifest.Disc.Titles!.Select(title => title.Source!.Path).ToArray();
+        Assert.Contains("BDMV/PLAYLIST/00149.mpls", sources);
+        Assert.Contains("BDMV/STREAM/00174.m2ts", sources);
+        Assert.Contains("BDMV/STREAM/00175.m2ts", sources);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Uhd_SurfacesHevcDynamicRangeAndColorSpaceEvidence()
+    {
+        // Real UHD CLPI evidence (00589.clpi), already verified at the parser layer:
+        // DynamicRangeTypeCode=1, ColorSpaceCode=2, HdrPlusFlag=false. This test proves the ODM
+        // mapper surfaces that control-file-only HDR/color-space evidence into disc.clips instead
+        // of silently dropping it.
+        var files = CreateBluRayFiles("UHD-A")
+            .Concat([RecordingFile.Payload("BDMV/STREAM/00589.m2ts", 1_000_000)])
+            .ToList();
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('C', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+
+        var clip = Assert.Single(result.Manifest.Disc.Clips!, item => item.ClipId == "00589");
+        var hevcStream = Assert.Single(clip.Streams!, stream => stream.Pid == 0x1011);
+        Assert.Equal(1, hevcStream.DynamicRangeTypeCode);
+        Assert.Equal(2, hevcStream.ColorSpaceCode);
+        Assert.False(hevcStream.HdrPlusFlag);
+        Assert.Equal("video", hevcStream.Category);
+        Assert.Equal("3840x2160", hevcStream.Resolution);
+        Assert.Equal("16:9", hevcStream.AspectRatio);
+        Assert.Equal(23.976, hevcStream.FrameRate);
+        Assert.False(hevcStream.IsInterlaced);
+        Assert.Contains(clip.Streams!, stream => stream.Type == "audio" && stream.SampleRate is not null);
+        Assert.Contains(
+            result.Manifest.Disc.Titles!.SelectMany(title => title.Streams ?? []),
+            stream => stream.Category == "video"
+                && stream.Resolution is not null
+                && stream.FrameRate is not null
+                && stream.IsInterlaced is not null);
+
+        // Non-video streams must not fabricate HDR/color-space evidence they don't carry.
+        Assert.All(
+            clip.Streams!.Where(stream => stream.Type != "video"),
+            stream =>
+            {
+                Assert.Null(stream.DynamicRangeTypeCode);
+                Assert.Null(stream.ColorSpaceCode);
+                Assert.Null(stream.HdrPlusFlag);
+            });
+
+        Assert.All(
+            files.Where(file => file.Path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)),
+            file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_MvcPlaylist_MapsBaseAndDependentViewRelationshipAndClips()
+    {
+        // Combined base + dependent-view byte total per task evidence: 43,553,961,984.
+        const long CombinedBytes = 43_553_961_984;
+        const long PerClipBytes = CombinedBytes / 2;
+
+        var files = new[]
+        {
+            RecordingFile.FromDisk(
+                "BDMV/PLAYLIST/00800.mpls",
+                Path.Combine(fixturesPath, "MPLS", "BD-3D", "00800.mpls")),
+            RecordingFile.FromDisk(
+                "BDMV/CLIPINF/00301.clpi",
+                Path.Combine(fixturesPath, "CLPI", "BD-3D", "00301.clpi")),
+            RecordingFile.Payload("BDMV/STREAM/00300.m2ts", PerClipBytes),
+            RecordingFile.Payload("BDMV/STREAM/00301.m2ts", PerClipBytes),
+        };
+        var generator = new OpticalDiscManifestGenerator();
+        var request = CreateRequest(files, "aacs-disc-id", new string('F', 40));
+
+        var first = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
+        var second = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.True(first.Validation.IsValid, string.Join(Environment.NewLine, first.Validation.Errors));
+        Assert.Equal(first.Json, second.Json);
+
+        var title = Assert.Single(first.Manifest.Disc.Titles!);
+        var stereoscopic3D = title.Stereoscopic3D;
+        Assert.NotNull(stereoscopic3D);
+        Assert.Equal("3d-dependent-view", stereoscopic3D!.RelationshipType);
+        Assert.Equal("00300", stereoscopic3D.BaseClipId);
+        Assert.Equal("00301", stereoscopic3D.DependentClipId);
+        Assert.True(stereoscopic3D.IsSsVideoSubPath);
+        Assert.NotNull(stereoscopic3D.DependentStream);
+        Assert.Equal(0x1012, stereoscopic3D.DependentStream!.Pid);
+        Assert.Equal(0x20, stereoscopic3D.DependentStream.CodingTypeCode);
+        Assert.Equal("MVC Video", stereoscopic3D.DependentStream.Codec);
+        Assert.Equal(6, stereoscopic3D.DependentStream.FormatCode);
+        Assert.Equal(1, stereoscopic3D.DependentStream.RateCode);
+
+        // Title size must account for both 00300 (base) and 00301 (dependent) without
+        // reading any payload bytes -- only file-size metadata.
+        Assert.Equal(CombinedBytes, title.SizeBytes);
+
+        var clips = Assert.IsAssignableFrom<IReadOnlyList<ManifestClip>>(first.Manifest.Disc.Clips);
+        Assert.Equal(2, clips.Count);
+
+        var baseClip = Assert.Single(clips, clip => clip.ClipId == "00300");
+        Assert.Equal("BDMV/STREAM/00300.m2ts", baseClip.StreamPath);
+        Assert.Equal(PerClipBytes, Assert.Single(
+            first.Manifest.Disc.Files,
+            file => file.Path == baseClip.StreamPath).SizeBytes);
+        // No CLPI fixture is available for 00300: CLPI-derived fields must be honestly
+        // absent rather than inferred or guessed.
+        Assert.Null(baseClip.ClipInfoPath);
+        Assert.Null(baseClip.DurationSeconds);
+        Assert.Null(baseClip.NumberOfSourcePackets);
+        Assert.Null(baseClip.TransportStreamRecordingRate);
+        Assert.Null(baseClip.Streams);
+
+        var dependentClip = Assert.Single(clips, clip => clip.ClipId == "00301");
+        Assert.Equal("BDMV/STREAM/00301.m2ts", dependentClip.StreamPath);
+        Assert.Equal(PerClipBytes, Assert.Single(
+            first.Manifest.Disc.Files,
+            file => file.Path == dependentClip.StreamPath).SizeBytes);
+        Assert.Equal("BDMV/CLIPINF/00301.clpi", dependentClip.ClipInfoPath);
+        Assert.True(dependentClip.DurationSeconds > 0);
+        Assert.True(dependentClip.NumberOfSourcePackets > 0);
+        Assert.True(dependentClip.TransportStreamRecordingRate > 0);
+        var mvcStream = Assert.Single(dependentClip.Streams!, stream => stream.CodingTypeCode == 0x20);
+        Assert.Equal(0x1012, mvcStream.Pid);
+        Assert.Equal("MVC Video", mvcStream.Codec);
+        Assert.Equal(6, mvcStream.FormatCode);
+        Assert.Equal(1, mvcStream.RateCode);
+
+        // disc.clips are never opened; only control-file/CLPI evidence and file-size
+        // metadata back them, per the CLPI/M2TS/SSIF payload no-read guarantee.
+        Assert.All(
+            files.Where(file => file.Path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)),
+            file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_CollapsesDuplicatePlaylistsAndPromotesUnreferencedStreams()
+    {
+        // The same playlist authored twice is one playback candidate, and a stream file
+        // no playlist reaches would otherwise never reach the identify flow at all.
+        string fixture = Path.Combine(fixturesPath, "MPLS", "BD-B", "00050.mpls");
+        var files = new[]
+        {
+            RecordingFile.FromDisk("BDMV/PLAYLIST/00050.mpls", fixture),
+            RecordingFile.FromDisk("BDMV/PLAYLIST/00051.mpls", fixture),
+            RecordingFile.Payload("BDMV/STREAM/00135.m2ts", 4096),
+            RecordingFile.Payload("BDMV/STREAM/00007.m2ts", 8192),
+            RecordingFile.Payload("BDMV/STREAM/00999.m2ts", 16384),
+        };
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('3', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var titles = result.Manifest.Disc.Titles!;
+        Assert.Equal(4, titles.Count);
+
+        // 00051 duplicates 00050 exactly, so only the first survives.
+        Assert.Equal("BDMV/PLAYLIST/00050.mpls", titles[0].Source!.Path);
+        var duplicate = Assert.Single(result.Diagnostics, item => item.Code == "ODM_BD_TITLE_DUPLICATE");
+        Assert.Equal("BDMV/PLAYLIST/00051.mpls", duplicate.Path);
+        Assert.Equal("info", duplicate.Severity);
+
+        // 00999 is orphaned. 00135 and 00007 are reachable through the playlist, but it
+        // holds both as infinite stills, so they are listed too, as MakeMKV lists the
+        // clips of Monsters University's still playlists.
+        Assert.Equal(
+            ["BDMV/STREAM/00135.m2ts", "BDMV/STREAM/00007.m2ts", "BDMV/STREAM/00999.m2ts"],
+            titles.Skip(1).Select(title => title.Source!.Path));
+        var promoted = titles[3];
+        Assert.Equal("BDMV/STREAM/00999.m2ts", promoted.Source!.Path);
+        Assert.Equal(16384, promoted.SizeBytes);
+        Assert.Equal("00999", Assert.Single(promoted.Segments!).Clip);
+        Assert.Contains(result.Diagnostics, item => item.Code == "ODM_BD_STREAM_TITLES");
+
+        // Promotion is backed by file-size metadata alone; payload bytes stay unread.
+        Assert.All(
+            files.Where(file => file.Path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)),
+            file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_DoesNotPromoteStreamsOnlyASubPathPlays()
+    {
+        // 2001: A Space Odyssey (UHD) 00100.mpls plays 00316 with popup-menu subpaths
+        // (type 3) over 00327-00329. MakeMKV never lists those menu clips as titles.
+        string fixture = Path.Combine(fixturesPath, "MPLS", "UHD-C", "00100.mpls");
+        var files = new[]
+        {
+            RecordingFile.FromDisk("BDMV/PLAYLIST/00100.mpls", fixture),
+            RecordingFile.Payload("BDMV/STREAM/00316.m2ts", 4096),
+            RecordingFile.Payload("BDMV/STREAM/00327.m2ts", 8192),
+            RecordingFile.Payload("BDMV/STREAM/00328.m2ts", 8192),
+            RecordingFile.Payload("BDMV/STREAM/00329.m2ts", 8192),
+            RecordingFile.Payload("BDMV/STREAM/00999.m2ts", 16384),
+        };
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('4', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        Assert.Equal(
+            ["BDMV/PLAYLIST/00100.mpls", "BDMV/STREAM/00999.m2ts"],
+            result.Manifest.Disc.Titles!.Select(title => title.Source!.Path));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_PreservesDirectoryOrderIndependentlyOfSortedInventory()
+    {
+        string fixture = Path.Combine(fixturesPath, "MPLS", "BD-B", "00050.mpls");
+        var files = new[]
+        {
+            RecordingFile.FromDisk("BDMV/PLAYLIST/00050.mpls", fixture),
+            RecordingFile.FromDisk("BDMV/PLAYLIST/00051.mpls", fixture),
+            RecordingFile.Payload("BDMV/STREAM/00135.m2ts", 4096),
+            RecordingFile.Payload("BDMV/STREAM/00007.m2ts", 8192),
+            RecordingFile.Payload("BDMV/STREAM/00999.m2ts", 16384),
+        };
+        var generator = new OpticalDiscManifestGenerator();
+        var first = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('3', 40)),
+            TestContext.Current.CancellationToken);
+        var reversed = await generator.GenerateAsync(
+            CreateRequest(files.Reverse().ToArray(), "aacs-disc-id", new string('3', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(first.Validation.IsValid);
+        Assert.True(reversed.Validation.IsValid);
+        Assert.Equal(first.Manifest.Disc.Files, reversed.Manifest.Disc.Files);
+        Assert.Equal(first.Manifest.Disc.Identifiers, reversed.Manifest.Disc.Identifiers);
+        Assert.Equal(
+            ["BDMV/PLAYLIST/00050.mpls", "BDMV/STREAM/00135.m2ts", "BDMV/STREAM/00007.m2ts", "BDMV/STREAM/00999.m2ts"],
+            first.Manifest.Disc.Titles!.Select(title => title.Source.Path));
+        Assert.Equal(
+            ["BDMV/PLAYLIST/00051.mpls", "BDMV/STREAM/00999.m2ts", "BDMV/STREAM/00007.m2ts", "BDMV/STREAM/00135.m2ts"],
+            reversed.Manifest.Disc.Titles!.Select(title => title.Source.Path));
+        Assert.Equal(
+            "BDMV/PLAYLIST/00050.mpls",
+            Assert.Single(reversed.Diagnostics, item => item.Code == "ODM_BD_TITLE_DUPLICATE").Path);
+        Assert.All(files.Where(file => file.Path.EndsWith(".m2ts")), file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task CreateBluRayStreams_PreservesFirstClipEvidenceAndMplsFallbacks()
+    {
+        var path = Path.Combine(fixturesPath, "CLPI", "UHD-A", "00589.clpi");
+        var parsed = await new ClpiParser(new MemoryOpticalDiscReader(
+            await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken)))
+            .ParseAsync();
+        Assert.NotNull(parsed.Value);
+        var clpi = parsed.Value;
+        var evidence = clpi.Programs.SelectMany(program => program.Streams).First() with
+        {
+            Category = "Video",
+            Pid = 4096,
+            CodingType = "HEVC",
+            CodingTypeCode = 0x24,
+            FormatCode = 8,
+            RateCode = null,
+            LanguageCode = null,
+            AspectCode = 3,
+            DynamicRangeTypeCode = 2,
+            ColorSpaceCode = 1,
+            HdrPlusFlag = true,
+        };
+        var firstClip = clpi with { Programs = [clpi.Programs[0] with { Streams = [evidence] }] };
+        var laterClip = clpi with
+        {
+            Programs = [clpi.Programs[0] with { Streams = [evidence with { CodingType = "Later", FormatCode = 6 }] }],
+        };
+        var playlist = CreateSyntheticPlaylist(90_000, []);
+        var item = playlist.PlayItems[0];
+        var mplsStream = new MplsStream
+        {
+            Category = "SecondaryVideo",
+            Pid = 4096,
+            StreamTypeCode = 1,
+            CodingType = "AVC",
+            CodingTypeCode = 0x1B,
+            FormatCode = 6,
+            RateCode = 1,
+            LanguageCode = " ENG ",
+        };
+        playlist = playlist with
+        {
+            PlayItems =
+            [
+                item with { StreamTable = item.StreamTable with { SecondaryVideoStreams = [mplsStream, mplsStream] } },
+                item with { Index = 1, ClipId = "00001", Clips = [item.Clips[0] with { ClipId = "00001" }] },
+            ],
+        };
+        var clips = new Dictionary<string, ClpiFile>
+        {
+            ["00000"] = firstClip,
+            ["00001"] = laterClip,
+        };
+
+        var stream = Assert.Single(ManifestStreamMapper.CreateBluRayStreams(playlist, clips));
+        Assert.Equal("HEVC", stream.Codec);
+        Assert.Equal("secondaryVideo", stream.Category);
+        Assert.Equal(8, stream.FormatCode);
+        Assert.Equal(1, stream.RateCode);
+        Assert.Equal("eng", stream.Language);
+        Assert.Equal("3840x2160", stream.Resolution);
+        Assert.Equal("16:9", stream.AspectRatio);
+        Assert.Equal(23.976, stream.FrameRate);
+        Assert.False(stream.IsInterlaced);
+        Assert.True(stream.HdrPlusFlag);
+        Assert.Equal(2, stream.DynamicRangeTypeCode);
+        Assert.Equal(1, stream.ColorSpaceCode);
+
+        var fallback = Assert.Single(ManifestStreamMapper.CreateBluRayStreams(playlist, new Dictionary<string, ClpiFile>()));
+        Assert.Equal("AVC", fallback.Codec);
+        Assert.Equal(6, fallback.FormatCode);
+        Assert.Null(fallback.HdrPlusFlag);
+        var standalone = Assert.Single(ManifestStreamMapper.CreateClpiStreams(firstClip with { ExtensionStreams = [] }));
+        Assert.Equal("video", standalone.Category);
+        Assert.Null(standalone.RateCode);
+        Assert.Null(standalone.Language);
+    }
+
+    [Fact]
+    public void CreateBluRayCompositionKey_DistinguishesTitlesThatPlayDifferently()
+    {
+        var baseline = CreateSegmentTitle(("00001", 0d, 10d, null));
+
+        Assert.Equal(
+            BluRayTitleReconciler.CreateBluRayCompositionKey(baseline),
+            BluRayTitleReconciler.CreateBluRayCompositionKey(
+                CreateSegmentTitle(("00001", 0d, 10d, null))));
+
+        Assert.NotEqual(
+            BluRayTitleReconciler.CreateBluRayCompositionKey(baseline),
+            BluRayTitleReconciler.CreateBluRayCompositionKey(
+                CreateSegmentTitle(("00002", 0d, 10d, null))));
+        Assert.NotEqual(
+            BluRayTitleReconciler.CreateBluRayCompositionKey(baseline),
+            BluRayTitleReconciler.CreateBluRayCompositionKey(
+                CreateSegmentTitle(("00001", 0d, 11d, null))));
+        Assert.NotEqual(
+            BluRayTitleReconciler.CreateBluRayCompositionKey(baseline),
+            BluRayTitleReconciler.CreateBluRayCompositionKey(
+                CreateSegmentTitle(("00001", 0d, 10d, 2))));
+        Assert.NotEqual(
+            BluRayTitleReconciler.CreateBluRayCompositionKey(baseline),
+            BluRayTitleReconciler.CreateBluRayCompositionKey(
+                CreateSegmentTitle(("00001", 0d, 10d, null), ("00002", 10d, 5d, null))));
+
+        // Two playlists over the same clips still differ when their chapter marks do,
+        // in number or in position.
+        var chaptered = baseline with
+        {
+            Chapters = [new ManifestChapter { StartSeconds = 0 }, new ManifestChapter { StartSeconds = 5 }],
+        };
+        Assert.NotEqual(
+            BluRayTitleReconciler.CreateBluRayCompositionKey(baseline),
+            BluRayTitleReconciler.CreateBluRayCompositionKey(chaptered));
+        Assert.NotEqual(
+            BluRayTitleReconciler.CreateBluRayCompositionKey(chaptered),
+            BluRayTitleReconciler.CreateBluRayCompositionKey(baseline with
+            {
+                Chapters = [new ManifestChapter { StartSeconds = 0 }, new ManifestChapter { StartSeconds = 6 }],
+            }));
+    }
+
+    [Fact]
+    public void SelectsNoStreamBeyond_SkipsOnlyPlaylistsThatAddNoStream()
+    {
+        var baseline = CreateSegmentTitle(("00001", 0d, 10d, null));
+        var english = baseline with
+        {
+            Streams = [new ManifestStream { Type = "audio", Codec = "ac3", Pid = 0x1100, Language = "eng" }],
+        };
+        var commentary = baseline with
+        {
+            Streams =
+            [
+                new ManifestStream { Type = "audio", Codec = "ac3", Pid = 0x1100, Language = "eng" },
+                new ManifestStream { Type = "audio", Codec = "ac3", Pid = 0x1101, Language = "eng" },
+            ],
+        };
+
+        // Stream selection does not change how a title plays.
+        Assert.Equal(
+            BluRayTitleReconciler.CreateBluRayCompositionKey(english),
+            BluRayTitleReconciler.CreateBluRayCompositionKey(commentary));
+
+        // A later playlist adding a commentary track is a distinct presentation...
+        Assert.False(BluRayTitleReconciler.SelectsNoStreamBeyond(commentary, english));
+
+        // ...but one selecting a subset of an earlier playlist's streams is the same
+        // title to MakeMKV ("Title 00090.mpls is equal to title 00089.mpls").
+        Assert.True(BluRayTitleReconciler.SelectsNoStreamBeyond(english, commentary));
+        Assert.True(BluRayTitleReconciler.SelectsNoStreamBeyond(english, english with { }));
+    }
+
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData(12.012, true)]
+    [InlineData(0.500489, true)]
+    [InlineData(0.041689, false)]
+    [InlineData(0d, false)]
+    public void IsPlayableStreamCandidate_RejectsOnlySingleFrameStubs(double? duration, bool expected)
+    {
+        // 0.041689s is one frame at 23.976fps: BD-J filler, not a playback candidate.
+        Assert.Equal(expected, BluRayTitleReconciler.IsPlayableStreamCandidate(duration));
+    }
+
+    [Fact]
+    public void AttributeSingleClipTitleToStream_UsesStreamPathOnlyWhenThePlaylistAddsNothing()
+    {
+        IReadOnlySet<string> streams = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "BDMV/STREAM/00001.m2ts",
+            "BDMV/STREAM/00002.m2ts",
+            "BDMV/STREAM/00003.m2ts",
+        };
+        var clipDurations = new Dictionary<string, double>
+        {
+            ["00001"] = 10.0,
+            ["00002"] = 15.0,
+            ["00003"] = 93.460022,
+        };
+        Func<string, double?> durationOf = clip => clipDurations.TryGetValue(clip, out var value) ? value : null;
+
+        var single = CreateSegmentTitle(("00001", 0d, 10d, null));
+        Assert.Equal(
+            "BDMV/STREAM/00001.m2ts",
+            BluRayTitleReconciler.AttributeSingleClipTitleToStream(single, streams, durationOf).Source!.Path);
+
+        // A lone chapter mark is just the title's start, so it still adds nothing, and a
+        // stream-sourced title carries no chapters, as in MakeMKV.
+        var oneChapter = single with { Chapters = [new ManifestChapter { StartSeconds = 0 }] };
+        var attributed = BluRayTitleReconciler.AttributeSingleClipTitleToStream(oneChapter, streams, durationOf);
+        Assert.Equal("BDMV/STREAM/00001.m2ts", attributed.Source!.Path);
+        Assert.Null(attributed.Chapters);
+
+        // Everything the playlist genuinely contributes keeps the playlist attribution.
+        var chaptered = single with
+        {
+            Chapters = [new ManifestChapter { StartSeconds = 0 }, new ManifestChapter { StartSeconds = 5 }],
+        };
+        var multiSegment = CreateSegmentTitle(("00001", 0d, 10d, null), ("00002", 10d, 5d, null));
+        var angled = CreateSegmentTitle(("00001", 0d, 10d, 1));
+        var missingStream = CreateSegmentTitle(("00777", 0d, 10d, null));
+        // Mirrors a real disc: the playlist plays 89.089s of a 93.46s clip, and MakeMKV
+        // keeps the playlist name for it.
+        var trimmed = CreateSegmentTitle(("00003", 0d, 89.089, null));
+        var unknownClipDuration = CreateSegmentTitle(("00002", 0d, 15d, null));
+        foreach (var title in new[] { chaptered, multiSegment, angled, missingStream, trimmed })
+        {
+            Assert.Equal(
+                "BDMV/PLAYLIST/00050.mpls",
+                BluRayTitleReconciler.AttributeSingleClipTitleToStream(title, streams, durationOf).Source!.Path);
+        }
+
+        Assert.Equal(
+            "BDMV/PLAYLIST/00050.mpls",
+            BluRayTitleReconciler.AttributeSingleClipTitleToStream(unknownClipDuration, streams, _ => null).Source!.Path);
+    }
+
+    [Fact]
+    public void OrderBluRayTitles_PlacesPlaylistTitlesBeforeStreamTitlesInDiscOrder()
+    {
+        static ManifestTitle At(string path) => new() { Source = new ManifestTitleSource { Path = path } };
+
+        // On-disc directory order of 2001: A Space Odyssey's bonus disc, as MakeMKV lists it.
+        string[] discOrder =
+        [
+            "BDMV/PLAYLIST/00054.mpls",
+            "BDMV/PLAYLIST/00053.mpls",
+            "BDMV/PLAYLIST/00055.mpls",
+            "BDMV/PLAYLIST/00017.mpls",
+            "BDMV/STREAM/00004.m2ts",
+            "BDMV/STREAM/00050.m2ts",
+            "BDMV/STREAM/00003.m2ts",
+        ];
+
+        var ordered = BluRayTitleReconciler.OrderBluRayTitles(
+        [
+            At("BDMV/PLAYLIST/00017.mpls"),
+            At("BDMV/STREAM/00003.m2ts"),
+            At("BDMV/PLAYLIST/00053.mpls"),
+            At("BDMV/STREAM/00050.m2ts"),
+            At("BDMV/PLAYLIST/00054.mpls"),
+            At("BDMV/STREAM/00004.m2ts"),
+            At("BDMV/PLAYLIST/00055.mpls"),
+        ],
+            path => Array.IndexOf(discOrder, path));
+
+        Assert.Equal(discOrder, ordered.Select(title => title.Source!.Path));
+    }
+
+    [Fact]
+    public void OrderBluRayTitles_FallsBackToClipOrderForStreamsWithoutDiscOrder()
+    {
+        static ManifestTitle At(string path) => new() { Source = new ManifestTitleSource { Path = path } };
+
+        var ordered = BluRayTitleReconciler.OrderBluRayTitles(
+        [
+            At("BDMV/PLAYLIST/00004.mpls"),
+            At("BDMV/STREAM/00012.m2ts"),
+            At("BDMV/PLAYLIST/00000.mpls"),
+            At("BDMV/STREAM/00002.m2ts"),
+        ],
+            _ => int.MaxValue);
+
+        // Playlist titles keep their incoming order; stream titles follow in clip order.
+        Assert.Equal(
+            [
+                "BDMV/PLAYLIST/00004.mpls",
+                "BDMV/PLAYLIST/00000.mpls",
+                "BDMV/STREAM/00002.m2ts",
+                "BDMV/STREAM/00012.m2ts",
+            ],
+            ordered.Select(title => title.Source!.Path));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_ReproducesMakeMkvTitleListForHellOnWheelsDisc()
+    {
+        // Real control files from Hell on Wheels Season 1 Disc 1 (fixture set BD-C),
+        // compared with a MakeMKV 1.18.3 log of the same disc. The chapter counts and
+        // h:mm:ss lengths (partial seconds truncated) match MakeMKV's. One known difference
+        // remains: MakeMKV splits 00005.mpls and 00009.mpls at their non-seamless
+        // connections, listing 00005.mpls(1) and 00010.m2ts where 00005.mpls appears here,
+        // and nothing where 00009.mpls appears. Playlists are not split, because Spartacus
+        // (UHD) has 21 playlists with the same connections that MakeMKV lists whole.
+        (string Clip, long Size)[] streams =
+        [
+            ("00000", 7910012928), ("00001", 15003648), ("00002", 5812224), ("00003", 5407795200),
+            ("00004", 5895487488), ("00005", 7580424192), ("00006", 110592), ("00007", 1013760),
+            ("00008", 119734272), ("00009", 2328576), ("00010", 6936576), ("00011", 405504),
+            ("00012", 4294656), ("00013", 243701760), ("00014", 246521856), ("00015", 61022208),
+            ("00016", 2476032), ("00017", 24576), ("00018", 325570560),
+        ];
+        var files = new List<RecordingFile>();
+        AddDirectory(files, Path.Combine(fixturesPath, "MPLS", "BD-C"), "BDMV/PLAYLIST");
+        AddDirectory(files, Path.Combine(fixturesPath, "CLPI", "BD-C"), "BDMV/CLIPINF");
+        files.AddRange(streams.Select(stream => RecordingFile.Payload($"BDMV/STREAM/{stream.Clip}.m2ts", stream.Size)));
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('4', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title =>
+            {
+                string name = Path.GetFileName(title.Source!.Path!);
+                if (title.Source.Part is > 0)
+                {
+                    name += $"({title.Source.Part})";
+                }
+
+                return (name, title.Chapters?.Count ?? 0, (int)Math.Floor(title.DurationSeconds!.Value), title.SizeBytes);
+            })
+            .ToArray();
+
+        Assert.Equal<(string, int, int, long?)>(
+            [
+                ("00000.mpls", 6, 2535, 5407795200),
+                ("00004.mpls", 6, 2694, 7910012928),
+                ("00005.mpls", 3, 101, 250638336),
+                ("00006.mpls", 2, 93, 246521856),
+                ("00009.mpls", 2, 16, 15028224),
+                ("00012.mpls", 6, 2571, 7580424192),
+                ("00013.mpls", 6, 2557, 5895487488),
+                ("00001.m2ts", 0, 15, 15003648),
+                ("00002.m2ts", 0, 12, 5812224),
+                ("00006.m2ts", 0, 0, 110592),
+                ("00007.m2ts", 0, 5, 1013760),
+                ("00008.m2ts", 0, 30, 119734272),
+                ("00011.m2ts", 0, 0, 405504),
+                ("00012.m2ts", 0, 7, 4294656),
+                ("00015.m2ts", 0, 80, 61022208),
+                ("00017.m2ts", 0, 1, 24576),
+                ("00018.m2ts", 0, 100, 325570560),
+            ],
+            actual);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay3D_ReproducesMakeMkvTitleListForSuperMarioBrosDisc()
+    {
+        // Real control files from Super Mario Bros (3D Blu-ray) (fixture set BD-3D-B),
+        // compared with a MakeMKV 1.18.3 log of the same disc, which lists these 17 titles
+        // in this order. 01000.mpls and 01003.mpls end with the 0.42 s clip 13,
+        // which selects no audio, so it is trimmed; 01003.mpls then plays clip 3 alone and
+        // is listed as 00003.m2ts. 00006.mpls is 01005.mpls without chapters. 01009.mpls
+        // differs from 00005.mpls only by a menu stream. MakeMKV does not list 00012.mpls
+        // (a single-frame still of clip 14), but it lists Hell on Wheels' single-frame
+        // still 00006.m2ts and thousands of 0:00:00 titles across the corpus, so no rule
+        // explains the omission and the still is kept as an 18th title.
+        (string Clip, long Size)[] streams =
+        [
+            ("00000", 110893056), ("00001", 12288), ("00002", 12288), ("00003", 68567040),
+            ("00004", 12288), ("00005", 238571520), ("00006", 86538240), ("00007", 24956436480),
+            ("00008", 8754653184), ("00009", 2322432), ("00010", 2371584), ("00011", 1880064),
+            ("00012", 12288), ("00013", 12288), ("00014", 276480), ("00015", 331776),
+            ("00016", 331776),
+        ];
+        var files = new List<RecordingFile>();
+        AddDirectory(files, Path.Combine(fixturesPath, "MPLS", "BD-3D-B"), "BDMV/PLAYLIST");
+        AddDirectory(files, Path.Combine(fixturesPath, "CLPI", "BD-3D-B"), "BDMV/CLIPINF");
+        files.AddRange(streams.Select(stream => RecordingFile.Payload($"BDMV/STREAM/{stream.Clip}.m2ts", stream.Size)));
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('5', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title => (
+                Path.GetFileName(title.Source!.Path!),
+                title.Chapters?.Count ?? 0,
+                title.SizeBytes,
+                string.Join(",", title.Segments!.Select(segment => segment.DependentClip is null
+                    ? segment.Clip
+                    : $"{segment.Clip}/{segment.DependentClip}"))))
+            .ToArray();
+
+        Assert.Equal<(string, int, long?, string)>(
+            [
+                ("00005.mpls", 1, 325109760, "00005/00006"),
+                ("01000.mpls", 3, 110893056, "00000"),
+                ("01001.mpls", 2, 24576, "00001,00012"),
+                ("01002.mpls", 2, 24576, "00002,00012"),
+                ("01005.mpls", 35, 33711089664, "00007/00008"),
+                ("01006.mpls", 1, 2334720, "00009,00012"),
+                ("01007.mpls", 1, 2383872, "00010,00012"),
+                ("01008.mpls", 1, 1892352, "00011,00012"),
+                ("00001.m2ts", 0, 12288, "00001"),
+                ("00002.m2ts", 0, 12288, "00002"),
+                ("00003.m2ts", 0, 68567040, "00003"),
+                ("00004.m2ts", 0, 12288, "00004"),
+                ("00009.m2ts", 0, 2322432, "00009"),
+                ("00010.m2ts", 0, 2371584, "00010"),
+                ("00011.m2ts", 0, 1880064, "00011"),
+                ("00012.m2ts", 0, 12288, "00012"),
+                ("00013.m2ts", 0, 12288, "00013"),
+                ("00014.m2ts", 0, 276480, "00014"),
+            ],
+            actual);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_ReproducesMakeMkvTitlesForMonstersUniversityStillsAndAudioVariants()
+    {
+        // Real control files from Monsters University (UHD) (fixture set UHD-D), compared
+        // with a MakeMKV 1.18.3 log of the same disc. 00002.mpls plays stills 150, 151,
+        // 151, 151, 150 and is listed as "150,151"; 00016.mpls (150, then still 151 twice)
+        // is reported equal to it. 00004.mpls plays 00800.mpls' clips with only one audio
+        // track and is reported equal to the later 00800.mpls. The still playlists' clips
+        // are listed as 00057.m2ts, 00150.m2ts and 00151.m2ts, while the looping
+        // 00020.mpls (40, then 41 repeated) leaves 00040.m2ts and 00041.m2ts unlisted.
+        var files = new List<RecordingFile>();
+        AddDirectory(files, Path.Combine(fixturesPath, "MPLS", "UHD-D"), "BDMV/PLAYLIST");
+        AddDirectory(files, Path.Combine(fixturesPath, "CLPI", "UHD-D"), "BDMV/CLIPINF");
+        files.AddRange(Directory.EnumerateFiles(Path.Combine(fixturesPath, "CLPI", "UHD-D"))
+            .Select(path => RecordingFile.Payload($"BDMV/STREAM/{Path.GetFileNameWithoutExtension(path)}.m2ts", 6144)));
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('6', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title => (
+                Path.GetFileName(title.Source!.Path!),
+                title.Chapters?.Count ?? 0,
+                string.Join(",", title.Segments!.Select(segment => segment.Clip).Take(3))))
+            .ToArray();
+
+        Assert.Equal<(string, int, string)>(
+            [
+                ("00002.mpls", 2, "00150,00151"),
+                ("00015.mpls", 2, "00150,00057"),
+                ("00020.mpls", 3, "00040,00041"),
+                ("00800.mpls", 32, "00055,00056,00086"),
+                ("00057.m2ts", 0, "00057"),
+                ("00150.m2ts", 0, "00150"),
+                ("00151.m2ts", 0, "00151"),
+            ],
+            actual);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_BluRay_ReproducesMakeMkvTitlesForMonstersUniversityBonusDisc()
+    {
+        // Real control files from the Monsters University Blu-ray bonus disc (fixture set
+        // BD-D), compared with a MakeMKV 1.18.3 log of the same disc, which lists these 63
+        // titles (in on-disc order; here in name order). 00000.mpls plays clip 2 103 times
+        // then the still clip 1 and is not listed: the loop ends it after clip 2, which is
+        // listed as 00002.m2ts. 00100.mpls holds 366 consecutive stills of clip 914, listed
+        // as the one segment 914, and 00914.m2ts is not listed.
+        (string Clip, long Size)[] streams =
+        [
+            ("00001", 159744), ("00002", 70877184), ("00003", 1308672), ("00004", 1308672),
+            ("00011", 59910144), ("00021", 40003584), ("00022", 95170560), ("00082", 2648064),
+            ("00252", 2116521984), ("00504", 2666496), ("00505", 2666496), ("00506", 2844672),
+            ("00507", 2666496), ("00508", 4239360), ("00509", 4239360), ("00510", 4239360),
+            ("00875", 1278105600), ("00876", 664227840), ("00877", 856197120), ("00878", 912832512),
+            ("00879", 1042083840), ("00880", 779372544), ("00881", 737851392), ("00882", 1133838336),
+            ("00883", 708925440), ("00884", 127125504), ("00885", 700035072), ("00886", 471005184),
+            ("00887", 629864448), ("00888", 1314828288), ("00889", 551301120), ("00890", 77629440),
+            ("00891", 63946752), ("00892", 218935296), ("00893", 165298176), ("00894", 343523328),
+            ("00895", 165709824), ("00896", 339572736), ("00897", 286593024), ("00898", 172308480),
+            ("00899", 171423744), ("00900", 245864448), ("00901", 238989312), ("00908", 11323392),
+            ("00909", 4245504), ("00910", 4257792), ("00911", 2660352), ("00912", 12853248),
+            ("00913", 10358784), ("00914", 123850752), ("00915", 15544320), ("00916", 11372544),
+        ];
+        var files = new List<RecordingFile>();
+        AddDirectory(files, Path.Combine(fixturesPath, "MPLS", "BD-D"), "BDMV/PLAYLIST");
+        AddDirectory(files, Path.Combine(fixturesPath, "CLPI", "BD-D"), "BDMV/CLIPINF");
+        files.AddRange(streams.Select(stream => RecordingFile.Payload($"BDMV/STREAM/{stream.Clip}.m2ts", stream.Size)));
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "aacs-disc-id", new string('7', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title => (
+                Path.GetFileName(title.Source!.Path!),
+                title.Chapters?.Count ?? 0,
+                title.SizeBytes,
+                string.Join(",", title.Segments!.Select(segment => segment.Clip))))
+            .ToArray();
+
+        Assert.Equal<(string, int, long?, string)>(
+            [
+                ("00020.mpls", 3, 135174144, "00021,00022"),
+                ("00050.mpls", 1, 3975168, "00504,00004"),
+                ("00051.mpls", 1, 3975168, "00505,00004"),
+                ("00052.mpls", 1, 12632064, "00908,00004"),
+                ("00053.mpls", 1, 4153344, "00506,00004"),
+                ("00054.mpls", 1, 3975168, "00507,00004"),
+                ("00060.mpls", 4, 13522944, "00508,00504,00911,00082,00004"),
+                ("00061.mpls", 3, 21067776, "00509,00505,00912,00004"),
+                ("00062.mpls", 4, 16889856, "00910,00908,00004"),
+                ("00063.mpls", 3, 18751488, "00510,00506,00913,00004"),
+                ("00064.mpls", 2, 8220672, "00909,00507,00004"),
+                ("00100.mpls", 366, 123850752, "00914"),
+                ("00300.mpls", 5, 2116521984, "00252"),
+                ("00301.mpls", 2, 1278105600, "00875"),
+                ("00303.mpls", 2, 856197120, "00877"),
+                ("00304.mpls", 2, 912832512, "00878"),
+                ("00305.mpls", 4, 1042083840, "00879"),
+                ("00306.mpls", 2, 779372544, "00880"),
+                ("00307.mpls", 2, 737851392, "00881"),
+                ("00308.mpls", 2, 1133838336, "00882"),
+                ("00309.mpls", 2, 708925440, "00883"),
+                ("00314.mpls", 3, 1314828288, "00888"),
+                ("00315.mpls", 7, 3242858496, "00884,00885,00886,00887,00888"),
+                ("00328.mpls", 4, 876189696, "00897,00898,00899,00900"),
+                ("00001.m2ts", 0, 159744, "00001"),
+                ("00002.m2ts", 0, 70877184, "00002"),
+                ("00003.m2ts", 0, 1308672, "00003"),
+                ("00004.m2ts", 0, 1308672, "00004"),
+                ("00011.m2ts", 0, 59910144, "00011"),
+                ("00021.m2ts", 0, 40003584, "00021"),
+                ("00022.m2ts", 0, 95170560, "00022"),
+                ("00082.m2ts", 0, 2648064, "00082"),
+                ("00504.m2ts", 0, 2666496, "00504"),
+                ("00505.m2ts", 0, 2666496, "00505"),
+                ("00506.m2ts", 0, 2844672, "00506"),
+                ("00507.m2ts", 0, 2666496, "00507"),
+                ("00508.m2ts", 0, 4239360, "00508"),
+                ("00509.m2ts", 0, 4239360, "00509"),
+                ("00510.m2ts", 0, 4239360, "00510"),
+                ("00876.m2ts", 0, 664227840, "00876"),
+                ("00884.m2ts", 0, 127125504, "00884"),
+                ("00885.m2ts", 0, 700035072, "00885"),
+                ("00886.m2ts", 0, 471005184, "00886"),
+                ("00887.m2ts", 0, 629864448, "00887"),
+                ("00889.m2ts", 0, 551301120, "00889"),
+                ("00890.m2ts", 0, 77629440, "00890"),
+                ("00891.m2ts", 0, 63946752, "00891"),
+                ("00892.m2ts", 0, 218935296, "00892"),
+                ("00893.m2ts", 0, 165298176, "00893"),
+                ("00894.m2ts", 0, 343523328, "00894"),
+                ("00895.m2ts", 0, 165709824, "00895"),
+                ("00896.m2ts", 0, 339572736, "00896"),
+                ("00897.m2ts", 0, 286593024, "00897"),
+                ("00898.m2ts", 0, 172308480, "00898"),
+                ("00899.m2ts", 0, 171423744, "00899"),
+                ("00900.m2ts", 0, 245864448, "00900"),
+                ("00901.m2ts", 0, 238989312, "00901"),
+                ("00908.m2ts", 0, 11323392, "00908"),
+                ("00909.m2ts", 0, 4245504, "00909"),
+                ("00910.m2ts", 0, 4257792, "00910"),
+                ("00911.m2ts", 0, 2660352, "00911"),
+                ("00912.m2ts", 0, 12853248, "00912"),
+                ("00913.m2ts", 0, 10358784, "00913"),
+            ],
+            actual);
+    }
+
+    [Fact]
+    public async Task CollapseRepeatedPlayItems_ListsLoopedClipOnceLikeMakeMkv()
+    {
+        // 1917's 00149.mpls plays clip 174 then loops clip 175 251 times, one mark per
+        // play item. MakeMKV 1.16.4 lists it as segments "174,175" with 2 chapters.
+        var bytes = await File.ReadAllBytesAsync(
+            Path.Combine(fixturesPath, "MPLS", "UHD-A", "00149.mpls"),
+            TestContext.Current.CancellationToken);
+        var playlist = (await new MplsParser(new MemoryOpticalDiscReader(bytes)).ParseAsync()).Value!;
+
+        var collapsed = BluRayPlaylistRules.CollapseRepeatedPlayItems(playlist);
+
+        Assert.Equal(252, playlist.PlayItems.Count);
+        Assert.Equal(["00174", "00175"], collapsed.PlayItems.Select(item => item.ClipId));
+        Assert.Equal([0, 1], collapsed.PlayItems.Select(item => item.Index));
+        Assert.Equal([0, 1], collapsed.Marks.Select(mark => mark.PlayItemReference));
+    }
+
+    [Theory]
+    [InlineData("BD-3D-B", "01000.mpls", new[] { "00000" })]
+    [InlineData("BD-3D-B", "01003.mpls", new[] { "00003" })]
+    [InlineData("BD-3D-B", "01001.mpls", new[] { "00001", "00012" })]
+    [InlineData("BD-C", "00009.mpls", new[] { "00001", "00017" })]
+    public async Task TrimTrailingNarrowerPlayItems_DropsOnlyShortTailsSelectingFewerStreams(string set, string file, string[] expected)
+    {
+        // Mario's 0.42 s video-only clip 13 after a video-and-audio clip is dropped by
+        // MakeMKV; its 0.42 s clip 12 after another video-only clip, and Hell on Wheels'
+        // 1.04 s video-only clip 17 after a video-and-audio clip, are kept.
+        var bytes = await File.ReadAllBytesAsync(
+            Path.Combine(fixturesPath, "MPLS", set, file),
+            TestContext.Current.CancellationToken);
+        var playlist = (await new MplsParser(new MemoryOpticalDiscReader(bytes)).ParseAsync()).Value!;
+
+        var trimmed = BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(playlist);
+
+        Assert.Equal(expected, trimmed.PlayItems.Select(item => item.ClipId));
+        Assert.All(trimmed.Marks, mark => Assert.True(mark.PlayItemReference < expected.Length));
+    }
+
+    [Fact]
+    public void CollapseRepeatedPlayItems_KeepsDistinctAndNonConsecutivePlayItems()
+    {
+        var distinct = CreateMultiItemPlaylist([("00010", 1, 0), ("00011", 1, 0), ("00010", 1, 0)], [(0, 0u), (2, 0u)]);
+        var loop = CreateMultiItemPlaylist([("00006", 1, 0), ("00010", 5, 0), ("00010", 5, 0), ("00010", 5, 0)], [(0, 0u), (0, 90u), (1, 0u), (3, 0u)]);
+
+        var collapsed = BluRayPlaylistRules.CollapseRepeatedPlayItems(loop);
+
+        Assert.Same(distinct, BluRayPlaylistRules.CollapseRepeatedPlayItems(distinct));
+        Assert.Equal(["00006", "00010"], collapsed.PlayItems.Select(item => item.ClipId));
+        Assert.Equal([0, 0, 1], collapsed.Marks.Select(mark => mark.PlayItemReference));
+        Assert.Equal([0, 1, 2], collapsed.Marks.Select(mark => mark.Index));
+    }
+
+    [Fact]
+    public void CollapseRepeatedPlayItems_DropsInfiniteStillRepeatingAnEarlierStill()
+    {
+        // Monsters University (UHD) 00002.mpls: stills 150, 151, 151, 151, 150 are listed
+        // by MakeMKV as "150,151". A repeat that is not an infinite still is kept, as
+        // MakeMKV keeps Stranger Things' "12,0,14,12,1,14".
+        var stills = CreateMultiItemPlaylist(
+            [("00150", 1, 2), ("00151", 1, 2), ("00151", 1, 2), ("00151", 1, 2), ("00150", 1, 2)],
+            [(0, 0u), (1, 0u), (4, 0u)]);
+        var mixed = CreateMultiItemPlaylist([("00150", 1, 0), ("00151", 1, 2), ("00150", 1, 2)], [(0, 0u)]);
+
+        var collapsed = BluRayPlaylistRules.CollapseRepeatedPlayItems(stills);
+
+        Assert.Equal(["00150", "00151"], collapsed.PlayItems.Select(item => item.ClipId));
+        Assert.Equal([0, 1], collapsed.Marks.Select(mark => mark.PlayItemReference));
+        Assert.Same(mixed, BluRayPlaylistRules.CollapseRepeatedPlayItems(mixed));
+    }
+
+    private static MplsPlaylist CreateMultiItemPlaylist(
+        IReadOnlyList<(string Clip, int ConnectionCondition, int StillMode)> items,
+        IReadOnlyList<(int PlayItem, uint Time)> marks)
+    {
+        var template = CreateSyntheticPlaylist(45_000, []);
+        var playItem = template.PlayItems[0];
+        return template with
+        {
+            PlayItems = items
+                .Select((item, index) => playItem with
+                {
+                    Index = index,
+                    ClipId = item.Clip,
+                    ConnectionCondition = item.ConnectionCondition,
+                    StillMode = item.StillMode,
+                    Clips = [new MplsClipReference { ClipId = item.Clip, CodecId = "M2TS", StcId = 0 }],
+                })
+                .ToArray(),
+            Marks = marks
+                .Select((mark, index) => new MplsPlaylistMark
+                {
+                    Index = index,
+                    MarkType = MplsPlaylistMark.EntryMarkType,
+                    PlayItemReference = mark.PlayItem,
+                    Time = mark.Time,
+                    EntryElementaryStreamPid = 0,
+                    Duration = 0,
+                })
+                .ToArray(),
+        };
+    }
+
+    private static ManifestTitle CreateSegmentTitle(
+        params (string Clip, double Start, double Duration, int? Angle)[] segments)
+        => new()
+        {
+            Source = new ManifestTitleSource { Path = "BDMV/PLAYLIST/00050.mpls" },
+            Segments = segments
+                .Select(segment => new ManifestSegment
+                {
+                    Clip = segment.Clip,
+                    StartSeconds = segment.Start,
+                    DurationSeconds = segment.Duration,
+                    Angle = segment.Angle,
+                })
+                .ToArray(),
+        };
+
+    /// <summary>
+    /// Real long-playlist evidence captured from a mounted disc and cross-checked against its
+    /// stored manifest. Clip byte sizes and segment ordering are retained as regression data;
+    /// only the clip payload bytes are synthesized because the parser must never read them.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, long> LongPlaylistClipSizes = new Dictionary<string, long>
+    {
+        ["00062"] = 5905029120L,
+        ["00069"] = 3544399872L,
+        ["00070"] = 129718272L,
+        ["00071"] = 16803827712L,
+        ["00072"] = 257193984L,
+        ["00073"] = 717262848L,
+        ["00074"] = 588361728L,
+        ["00075"] = 334688256L,
+        ["00076"] = 363061248L,
+        ["00077"] = 80590848L,
+        ["00078"] = 4780916736L,
+        ["00079"] = 94113792L,
+        ["00080"] = 873486336L,
+        ["00081"] = 230240256L,
+        ["00082"] = 2554140672L,
+        ["00083"] = 269598720L,
+        ["00084"] = 5606166528L,
+        ["00085"] = 121092096L,
+        ["00086"] = 3854635008L,
+        ["00087"] = 230019072L,
+        ["00088"] = 645347328L,
+        ["00089"] = 90605568L,
+        ["00090"] = 279035904L,
+        ["00091"] = 118407168L,
+        ["00092"] = 2760923136L,
+        ["00093"] = 210868224L,
+        ["00094"] = 636125184L,
+        ["00095"] = 116459520L,
+        ["00096"] = 439842816L,
+        ["00097"] = 252493824L,
+        ["00098"] = 831375360L,
+        ["00099"] = 111728640L,
+        ["00100"] = 2473943040L,
+        ["00101"] = 278476800L,
+        ["00102"] = 6244890624L,
+        ["00103"] = 125024256L,
+        ["00104"] = 971065344L,
+        ["00105"] = 8711098368L,
+        ["00106"] = 13898870784L,
+        ["00107"] = 129589248L,
+        ["00108"] = 256739328L,
+        ["00109"] = 588158976L,
+        ["00110"] = 80584704L,
+        ["00111"] = 94083072L,
+        ["00112"] = 230719488L,
+        ["00113"] = 269457408L,
+        ["00114"] = 121067520L,
+        ["00115"] = 230191104L,
+        ["00116"] = 90519552L,
+        ["00117"] = 118628352L,
+        ["00118"] = 210714624L,
+        ["00119"] = 116496384L,
+        ["00120"] = 252499968L,
+        ["00121"] = 111642624L,
+        ["00122"] = 278673408L,
+        ["00123"] = 125128704L,
+        ["00124"] = 8710748160L,
+        ["00125"] = 363356160L,
+    };
+
+    private static readonly string[] LongPlaylist00800SegmentMap =
+    [
+        "00062", "00107", "00071", "00108", "00073", "00109", "00075", "00125", "00069", "00110",
+        "00078", "00111", "00080", "00112", "00082", "00113", "00084", "00114", "00086", "00115",
+        "00088", "00116", "00090", "00117", "00092", "00118", "00094", "00119", "00096", "00120",
+        "00098", "00121", "00100", "00122", "00102", "00123", "00104", "00124", "00106",
+    ];
+
+    private static readonly string[] LongPlaylist00801SegmentMap =
+    [
+        "00062", "00070", "00071", "00072", "00073", "00074", "00075", "00076", "00069", "00077",
+        "00078", "00079", "00080", "00081", "00082", "00083", "00084", "00085", "00086", "00087",
+        "00088", "00089", "00090", "00091", "00092", "00093", "00094", "00095", "00096", "00097",
+        "00098", "00099", "00100", "00101", "00102", "00103", "00104", "00105", "00106",
+    ];
+
+    [Theory]
+    [InlineData("00800.mpls", 86_534_971_392L)]
+    [InlineData("00801.mpls", 86_535_124_992L)]
+    public async Task GenerateAsync_LongPlaylist_MatchesSegmentOrderSizeDurationAndCorrectedChapterCount(
+        string playlistFileName,
+        long expectedSizeBytes)
+    {
+        var files = new List<RecordingFile>
+        {
+            RecordingFile.FromDisk(
+                $"BDMV/PLAYLIST/{playlistFileName}",
+                Path.Combine(fixturesPath, "MPLS", "UHD-B", playlistFileName)),
+        };
+        foreach (var (clipId, size) in LongPlaylistClipSizes)
+        {
+            files.Add(RecordingFile.FromDisk(
+                $"BDMV/CLIPINF/{clipId}.clpi",
+                Path.Combine(fixturesPath, "CLPI", "UHD-A", "00589.clpi")));
+            files.Add(RecordingFile.Payload($"BDMV/STREAM/{clipId}.m2ts", size));
+        }
+
+        var generator = new OpticalDiscManifestGenerator();
+        var request = CreateRequest(files, "aacs-disc-id", new string('D', 40));
+
+        var first = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
+        var second = await generator.GenerateAsync(request, TestContext.Current.CancellationToken);
+
+        Assert.True(first.Validation.IsValid, string.Join(Environment.NewLine, first.Validation.Errors));
+        Assert.Equal(first.Json, second.Json);
+
+        var title = Assert.Single(
+            first.Manifest.Disc.Titles!,
+            candidate => candidate.Source.Path == $"BDMV/PLAYLIST/{playlistFileName}");
+
+        // Exact whole-file byte sum from the real disc / stored disc02.json fixture.
+        Assert.Equal(expectedSizeBytes, title.SizeBytes);
+        var expectedSegmentMapForSizeCheck = playlistFileName == "00800.mpls"
+            ? LongPlaylist00800SegmentMap
+            : LongPlaylist00801SegmentMap;
+        Assert.Equal(
+            expectedSegmentMapForSizeCheck.Sum(clip => LongPlaylistClipSizes[clip]),
+            title.SizeBytes);
+
+        // Real-disc duration evidence (9722.003467s / 437,490,156 ticks @ 45kHz).
+        Assert.Equal(9722.003467, title.DurationSeconds);
+
+        // Exact 39-segment ordering per the stored disc02.json SegmentMap.
+        var expectedSegmentMap = playlistFileName == "00800.mpls"
+            ? LongPlaylist00800SegmentMap
+            : LongPlaylist00801SegmentMap;
+        Assert.Equal(39, expectedSegmentMap.Length);
+        Assert.Equal(expectedSegmentMap, title.Segments!.Select(segment => segment.Clip).ToArray());
+
+        // Raw entry marks are 36; the corrected/emitted chapter count excludes the terminal
+        // chapter-end sentinel, per task evidence (final mark 11,261 ticks from playlist end).
+        Assert.Equal(35, title.Chapters!.Count);
+
+        Assert.Contains(
+            first.Diagnostics,
+            item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED"
+                && item.Path == $"BDMV/PLAYLIST/{playlistFileName}"
+                && item.Message.Contains("11261"));
+
+        // The real MPLS extension type/version (3.5) is preserved as a truthful,
+        // unsupported-entry diagnostic rather than guessed at in the mapper.
+        Assert.Contains(
+            first.Diagnostics,
+            item => item.Code == "ODM_BD_EXTENSION_UNSUPPORTED"
+                && item.Path == $"BDMV/PLAYLIST/{playlistFileName}"
+                && item.Message.Contains("3.5"));
+        string unsupportedExtensionEvidence =
+            title.Extensions!["thediscdb.optical-disc-manifest/unsupported-mpls-extensions"].GetRawText();
+        Assert.Contains("\"typeIdentifier\":3", unsupportedExtensionEvidence);
+        Assert.Contains("\"versionIdentifier\":5", unsupportedExtensionEvidence);
+
+        // Never open CLPI/M2TS payloads: only file-size metadata backs disc.clips/segments.
+        Assert.All(
+            files.Where(file => file.Path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)),
+            file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Dvd_JoinsLogicalTitlesAndChapterTiming()
+    {
+        var root = Path.Combine(fixturesPath, "DVD-A");
+        var files = Directory.GetFiles(root, "*.IFO")
+            .Select(path => RecordingFile.FromDisk(
+                $"VIDEO_TS/{Path.GetFileName(path)}",
+                path))
+            .Append(RecordingFile.Payload("VIDEO_TS/VTS_01_1.VOB", 1_000_000))
+            .ToArray();
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "dvd-disc-id", new string('C', 32)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        Assert.Equal("dvd", result.Manifest.Disc.Format);
+        Assert.DoesNotContain(
+            result.Diagnostics,
+            item => item.Code == "ODM_DVD_PARTIAL");
+
+        var titles = Assert.IsAssignableFrom<IReadOnlyList<ManifestTitle>>(result.Manifest.Disc.Titles);
+        Assert.Equal(23, titles.Count);
+        var mainTitle = titles[0];
+        Assert.Equal(1, mainTitle.Source.Title);
+        Assert.Equal(1, mainTitle.Source.TitleSet);
+        Assert.Equal(1, mainTitle.Source.TitleSetTitle);
+        Assert.Equal(35, mainTitle.Chapters!.Count);
+        Assert.Equal(0, mainTitle.Chapters[0].StartSeconds);
+        Assert.True(mainTitle.Chapters[0].DurationSeconds > 0);
+        Assert.True(mainTitle.DurationSeconds > 0);
+        Assert.Equal(4_459_864_064L, mainTitle.SizeBytes);
+        Assert.Equal(0, files.Single(file => file.Path.EndsWith(".VOB", StringComparison.OrdinalIgnoreCase)).ReadCount);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_DvdSequentialTitles_SumAuthoredCellSectorsToMakeMkvTitleSizes()
+    {
+        // MakeMKV TINFO:11 sizes from the associated multi-title DVD fixture baseline.
+        long[] expected =
+        [
+            4_774_885_376, 141_600_768, 86_566_912, 78_424_064, 29_485_056, 42_805_248,
+            378_882_048, 209_395_712, 198_991_872, 351_432_704, 185_497_600, 271_239_168,
+            454_447_104, 1_671_004_160, 48_924_672, 11_198_464, 37_392_384,
+        ];
+        var files = CreateDvdIfoFiles("DVD-B");
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "dvd-disc-id", new string('E', 32)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var titles = result.Manifest.Disc.Titles!;
+        Assert.Equal(expected, titles.Select(title => title.SizeBytes ?? -1).ToArray());
+        Assert.All(files.Where(file => file.Path.EndsWith(".VOB", StringComparison.OrdinalIgnoreCase)), file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Dvd_SizesSequentialMainFeatureAndOmitsMultiPgcSizes()
+    {
+        var files = CreateDvdIfoFiles("DVD-D");
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "dvd-disc-id", new string('F', 32)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var titles = result.Manifest.Disc.Titles!;
+        Assert.Equal(6, titles.Count);
+
+        var main = titles[0];
+        Assert.Equal(2, main.Source.TitleSet);
+        Assert.Equal(37, main.Chapters!.Count);
+        Assert.Equal(8342.527528, main.DurationSeconds);
+        // Exactly MakeMKV's title size and every sector of VTS_02_1..8.VOB (all 59 cells).
+        Assert.Equal(7_932_198_912L, main.SizeBytes);
+
+        // VTS_V_ATR 0x4E 0x80: NTSC 16:9 with line-21 CC field 1 (MakeMKV: 16:9 + CC608 track).
+        var video = Assert.Single(main.Streams!, stream => stream.Type == "video");
+        Assert.Equal("720x480", video.Resolution);
+        Assert.Equal("16:9", video.AspectRatio);
+        Assert.Equal("video", video.Category);
+        Assert.Equal(29.97, video.FrameRate);
+        Assert.Equal([1], video.Line21ClosedCaptionFields);
+        Assert.All(main.Streams!.Where(stream => stream.Type == "subtitle"), stream => Assert.Equal("RLE", stream.Codec));
+        Assert.Contains("\"line21ClosedCaptionFields\":[1]", System.Text.RegularExpressions.Regex.Replace(System.Text.Encoding.UTF8.GetString(result.Json), @"\s", string.Empty));
+
+        // Multi/random-PGC titles keep counts but omit timing and size rather than guessing.
+        Assert.All(titles.Skip(1), title =>
+        {
+            Assert.Null(title.DurationSeconds);
+            Assert.Null(title.SizeBytes);
+        });
+        Assert.All(files.Where(file => file.Path.EndsWith(".VOB", StringComparison.OrdinalIgnoreCase)), file => Assert.Equal(0, file.ReadCount));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Dvd_EmitsCellSegmentsThatReproduceMakeMkvLengthsAndSegmentMaps()
+    {
+        // MakeMKV 1.x TINFO:9 lengths and TINFO:26 segment maps for the same DVD-B disc
+        // (Reservoir Dogs 2002 SE disc 1). MakeMKV sums whole cell seconds, so the 23-cell
+        // feature reads 1:38:50 although its frame-accurate playback time is 1:38:59.
+        (string Length, string SegmentMap)[] expected =
+        [
+            ("1:38:50", "1-23"), ("0:04:39", "1,2"), ("0:02:57", "1,2"), ("0:02:31", "1,2"),
+            ("0:00:58", "1,2"), ("0:01:20", "1,2"), ("0:12:25", "1,2,3,4,5,6,7,8,9,10"),
+            ("0:06:54", "1"), ("0:06:49", "1"), ("0:11:16", "1"), ("0:06:08", "1"),
+            ("0:09:07", "1"), ("0:14:45", "1"), ("0:54:59", "1,2,3,4,5,6"), ("0:01:34", "1"),
+            ("0:00:11", "1"), ("0:00:36", "1,2"),
+        ];
+        var files = CreateDvdIfoFiles("DVD-B");
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "dvd-disc-id", new string('E', 32)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title =>
+            {
+                var segments = title.Segments!;
+                Assert.All(segments, segment => Assert.Matches(@"^\d+\.\d+$", segment.Clip));
+                Assert.Equal(title.DurationSeconds!.Value, segments.Sum(segment => segment.DurationSeconds!.Value), 3);
+                var wholeSeconds = TimeSpan.FromSeconds(segments.Sum(segment => Math.Floor(segment.DurationSeconds!.Value)));
+                return (wholeSeconds.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture), GroupCellsByVob(segments));
+            })
+            .ToArray();
+        Assert.Equal(expected, actual);
+
+        static string GroupCellsByVob(IReadOnlyList<ManifestSegment> segments)
+        {
+            var ranges = new List<string>();
+            int start = 1;
+            for (int number = 2; number <= segments.Count + 1; number++)
+            {
+                if (number > segments.Count
+                    || segments[number - 1].Clip.Split('.')[0] != segments[start - 1].Clip.Split('.')[0])
+                {
+                    ranges.Add(start == number - 1 ? $"{start}" : $"{start}-{number - 1}");
+                    start = number;
+                }
+            }
+
+            return string.Join(",", ranges);
+        }
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Dvd_SkipsCellsPlaybackNeverReachesLikeMakeMkv()
+    {
+        // DVD-E is United 93 (2006). MakeMKV 1.18.3 logged "Cells 1-2 were removed from title
+        // start" and "Cells 26-26 were removed from title end" for title 1, trimmed titles 2-6 the
+        // same way, and did not list titles 7 and 8, whose PGCs have no valid program map. These
+        // are its TINFO:9 lengths, TINFO:11 sizes, TINFO:8 chapter counts (absent, so 0, for
+        // title 3) and TINFO:26 segment maps.
+        (int Title, string Length, long Size, int Chapters, string SegmentMap)[] expected =
+        [
+            (1, "1:50:42", 5815142400, 20, "3,4,5-25"),
+            (2, "0:02:14", 82825216, 1, "1"),
+            (3, "0:59:48", 2164613120, 0, "3,4,5"),
+            (4, "0:00:23", 17776640, 1, "1"),
+            (5, "0:00:13", 12242944, 1, "1"),
+            (6, "0:00:13", 13604864, 1, "1"),
+        ];
+        var files = CreateDvdIfoFiles("DVD-E");
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "dvd-disc-id", new string('E', 32)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title =>
+            {
+                var segments = title.Segments!;
+                var wholeSeconds = TimeSpan.FromSeconds(segments.Sum(segment => Math.Floor(segment.DurationSeconds!.Value)));
+                return (
+                    title.Source.Title!.Value,
+                    wholeSeconds.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture),
+                    title.SizeBytes!.Value,
+                    title.Chapters?.Count ?? 0,
+                    GroupCellsByVob(segments));
+            })
+            .ToArray();
+        Assert.Equal(expected, actual);
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Code == "ODM_DVD_TIMING_PARTIAL");
+        Assert.Equal(2, result.Diagnostics.Count(diagnostic => diagnostic.Code == "ODM_DVD_TITLE_SKIPPED"));
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Dvd_SkipsZeroLengthFakeTitlesLikeMakeMkv()
+    {
+        // DVD-F is Avatar (2009). MakeMKV 1.18.3 logged "Title #N declared length is 0:00:00 ...
+        // assuming fake title" and listed only titles 1, 5, 10 and 11; titles 2-4 and 6-9 are
+        // built from 0.52 s cells. These are its TINFO:9 lengths, TINFO:11 sizes, TINFO:8 chapter
+        // counts and TINFO:26 segment maps.
+        (int Title, string Length, long Size, int Chapters, string SegmentMap)[] expected =
+        [
+            (1, "2:34:40", 7034075136, 36, "1-21,22-46,47"),
+            (5, "0:00:27", 22016000, 2, "1,2"),
+            (10, "0:00:41", 40779776, 2, "1,2"),
+            (11, "0:00:42", 20209664, 7, "1,2,3,4,5,6,7"),
+        ];
+        var files = CreateDvdIfoFiles("DVD-F");
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(files, "dvd-disc-id", new string('F', 32)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        var actual = result.Manifest.Disc.Titles!
+            .Select(title =>
+            {
+                var segments = title.Segments!;
+                var wholeSeconds = TimeSpan.FromSeconds(segments.Sum(segment => Math.Floor(segment.DurationSeconds!.Value)));
+                return (
+                    title.Source.Title!.Value,
+                    wholeSeconds.ToString(@"h\:mm\:ss", CultureInfo.InvariantCulture),
+                    title.SizeBytes!.Value,
+                    title.Chapters?.Count ?? 0,
+                    GroupCellsByVob(segments));
+            })
+            .ToArray();
+        Assert.Equal(expected, actual);
+        Assert.Equal(7, result.Diagnostics.Count(diagnostic => diagnostic.Code == "ODM_DVD_TITLE_SKIPPED"));
+    }
+
+    private static string GroupCellsByVob(IReadOnlyList<ManifestSegment> segments)
+    {
+        var ranges = new List<string>();
+        int start = 0;
+        for (int index = 0; index <= segments.Count; index++)
+        {
+            if (index == segments.Count
+                || (index > start && segments[index].Clip.Split('.')[0] != segments[start].Clip.Split('.')[0]))
+            {
+                int first = segments[start].Cell!.Value;
+                int last = segments[index - 1].Cell!.Value;
+                ranges.Add(first == last ? $"{first}" : $"{first}-{last}");
+                start = index;
+            }
+        }
+
+        return string.Join(",", ranges);
+    }
+
+    private RecordingFile[] CreateDvdIfoFiles(string fixture)
+        => Directory.GetFiles(Path.Combine(fixturesPath, fixture), "*.IFO")
+            .Select(path => RecordingFile.FromDisk($"VIDEO_TS/{Path.GetFileName(path)}", path))
+            .Append(RecordingFile.Payload("VIDEO_TS/VTS_01_1.VOB", 1_000_000))
+            .ToArray();
+
+    [Fact]
+    public async Task GenerateAsync_DvdMissingTitleSet_DoesNotClaimCompleteTitles()
+    {
+        var root = Path.Combine(fixturesPath, "DVD-A");
+        var files = Directory.GetFiles(root, "*.IFO")
+            .Where(path => !path.EndsWith("VTS_02_0.IFO", StringComparison.OrdinalIgnoreCase))
+            .Select(path => RecordingFile.FromDisk(
+                $"VIDEO_TS/{Path.GetFileName(path)}",
+                path))
+            .ToArray();
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest(files, "dvd-disc-id", new string('D', 32)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        Assert.Contains(result.Diagnostics, item => item.Code == "ODM_DVD_PARTIAL");
+    }
+
+    [Fact]
+    public void CreateBluRayChapters_OnlyEmitsEntryMarksAsChapters()
+    {
+        var diagnostics = new List<ManifestDiagnostic>();
+        var playlist = CreateSyntheticPlaylist(
+            outTime: 200_000,
+            marks:
+            [
+                (0, MplsPlaylistMark.EntryMarkType, 0, 45_000),
+                (1, MplsPlaylistMark.LinkMarkType, 20_000, 0),
+                (2, MplsPlaylistMark.EntryMarkType, 100_000, 45_000),
+            ]);
+
+        var chapters = BluRayChapterMapper.CreateBluRayChapters(
+            playlist, diagnostics, "BDMV/PLAYLIST/00000.mpls");
+
+        Assert.Equal(2, chapters.Count);
+        Assert.Equal(0, chapters[0].StartSeconds);
+        Assert.Equal(2.222222, chapters[1].StartSeconds);
+    }
+
+    [Theory]
+    [InlineData(1_876)] // One-frame terminal marks from short titles.
+    [InlineData(11_261)] // Measured terminal-mark offset.
+    [InlineData(11_262)] // Measured terminal-mark offset.
+    [InlineData(15_014)] // Measured terminal-mark offset.
+    [InlineData(22_500)] // Upper bound: exactly one half second.
+    public void CreateBluRayChapters_ExcludesFinalEntryMarkAtKnownTerminalSentinelTicks(long ticksFromEnd)
+    {
+        var diagnostics = new List<ManifestDiagnostic>();
+        const long TotalDurationTicks = 200_000;
+        long finalMarkStart = TotalDurationTicks - ticksFromEnd;
+        var playlist = CreateSyntheticPlaylist(
+            outTime: TotalDurationTicks,
+            marks:
+            [
+                (0, MplsPlaylistMark.EntryMarkType, 0, 45_000),
+                (1, MplsPlaylistMark.EntryMarkType, (uint)finalMarkStart, 45_000),
+            ]);
+
+        var chapters = BluRayChapterMapper.CreateBluRayChapters(
+            playlist, diagnostics, "BDMV/PLAYLIST/00000.mpls");
+
+        var chapter = Assert.Single(chapters);
+        Assert.Equal(0, chapter.StartSeconds);
+        Assert.Contains(
+            diagnostics,
+            item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED" && item.Severity == "info");
+    }
+
+    [Theory]
+    [InlineData(0)] // A mark exactly at playlist end is not strictly before end.
+    [InlineData(22_501)] // Just above the half-second band.
+    [InlineData(45_000)] // A clearly legitimate final chapter, about 1 second from end.
+    public void CreateBluRayChapters_DoesNotExcludeLegitimateFinalChapterOutsideSentinelTolerance(
+        long ticksFromEnd)
+    {
+        var diagnostics = new List<ManifestDiagnostic>();
+        const long TotalDurationTicks = 200_000;
+        long finalMarkStart = TotalDurationTicks - ticksFromEnd;
+        var playlist = CreateSyntheticPlaylist(
+            outTime: TotalDurationTicks,
+            marks:
+            [
+                (0, MplsPlaylistMark.EntryMarkType, 0, 45_000),
+                (1, MplsPlaylistMark.EntryMarkType, (uint)finalMarkStart, 45_000),
+            ]);
+
+        var chapters = BluRayChapterMapper.CreateBluRayChapters(
+            playlist, diagnostics, "BDMV/PLAYLIST/00000.mpls");
+
+        Assert.Equal(2, chapters.Count);
+        Assert.Equal(Math.Round(finalMarkStart / 45_000d, 6), chapters[1].StartSeconds);
+        Assert.DoesNotContain(
+            diagnostics,
+            item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
+    }
+
+    [Fact]
+    public async Task GenerateAsync_ShortPlaylist_PreservesLegitimateSecondChapter()
+    {
+        var playlist = RecordingFile.FromDisk(
+            "BDMV/PLAYLIST/00050.mpls",
+            Path.Combine(fixturesPath, "MPLS", "BD-B", "00050.mpls"));
+        var generator = new OpticalDiscManifestGenerator();
+
+        var result = await generator.GenerateAsync(
+            CreateRequest([playlist], "aacs-disc-id", new string('2', 40)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid);
+        var title = Assert.Single(result.Manifest.Disc.Titles!);
+        Assert.Equal(2, title.Chapters!.Count);
+        Assert.Equal([0d, 0.0834], title.Chapters.Select(chapter => chapter.StartSeconds));
+        Assert.DoesNotContain(
+            result.Diagnostics,
+            item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
+        Assert.Equal(1, playlist.ReadCount);
+    }
+
+    [Fact]
+    public void CreateBluRayChapters_OnlyChecksSentinelToleranceAgainstTheFinalMark()
+    {
+        // A non-final mark that lands within the sentinel tolerance band, purely by
+        // coincidence relative to a *later* mark's distance-from-end, must never be
+        // excluded: only the actual final entry mark is checked.
+        var diagnostics = new List<ManifestDiagnostic>();
+        const long TotalDurationTicks = 200_000;
+        const long CoincidentalSentinelLikeStart = TotalDurationTicks - 11_261;
+        var playlist = CreateSyntheticPlaylist(
+            outTime: TotalDurationTicks,
+            marks:
+            [
+                (0, MplsPlaylistMark.EntryMarkType, 0, 45_000),
+                (1, MplsPlaylistMark.EntryMarkType, (uint)CoincidentalSentinelLikeStart, 45_000),
+                (2, MplsPlaylistMark.EntryMarkType, (uint)(TotalDurationTicks - 45_000), 45_000),
+            ]);
+
+        var chapters = BluRayChapterMapper.CreateBluRayChapters(
+            playlist, diagnostics, "BDMV/PLAYLIST/00000.mpls");
+
+        Assert.Equal(3, chapters.Count);
+        Assert.DoesNotContain(
+            diagnostics,
+            item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
+    }
+
+    [Theory]
+    [InlineData(-1, false)]
+    [InlineData(0, false)]
+    [InlineData(1, true)]
+    [InlineData(1_876, true)]
+    [InlineData(11_261, true)]
+    [InlineData(11_262, true)]
+    [InlineData(15_014, true)]
+    [InlineData(22_500, true)]
+    [InlineData(22_501, false)]
+    public void IsTerminalChapterSentinel_MatchesHalfSecondEvidenceBasedToleranceBand(
+        long ticksFromEnd, bool expected)
+    {
+        Assert.Equal(expected, BluRayChapterMapper.IsTerminalChapterSentinel(ticksFromEnd));
+    }
+
+    [Theory]
+    [InlineData(3_753, 15_014)] // Short two-item playlist shape.
+    [InlineData(44_999, 60_000)] // Final mark just under one second in.
+    public void CreateBluRayChapters_PreservesFinalMarkWithLessThanOneSecondOfPrecedingContent(
+        long finalMarkStart, long totalDurationTicks)
+    {
+        var diagnostics = new List<ManifestDiagnostic>();
+        var playlist = CreateSyntheticPlaylist(
+            outTime: totalDurationTicks,
+            marks:
+            [
+                (0, MplsPlaylistMark.EntryMarkType, 0, 45_000),
+                (1, MplsPlaylistMark.EntryMarkType, (uint)finalMarkStart, 45_000),
+            ]);
+
+        var chapters = BluRayChapterMapper.CreateBluRayChapters(
+            playlist, diagnostics, "BDMV/PLAYLIST/00050.mpls");
+
+        Assert.Equal(2, chapters.Count);
+        Assert.Equal(Math.Round(finalMarkStart / 45_000d, 6), chapters[1].StartSeconds);
+        Assert.DoesNotContain(
+            diagnostics,
+            item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
+    }
+
+    [Fact]
+    public void CreateBluRayChapters_KnivesOutFiveSecondClip_ExcludesOneFrameFinalMark()
+    {
+        // Knives Out 1080p 00002.mpls: 227,101-tick playlist, final entry mark at 225,225
+        // (1,876 ticks / one frame before end). MakeMKV reports one chapter.
+        var diagnostics = new List<ManifestDiagnostic>();
+        var playlist = CreateSyntheticPlaylist(
+            outTime: 227_101,
+            marks:
+            [
+                (0, MplsPlaylistMark.EntryMarkType, 0, 45_000),
+                (1, MplsPlaylistMark.EntryMarkType, 225_225, 45_000),
+            ]);
+
+        var chapters = BluRayChapterMapper.CreateBluRayChapters(
+            playlist, diagnostics, "BDMV/PLAYLIST/00002.mpls");
+
+        Assert.Single(chapters);
+        Assert.Contains(diagnostics, item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
+    }
+
+    [Fact]
+    public void CreateStereoscopicView_ReturnsNullWhenNoRelationshipIsDeclared()
+    {
+        var diagnostics = new List<ManifestDiagnostic>();
+        var playlist = CreateSyntheticPlaylist(outTime: 1_000, marks: []);
+
+        var view = BluRayTitleMapper.CreateStereoscopicView(
+            playlist, diagnostics, "BDMV/PLAYLIST/00800.mpls");
+
+        Assert.Null(view);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void CreateStereoscopicView_MapsBaseAndDependentViewEvidence()
+    {
+        var diagnostics = new List<ManifestDiagnostic>();
+        var playlist = CreateSyntheticPlaylist(outTime: 1_000, marks: []) with
+        {
+            StereoVideoRelationships = [CreateMvcStereoRelationship()],
+        };
+
+        var view = BluRayTitleMapper.CreateStereoscopicView(
+            playlist, diagnostics, "BDMV/PLAYLIST/00800.mpls");
+
+        Assert.NotNull(view);
+        Assert.Equal("3d-dependent-view", view!.RelationshipType);
+        Assert.Equal("00300", view.BaseClipId);
+        Assert.Equal("00301", view.DependentClipId);
+        Assert.True(view.IsSsVideoSubPath);
+        Assert.NotNull(view.DependentStream);
+        Assert.Equal(0x1012, view.DependentStream!.Pid);
+        Assert.Equal(0x20, view.DependentStream.CodingTypeCode);
+        Assert.Equal("MVC Video", view.DependentStream.Codec);
+        Assert.Equal(6, view.DependentStream.FormatCode);
+        Assert.Equal(1, view.DependentStream.RateCode);
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void CreateStereoscopicView_EmitsDiagnosticWhenMultipleRelationshipsAreDeclared()
+    {
+        var diagnostics = new List<ManifestDiagnostic>();
+        var relationship = CreateMvcStereoRelationship();
+        var playlist = CreateSyntheticPlaylist(outTime: 1_000, marks: []) with
+        {
+            StereoVideoRelationships = [relationship, relationship],
+        };
+
+        var view = BluRayTitleMapper.CreateStereoscopicView(
+            playlist, diagnostics, "BDMV/PLAYLIST/00800.mpls");
+
+        Assert.NotNull(view);
+        Assert.Contains(diagnostics, item => item.Code == "ODM_BD_3D_MULTIPLE_RELATIONSHIPS");
+    }
+
+    [Fact]
+    public void AddUnsupportedExtensionDiagnostics_DoesNothingWhenNoExtensionDataIsPresent()
+    {
+        var diagnostics = new List<ManifestDiagnostic>();
+        var playlist = CreateSyntheticPlaylist(outTime: 1_000, marks: []);
+
+        BluRayTitleMapper.AddUnsupportedExtensionDiagnostics(
+            playlist, diagnostics, "BDMV/PLAYLIST/00800.mpls");
+
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void AddUnsupportedExtensionDiagnostics_DoesNotEmitDiagnosticsForSupportedEntries()
+    {
+        var diagnostics = new List<ManifestDiagnostic>();
+        var playlist = CreateSyntheticPlaylist(outTime: 1_000, marks: []) with
+        {
+            ExtensionData = new MplsExtensionData
+            {
+                Length = 20,
+                DataBlockStartAddress = 4,
+                Entries =
+                [
+                    new MplsExtensionDataEntry
+                    {
+                        Index = 0,
+                        TypeIdentifier = 2,
+                        VersionIdentifier = 1,
+                        RelativeStartAddress = 0,
+                        Length = 10,
+                        Name = "STN SS extension",
+                        IsSupported = true,
+                        OverlapsAnotherEntry = false,
+                        IsRawDataTruncated = false,
+                    },
+                ],
+            },
+        };
+
+        BluRayTitleMapper.AddUnsupportedExtensionDiagnostics(
+            playlist, diagnostics, "BDMV/PLAYLIST/00800.mpls");
+
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void AddUnsupportedExtensionDiagnostics_EmitsTruthfulDiagnosticForUnsupportedType3Point5()
+    {
+        // Parser commit 961ffd6 preserves entries it does not interpret (for example,
+        // an unsupported 3.5 extension type) rather than guessing its semantics. The mapper
+        // must surface this honestly and must never infer meaning for it.
+        var diagnostics = new List<ManifestDiagnostic>();
+        var playlist = CreateSyntheticPlaylist(outTime: 1_000, marks: []) with
+        {
+            ExtensionData = new MplsExtensionData
+            {
+                Length = 20,
+                DataBlockStartAddress = 4,
+                Entries =
+                [
+                    new MplsExtensionDataEntry
+                    {
+                        Index = 0,
+                        TypeIdentifier = 3,
+                        VersionIdentifier = 5,
+                        RelativeStartAddress = 0,
+                        Length = 10,
+                        Name = null,
+                        IsSupported = false,
+                        OverlapsAnotherEntry = false,
+                        RawDataHex = "0102030405",
+                        IsRawDataTruncated = false,
+                    },
+                ],
+            },
+        };
+
+        BluRayTitleMapper.AddUnsupportedExtensionDiagnostics(
+            playlist, diagnostics, "BDMV/PLAYLIST/00800.mpls");
+
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("ODM_BD_EXTENSION_UNSUPPORTED", diagnostic.Code);
+        Assert.Equal("info", diagnostic.Severity);
+        Assert.Contains("3.5", diagnostic.Message);
+    }
+
+    private static MplsStereoVideoRelationship CreateMvcStereoRelationship()
+        => new()
+        {
+            RelationshipType = MplsStereoVideoRelationship.ThreeDimensionalDependentView,
+            BasePlayItemIndex = 0,
+            BaseClipId = "00300",
+            BaseCodecId = "M2TS",
+            BaseStcId = 0,
+            DependentSubPathIndex = 0,
+            DependentSubPathType = 8,
+            DependentSubPlayItemIndex = 0,
+            DependentClipId = "00301",
+            DependentCodecId = "M2TS",
+            DependentStcId = 1,
+            SyncPlayItemId = 0,
+            SyncPresentationTimestamp = 524_280,
+            IsSsVideoSubPath = true,
+            DependentViewStream = new MplsStereoVideoStream
+            {
+                PlayItemIndex = 0,
+                VideoStreamIndex = 0,
+                StreamTypeCode = 2,
+                Pid = 0x1012,
+                CodingTypeCode = 0x20,
+                CodingType = "MVC Video",
+                FormatCode = 6,
+                RateCode = 1,
+                RawAttributesHex = "20",
+            },
+        };
+
+    private static MplsPlaylist CreateSyntheticPlaylist(
+        long outTime,
+        IReadOnlyList<(int Index, int MarkType, uint Time, uint Duration)> marks)
+    {
+        var streamTable = new MplsStreamTable
+        {
+            VideoStreams = [],
+            AudioStreams = [],
+            PresentationGraphicsStreams = [],
+            InteractiveGraphicsStreams = [],
+            SecondaryAudioStreams = [],
+            SecondaryVideoStreams = [],
+        };
+        var playItem = new MplsPlayItem
+        {
+            Index = 0,
+            ClipId = "00000",
+            CodecId = "M2TS",
+            ConnectionCondition = 1,
+            IsMultiAngle = false,
+            StcId = 0,
+            InTime = 0,
+            OutTime = (uint)outTime,
+            RandomAccessFlag = true,
+            StillMode = 0,
+            Clips = [new MplsClipReference { ClipId = "00000", CodecId = "M2TS", StcId = 0 }],
+            StreamTable = streamTable,
+        };
+        var playlistMarks = marks
+            .Select(mark => new MplsPlaylistMark
+            {
+                Index = mark.Index,
+                MarkType = mark.MarkType,
+                PlayItemReference = 0,
+                Time = mark.Time,
+                EntryElementaryStreamPid = 0,
+                Duration = mark.Duration,
+            })
+            .ToArray();
+
+        return new MplsPlaylist
+        {
+            Identifier = "MPLS",
+            Version = "0200",
+            PlaylistStartAddress = 0,
+            PlaylistMarkStartAddress = 0,
+            ExtensionDataStartAddress = 0,
+            AppInfo = new MplsAppInfo
+            {
+                Length = 0,
+                PlaybackTypeCode = 1,
+                PlaybackType = "sequential",
+                RandomAccessFlag = false,
+                AudioMixFlag = false,
+                LosslessBypassFlag = false,
+                MvcBaseViewRFlag = false,
+            },
+            PlayItems = [playItem],
+            SubPaths = [],
+            Marks = playlistMarks,
+            ExtensionData = null,
+            ExtensionSubPaths = [],
+            StereoVideoRelationships = [],
+        };
+    }
+
+    private ManifestGenerationRequest CreateRequest(
+        IReadOnlyList<RecordingFile> files,
+        string identifierKind,
+        string identifier)
+        => new()
+        {
+            Files = files,
+            ProducerName = "test",
+            ProducerVersion = "1.0.0",
+            Identifiers =
+            [
+                new ManifestIdentifier
+                {
+                    Kind = identifierKind,
+                    Value = identifier,
+                },
+            ],
+        };
+
+    private IReadOnlyList<RecordingFile> CreateBluRayFiles(string discName)
+    {
+        var files = new List<RecordingFile>();
+        AddDirectory(files, Path.Combine(fixturesPath, "BDMV", discName), "BDMV");
+        AddDirectory(files, Path.Combine(fixturesPath, "MPLS", discName), "BDMV/PLAYLIST");
+        AddDirectory(files, Path.Combine(fixturesPath, "CLPI", discName), "BDMV/CLIPINF");
+        files.Add(RecordingFile.Payload("BDMV/STREAM/00000.m2ts", 1_000_000));
+        return files;
+    }
+
+    private static void AddDirectory(
+        ICollection<RecordingFile> destination,
+        string directory,
+        string manifestDirectory)
+    {
+        foreach (var path in Directory.GetFiles(directory).OrderBy(path => path, StringComparer.Ordinal))
+        {
+            destination.Add(RecordingFile.FromDisk(
+                $"{manifestDirectory}/{Path.GetFileName(path)}",
+                path));
+        }
+    }
+
+    private sealed class RecordingFile : IManifestDiscFile
+    {
+        private readonly string? sourcePath;
+        private readonly byte[]? content;
+
+        private RecordingFile(string path, long size, string? sourcePath, byte[]? content = null)
+        {
+            Path = path;
+            Size = size;
+            this.sourcePath = sourcePath;
+            this.content = content;
+        }
+
+        public string Path { get; }
+
+        public long Size { get; }
+
+        public int ReadCount { get; private set; }
+
+        public static RecordingFile FromDisk(string path, string sourcePath)
+            => new(path, new FileInfo(sourcePath).Length, sourcePath);
+
+        public static RecordingFile Payload(string path, long size)
+            => new(path, size, null);
+
+        public static RecordingFile FromBytes(string path, byte[] content)
+            => new(path, content.LongLength, null, content);
+
+        public async ValueTask<byte[]> ReadBytesAsync(
+            long maxAllowedSize,
+            CancellationToken cancellationToken = default)
+        {
+            ReadCount++;
+            if (content is not null)
+            {
+                return content;
+            }
+
+            if (sourcePath is null)
+            {
+                throw new InvalidOperationException($"Payload file was read: {Path}");
+            }
+
+            if (Size > maxAllowedSize)
+            {
+                throw new IOException($"{Path} exceeds the read limit.");
+            }
+
+            return await File.ReadAllBytesAsync(sourcePath, cancellationToken);
+        }
+    }
+}

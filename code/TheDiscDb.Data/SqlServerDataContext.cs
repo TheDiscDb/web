@@ -1,4 +1,4 @@
-﻿namespace TheDiscDb.Web.Data;
+namespace TheDiscDb.Web.Data;
 
 using System;
 using System.Collections.Generic;
@@ -278,6 +278,7 @@ public class SqlServerDataContext : DbContext
         var userDiscContribution = modelBuilder.Entity<UserContributionDisc>();
         userDiscContribution.HasKey(x => x.Id);
         userDiscContribution.Property(x => x.Fingerprint).HasMaxLength(64);
+        userDiscContribution.Property(x => x.ManifestUserAgent).HasMaxLength(1000);
         userDiscContribution.HasMany(x => x.Items)
             .WithOne(x => x.Disc)
             .OnDelete(DeleteBehavior.Cascade);
