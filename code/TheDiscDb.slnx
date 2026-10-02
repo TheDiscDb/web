@@ -11,6 +11,8 @@
   <Project Path="TheDiscDb.Data.Import/TheDiscDb.Data.Import.csproj" />
   <Project Path="TheDiscDb.Data/TheDiscDb.Data.csproj" />
   <Project Path="TheDiscDb.DatabaseMigration/TheDiscDb.DatabaseMigration.csproj" />
+  <Project Path="TheDiscDb.DiscScan.Cli.Tests/TheDiscDb.DiscScan.Cli.Tests.csproj" />
+  <Project Path="TheDiscDb.DiscScan.Cli/TheDiscDb.DiscScan.Cli.csproj" />
   <Project Path="TheDiscDb.Import/TheDiscDb.Import.csproj" />
   <Project Path="TheDiscDb.IntegrationTests/TheDiscDb.IntegrationTests.csproj" />
   <Project Path="TheDiscDb.Mailgun/TheDiscDb.Mailgun.csproj" />
