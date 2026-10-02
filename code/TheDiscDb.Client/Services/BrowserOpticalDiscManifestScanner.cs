@@ -28,11 +28,6 @@ public sealed class BrowserOpticalDiscManifestScanner
             {
                 Files = files,
                 ProducerName = "thediscdb",
-                ProducerVersion = typeof(BrowserOpticalDiscManifestScanner)
-                    .Assembly
-                    .GetName()
-                    .Version?
-                    .ToString() ?? "0.0.0",
                 ProducerUri = "https://thediscdb.com/",
                 Identifiers = identifiers,
                 ReportProgress = reportProgress,

@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -83,7 +84,9 @@ public sealed partial class OpticalDiscManifestGenerator
             Producer = new ManifestProducer
             {
                 Name = request.ProducerName,
-                Version = request.ProducerVersion,
+                Version = string.IsNullOrWhiteSpace(request.ProducerVersion)
+                    ? DefaultProducerVersion()
+                    : request.ProducerVersion,
                 Uri = request.ProducerUri,
             },
             Disc = new ManifestDisc
@@ -199,6 +202,14 @@ public sealed partial class OpticalDiscManifestGenerator
             _ => "unknown",
         };
     }
+
+    private static string DefaultProducerVersion()
+        => typeof(OpticalDiscManifestGenerator)
+            .Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion
+            ?? typeof(OpticalDiscManifestGenerator).Assembly.GetName().Version?.ToString()
+            ?? "0.0.0";
 
     private static IReadOnlyList<ManifestIdentifier> CreateIdentifiers(
         IReadOnlyList<NormalizedFile> files,

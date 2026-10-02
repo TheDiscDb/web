@@ -17,7 +17,7 @@ public sealed record ManifestGenerationRequest
 
     public required string ProducerName { get; init; }
 
-    public required string ProducerVersion { get; init; }
+    public string? ProducerVersion { get; init; }
 
     public string? ProducerUri { get; init; }
 

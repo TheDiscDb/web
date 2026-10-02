@@ -510,19 +510,22 @@ public class ContributionGeneratorService
                     await this.TryAppendHashInfo(makeMkvLogPath, hashInfo, generatedFiles, cancellationToken);
                 }
             }
-            else
+
+            var manifestDiscInfo = await this.TryGenerateManifestFiles(
+                encodedContributionId,
+                encodedDiscId,
+                releaseFolder,
+                discName,
+                generatedFiles,
+                log,
+                cancellationToken);
+
+            if (discInfo is null)
             {
                 // A contributor can describe a disc with an Optical Disc Manifest instead of a
                 // MakeMKV log. Publish the manifest itself rather than synthesizing a log, and map
                 // it so the disc file is populated the same way either upload would populate it.
-                discInfo = await this.TryGenerateManifestFiles(
-                    encodedContributionId,
-                    encodedDiscId,
-                    releaseFolder,
-                    discName,
-                    generatedFiles,
-                    log,
-                    cancellationToken);
+                discInfo = manifestDiscInfo;
             }
 
             var discItems = await dbContext.UserContributionDiscItems

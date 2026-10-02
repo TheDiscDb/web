@@ -23,11 +23,14 @@ public class UserContributionDisc : IHasId
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
     public bool LogsUploaded { get; set; } = false;
+    public bool ManifestUploaded { get; set; } = false;
+    public string? ManifestUserAgent { get; set; }
     public string? LogUploadError { get; set; }
     public int? Index { get; set; }
     public string? ExistingDiscPath { get; set; } = default!;
 
     public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();
+    public ICollection<UserContributionDiscComparison> Comparisons { get; set; } = new HashSet<UserContributionDiscComparison>();
 
     public static string GenerateDiscPath(string mediaType, string externalId, string releaseSlug, string discSlug) => $"{mediaType}/{externalId}/{releaseSlug}/{discSlug}";
     public static (string MediaType, string ExternalId, string ReleaseSlug, string DiscSlug) ParseDiscPath(string discPath)

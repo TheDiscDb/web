@@ -562,6 +562,189 @@ public class OpticalDiscManifestMapperTests
     }
 }
 
+public class DiscLogManifestComparerTests
+{
+    [Test]
+    public async Task Compare_SampleLogAndManifest_Matches()
+    {
+        string logText = await File.ReadAllTextAsync(TestFiles.LogPath);
+        DiscInfo logInfo = LogParser.Organize(LogParser.Parse(logText.Split(Environment.NewLine)));
+        var parsed = new OpticalDiscManifestValidator().Parse(await TestFiles.ReadManifestAsync());
+        DiscInfo manifestInfo = OpticalDiscManifestMapper.ToDiscInfo(parsed.Document!);
+
+        var result = DiscLogManifestComparer.Compare(
+            logInfo,
+            logText,
+            parsed.Document!,
+            manifestInfo,
+            OpticalDiscManifestMapper.GetContentHash(parsed.Document!));
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Match);
+        await Assert.That(result.LogTitleCount).IsEqualTo(result.ManifestTitleCount);
+        await Assert.That(result.MatchedTitleCount).IsEqualTo(result.LogTitleCount);
+        await Assert.That(result.OrderMatches).IsTrue();
+    }
+
+    [Test]
+    public async Task Compare_ExtraLogTitle_IsMismatch()
+    {
+        var manifest = CreateManifest(
+            CreateTitle("BDMV/PLAYLIST/00001.mpls", chapters: 1, size: 100, lengthSeconds: 10, segmentMap: "1"));
+        DiscInfo manifestInfo = OpticalDiscManifestMapper.ToDiscInfo(manifest);
+        DiscInfo logInfo = CreateDiscInfo(
+            CreateLogTitle("00001.mpls", chapters: 1, size: 100, length: "0:00:10", segmentMap: "1"),
+            CreateLogTitle("00002.mpls", chapters: 1, size: 100, length: "0:00:10", segmentMap: "2"));
+
+        var result = DiscLogManifestComparer.Compare(logInfo, string.Empty, manifest, manifestInfo, "HASH");
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Mismatch);
+        await Assert.That(result.Differences.LogOnlyTitles).Contains("00002.mpls");
+    }
+
+    [Test]
+    public async Task Compare_DifferentChapterCount_IsMismatch()
+    {
+        var result = CompareSingleTitle(
+            manifestTitle: CreateTitle("BDMV/PLAYLIST/00001.mpls", chapters: 3, size: 100, lengthSeconds: 10, segmentMap: "1"),
+            logTitle: CreateLogTitle("00001.mpls", chapters: 2, size: 100, length: "0:00:10", segmentMap: "1"));
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Mismatch);
+        await Assert.That(result.Differences.TitleDifferences.Any(d => d.Field == "ChapterCount")).IsTrue();
+    }
+
+    [Test]
+    public async Task Compare_DifferentSize_IsMismatch()
+    {
+        var result = CompareSingleTitle(
+            manifestTitle: CreateTitle("BDMV/PLAYLIST/00001.mpls", chapters: 1, size: 101, lengthSeconds: 10, segmentMap: "1"),
+            logTitle: CreateLogTitle("00001.mpls", chapters: 1, size: 100, length: "0:00:10", segmentMap: "1"));
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Mismatch);
+        await Assert.That(result.Differences.TitleDifferences.Any(d => d.Field == "SizeBytes")).IsTrue();
+    }
+
+    [Test]
+    public async Task Compare_OrderSwap_DoesNotMakeMismatch()
+    {
+        var manifest = CreateManifest(
+            CreateTitle("BDMV/PLAYLIST/00002.mpls", chapters: 1, size: 100, lengthSeconds: 10, segmentMap: "2"),
+            CreateTitle("BDMV/PLAYLIST/00001.mpls", chapters: 1, size: 100, lengthSeconds: 10, segmentMap: "1"));
+        DiscInfo manifestInfo = OpticalDiscManifestMapper.ToDiscInfo(manifest);
+        DiscInfo logInfo = CreateDiscInfo(
+            CreateLogTitle("00001.mpls", chapters: 1, size: 100, length: "0:00:10", segmentMap: "1"),
+            CreateLogTitle("00002.mpls", chapters: 1, size: 100, length: "0:00:10", segmentMap: "2"));
+
+        var result = DiscLogManifestComparer.Compare(logInfo, string.Empty, manifest, manifestInfo, "HASH");
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Match);
+        await Assert.That(result.OrderMatches).IsFalse();
+    }
+
+    [Test]
+    public async Task Compare_DifferentContentHash_IsDifferentDisc()
+    {
+        var manifest = CreateManifest(
+            CreateTitle("BDMV/PLAYLIST/00001.mpls", chapters: 1, size: 100, lengthSeconds: 10, segmentMap: "1"));
+        DiscInfo manifestInfo = OpticalDiscManifestMapper.ToDiscInfo(manifest);
+        DiscInfo logInfo = CreateDiscInfo(
+            CreateLogTitle("00001.mpls", chapters: 1, size: 100, length: "0:00:10", segmentMap: "1"));
+
+        var result = DiscLogManifestComparer.Compare(logInfo, string.Empty, manifest, manifestInfo, "OTHER");
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.DifferentDisc);
+        await Assert.That(result.Differences.DifferentDisc).IsTrue();
+    }
+
+    private static DiscLogManifestComparisonResult CompareSingleTitle(
+        OpticalDiscManifestTitle manifestTitle,
+        Title logTitle)
+    {
+        var manifest = CreateManifest(manifestTitle);
+        return DiscLogManifestComparer.Compare(
+            CreateDiscInfo(logTitle),
+            string.Empty,
+            manifest,
+            OpticalDiscManifestMapper.ToDiscInfo(manifest),
+            "HASH");
+    }
+
+    private static OpticalDiscManifestDocument CreateManifest(params OpticalDiscManifestTitle[] titles)
+    {
+        var manifest = new OpticalDiscManifestDocument
+        {
+            SchemaVersion = 1,
+            Producer = new OpticalDiscManifestProducer
+            {
+                Name = "test",
+                Version = "1.0.0"
+            },
+            Disc = new OpticalDiscManifestDisc
+            {
+                Format = "blu-ray",
+                Identifiers =
+                {
+                    new OpticalDiscManifestIdentifier
+                    {
+                        Kind = OpticalDiscManifestIdentifier.ContentHashKind,
+                        Value = "HASH"
+                    }
+                }
+            }
+        };
+
+        foreach (var title in titles)
+        {
+            manifest.Disc.Titles.Add(title);
+        }
+
+        return manifest;
+    }
+
+    private static OpticalDiscManifestTitle CreateTitle(
+        string path,
+        int chapters,
+        long size,
+        double lengthSeconds,
+        string segmentMap)
+    {
+        var title = new OpticalDiscManifestTitle
+        {
+            Source = new OpticalDiscManifestTitleSource { Path = path },
+            ChapterCount = chapters,
+            SizeBytes = size,
+            DurationSeconds = lengthSeconds
+        };
+
+        foreach (string clip in segmentMap.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            title.Segments.Add(new OpticalDiscManifestSegment { Clip = clip });
+        }
+
+        return title;
+    }
+
+    private static DiscInfo CreateDiscInfo(params Title[] titles)
+    {
+        var disc = new DiscInfo();
+        foreach (var title in titles)
+        {
+            disc.Titles.Add(title);
+        }
+
+        return disc;
+    }
+
+    private static Title CreateLogTitle(string playlist, int chapters, long size, string length, string segmentMap)
+        => new()
+        {
+            Playlist = playlist,
+            ChapterCount = chapters,
+            Size = size,
+            Length = length,
+            SegmentMap = segmentMap
+        };
+}
+
 internal static class TestFiles
 {
     public static string ManifestPath { get; } =
