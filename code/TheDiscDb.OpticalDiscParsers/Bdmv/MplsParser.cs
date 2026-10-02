@@ -515,6 +515,13 @@ internal sealed class MplsParseSession
             return MplsExtensionParseResult.Empty;
         }
 
+        // An empty ExtensionData block is just a zero length field, so check the length before requiring the full header.
+        var lengthField = await ReadBytesAtAsync(extensionDataStartAddress, 4);
+        if (lengthField.Length == 4 && BinaryPrimitives.ReadUInt32BigEndian(lengthField.Span) == 0)
+        {
+            return MplsExtensionParseResult.Empty;
+        }
+
         var header = await ReadBytesAtAsync(extensionDataStartAddress, 12);
         if (header.Length < 12)
         {
