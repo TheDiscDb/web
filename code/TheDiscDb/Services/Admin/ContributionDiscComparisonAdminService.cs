@@ -1,4 +1,8 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Contributions.OpticalDiscManifest;
+using TheDiscDb.Services.Server;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Services.Admin;
@@ -24,11 +28,23 @@ public interface IContributionDiscComparisonAdminService
 
 public sealed class ContributionDiscComparisonAdminService : IContributionDiscComparisonAdminService
 {
-    private readonly SqlServerDataContext database;
+    private static readonly JsonSerializerOptions DifferencesJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
 
-    public ContributionDiscComparisonAdminService(SqlServerDataContext database)
+    private readonly SqlServerDataContext database;
+    private readonly DiscScanComparisonStore comparisonStore;
+    private readonly IdEncoder idEncoder;
+
+    public ContributionDiscComparisonAdminService(
+        SqlServerDataContext database,
+        DiscScanComparisonStore comparisonStore,
+        IdEncoder idEncoder)
     {
         this.database = database;
+        this.comparisonStore = comparisonStore;
+        this.idEncoder = idEncoder;
     }
 
     public async Task<IReadOnlyList<ContributionDiscComparisonListItem>> GetRecentComparisonsAsync(
@@ -36,18 +52,18 @@ public sealed class ContributionDiscComparisonAdminService : IContributionDiscCo
         CancellationToken cancellationToken = default)
     {
         int count = Math.Clamp(take, 1, 500);
-        return await this.Query()
+        var comparisons = await this.LoadAsync(discIds: null, cancellationToken);
+        return comparisons
             .OrderByDescending(item => item.ComparedAt)
-            .ThenByDescending(item => item.Id)
             .Take(count)
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 
     public async Task<ContributionDiscParityDashboard> GetDashboardAsync(
         string? producerVersion = null,
         CancellationToken cancellationToken = default)
     {
-        var latest = await this.GetLatestComparisonsAsync(cancellationToken);
+        var latest = Latest(await this.LoadAsync(discIds: null, cancellationToken));
         var producerVersions = latest
             .Select(item => item.ProducerVersion)
             .Where(item => !string.IsNullOrWhiteSpace(item))
@@ -69,11 +85,10 @@ public sealed class ContributionDiscComparisonAdminService : IContributionDiscCo
     public async Task<IReadOnlyList<ContributionDiscComparisonListItem>> GetDiscComparisonsAsync(
         int discId,
         CancellationToken cancellationToken = default)
-        => await this.Query()
-            .Where(item => item.DiscId == discId)
+        => (await this.LoadAsync([discId], cancellationToken))
             .OrderByDescending(item => item.ComparedAt)
             .ThenByDescending(item => item.Id)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
     public async Task<IReadOnlyDictionary<int, ContributionDiscComparisonListItem>> GetLatestComparisonsForDiscsAsync(
         IReadOnlyCollection<int> discIds,
@@ -84,57 +99,87 @@ public sealed class ContributionDiscComparisonAdminService : IContributionDiscCo
             return new Dictionary<int, ContributionDiscComparisonListItem>();
         }
 
-        var comparisons = await this.Query()
-            .Where(item => discIds.Contains(item.DiscId))
-            .ToListAsync(cancellationToken);
-
-        return comparisons
-            .GroupBy(item => item.DiscId)
-            .Select(group => group
-                .OrderByDescending(item => item.ComparedAt)
-                .ThenByDescending(item => item.Id)
-                .First())
-            .ToDictionary(item => item.DiscId);
+        return Latest(await this.LoadAsync(discIds, cancellationToken)).ToDictionary(item => item.DiscId);
     }
 
-    private async Task<IReadOnlyList<ContributionDiscComparisonListItem>> GetLatestComparisonsAsync(CancellationToken cancellationToken)
-    {
-        var comparisons = await this.Query().ToListAsync(cancellationToken);
-        return comparisons
+    private static List<ContributionDiscComparisonListItem> Latest(IEnumerable<ContributionDiscComparisonListItem> comparisons)
+        => comparisons
             .GroupBy(item => item.DiscId)
             .Select(group => group
                 .OrderByDescending(item => item.ComparedAt)
                 .ThenByDescending(item => item.Id)
                 .First())
             .OrderByDescending(item => item.ComparedAt)
-            .ThenByDescending(item => item.Id)
             .ToList();
-    }
 
-    private IQueryable<ContributionDiscComparisonListItem> Query()
-        => this.database.UserContributionDiscComparisons
+    // Comparison history lives in a blob next to each disc's log and scan, so only discs
+    // that have both uploads can have one.
+    private async Task<List<ContributionDiscComparisonListItem>> LoadAsync(
+        IReadOnlyCollection<int>? discIds,
+        CancellationToken cancellationToken)
+    {
+        var query = this.database.UserContributionDiscs
             .AsNoTracking()
-            .Select(comparison => new ContributionDiscComparisonListItem(
-                comparison.Id,
-                comparison.DiscId,
-                comparison.Disc.UserContribution.Id,
-                comparison.Disc.UserContribution.ReleaseTitle,
-                comparison.Disc.Index,
-                comparison.Disc.Name,
-                comparison.ComparedAt,
-                comparison.Format,
-                comparison.ProducerName,
-                comparison.ProducerVersion,
-                comparison.MakeMkvVersion,
-                comparison.UserAgent,
-                comparison.LogTitleCount,
-                comparison.ManifestTitleCount,
-                comparison.MatchedTitleCount,
-                comparison.OrderMatches,
-                comparison.Status,
-                comparison.DifferencesJson));
-}
+            .Where(disc => disc.LogsUploaded && disc.ManifestUploaded);
 
+        if (discIds is not null)
+        {
+            query = query.Where(disc => discIds.Contains(disc.Id));
+        }
+
+        var discs = await query
+            .Select(disc => new
+            {
+                disc.Id,
+                ContributionId = disc.UserContribution.Id,
+                disc.UserContribution.ReleaseTitle,
+                disc.Index,
+                disc.Name
+            })
+            .ToListAsync(cancellationToken);
+
+        var items = new List<ContributionDiscComparisonListItem>();
+        foreach (var disc in discs)
+        {
+            var file = await this.comparisonStore.ReadAsync(
+                this.idEncoder.Encode(disc.ContributionId),
+                this.idEncoder.Encode(disc.Id),
+                cancellationToken);
+
+            if (file is null)
+            {
+                continue;
+            }
+
+            // The file is stored newest first; number runs so the oldest is 1.
+            for (int i = 0; i < file.Comparisons.Count; i++)
+            {
+                var run = file.Comparisons[i];
+                items.Add(new ContributionDiscComparisonListItem(
+                    file.Comparisons.Count - i,
+                    disc.Id,
+                    disc.ContributionId,
+                    disc.ReleaseTitle,
+                    disc.Index,
+                    disc.Name,
+                    run.ComparedAt,
+                    run.Format,
+                    run.ProducerName,
+                    run.ProducerVersion,
+                    run.MakeMkvVersion,
+                    run.UserAgent,
+                    run.LogTitleCount,
+                    run.ManifestTitleCount,
+                    run.MatchedTitleCount,
+                    run.OrderMatches,
+                    run.Status,
+                    JsonSerializer.Serialize(run.Differences, DifferencesJsonOptions)));
+            }
+        }
+
+        return items;
+    }
+}
 public sealed record ContributionDiscComparisonListItem(
     int Id,
     int DiscId,
@@ -152,7 +197,7 @@ public sealed record ContributionDiscComparisonListItem(
     int ManifestTitleCount,
     int MatchedTitleCount,
     bool OrderMatches,
-    UserContributionDiscComparisonStatus Status,
+    DiscLogManifestComparisonStatus Status,
     string DifferencesJson);
 
 public sealed record ContributionDiscParityDashboard(
@@ -182,7 +227,7 @@ public static class DiscScanParityAggregator
             CreateBreakdown(latest, item => item.ProducerVersion),
             CreateBreakdown(latest, item => item.MakeMkvVersion),
             CreateBreakdown(latest, item => BrowserName(item.UserAgent)),
-            latest.Where(item => item.Status != UserContributionDiscComparisonStatus.Match).ToList(),
+            latest.Where(item => item.Status != DiscLogManifestComparisonStatus.Match).ToList(),
             producerVersions ?? latest
                 .Select(item => item.ProducerVersion)
                 .Where(item => !string.IsNullOrWhiteSpace(item))
@@ -240,7 +285,7 @@ public static class DiscScanParityAggregator
         foreach (var item in items)
         {
             total++;
-            if (item.Status == UserContributionDiscComparisonStatus.Match)
+            if (item.Status == DiscLogManifestComparisonStatus.Match)
             {
                 matches++;
             }

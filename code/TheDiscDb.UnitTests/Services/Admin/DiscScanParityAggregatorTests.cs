@@ -1,3 +1,4 @@
+using TheDiscDb.Contributions.OpticalDiscManifest;
 namespace TheDiscDb.UnitTests.Services.Admin;
 
 using TheDiscDb.Services.Admin;
@@ -24,9 +25,9 @@ public class DiscScanParityAggregatorTests
     {
         var latest = new[]
         {
-            CreateItem(1, UserContributionDiscComparisonStatus.Match, "blu-ray", "1.0", "1.17.8", "Mozilla/5.0 Chrome/120.0"),
-            CreateItem(2, UserContributionDiscComparisonStatus.Mismatch, "dvd", "1.0", "1.17.7", "Mozilla/5.0 Firefox/119.0"),
-            CreateItem(3, UserContributionDiscComparisonStatus.Match, "blu-ray", "1.1", "1.17.8", "TheDiscDb.DiscScan.Cli/1.0"),
+            CreateItem(1, DiscLogManifestComparisonStatus.Match, "blu-ray", "1.0", "1.17.8", "Mozilla/5.0 Chrome/120.0"),
+            CreateItem(2, DiscLogManifestComparisonStatus.Mismatch, "dvd", "1.0", "1.17.7", "Mozilla/5.0 Firefox/119.0"),
+            CreateItem(3, DiscLogManifestComparisonStatus.Match, "blu-ray", "1.1", "1.17.8", "TheDiscDb.DiscScan.Cli/1.0"),
         };
 
         var dashboard = DiscScanParityAggregator.CreateDashboard(latest);
@@ -40,7 +41,7 @@ public class DiscScanParityAggregatorTests
 
     private static ContributionDiscComparisonListItem CreateItem(
         int discId,
-        UserContributionDiscComparisonStatus status,
+        DiscLogManifestComparisonStatus status,
         string format,
         string producerVersion,
         string makeMkvVersion,
@@ -60,7 +61,7 @@ public class DiscScanParityAggregatorTests
             userAgent,
             10,
             10,
-            status == UserContributionDiscComparisonStatus.Match ? 10 : 9,
+            status == DiscLogManifestComparisonStatus.Match ? 10 : 9,
             true,
             status,
             "{}");

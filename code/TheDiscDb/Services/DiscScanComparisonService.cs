@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using MakeMkv;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Contributions.OpticalDiscManifest;
@@ -11,7 +10,7 @@ namespace TheDiscDb.Services;
 
 public interface IDiscScanComparisonService
 {
-    Task<UserContributionDiscComparison?> RecompareDiscAsync(int discId, CancellationToken cancellationToken = default);
+    Task<DiscScanComparisonRecord?> RecompareDiscAsync(int discId, CancellationToken cancellationToken = default);
 
     Task<int> RecompareAllDiscsAsync(CancellationToken cancellationToken = default);
 }
@@ -21,18 +20,21 @@ public sealed class DiscScanComparisonService : IDiscScanComparisonService
     private readonly IDbContextFactory<SqlServerDataContext> dbContextFactory;
     private readonly IStaticAssetStore assetStore;
     private readonly IdEncoder idEncoder;
+    private readonly DiscScanComparisonStore comparisonStore;
 
     public DiscScanComparisonService(
         IDbContextFactory<SqlServerDataContext> dbContextFactory,
         IStaticAssetStore assetStore,
-        IdEncoder idEncoder)
+        IdEncoder idEncoder,
+        DiscScanComparisonStore comparisonStore)
     {
         this.dbContextFactory = dbContextFactory;
         this.assetStore = assetStore;
         this.idEncoder = idEncoder;
+        this.comparisonStore = comparisonStore;
     }
 
-    public async Task<UserContributionDiscComparison?> RecompareDiscAsync(int discId, CancellationToken cancellationToken = default)
+    public async Task<DiscScanComparisonRecord?> RecompareDiscAsync(int discId, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await this.dbContextFactory.CreateDbContextAsync(cancellationToken);
         var disc = await dbContext.UserContributionDiscs
@@ -64,7 +66,7 @@ public sealed class DiscScanComparisonService : IDiscScanComparisonService
             var parsedManifest = new OpticalDiscManifestValidator().Parse(manifestJson);
             if (!parsedManifest.IsValid)
             {
-                return await SaveErrorAsync(dbContext, disc, parsedManifest.Error ?? "The manifest could not be parsed.", cancellationToken);
+                return await this.SaveAsync(encodedContributionId, encodedDiscId, CreateErrorRecord(disc, parsedManifest.Error ?? "The manifest could not be parsed."), cancellationToken);
             }
 
             DiscInfo manifestDiscInfo = OpticalDiscManifestMapper.ToDiscInfo(parsedManifest.Document!);
@@ -75,11 +77,11 @@ public sealed class DiscScanComparisonService : IDiscScanComparisonService
                 manifestDiscInfo,
                 string.IsNullOrWhiteSpace(disc.ContentHash) ? null : disc.ContentHash);
 
-            return await SaveResultAsync(dbContext, disc, result, cancellationToken);
+            return await this.SaveAsync(encodedContributionId, encodedDiscId, CreateRecord(disc, result), cancellationToken);
         }
         catch (Exception ex)
         {
-            return await SaveErrorAsync(dbContext, disc, ex.Message, cancellationToken);
+            return await this.SaveAsync(encodedContributionId, encodedDiscId, CreateErrorRecord(disc, ex.Message), cancellationToken);
         }
     }
 
@@ -105,16 +107,21 @@ public sealed class DiscScanComparisonService : IDiscScanComparisonService
     private static string[] SplitLines(string text)
         => text.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-    private static async Task<UserContributionDiscComparison> SaveResultAsync(
-        SqlServerDataContext dbContext,
-        UserContributionDisc disc,
-        DiscLogManifestComparisonResult result,
+    private async Task<DiscScanComparisonRecord> SaveAsync(
+        string encodedContributionId,
+        string encodedDiscId,
+        DiscScanComparisonRecord record,
         CancellationToken cancellationToken)
     {
-        var comparison = new UserContributionDiscComparison
+        await this.comparisonStore.AppendAsync(encodedContributionId, encodedDiscId, record, cancellationToken);
+        return record;
+    }
+
+    private static DiscScanComparisonRecord CreateRecord(UserContributionDisc disc, DiscLogManifestComparisonResult result)
+        => new()
         {
-            DiscId = disc.Id,
             ComparedAt = DateTimeOffset.UtcNow,
+            Status = result.Status,
             Format = result.Format,
             ProducerName = result.ProducerName,
             ProducerVersion = result.ProducerVersion,
@@ -124,40 +131,20 @@ public sealed class DiscScanComparisonService : IDiscScanComparisonService
             ManifestTitleCount = result.ManifestTitleCount,
             MatchedTitleCount = result.MatchedTitleCount,
             OrderMatches = result.OrderMatches,
-            Status = Enum.Parse<UserContributionDiscComparisonStatus>(result.Status.ToString()),
-            DifferencesJson = result.DifferencesJson
+            Differences = result.Differences
         };
 
-        dbContext.UserContributionDiscComparisons.Add(comparison);
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return comparison;
-    }
-
-    private static async Task<UserContributionDiscComparison> SaveErrorAsync(
-        SqlServerDataContext dbContext,
-        UserContributionDisc disc,
-        string error,
-        CancellationToken cancellationToken)
-    {
-        var differences = new DiscLogManifestDifferences
+    private static DiscScanComparisonRecord CreateErrorRecord(UserContributionDisc disc, string error)
+        => new()
         {
-            ExpectedContentHash = string.IsNullOrWhiteSpace(disc.ContentHash) ? null : disc.ContentHash,
-            Error = error
-        };
-
-        var comparison = new UserContributionDiscComparison
-        {
-            DiscId = disc.Id,
             ComparedAt = DateTimeOffset.UtcNow,
+            Status = DiscLogManifestComparisonStatus.Error,
             Format = disc.Format,
             UserAgent = disc.ManifestUserAgent,
-            OrderMatches = false,
-            Status = UserContributionDiscComparisonStatus.Error,
-            DifferencesJson = JsonSerializer.Serialize(differences, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            Differences = new DiscLogManifestDifferences
+            {
+                ExpectedContentHash = string.IsNullOrWhiteSpace(disc.ContentHash) ? null : disc.ContentHash,
+                Error = error
+            }
         };
-
-        dbContext.UserContributionDiscComparisons.Add(comparison);
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return comparison;
-    }
 }

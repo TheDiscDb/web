@@ -18,8 +18,10 @@ phases so that MakeMKV logs can eventually be retired.
   (`ContributionDiscAssets.ManifestPath`), or both. `UserContributionDisc.ManifestUploaded` and
   `ManifestUserAgent` record the scan. A failed scan never changes the log state.
 - **Comparison.** `DiscLogManifestComparer` (in `TheDiscDb.Contributions`) runs after either upload
-  when both blobs exist, through `IDiscScanComparisonService`. Every run is stored as a
-  `UserContributionDiscComparison` row.
+  when both blobs exist, through `IDiscScanComparisonService`. Every run is appended (newest first,
+  last 20 kept) to a readable JSON file next to the log and scan, `{c}/{d}-comparison.json`
+  (`ContributionDiscAssets.ComparisonPath`, via `DiscScanComparisonStore`). Comparisons are
+  rollout-only data, so they are kept out of the database and are not published.
   - Disc identity is checked first using the content hash; a scan of another disc is reported as
     `DifferentDisc`.
   - Titles are matched by source key: the playlist or stream file on Blu-ray, the title number on
@@ -29,8 +31,9 @@ phases so that MakeMKV logs can eventually be retired.
     lists files in name order.
 - **Admin dashboard.** `/admin/disc-scan-parity` shows match rates, using the latest comparison for
   each disc, broken down by format, producer version, MakeMKV version and browser.
-  `/admin/disc-scan-parity/{discId}` shows the title-by-title differences, links to download both
-  blobs, and a Re-compare action. Re-compare all is on the dashboard.
+  `/admin/disc-scan-parity/{discId}` shows the title-by-title differences, links to download the
+  log, the manifest and the comparison file, and a Re-compare action. Re-compare all is on the
+  dashboard. The admin pages read the comparison files for discs that have both uploads.
 - **Publishing.** Approved contributions write `discNN.txt` and, when present, `discNN.odm.json`.
   The importer, the data-repo CI and the tools ignore `*.odm.json` when enumerating `disc*.json`.
 - **CLI.** `thediscdb-scan` (`code/TheDiscDb.DiscScan.Cli`) produces the same manifest from a

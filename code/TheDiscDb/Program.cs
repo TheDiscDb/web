@@ -308,6 +308,7 @@ builder.Services.AddKeyedSingleton<IStaticAssetStore>(KeyedServiceNames.ImagesAs
     }));
 });
 builder.Services.AddScoped<IIntakeAdminService, IntakeAdminService>();
+builder.Services.AddSingleton<DiscScanComparisonStore>();
 builder.Services.AddScoped<IDiscScanComparisonService, DiscScanComparisonService>();
 builder.Services.AddScoped<IContributionDiscComparisonAdminService, ContributionDiscComparisonAdminService>();
 
@@ -499,11 +500,14 @@ app.MapGet(
 
         string contributionId = idEncoder.Encode(disc.UserContribution.Id);
         string encodedDiscId = idEncoder.Encode(disc.Id);
-        string remotePath = kind.Equals("manifest", StringComparison.OrdinalIgnoreCase)
-            ? ContributionDiscAssets.ManifestPath(contributionId, encodedDiscId)
-            : kind.Equals("log", StringComparison.OrdinalIgnoreCase)
-                ? ContributionDiscAssets.LogsPath(contributionId, encodedDiscId)
-                : string.Empty;
+        string discLabel = $"disc{disc.Index ?? disc.Id:00}";
+        (string remotePath, string fileName, string contentType) = kind.ToLowerInvariant() switch
+        {
+            "manifest" => (ContributionDiscAssets.ManifestPath(contributionId, encodedDiscId), $"{discLabel}.odm.json", ContentTypes.JsonContentType),
+            "log" => (ContributionDiscAssets.LogsPath(contributionId, encodedDiscId), $"{discLabel}.txt", ContentTypes.TextContentType),
+            "comparison" => (ContributionDiscAssets.ComparisonPath(contributionId, encodedDiscId), $"{discLabel}-comparison.json", ContentTypes.JsonContentType),
+            _ => (string.Empty, string.Empty, string.Empty)
+        };
 
         if (string.IsNullOrEmpty(remotePath) || !await assetStore.Exists(remotePath, cancellationToken))
         {
@@ -511,13 +515,6 @@ app.MapGet(
         }
 
         var data = await assetStore.Download(remotePath, cancellationToken);
-        string fileName = kind.Equals("manifest", StringComparison.OrdinalIgnoreCase)
-            ? $"disc{disc.Index ?? disc.Id:00}.odm.json"
-            : $"disc{disc.Index ?? disc.Id:00}.txt";
-        string contentType = kind.Equals("manifest", StringComparison.OrdinalIgnoreCase)
-            ? ContentTypes.JsonContentType
-            : ContentTypes.TextContentType;
-
         return Results.File(data.ToArray(), contentType, fileName);
     })
     .RequireAuthorization("Admin");

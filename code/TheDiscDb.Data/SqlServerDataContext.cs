@@ -1,4 +1,4 @@
-﻿namespace TheDiscDb.Web.Data;
+namespace TheDiscDb.Web.Data;
 
 using System;
 using System.Collections.Generic;
@@ -282,23 +282,6 @@ public class SqlServerDataContext : DbContext
         userDiscContribution.HasMany(x => x.Items)
             .WithOne(x => x.Disc)
             .OnDelete(DeleteBehavior.Cascade);
-        userDiscContribution.HasMany(x => x.Comparisons)
-            .WithOne(x => x.Disc)
-            .HasForeignKey(x => x.DiscId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        var userContributionDiscComparison = modelBuilder.Entity<UserContributionDiscComparison>();
-        userContributionDiscComparison.HasKey(x => x.Id);
-        userContributionDiscComparison.Property(x => x.Status)
-            .HasConversion<string>()
-            .HasMaxLength(32);
-        userContributionDiscComparison.Property(x => x.Format).HasMaxLength(64);
-        userContributionDiscComparison.Property(x => x.ProducerName).HasMaxLength(200);
-        userContributionDiscComparison.Property(x => x.ProducerVersion).HasMaxLength(200);
-        userContributionDiscComparison.Property(x => x.MakeMkvVersion).HasMaxLength(64);
-        userContributionDiscComparison.Property(x => x.UserAgent).HasMaxLength(1000);
-        userContributionDiscComparison.Property(x => x.DifferencesJson).HasColumnType("nvarchar(max)");
-        userContributionDiscComparison.HasIndex(x => new { x.DiscId, x.ComparedAt });
 
         var userContributionDiscHashItem = modelBuilder.Entity<UserContributionDiscHashItem>();
         userContributionDiscHashItem.HasKey(x => x.Id);
@@ -506,7 +489,6 @@ public class SqlServerDataContext : DbContext
     public DbSet<TheDiscDbUser> Users { get; set; } = null!;
     public DbSet<UserContribution> UserContributions { get; set; } = null!;
     public DbSet<UserContributionDisc> UserContributionDiscs { get; set; } = null!;
-    public DbSet<UserContributionDiscComparison> UserContributionDiscComparisons { get; set; } = null!;
     public DbSet<UserContributionDiscItem> UserContributionDiscItems { get; set; } = null!;
     public DbSet<UserContributionChapter> UserContributionChapters { get; set; } = null!;
     public DbSet<UserContributionAudioTrack> UserContributionAudioTracks { get; set; } = null!;

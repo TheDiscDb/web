@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using TheDiscDb.Contributions.OpticalDiscManifest;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -263,10 +264,10 @@ public partial class ContributionDetails : ComponentBase, IAsyncDisposable
     private static string GetComparisonBadgeClass(ContributionDiscComparisonListItem? comparison)
         => comparison?.Status switch
         {
-            UserContributionDiscComparisonStatus.Match => "badge bg-success",
-            UserContributionDiscComparisonStatus.Mismatch => "badge bg-warning text-dark",
-            UserContributionDiscComparisonStatus.DifferentDisc => "badge bg-danger",
-            UserContributionDiscComparisonStatus.Error => "badge bg-danger",
+            DiscLogManifestComparisonStatus.Match => "badge bg-success",
+            DiscLogManifestComparisonStatus.Mismatch => "badge bg-warning text-dark",
+            DiscLogManifestComparisonStatus.DifferentDisc => "badge bg-danger",
+            DiscLogManifestComparisonStatus.Error => "badge bg-danger",
             _ => "badge bg-secondary",
         };
 

@@ -14,4 +14,8 @@ public static class ContributionDiscAssets
 
     public static string ManifestPath(string contributionId, string discId)
         => $"{contributionId}/{discId}-manifest.odm.json";
+
+    // Phase 1 of the disc scan rollout: the log-vs-scan comparison history, read by the admin parity pages.
+    public static string ComparisonPath(string contributionId, string discId)
+        => $"{contributionId}/{discId}-comparison.json";
 }

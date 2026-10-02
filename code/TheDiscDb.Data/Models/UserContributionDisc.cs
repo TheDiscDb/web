@@ -30,7 +30,6 @@ public class UserContributionDisc : IHasId
     public string? ExistingDiscPath { get; set; } = default!;
 
     public ICollection<UserContributionDiscItem> Items { get; set; } = new HashSet<UserContributionDiscItem>();
-    public ICollection<UserContributionDiscComparison> Comparisons { get; set; } = new HashSet<UserContributionDiscComparison>();
 
     public static string GenerateDiscPath(string mediaType, string externalId, string releaseSlug, string discSlug) => $"{mediaType}/{externalId}/{releaseSlug}/{discSlug}";
     public static (string MediaType, string ExternalId, string ReleaseSlug, string DiscSlug) ParseDiscPath(string discPath)
