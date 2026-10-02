@@ -3,9 +3,11 @@ using HotChocolate.Authorization;
 using MakeMkv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.GraphQL.Contribute.Models;
 using TheDiscDb.Contributions.OpticalDiscManifest;
+using TheDiscDb.Services.Contributions;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.GraphQL.Contribute.Mutations;
@@ -20,7 +22,13 @@ public partial class ContributionMutations
     [Error(typeof(InvalidIdException))]
     [Error(typeof(InvalidOwnershipException))]
     [Authorize]
-    public async Task<DiscLogs> GetDiscLogs(string contributionId, string discId, SqlServerDataContext database, UserManager<TheDiscDbUser> userManager, CancellationToken cancellationToken)
+    public async Task<DiscLogs> GetDiscLogs(
+        string contributionId,
+        string discId,
+        SqlServerDataContext database,
+        UserManager<TheDiscDbUser> userManager,
+        IOptions<DiscScanOptions> discScanOptions,
+        CancellationToken cancellationToken)
     {
         var decodedContributionId = this.idEncoder.Decode(contributionId);
         var decodedDiscId = this.idEncoder.Decode(discId);
@@ -48,10 +56,23 @@ public partial class ContributionMutations
         }
 
         string logPath = ContributionDiscAssets.LogsPath(contributionId, discId);
+        string manifestPath = ContributionDiscAssets.ManifestPath(contributionId, discId);
         bool hasLogs = await this.assetStore.Exists(logPath, cancellationToken);
+        bool hasManifest = await this.assetStore.Exists(manifestPath, cancellationToken);
+        var preference = DiscLogSourceSelector.Select(disc, discScanOptions.Value.DiscScanMode, hasLogs, hasManifest);
+
+        if (preference == DiscLogSourcePreference.ManifestFirst)
+        {
+            var manifestLogs = await GetDiscLogsFromManifest(manifestPath, disc, contribution, cancellationToken);
+            if (manifestLogs.Info is not null || !hasLogs)
+            {
+                return manifestLogs;
+            }
+        }
+
         if (!hasLogs)
         {
-            return await GetDiscLogsFromManifest(contributionId, discId, disc, contribution, cancellationToken);
+            return await GetDiscLogsFromManifest(manifestPath, disc, contribution, cancellationToken);
         }
 
         var blob = await this.assetStore.Download(logPath, cancellationToken);
@@ -67,7 +88,7 @@ public partial class ContributionMutations
         }
         catch (Exception ex)
         {
-            throw new CouldNotParseLogsException(discId, ex);
+            throw new CouldNotParseLogsException(disc.Id.ToString(), ex);
         }
 
         return new DiscLogs
@@ -78,9 +99,8 @@ public partial class ContributionMutations
         };
     }
 
-    private async Task<DiscLogs> GetDiscLogsFromManifest(string contributionId, string discId, UserContributionDisc disc, UserContribution contribution, CancellationToken cancellationToken)
+    private async Task<DiscLogs> GetDiscLogsFromManifest(string manifestPath, UserContributionDisc disc, UserContribution contribution, CancellationToken cancellationToken)
     {
-        string manifestPath = ContributionDiscAssets.ManifestPath(contributionId, discId);
         if (!await this.assetStore.Exists(manifestPath, cancellationToken))
         {
             return new DiscLogs
@@ -106,7 +126,7 @@ public partial class ContributionMutations
         }
         catch (Exception ex)
         {
-            throw new CouldNotParseLogsException(discId, ex);
+            throw new CouldNotParseLogsException(disc.Id.ToString(), ex);
         }
 
         return new DiscLogs

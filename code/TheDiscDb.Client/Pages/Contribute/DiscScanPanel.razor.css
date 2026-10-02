@@ -1,0 +1,20 @@
+.disc-scan {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.disc-scan .scan-status {
+    width: 100%;
+}
+
+.disc-scan .scan-warnings {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.disc-scan .scan-warnings ul {
+    margin-bottom: 0;
+    padding-left: 1.25rem;
+}

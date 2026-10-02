@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using TheDiscDb.Services.Contributions;
 
 namespace TheDiscDb;
 
@@ -18,7 +19,10 @@ public class WasmConfigMiddleware
 
         var publicApiKey = configuration.GetValue<string>("GraphQL:ApiKeyAuthentication:PublicApiKey");
         var apiKeyAuthEnabled = configuration.GetValue<bool>("GraphQL:ApiKeyAuthentication:Enabled");
-        if (apiKeyAuthEnabled && !string.IsNullOrEmpty(publicApiKey))
+        var discScanMode = configuration.GetValue<string>($"{DiscScanOptions.SectionName}:DiscScanMode")
+            ?? DiscScanMode.Optional.ToString();
+        if ((apiKeyAuthEnabled && !string.IsNullOrEmpty(publicApiKey))
+            || !string.IsNullOrEmpty(discScanMode))
         {
             var fileInfo = env.WebRootFileProvider.GetFileInfo("appsettings.json");
             JsonObject json;
@@ -32,11 +36,18 @@ public class WasmConfigMiddleware
                 json = new JsonObject();
             }
 
-            var graphql = json["GraphQL"] as JsonObject ?? new JsonObject();
-            var auth = graphql["ApiKeyAuthentication"] as JsonObject ?? new JsonObject();
-            auth["PublicApiKey"] = publicApiKey;
-            graphql["ApiKeyAuthentication"] = auth;
-            json["GraphQL"] = graphql;
+            if (apiKeyAuthEnabled && !string.IsNullOrEmpty(publicApiKey))
+            {
+                var graphql = json["GraphQL"] as JsonObject ?? new JsonObject();
+                var auth = graphql["ApiKeyAuthentication"] as JsonObject ?? new JsonObject();
+                auth["PublicApiKey"] = publicApiKey;
+                graphql["ApiKeyAuthentication"] = auth;
+                json["GraphQL"] = graphql;
+            }
+
+            var contributions = json[DiscScanOptions.SectionName] as JsonObject ?? new JsonObject();
+            contributions[nameof(DiscScanOptions.DiscScanMode)] = discScanMode;
+            json[DiscScanOptions.SectionName] = contributions;
 
             augmentedJson = JsonSerializer.SerializeToUtf8Bytes(json, new JsonSerializerOptions { WriteIndented = true });
         }

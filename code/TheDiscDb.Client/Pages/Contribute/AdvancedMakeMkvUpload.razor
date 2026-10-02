@@ -1,0 +1,47 @@
+@using HighlightBlazor
+@using Syncfusion.Blazor.Inputs
+
+<div class="advanced-log-upload">
+    <p>Use these options if the browser scan fails or if you want to upload a MakeMKV log for comparison.</p>
+    <section>
+        <h3>PowerShell</h3>
+        <CodeHighlight CodeLanguage="PowerShell" Code="@PowershellCommand" />
+        <button class="btn btn-primary copy-command" @onclick="OnCopyPowerShell">
+            <i class="e-icons e-copy"></i>
+            <span>Copy</span>
+        </button>
+    </section>
+    <section>
+        <h3>Bash</h3>
+        <CodeHighlight CodeLanguage="Bash" Code="@BashCommand" />
+        <button class="btn btn-primary copy-command" @onclick="OnCopyBash">
+            <i class="e-icons e-copy"></i>
+            <span>Copy</span>
+        </button>
+    </section>
+    <section>
+        <h3>Manual upload</h3>
+        <div class="manual-upload">
+            <p>Have a log file already? Upload the <code>.txt</code> output directly.</p>
+            <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".txt" ShowFileList="false">
+                <UploaderEvents ValueChange="OnLogValueChange" />
+            </SfUploader>
+        </div>
+    </section>
+    <section>
+        <h3>Disc manifest file</h3>
+        <div class="manual-upload">
+            <p>Have an Optical Disc Manifest? Upload the <code>.odm.json</code> file.</p>
+            <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".json" ShowFileList="false">
+                <UploaderEvents ValueChange="OnManifestValueChange" />
+            </SfUploader>
+        </div>
+    </section>
+    <section class="info-card">
+        <h2>Select drive</h2>
+        <p class="helper-text">If you have multiple drives, choose the index where the disc is mounted. This value is injected into the commands above.</p>
+        <div class="form-control-block">
+            <SfDropDownList TValue="string" TItem="string" DataSource="DriveIndices" class="form-control" Value="DriveIndex" ValueChanged="DriveIndexChanged" ValueExpression="@(() => DriveIndex)" Placeholder="Select drive index" />
+        </div>
+    </section>
+</div>

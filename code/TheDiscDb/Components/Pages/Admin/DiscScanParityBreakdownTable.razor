@@ -1,0 +1,24 @@
+@using TheDiscDb.Services.Admin
+
+<section class="info-card">
+    <h2>@Title</h2>
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Group</th>
+                <th>Matches</th>
+                <th>Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Rows)
+            {
+                <tr>
+                    <td>@row.Label</td>
+                    <td>@row.Stats.Matches / @row.Stats.Total</td>
+                    <td>@FormatRate(row.Stats)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>

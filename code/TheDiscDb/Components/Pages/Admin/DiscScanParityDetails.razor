@@ -1,0 +1,107 @@
+@page "/admin/disc-scan-parity/{discId:int}"
+@using System.Text.Json
+@using TheDiscDb.Contributions.OpticalDiscManifest
+@using TheDiscDb.Services.Admin
+
+@rendermode InteractiveServer
+
+<PageTitle>Admin - Disc scan comparison</PageTitle>
+
+<TheDiscDb.Client.Controls.Breadcrumb Items="[GetRootAdminLink(), GetParityLink()]" PrimaryText="@Latest?.DiscName" />
+
+<h1>Disc scan comparison</h1>
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info">@statusMessage</div>
+}
+
+@if (Latest == null)
+{
+    <p>No comparison has been recorded for this disc.</p>
+}
+else
+{
+    <section class="info-card mb-3">
+        <h2>@Latest.ReleaseTitle - @Latest.DiscName</h2>
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">@Latest.Status</dd>
+            <dt class="col-sm-3">Counts</dt>
+            <dd class="col-sm-9">@Latest.MatchedTitleCount matched / @Latest.LogTitleCount log / @Latest.ManifestTitleCount scan</dd>
+            <dt class="col-sm-3">Versions</dt>
+            <dd class="col-sm-9">Producer @Display(Latest.ProducerVersion), MakeMKV @Display(Latest.MakeMkvVersion)</dd>
+            <dt class="col-sm-3">Browser</dt>
+            <dd class="col-sm-9">@DiscScanParityAggregator.BrowserName(Latest.UserAgent)</dd>
+        </dl>
+        <div class="mt-3">
+            <a class="btn btn-outline-primary" href="/api/admin/contribution-discs/@DiscId/assets/log">Download log</a>
+            <a class="btn btn-outline-primary ms-2" href="/api/admin/contribution-discs/@DiscId/assets/manifest">Download manifest</a>
+            <button type="button" class="btn btn-primary ms-2" @onclick="RecompareAsync" disabled="@isRecompareRunning">
+                @(isRecompareRunning ? "Re-comparing..." : "Re-compare")
+            </button>
+        </div>
+    </section>
+
+    <section class="info-card mb-3">
+        <h2>Differences</h2>
+        @if (Differences == null)
+        {
+            <p>Differences could not be parsed.</p>
+            <pre>@Latest.DifferencesJson</pre>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(Differences.Error))
+            {
+                <div class="alert alert-warning">@Differences.Error</div>
+            }
+            @if (Differences.LogOnlyTitles.Count > 0)
+            {
+                <h3>Log-only titles</h3>
+                <p>@string.Join(", ", Differences.LogOnlyTitles)</p>
+            }
+            @if (Differences.ManifestOnlyTitles.Count > 0)
+            {
+                <h3>Scan-only titles</h3>
+                <p>@string.Join(", ", Differences.ManifestOnlyTitles)</p>
+            }
+            <DiscScanTitleDifferenceTable Title="Title differences" Rows="Differences.TitleDifferences" />
+            <DiscScanTitleDifferenceTable Title="Soft differences" Rows="Differences.SoftDifferences" />
+            @if (Differences.LogOrder is { Count: > 0 } || Differences.ManifestOrder is { Count: > 0 })
+            {
+                <h3>Order</h3>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Position</th>
+                            <th>Log</th>
+                            <th>Scan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Math.Max(Differences.LogOrder?.Count ?? 0, Differences.ManifestOrder?.Count ?? 0); i++)
+                        {
+                            <tr>
+                                <td>@(i + 1)</td>
+                                <td>@GetAt(Differences.LogOrder, i)</td>
+                                <td>@GetAt(Differences.ManifestOrder, i)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+    </section>
+
+    <section class="info-card">
+        <h2>History</h2>
+        <QuickGrid Items="History.AsQueryable()" Class="striped-grid">
+            <PropertyColumn Property="@(item => item.ComparedAt)" Title="Compared" Format="yyyy-MM-dd HH:mm" />
+            <PropertyColumn Property="@(item => item.Status)" Title="Status" />
+            <PropertyColumn Property="@(item => item.MatchedTitleCount)" Title="Matched" />
+            <PropertyColumn Property="@(item => item.LogTitleCount)" Title="Log" />
+            <PropertyColumn Property="@(item => item.ManifestTitleCount)" Title="Scan" />
+        </QuickGrid>
+    </section>
+}

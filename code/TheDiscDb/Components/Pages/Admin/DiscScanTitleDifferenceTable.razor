@@ -1,0 +1,27 @@
+@using TheDiscDb.Contributions.OpticalDiscManifest
+
+@if (Rows.Count > 0)
+{
+    <h3>@Title</h3>
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Field</th>
+                <th>Log</th>
+                <th>Scan</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Rows)
+            {
+                <tr>
+                    <td>@row.SourceKey</td>
+                    <td>@row.Field</td>
+                    <td>@row.LogValue</td>
+                    <td>@row.ManifestValue</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

@@ -1,0 +1,36 @@
+<div class="manual-upload disc-scan">
+    <p>
+        Put the disc in your drive and select its root folder. We read the disc structure
+        in your browser and build the manifest here &mdash; no MakeMKV and no file to upload.
+        Chrome and Edge use direct file-system access; Firefox and Safari use a folder
+        selection fallback.
+    </p>
+    <button class="btn btn-primary" @onclick="OnScanDisc" disabled="@IsScanning">
+        @(IsScanning ? "Scanning Disc..." : ButtonText)
+    </button>
+    @if (IsScanning)
+    {
+        <div class="scan-status">
+            <LoadingIndicator Message="@(ScanProgress ?? "Reading disc…")" />
+        </div>
+    }
+    @if (ScanUploadSucceeded && IsDefaultMode)
+    {
+        <p class="helper-text">Scan uploaded. If you also want to send a MakeMKV log for comparison, use the advanced tab.</p>
+    }
+    @if (ScanWarnings.Count > 0)
+    {
+        <div class="alert alert-warning scan-warnings">
+            <p>
+                The disc was scanned, but some of its structure could not be read. You can
+                still continue, or upload a MakeMKV log instead for a more complete result.
+            </p>
+            <ul>
+                @foreach (var warning in ScanWarnings)
+                {
+                    <li>@warning</li>
+                }
+            </ul>
+        </div>
+    }
+</div>

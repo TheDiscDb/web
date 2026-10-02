@@ -45,6 +45,12 @@ public partial class DiscUpload : CancellableComponentBase
     [Inject]
     private BrowserOpticalDiscManifestScanner ManifestScanner { get; set; } = default!;
 
+    [Inject]
+    private IConfiguration Configuration { get; set; } = null!;
+
+    [SupplyParameterFromQuery(Name = "scan")]
+    public string? ScanQuery { get; set; }
+
     private readonly string powershellCommandTemplate = "Invoke-WebRequest -Uri \"{0}\" -Method POST -UseBasicParsing -ContentType \"text/plain\" -Body ((& '{1}' --minlength=0 --robot info disc:{2}) | Out-String)";
     private readonly string bashCommandTemplate = "makemkvcon --minlength=0 --robot info disc:{1} 2>&1 | curl -X POST -H \"Content-Type: text/plain\" --data-binary @- {0}";
     //private readonly string powershellLocalCommandTempalte = "Invoke-WebRequest -Uri \"{0}\" -Method POST -ContentType \"text/plain\" -Body ((Get-Content -Path '{1}') | Out-String)";
@@ -62,12 +68,12 @@ public partial class DiscUpload : CancellableComponentBase
 
     // Only the PowerShell and Bash tabs produce a command, so the copy button and the drive
     // selector that feeds it have nothing to act on anywhere else.
-    private bool IsCommandTab => selectedIndex is PowershellTabIndex or BashTabIndex;
+    private bool IsCommandTab => !IsDefaultMode && selectedIndex is PowershellTabIndex or BashTabIndex;
 
     // Scanning reads the disc in the browser and reports its own progress, so the banner that
     // waits on an upload from somewhere else would only compete with it. Polling continues
     // underneath either way, which is what carries a finished scan on to the next page.
-    private bool IsScanTab => selectedIndex == ScanTabIndex;
+    private bool IsScanTab => IsDefaultMode ? selectedIndex == 0 : selectedIndex == ScanTabIndex;
 
     private const int PowershellTabIndex = 0;
     private const int BashTabIndex = 1;
@@ -88,16 +94,46 @@ public partial class DiscUpload : CancellableComponentBase
     private bool isScanning;
     private string? scanProgress;
     private IReadOnlyList<string> scanWarnings = [];
+    private bool showOptionalScanPanel;
+    private bool showContinueToIdentify;
+    private bool scanUploadSucceeded;
+    private string? scanNotice;
+
+    private bool IsDefaultMode => string.Equals(
+        Configuration.GetValue<string>("Contributions:DiscScanMode"),
+        "Default",
+        StringComparison.OrdinalIgnoreCase);
+
+    private IDiscUploadPageData_MyContributions_Nodes_Discs? CurrentDisc =>
+        this.contribution?.Discs.FirstOrDefault(d => d.EncodedId == this.DiscId);
+
+    private bool IsOptionalScanPanelActive => showOptionalScanPanel && !IsDefaultMode;
 
     protected override async Task OnInitializedAsync()
     {
-        //this.pollUploadedTimer = new Timer(PollTimerTick!, null, 0, 2000);
+        if (IsDefaultMode)
+        {
+            this.selectedIndex = 0;
+        }
+
         this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
         
         var response = await this.ContributionClient.DiscUploadPageData.ExecuteAsync(this.ContributionId ?? string.Empty, this.CancellationToken);
         if (response != null && response.IsSuccessResult())
         {
             this.contribution = response.Data!.MyContributions!.Nodes!.FirstOrDefault();
+            var disc = CurrentDisc;
+            if (!IsDefaultMode
+                && ScanQuery == "1"
+                && disc?.LogsUploaded == true
+                && disc.ManifestUploaded == false)
+            {
+                ShowOptionalScanPanel();
+            }
+            else if (!IsDefaultMode && ScanQuery == "1")
+            {
+                this.selectedIndex = ScanTabIndex;
+            }
         }
     }
 
@@ -135,7 +171,14 @@ public partial class DiscUpload : CancellableComponentBase
                 InvokeAsync(() =>
                 {
                     this.pollUploadedTimer?.Dispose();
-                    JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
+                    if (!IsDefaultMode && !status.ManifestUploaded)
+                    {
+                        ShowOptionalScanPanel();
+                    }
+                    else
+                    {
+                        NavigateToIdentify();
+                    }
                 });
             }
             else if (!string.IsNullOrEmpty(status.LogUploadError))
@@ -175,6 +218,18 @@ public partial class DiscUpload : CancellableComponentBase
     private Task ManifestValueChange(UploadChangeEventArgs args)
         => Upload(args, GetManifestUri(), "application/json", "disc manifest");
 
+    private async Task CopyCommandToClipboard(string command)
+    {
+        if (!string.IsNullOrEmpty(command))
+        {
+            await Clipboard.WriteTextAsync(command);
+        }
+    }
+
+    private Task CopyPowerShellCommand() => CopyCommandToClipboard(PowershellCommand ?? string.Empty);
+
+    private Task CopyBashCommand() => CopyCommandToClipboard(BashCommand ?? string.Empty);
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -191,6 +246,9 @@ public partial class DiscUpload : CancellableComponentBase
         this.uploadError = null;
         this.scanWarnings = [];
         this.scanProgress = null;
+        this.scanNotice = null;
+        this.scanUploadSucceeded = false;
+        this.showContinueToIdentify = false;
 
         try
         {
@@ -217,6 +275,7 @@ public partial class DiscUpload : CancellableComponentBase
                 this.uploadError =
                     "The scan produced a manifest that does not satisfy the disc manifest schema: "
                     + string.Join(" ", result.Validation.Errors.Take(3));
+                AllowIdentifyAfterOptionalScanFailure();
                 return;
             }
 
@@ -241,6 +300,19 @@ public partial class DiscUpload : CancellableComponentBase
             {
                 string body = await response.Content.ReadAsStringAsync(this.CancellationToken);
                 this.uploadError = ExtractErrorDetail(body, "disc manifest");
+                AllowIdentifyAfterOptionalScanFailure();
+                return;
+            }
+
+            this.scanUploadSucceeded = true;
+            if (IsOptionalScanPanelActive && this.scanWarnings.Count > 0)
+            {
+                this.scanNotice = "The scan uploaded with warnings. You can review them below or continue to identify this disc.";
+                this.showContinueToIdentify = true;
+            }
+            else
+            {
+                NavigateToIdentify();
             }
         }
         catch (OperationCanceledException) when (this.CancellationToken.IsCancellationRequested)
@@ -250,12 +322,39 @@ public partial class DiscUpload : CancellableComponentBase
         {
             Console.WriteLine(ex);
             this.uploadError = $"Could not scan the selected disc folder: {ex.Message}";
+            AllowIdentifyAfterOptionalScanFailure();
         }
         finally
         {
             this.isScanning = false;
             this.scanProgress = null;
             this.StateHasChanged();
+        }
+    }
+
+    private void ShowOptionalScanPanel()
+    {
+        this.startSpinnerTimer?.Dispose();
+        this.pollUploadedTimer?.Dispose();
+        this.showOptionalScanPanel = true;
+        this.showSpinner = false;
+        this.uploadError = null;
+        this.selectedIndex = ScanTabIndex;
+        this.StateHasChanged();
+    }
+
+    private void SkipAndIdentify() => NavigateToIdentify();
+
+    private void ContinueToIdentify() => NavigateToIdentify();
+
+    private void NavigateToIdentify()
+        => JSRuntime.InvokeVoidAsync("window.location.replace", $"/contribution/{this.ContributionId}/discs/{this.DiscId}/identify");
+
+    private void AllowIdentifyAfterOptionalScanFailure()
+    {
+        if (IsOptionalScanPanelActive)
+        {
+            this.showContinueToIdentify = true;
         }
     }
 

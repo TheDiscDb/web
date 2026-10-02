@@ -18,6 +18,7 @@ using Syncfusion.Blazor;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb;
 using TheDiscDb.Client;
+using TheDiscDb.Contributions.OpticalDiscManifest;
 using TheDiscDb.Data.GraphQL;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Data.Import.Pipeline;
@@ -49,6 +50,7 @@ builder.Services.AddTransient<EngramEndpoints>();
 builder.Services.AddTransient<DiscLookupEndpoints>();
 builder.Services.AddEditSuggestions();
 builder.Services.AddContributionDiscServices();
+builder.Services.Configure<DiscScanOptions>(builder.Configuration.GetSection(DiscScanOptions.SectionName));
 
 builder.Services.AddControllersWithViews( options =>
 {
@@ -473,6 +475,52 @@ app.MapGraphQL("/graphql/contributions", schemaName: "ContributionSchema")
 
 app.MapControllers();
 app.UseAntiforgery();
+
+app.MapGet(
+    "/api/admin/contribution-discs/{discId:int}/assets/{kind}",
+    async (
+        int discId,
+        string kind,
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
+        IStaticAssetStore assetStore,
+        IdEncoder idEncoder,
+        CancellationToken cancellationToken) =>
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var disc = await dbContext.UserContributionDiscs
+            .AsNoTracking()
+            .Include(item => item.UserContribution)
+            .FirstOrDefaultAsync(item => item.Id == discId, cancellationToken);
+
+        if (disc is null)
+        {
+            return Results.NotFound();
+        }
+
+        string contributionId = idEncoder.Encode(disc.UserContribution.Id);
+        string encodedDiscId = idEncoder.Encode(disc.Id);
+        string remotePath = kind.Equals("manifest", StringComparison.OrdinalIgnoreCase)
+            ? ContributionDiscAssets.ManifestPath(contributionId, encodedDiscId)
+            : kind.Equals("log", StringComparison.OrdinalIgnoreCase)
+                ? ContributionDiscAssets.LogsPath(contributionId, encodedDiscId)
+                : string.Empty;
+
+        if (string.IsNullOrEmpty(remotePath) || !await assetStore.Exists(remotePath, cancellationToken))
+        {
+            return Results.NotFound();
+        }
+
+        var data = await assetStore.Download(remotePath, cancellationToken);
+        string fileName = kind.Equals("manifest", StringComparison.OrdinalIgnoreCase)
+            ? $"disc{disc.Index ?? disc.Id:00}.odm.json"
+            : $"disc{disc.Index ?? disc.Id:00}.txt";
+        string contentType = kind.Equals("manifest", StringComparison.OrdinalIgnoreCase)
+            ? ContentTypes.JsonContentType
+            : ContentTypes.TextContentType;
+
+        return Results.File(data.ToArray(), contentType, fileName);
+    })
+    .RequireAuthorization("Admin");
 
 app.MapRazorComponents<TheDiscDb.Components.App>()
     .AddInteractiveServerRenderMode()
