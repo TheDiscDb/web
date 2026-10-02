@@ -149,6 +149,11 @@
                             <ContentTemplate>
                                 <div class="manual-upload">
                                     <p>Have an Optical Disc Manifest? Upload the <code>.odm.json</code> file.</p>
+                                    <p class="small text-muted">
+                                        Can't scan in this browser? Create a manifest on your own computer with
+                                        <a href="https://github.com/TheDiscDb/web/releases?q=scan-cli" target="_blank" rel="noopener noreferrer">thediscdb-scan</a>
+                                        (Windows, macOS and Linux), for example <code>thediscdb-scan D:\ -o disc01.odm.json</code>, then upload the file here.
+                                    </p>
                                     <SfUploader AllowMultiple="false" AutoUpload="true" AllowedExtensions=".json" ShowFileList="false">
                                         <UploaderEvents ValueChange="ManifestValueChange" />
                                     </SfUploader>

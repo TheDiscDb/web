@@ -40,10 +40,25 @@
             <ol>
                 <li>Identify the release with TMDB search or ID.</li>
                 <li>Add release details and cover images.</li>
-                <li>Upload MakeMKV scan logs for each disc.</li>
+                <li>Upload MakeMKV scan logs for each disc, and optionally scan the disc in your browser.</li>
                 <li>Label disc titles and submit for review.</li>
             </ol>
         </article>
+    </section>
+
+    <section class="info-card">
+        <h2>Disc scans</h2>
+        <p>
+            After you upload a MakeMKV log you can also scan the disc. The scan reads only the disc's
+            structure files (IFO, MPLS and CLPI) and creates an Optical Disc Manifest; your video is never
+            uploaded. We compare each scan with its MakeMKV log so that scans can eventually replace logs.
+        </p>
+        <p class="mb-0">
+            Browser scans need Chrome or Edge. On any other browser, or for discs your browser cannot read,
+            use the <a href="https://github.com/TheDiscDb/web/releases?q=scan-cli" target="_blank" rel="noopener noreferrer">thediscdb-scan</a>
+            command-line tool for Windows, macOS and Linux and upload its <code>.odm.json</code> file on the
+            Disc Manifest tab.
+        </p>
     </section>
 
     <section class="info-card">
