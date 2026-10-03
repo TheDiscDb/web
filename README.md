@@ -32,6 +32,18 @@ To run the site locally, you'll need the following tools installed:
 
 **TODO: Provide a command line only way to clone and run the site**
 
+### Release import behavior
+
+Imports merge a media item's releases by slug. A contribution workspace may contain
+only one release, so releases absent from an import are retained; deleting a release
+requires the explicit release-deletion workflow. Disc, title, and track updates
+within an imported release retain their existing reconciliation behavior.
+
+If releases were overwritten by an earlier import, deploy the corrected importer
+and re-import the media item's complete directory from the data repository.
+The site's media-item detail cache can retain the old result for up to 12 hours;
+restart the web app after repair to refresh it immediately.
+
 ---
 
 ## Tech Stack

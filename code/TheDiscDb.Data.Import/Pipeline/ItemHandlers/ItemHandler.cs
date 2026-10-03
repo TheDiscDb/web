@@ -9,9 +9,9 @@ public abstract class ItemHandler<T> : IItemHandler<T>
     public abstract void TryUpdate(T fromDatabase, T newValue);
 
     /// <summary>Handle updating a sub list of items</summary>
-    protected void HandleList<TItem>(ICollection<TItem> fromDatabase, ICollection<TItem> newValue, IItemHandler<TItem> handler)
+    protected void HandleList<TItem>(ICollection<TItem> fromDatabase, ICollection<TItem> newValue, IItemHandler<TItem> handler, bool removeMissingItems = true)
     {
-        if (newValue.Count == fromDatabase.Count)
+        if (removeMissingItems && newValue.Count == fromDatabase.Count)
         {
             for (int i = 0; i < fromDatabase.Count; i++)
             {
@@ -42,19 +42,22 @@ public abstract class ItemHandler<T> : IItemHandler<T>
                     }
                 }
 
-                List<TItem> itemsToRemove = new List<TItem>();
-                foreach (var itemFromDatabase in fromDatabase)
+                if (removeMissingItems)
                 {
-                    var match = newValue.FirstOrDefault(d => handler.IsMatch(d, itemFromDatabase));
-                    if (match == null)
+                    List<TItem> itemsToRemove = new List<TItem>();
+                    foreach (var itemFromDatabase in fromDatabase)
                     {
-                        itemsToRemove.Add(itemFromDatabase);
+                        var match = newValue.FirstOrDefault(d => handler.IsMatch(d, itemFromDatabase));
+                        if (match == null)
+                        {
+                            itemsToRemove.Add(itemFromDatabase);
+                        }
                     }
-                }
 
-                foreach (var itemToRemove in itemsToRemove)
-                {
-                    fromDatabase.Remove(itemToRemove);
+                    foreach (var itemToRemove in itemsToRemove)
+                    {
+                        fromDatabase.Remove(itemToRemove);
+                    }
                 }
             }
         }
