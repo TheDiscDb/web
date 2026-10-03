@@ -14,12 +14,11 @@ internal static class BluRayChapterMapper
 
     /// <summary>
     /// Maximum ticks (45 kHz) between a final entry mark and playlist end still treated
-    /// as a terminal chapter-end sentinel: one half second (22,500 ticks). MakeMKV drops
-    /// a final chapter this short. Real-disc evidence: Knives Out 1080p 1,876 ticks;
-    /// Spartacus (UHD) and Avatar (UHD) 11,261 ticks; Avengers: Age of Ultron 3D
-    /// 11,262 ticks; 2001: A Space Odyssey (UHD) 15,014 ticks.
+    /// as a terminal chapter-end sentinel: 1.001 seconds (45,045 ticks). Production
+    /// comparisons show MakeMKV dropping final marks 0.500511, 0.8008, 0.959289 and
+    /// 1.001 seconds before playlist end.
     /// </summary>
-    internal const long TerminalSentinelMaximumTicksFromEnd = 22_500;
+    internal const long TerminalSentinelMaximumTicksFromEnd = 45_045;
 
     /// <summary>
     /// Minimum authored start time for a final entry mark to be eligible for terminal
@@ -33,7 +32,7 @@ internal static class BluRayChapterMapper
 
     /// <summary>
     /// Determines whether a final entry mark's distance from playlist end falls within
-    /// the terminal chapter-end sentinel tolerance band (strictly before end, at most 0.5 s).
+    /// the terminal chapter-end sentinel tolerance band (strictly before end, at most 1.001 s).
     /// </summary>
     internal static bool IsTerminalChapterSentinel(long ticksFromEnd)
         => ticksFromEnd >= TerminalSentinelMinimumTicksFromEnd

@@ -1557,7 +1557,10 @@ public sealed class OpticalDiscManifestGeneratorTests
     [InlineData(11_261)] // Measured terminal-mark offset.
     [InlineData(11_262)] // Measured terminal-mark offset.
     [InlineData(15_014)] // Measured terminal-mark offset.
-    [InlineData(22_500)] // Upper bound: exactly one half second.
+    [InlineData(22_523)] // Production comparison: 0.500511 seconds.
+    [InlineData(36_036)] // Production comparison: 0.8008 seconds.
+    [InlineData(43_168)] // Production comparisons: 0.959289 seconds.
+    [InlineData(45_045)] // Production comparison: 1.001 seconds, inclusive upper bound.
     public void CreateBluRayChapters_ExcludesFinalEntryMarkAtKnownTerminalSentinelTicks(long ticksFromEnd)
     {
         var diagnostics = new List<ManifestDiagnostic>();
@@ -1583,8 +1586,8 @@ public sealed class OpticalDiscManifestGeneratorTests
 
     [Theory]
     [InlineData(0)] // A mark exactly at playlist end is not strictly before end.
-    [InlineData(22_501)] // Just above the half-second band.
-    [InlineData(45_000)] // A clearly legitimate final chapter, about 1 second from end.
+    [InlineData(45_046)] // Just above the production-evidenced 1.001-second band.
+    [InlineData(90_000)] // A clearly legitimate final chapter, 2 seconds from end.
     public void CreateBluRayChapters_DoesNotExcludeLegitimateFinalChapterOutsideSentinelTolerance(
         long ticksFromEnd)
     {
@@ -1634,9 +1637,8 @@ public sealed class OpticalDiscManifestGeneratorTests
     [Fact]
     public void CreateBluRayChapters_OnlyChecksSentinelToleranceAgainstTheFinalMark()
     {
-        // A non-final mark that lands within the sentinel tolerance band, purely by
-        // coincidence relative to a *later* mark's distance-from-end, must never be
-        // excluded: only the actual final entry mark is checked.
+        // A non-final mark within the sentinel tolerance band must not be excluded
+        // when the actual final mark is outside that band.
         var diagnostics = new List<ManifestDiagnostic>();
         const long TotalDurationTicks = 200_000;
         const long CoincidentalSentinelLikeStart = TotalDurationTicks - 11_261;
@@ -1646,7 +1648,7 @@ public sealed class OpticalDiscManifestGeneratorTests
             [
                 (0, MplsPlaylistMark.EntryMarkType, 0, 45_000),
                 (1, MplsPlaylistMark.EntryMarkType, (uint)CoincidentalSentinelLikeStart, 45_000),
-                (2, MplsPlaylistMark.EntryMarkType, (uint)(TotalDurationTicks - 45_000), 45_000),
+                (2, MplsPlaylistMark.EntryMarkType, (uint)(TotalDurationTicks - 45_046), 45_000),
             ]);
 
         var chapters = BluRayChapterMapper.CreateBluRayChapters(
@@ -1667,8 +1669,10 @@ public sealed class OpticalDiscManifestGeneratorTests
     [InlineData(11_262, true)]
     [InlineData(15_014, true)]
     [InlineData(22_500, true)]
-    [InlineData(22_501, false)]
-    public void IsTerminalChapterSentinel_MatchesHalfSecondEvidenceBasedToleranceBand(
+    [InlineData(22_501, true)]
+    [InlineData(45_045, true)]
+    [InlineData(45_046, false)]
+    public void IsTerminalChapterSentinel_MatchesProductionEvidenceBasedToleranceBand(
         long ticksFromEnd, bool expected)
     {
         Assert.Equal(expected, BluRayChapterMapper.IsTerminalChapterSentinel(ticksFromEnd));
@@ -1718,6 +1722,30 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         Assert.Single(chapters);
         Assert.Contains(diagnostics, item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
+    }
+
+    [Fact]
+    public void CreateBluRayChapters_ExcludesProductionObservedOneSecondTerminalMark()
+    {
+        // Multiple production episode discs have a final entry mark 43,168 ticks
+        // (0.959289 seconds) before playlist end; MakeMKV omits that terminal chapter.
+        const long TotalDurationTicks = 90_000_000;
+        var diagnostics = new List<ManifestDiagnostic>();
+        var playlist = CreateSyntheticPlaylist(
+            outTime: TotalDurationTicks,
+            marks:
+            [
+                (0, MplsPlaylistMark.EntryMarkType, 0, 45_000),
+                (1, MplsPlaylistMark.EntryMarkType, (uint)(TotalDurationTicks - 43_168), 45_000),
+            ]);
+
+        var chapters = BluRayChapterMapper.CreateBluRayChapters(
+            playlist, diagnostics, "BDMV/PLAYLIST/00007.mpls");
+
+        Assert.Single(chapters);
+        Assert.Contains(
+            diagnostics,
+            item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
     }
 
     [Fact]
