@@ -49,6 +49,21 @@ public class MiddlewareTests(AspireAppFixture fixture)
         await Assert.That(content).Contains("groups.xml");
     }
 
+    [Test]
+    public async Task RobotsTxt_DisallowsAuthGatedPaths()
+    {
+        // Edit pages (and /admin, /contribute, /contribution, /changes/my) require an
+        // authenticated user and 302-redirect to the login page when crawled signed-out.
+        var response = await Client.GetAsync("/robots.txt");
+
+        var content = await response.Content.ReadAsStringAsync();
+        await Assert.That(content).Contains("Disallow: /*/edit");
+        await Assert.That(content).Contains("Disallow: /admin");
+        await Assert.That(content).Contains("Disallow: /contribute/");
+        await Assert.That(content).Contains("Disallow: /contribution/");
+        await Assert.That(content).Contains("Disallow: /changes/my");
+    }
+
     #endregion
 
     #region RSS
