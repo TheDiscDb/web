@@ -64,6 +64,7 @@ public class MediaItemHandler : ItemHandler<MediaItem>
         fromDatabase.RuntimeMinutes = newValue.RuntimeMinutes;
         fromDatabase.Writers = newValue.Writers;
 
-        this.HandleList(fromDatabase.Releases, newValue.Releases, this.releaseItemHandler);
+        // Contribution workspaces may contain only the release being imported.
+        this.HandleList(fromDatabase.Releases, newValue.Releases, this.releaseItemHandler, removeMissingItems: false);
     }
 }
