@@ -72,6 +72,15 @@ internal static class BluRayChapterMapper
         long totalDurationTicks45k = Math.Max(cumulative, presentationTicks45k ?? 0);
 
         var resolved = new List<(MplsPlaylistMark Mark, long StartTicks)>();
+        diagnostics.Add(new ManifestDiagnostic
+        {
+            Severity = "info",
+            Code = "ODM_BD_CHAPTER_AUTHORED_MARKS",
+            Message = "Authored marks (index:type:playItem:time:duration, 45 kHz): "
+                + string.Join(", ", playlist.Marks.Select(mark =>
+                    $"{mark.Index}:{mark.MarkType}:{mark.PlayItemReference}:{mark.Time}:{mark.Duration}")),
+            Path = path,
+        });
         foreach (var mark in playlist.Marks.Where(item => item.IsEntryMark).OrderBy(item => item.Index))
         {
             if (mark.PlayItemReference < 0 || mark.PlayItemReference >= playlist.PlayItems.Count)
@@ -100,6 +109,13 @@ internal static class BluRayChapterMapper
             if (i == resolved.Count - 1)
             {
                 long ticksFromEnd = totalDurationTicks45k - startTicks;
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_BD_CHAPTER_FINAL_MARK",
+                    Message = $"Resolved {resolved.Count} entry marks from {playlist.Marks.Count} authored marks. Final entry mark {mark.Index} references play item {mark.PlayItemReference}, timestamp {mark.Time}, duration {mark.Duration}; playlist start {startTicks}, playlist end {totalDurationTicks45k}, distance from end {ticksFromEnd} ticks (45 kHz).",
+                    Path = path,
+                });
                 if (ShouldExcludeTerminalChapterSentinel(startTicks, ticksFromEnd))
                 {
                     diagnostics.Add(new ManifestDiagnostic

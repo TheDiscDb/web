@@ -23,4 +23,5 @@ public static class OpticalDiscManifestJson
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     WriteIndented = true)]
 [JsonSerializable(typeof(OpticalDiscManifestDocument))]
+[JsonSerializable(typeof(ManifestDiagnostic[]))]
 internal partial class OpticalDiscManifestJsonContext : JsonSerializerContext;

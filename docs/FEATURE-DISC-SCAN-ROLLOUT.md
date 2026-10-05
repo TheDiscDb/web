@@ -29,6 +29,14 @@ phases so that MakeMKV logs can eventually be retired.
   - Chapters, size, length and segment map are hard differences. Display size is a soft difference.
   - `OrderMatches` is tracked separately and never causes a mismatch on its own, because Chromium
     lists files in name order.
+  - Blu-ray artifact-consistency warnings report log sources missing from the scan inventory
+    and standalone stream size disagreements. They do not change parity status or prove a
+    different disc: the identity hash compares the scan with the contribution record, not
+    independently with the MakeMKV log.
+  - New manifests retain ordered scanner diagnostics in the schema-supported extension
+    `thediscdb.optical-disc-manifest/scan-diagnostics`. The comparison detail page exposes them,
+    including authored chapter marks, final chapter-mark ticks, sentinel exclusions, parse failures, duplicate playlist
+    exclusions and per-stream promotion reasons. Older manifests remain supported.
 - **Admin dashboard.** `/admin/disc-scan-parity` shows match rates, using the latest comparison for
   each disc, broken down by format, producer version, MakeMKV version and browser.
   `/admin/disc-scan-parity/{discId}` shows the title-by-title differences, links to download the
@@ -56,13 +64,17 @@ keeps the log as its source, so that title indices don't shift.
 ## Investigating a mismatch
 
 1. Open the disc on the parity dashboard and read the differences table.
-2. Ignore comparisons from old producer versions. Scans cannot be regenerated without the disc,
-   because raw structure files are not stored.
-3. Check the MakeMKV version. Logs from 1.15 and 1.16 (the CellTrim era) list zero-length DVD
+2. Separate comparisons by producer version. Scans cannot be regenerated without the disc,
+   because raw structure files are not stored. Re-compare only re-evaluates saved artifacts;
+   it does not run the updated scanner. Validate generator fixes with future submissions,
+   rather than requiring users to rescan.
+3. Inspect artifact warnings and scanner diagnostics before changing chapter or stream rules.
+   Do not mask hard differences with a duration tolerance or a blanket audio requirement.
+4. Check the MakeMKV version. Logs from 1.15 and 1.16 (the CellTrim era) list zero-length DVD
    titles that newer versions skip.
-4. Download both blobs. If the generator is wrong, add a fixture to
-   `TheDiscDb.OpticalDiscParsers.Tests` and fix `OpticalDiscManifestGenerator`, then Re-compare once
-   a fixed scan is uploaded.
+5. Download both blobs. If the generator is wrong, add a fixture to
+   `TheDiscDb.OpticalDiscParsers.Tests` and fix `OpticalDiscManifestGenerator`, then monitor
+   comparisons from subsequent submissions using the fixed producer version.
 
 ## Generator maintenance
 
