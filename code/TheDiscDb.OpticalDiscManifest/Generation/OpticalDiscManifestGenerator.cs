@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json;
 using TheDiscDb.OpticalDiscManifest.Models;
 using TheDiscDb.OpticalDiscManifest.Serialization;
 using TheDiscDb.OpticalDiscManifest.Validation;
@@ -62,6 +63,11 @@ public sealed class OpticalDiscManifestGenerator
         }
 
         request.ReportProgress?.Invoke("Building deterministic manifest");
+        var orderedDiagnostics = diagnostics
+            .OrderBy(item => item.Path, StringComparer.Ordinal)
+            .ThenBy(item => item.ByteOffset)
+            .ThenBy(item => item.Code, StringComparer.Ordinal)
+            .ToArray();
         var manifest = new OpticalDiscManifestDocument
         {
             Schema = SchemaUri,
@@ -87,6 +93,11 @@ public sealed class OpticalDiscManifestGenerator
                 Titles = titles.Count > 0 ? titles : null,
                 Clips = clips.Count > 0 ? clips : null,
             },
+            Extensions = new Dictionary<string, JsonElement>
+            {
+                ["thediscdb.optical-disc-manifest/scan-diagnostics"] =
+                    JsonSerializer.SerializeToElement(orderedDiagnostics, OpticalDiscManifestJson.Options),
+            },
         };
 
         var json = OpticalDiscManifestJson.Serialize(manifest);
@@ -97,11 +108,7 @@ public sealed class OpticalDiscManifestGenerator
         return new ManifestGenerationResult
         {
             Manifest = manifest,
-            Diagnostics = diagnostics
-                .OrderBy(item => item.Path, StringComparer.Ordinal)
-                .ThenBy(item => item.ByteOffset)
-                .ThenBy(item => item.Code, StringComparer.Ordinal)
-                .ToArray(),
+            Diagnostics = orderedDiagnostics,
             Json = json,
             Validation = validation,
             Metrics = new ManifestScanMetrics

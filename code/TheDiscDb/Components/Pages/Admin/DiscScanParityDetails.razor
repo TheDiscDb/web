@@ -22,6 +22,39 @@
 }
 else
 {
+    @if (Differences?.ArtifactWarnings is { Count: > 0 } warnings)
+    {
+        <h3>Artifact consistency warnings</h3>
+        <p>These warnings do not change parity status or prove that the wrong disc was selected.</p>
+        <ul>
+            @foreach (var warning in warnings)
+            {
+                <li>@warning</li>
+            }
+        </ul>
+    }
+    @if (Differences?.ScanDiagnostics is { Count: > 0 } diagnostics)
+    {
+        <details class="mb-3">
+            <summary>Scanner diagnostics (@diagnostics.Count)</summary>
+            <table class="table">
+                <thead>
+                    <tr><th>Severity</th><th>Code</th><th>Path</th><th>Evidence</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var diagnostic in diagnostics)
+                    {
+                        <tr>
+                            <td>@diagnostic.Severity</td>
+                            <td>@diagnostic.Code</td>
+                            <td>@diagnostic.Path</td>
+                            <td>@diagnostic.Message</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </details>
+    }
     <section class="info-card mb-3">
         <h2>@Latest.ReleaseTitle - @Latest.DiscName</h2>
         <dl class="row mb-0">

@@ -26,6 +26,16 @@ public sealed class OpticalDiscManifestDocument
     public OpticalDiscManifestProducer? Producer { get; set; }
     public DateTimeOffset? CapturedAt { get; set; }
     public OpticalDiscManifestDisc? Disc { get; set; }
+    public Dictionary<string, JsonElement>? Extensions { get; set; }
+}
+
+public sealed class OpticalDiscScanDiagnostic
+{
+    public string? Severity { get; set; }
+    public string? Code { get; set; }
+    public string? Message { get; set; }
+    public string? Path { get; set; }
+    public long? ByteOffset { get; set; }
 }
 
 public sealed class OpticalDiscManifestProducer

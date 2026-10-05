@@ -17,6 +17,8 @@ public sealed record OpticalDiscManifestDocument
 
     [JsonPropertyOrder(-70)]
     public required ManifestDisc Disc { get; init; }
+
+    public IReadOnlyDictionary<string, JsonElement>? Extensions { get; init; }
 }
 
 public sealed record ManifestProducer

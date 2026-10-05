@@ -32,6 +32,17 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.DoesNotContain("\"diagnostics\"", System.Text.Encoding.UTF8.GetString(first.Json));
         Assert.NotEmpty(first.Manifest.Disc.Titles!);
         Assert.Equal(first.Json, second.Json);
+        var persistedDiagnostics = first.Manifest.Extensions![
+            "thediscdb.optical-disc-manifest/scan-diagnostics"];
+        Assert.Equal(first.Diagnostics.Count, persistedDiagnostics.GetArrayLength());
+        Assert.Contains(
+            persistedDiagnostics.EnumerateArray(),
+            item => item.GetProperty("code").GetString() == "ODM_BD_CHAPTER_FINAL_MARK");
+        Assert.Equal(
+            System.Text.Json.JsonSerializer.SerializeToElement(
+                first.Diagnostics.ToArray(),
+                TheDiscDb.OpticalDiscManifest.Serialization.OpticalDiscManifestJson.Options).GetRawText(),
+            persistedDiagnostics.GetRawText());
         Assert.All(
             files.Where(file => file.Path.EndsWith(".m2ts", StringComparison.OrdinalIgnoreCase)),
             file => Assert.Equal(0, file.ReadCount));
@@ -344,6 +355,13 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Equal(16384, promoted.SizeBytes);
         Assert.Equal("00999", Assert.Single(promoted.Segments!).Clip);
         Assert.Contains(result.Diagnostics, item => item.Code == "ODM_BD_STREAM_TITLES");
+        var orphanDiagnostic = Assert.Single(result.Diagnostics,
+            item => item.Code == "ODM_BD_STREAM_TITLE_PROMOTED" && item.Path == promoted.Source.Path);
+        Assert.Contains("unreferenced=True", orphanDiagnostic.Message);
+        Assert.Contains("still playlist=False", orphanDiagnostic.Message);
+        Assert.Contains(result.Diagnostics, item => item.Code == "ODM_BD_STREAM_TITLE_PROMOTED"
+            && item.Path == "BDMV/STREAM/00135.m2ts"
+            && item.Message.Contains("still playlist=True", StringComparison.Ordinal));
 
         // Promotion is backed by file-size metadata alone; payload bytes stay unread.
         Assert.All(
@@ -1582,6 +1600,10 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Contains(
             diagnostics,
             item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED" && item.Severity == "info");
+        Assert.Contains(
+            diagnostics,
+            item => item.Code == "ODM_BD_CHAPTER_FINAL_MARK"
+                && item.Message.Contains($"distance from end {ticksFromEnd} ticks", StringComparison.Ordinal));
     }
 
     [Theory]

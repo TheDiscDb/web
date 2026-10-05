@@ -43,6 +43,8 @@ public static partial class DiscLogManifestComparer
                 ManifestContentHash = normalizedManifestHash,
                 MakeMkvVersion = ExtractMakeMkvVersion(logText)
             };
+            ReadScanDiagnostics(manifest, differences);
+            CheckArtifactConsistency(logDiscInfo, manifest, differences);
 
             if (!string.IsNullOrEmpty(normalizedExpectedHash)
                 && !string.IsNullOrEmpty(normalizedManifestHash)
@@ -162,6 +164,75 @@ public static partial class DiscLogManifestComparer
     public static string SerializeDifferences(DiscLogManifestDifferences differences)
         => JsonSerializer.Serialize(differences, DifferencesJsonOptions);
 
+    private static void ReadScanDiagnostics(
+        OpticalDiscManifestDocument manifest,
+        DiscLogManifestDifferences differences)
+    {
+        if (manifest.Extensions?.TryGetValue(
+            "thediscdb.optical-disc-manifest/scan-diagnostics", out var diagnostics) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var parsed = diagnostics.Deserialize<List<OpticalDiscScanDiagnostic>>(
+                OpticalDiscManifestDocument.SerializerOptions);
+            if (parsed is null || parsed.Any(item => item is null
+                || string.IsNullOrWhiteSpace(item.Code)
+                || string.IsNullOrWhiteSpace(item.Message)
+                || item.Severity is not ("info" or "warning" or "error")))
+            {
+                differences.ArtifactWarnings.Add("The scan diagnostics extension contains invalid diagnostic entries.");
+                return;
+            }
+
+            differences.ScanDiagnostics = parsed;
+        }
+        catch (JsonException ex)
+        {
+            differences.ArtifactWarnings.Add($"The scan diagnostics extension could not be read: {ex.Message}");
+        }
+    }
+
+    private static void CheckArtifactConsistency(
+        DiscInfo log,
+        OpticalDiscManifestDocument manifest,
+        DiscLogManifestDifferences differences)
+    {
+        if (manifest.Disc is not { Format: "blu-ray" or "uhd-blu-ray" } disc
+            || disc.Files.Count == 0)
+        {
+            return;
+        }
+
+        var files = disc.Files.Where(file => !string.IsNullOrWhiteSpace(file.Path))
+            .GroupBy(file => file.Path!.Replace('\\', '/'), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+        var checkedSources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var title in log.Titles)
+        {
+            string? source = SourceKey(title);
+            if (source is null || !BluRaySourceRegex().IsMatch(source) || !checkedSources.Add(source))
+            {
+                continue;
+            }
+
+            string directory = source.EndsWith(".mpls", StringComparison.OrdinalIgnoreCase)
+                ? "PLAYLIST" : "STREAM";
+            if (!files.TryGetValue($"BDMV/{directory}/{source}", out var file))
+            {
+                differences.ArtifactWarnings.Add(
+                    $"Log source {source} is absent from the scan file inventory. The log and selected folder may describe different or incomplete disc sources.");
+            }
+            else if (directory == "STREAM" && title.Size > 0 && title.Size != file.SizeBytes)
+            {
+                differences.ArtifactWarnings.Add(
+                    $"Log stream {source} reports {title.Size} bytes, but the scan file inventory reports {file.SizeBytes} bytes. Verify that the log and selected folder describe the same disc source.");
+            }
+        }
+    }
+
     private static DiscLogManifestComparisonResult CreateResult(
         DiscLogManifestComparisonStatus status,
         DiscInfo logDiscInfo,
@@ -254,6 +325,9 @@ public static partial class DiscLogManifestComparer
 
     [GeneratedRegex(@"MakeMKV\s+v([0-9][^""\s]*)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex VersionRegex();
+
+    [GeneratedRegex(@"^[0-9]{5}\.(?:mpls|m2ts)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex BluRaySourceRegex();
 }
 
 public sealed record DiscLogManifestComparisonResult(
@@ -286,6 +360,10 @@ public sealed class DiscLogManifestDifferences
     public List<TitleDifference> TitleDifferences { get; set; } = [];
 
     public List<TitleDifference> SoftDifferences { get; set; } = [];
+
+    public List<string> ArtifactWarnings { get; set; } = [];
+
+    public List<OpticalDiscScanDiagnostic> ScanDiagnostics { get; set; } = [];
 
     public IReadOnlyList<string>? LogOrder { get; set; }
 

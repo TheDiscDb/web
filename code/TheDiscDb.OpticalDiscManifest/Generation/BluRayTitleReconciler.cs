@@ -179,6 +179,13 @@ internal static class BluRayTitleReconciler
         {
             string clipId = Path.GetFileNameWithoutExtension(file.Path);
             retained.Add(CreateBluRayStreamTitle(file, clipId, GetClip(clipId, clpiByClip)));
+            diagnostics.Add(new ManifestDiagnostic
+            {
+                Severity = "info",
+                Code = "ODM_BD_STREAM_TITLE_PROMOTED",
+                Message = $"Promoted clip {clipId}: unreferenced={!referenced.Contains(clipId)}, Dolby Vision={dolbyVisionClips.Contains(clipId)}, still playlist={stillPlaylistClips.Contains(clipId)}, duration seconds={GetClipDurationSeconds(clipId, clpiByClip)?.ToString(CultureInfo.InvariantCulture) ?? "unknown"}.",
+                Path = file.Path,
+            });
         }
 
         if (promoted.Length > 0)

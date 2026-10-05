@@ -565,6 +565,117 @@ public class OpticalDiscManifestMapperTests
 public class DiscLogManifestComparerTests
 {
     [Test]
+    public async Task Compare_MissingSourceAndStreamSize_ReportWarningsWithoutChangingMismatch()
+    {
+        var manifest = CreateManifest(
+            CreateTitle("BDMV/STREAM/00001.m2ts", chapters: 1, size: 100, lengthSeconds: 10, segmentMap: "1"));
+        manifest.Disc!.Files.Add(new OpticalDiscManifestFile
+        {
+            Path = @"bdmv\stream\00001.m2ts",
+            SizeBytes = 100
+        });
+        var log = CreateDiscInfo(
+            CreateLogTitle("00001.m2ts", chapters: 1, size: 200, length: "0:00:10", segmentMap: "1"),
+            CreateLogTitle("00002.mpls", chapters: 1, size: 100, length: "0:00:10", segmentMap: "2"));
+        var result = DiscLogManifestComparer.Compare(
+            log, string.Empty, manifest, OpticalDiscManifestMapper.ToDiscInfo(manifest), "HASH");
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Mismatch);
+        await Assert.That(result.Differences.ArtifactWarnings.Count).IsEqualTo(2);
+        await Assert.That(result.Differences.ArtifactWarnings.Any(w => w.Contains("00002.mpls"))).IsTrue();
+        await Assert.That(result.Differences.ArtifactWarnings.Any(w => w.Contains("200 bytes"))).IsTrue();
+        await Assert.That(result.Differences.DifferentDisc).IsFalse();
+    }
+
+    [Test]
+    public async Task Compare_ScanDiagnostics_RoundTripIntoComparison()
+    {
+        var manifest = CreateManifest(
+            CreateTitle("BDMV/PLAYLIST/00001.mpls", chapters: 1, size: 100, lengthSeconds: 10, segmentMap: "1"));
+        manifest.Extensions = new()
+        {
+            ["thediscdb.optical-disc-manifest/scan-diagnostics"] =
+                System.Text.Json.JsonSerializer.SerializeToElement(new[]
+                {
+                    new OpticalDiscScanDiagnostic
+                    {
+                        Code = "ODM_BD_CHAPTER_FINAL_MARK",
+                        Severity = "info",
+                        Path = "BDMV/PLAYLIST/00001.mpls",
+                        Message = "distance from end 45045 ticks",
+                        ByteOffset = 12
+                    }
+                }, OpticalDiscManifestDocument.SerializerOptions)
+        };
+        var result = DiscLogManifestComparer.Compare(
+            CreateDiscInfo(CreateLogTitle("00001.mpls", chapters: 1, size: 100, length: "0:00:10", segmentMap: "1")),
+            string.Empty, manifest, OpticalDiscManifestMapper.ToDiscInfo(manifest), "HASH");
+        var persisted = System.Text.Json.JsonSerializer.Deserialize<DiscLogManifestDifferences>(
+            result.DifferencesJson, OpticalDiscManifestDocument.SerializerOptions)!;
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Match);
+        await Assert.That(persisted.ScanDiagnostics.Count).IsEqualTo(1);
+        await Assert.That(persisted.ScanDiagnostics[0].ByteOffset).IsEqualTo(12L);
+        await Assert.That(persisted.ArtifactWarnings).IsEmpty();
+    }
+
+    [Test]
+    public async Task Compare_MalformedScanDiagnostics_ReportWarning()
+    {
+        var manifest = CreateManifest();
+        manifest.Extensions = new()
+        {
+            ["thediscdb.optical-disc-manifest/scan-diagnostics"] =
+                System.Text.Json.JsonSerializer.SerializeToElement("invalid")
+        };
+        var result = DiscLogManifestComparer.Compare(
+            CreateDiscInfo(), string.Empty, manifest, CreateDiscInfo(), "HASH");
+
+        await Assert.That(result.Differences.ArtifactWarnings.Count).IsEqualTo(1);
+        await Assert.That(result.Differences.ScanDiagnostics).IsEmpty();
+    }
+
+    [Test]
+    [Arguments("blu-ray", "00001.m2ts")]
+    [Arguments("uhd-blu-ray", "00001.m2ts")]
+    [Arguments("blu-ray", "00001.mpls(1)")]
+    [Arguments("dvd-video", "1")]
+    public async Task Compare_MatchingInventoryOrNoncanonicalSource_NoArtifactWarnings(string format, string source)
+    {
+        var manifest = CreateManifest();
+        manifest.Disc!.Format = format;
+        manifest.Disc.Files.Add(new OpticalDiscManifestFile
+        {
+            Path = @"bdmv\stream\00001.m2ts",
+            SizeBytes = 100
+        });
+        var result = DiscLogManifestComparer.Compare(
+            CreateDiscInfo(CreateLogTitle(source, chapters: 1, size: 100, length: "0:00:10", segmentMap: "1")),
+            string.Empty, manifest, CreateDiscInfo(), "HASH");
+
+        await Assert.That(result.Differences.ArtifactWarnings).IsEmpty();
+    }
+
+    [Test]
+    [Arguments("null")]
+    [Arguments("[null]")]
+    [Arguments("[{}]")]
+    public async Task Compare_InvalidDiagnosticEntries_ReportWarning(string diagnosticJson)
+    {
+        var manifest = CreateManifest();
+        using var document = System.Text.Json.JsonDocument.Parse(diagnosticJson);
+        manifest.Extensions = new()
+        {
+            ["thediscdb.optical-disc-manifest/scan-diagnostics"] = document.RootElement.Clone()
+        };
+        var result = DiscLogManifestComparer.Compare(
+            CreateDiscInfo(), string.Empty, manifest, CreateDiscInfo(), "HASH");
+
+        await Assert.That(result.Differences.ArtifactWarnings.Count).IsEqualTo(1);
+        await Assert.That(result.Differences.ScanDiagnostics).IsEmpty();
+    }
+
+    [Test]
     public async Task Compare_SampleLogAndManifest_Matches()
     {
         string logText = await File.ReadAllTextAsync(TestFiles.LogPath);
