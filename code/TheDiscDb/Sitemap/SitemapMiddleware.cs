@@ -113,7 +113,11 @@ public class SitemapMiddleware
 
     private Task WriteRobotsAsync(HttpContext context)
     {
-        string content = $"User-agent: *\r\nAllow: /\r\nSitemap: {this.GetSitemapUrl(context.Request)}\r\nSitemap: {this.GetGroupsSitemapUrl(context.Request)}";
+        // These paths all require an authenticated user ([Authorize]) and, when crawled while
+        // signed out, return a 302 to the login page — which Search Console flags as
+        // "Page with redirect". Keep crawlers off them entirely rather than relying on noindex,
+        // since the redirect happens before any page content (and any noindex tag) is served.
+        string content = $"User-agent: *\r\nAllow: /\r\nDisallow: /*/edit\r\nDisallow: /admin/\r\nDisallow: /admin\r\nDisallow: /contribute/\r\nDisallow: /contribution/\r\nDisallow: /changes/my\r\nSitemap: {this.GetSitemapUrl(context.Request)}\r\nSitemap: {this.GetGroupsSitemapUrl(context.Request)}";
         return WriteStringContentAsync(context, content, "text/plain");
     }
 
