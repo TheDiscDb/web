@@ -110,7 +110,11 @@ internal static class BluRayPlaylistRules
             int[] counts = CountStreams(item.StreamTable);
             bool narrower = counts.Zip(first).All(pair => pair.First <= pair.Second)
                 && counts.Sum() < first.Sum();
-            if (!narrower || item.OutTime < item.InTime || item.OutTime - item.InTime >= MaximumTrimmedTicks)
+            // Half a second at NTSC rates spans 12/15/30 frames in 0.5005 seconds.
+            // Allow integer-tick rounding, not an additional whole frame.
+            bool ntscHalfSecond = item.StreamTable.VideoStreams is [{ RateCode: 1 or 4 or 7 }];
+            uint maximumTicks = ntscHalfSecond ? 22_523u : MaximumTrimmedTicks - 1;
+            if (!narrower || item.OutTime < item.InTime || item.OutTime - item.InTime > maximumTicks)
             {
                 break;
             }

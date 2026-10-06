@@ -10,7 +10,7 @@ internal static class BluRayTitleReconciler
     /// <summary>
     /// Aligns the playlist-derived title list with the set of playback candidates an
     /// optical disc actually offers, so a manifest produced from the disc describes the
-    /// same titles a MakeMKV log of that disc would describe. Three reconciliations run,
+    /// same titles a MakeMKV log of that disc would describe. Reconciliations run,
     /// in order: a playlist that plays exactly like another and selects no stream the
     /// other lacks collapses into it (the earlier one wins when both select the same
     /// streams); stream files no retained playlist references, or that a Dolby Vision
@@ -18,7 +18,9 @@ internal static class BluRayTitleReconciler
     /// are promoted to titles of their own, except clips a non-Dolby-Vision subpath (such
     /// as a popup menu) plays, which are never playback candidates; and a title whose only content is a single unchaptered clip,
     /// played in full, is attributed to that clip's stream file, because the playlist adds
-    /// nothing the stream does not already state. Earlier titles win ties, so
+    /// nothing the stream does not already state. A chaptered single-clip playlist can
+    /// also cover a standalone stream with identical duration, size and stream selection.
+    /// Earlier titles win ties, so
     /// callers pass playlist titles in disc order. Each reconciliation is
     /// evidence-driven and never discards a distinct playback candidate.
     /// </summary>
@@ -35,8 +37,9 @@ internal static class BluRayTitleReconciler
         RemoveUnchapteredPresentations(retained, diagnostics);
         var referenced = CollectReferencedClips(retained, subPathClips);
         PromoteStreamTitles(retained, files, clpiByClip, referenced, dolbyVisionClips, stillPlaylistClips, diagnostics);
-        AttributeFullClipTitles(retained, files, clpiByClip);
+        AttributeFullClipTitles(retained, files, clpiByClip, diagnostics);
         RemoveDuplicateStreamSources(retained, diagnostics);
+        RemoveStreamsCoveredByChapteredPlaylists(retained, dolbyVisionClips, stillPlaylistClips, diagnostics);
         return retained;
     }
 
@@ -202,7 +205,8 @@ internal static class BluRayTitleReconciler
     private static void AttributeFullClipTitles(
         List<ManifestTitle> retained,
         IReadOnlyList<NormalizedFile> files,
-        IReadOnlyDictionary<string, ClpiFile> clpiByClip)
+        IReadOnlyDictionary<string, ClpiFile> clpiByClip,
+        ICollection<ManifestDiagnostic> diagnostics)
     {
         var streamPaths = files
             .Where(item => DiscFileCatalog.IsControlFile(item.Path, "BDMV/STREAM", ".m2ts"))
@@ -213,7 +217,8 @@ internal static class BluRayTitleReconciler
             retained[index] = AttributeSingleClipTitleToStream(
                 retained[index],
                 streamPaths,
-                clipId => GetClipDurationSeconds(clipId, clpiByClip));
+                clipId => GetClipDurationSeconds(clipId, clpiByClip),
+                diagnostics);
         }
     }
 
@@ -242,6 +247,60 @@ internal static class BluRayTitleReconciler
                 Code = "ODM_BD_TITLE_DUPLICATE",
                 Message = $"Title plays the same stream file as an earlier title and is not emitted separately.",
                 Path = path,
+            });
+            return true;
+        });
+    }
+
+    internal static void RemoveStreamsCoveredByChapteredPlaylists(
+        List<ManifestTitle> retained,
+        IReadOnlySet<string> dolbyVisionClips,
+        IReadOnlySet<string> stillPlaylistClips,
+        ICollection<ManifestDiagnostic> diagnostics)
+    {
+        var chaptered = retained.Where(title =>
+            title.Source?.Path?.StartsWith("BDMV/PLAYLIST/", StringComparison.OrdinalIgnoreCase) == true
+            && title.Chapters is { Count: > 1 }
+            && title.Segments is [{ StartSeconds: 0, Angle: null, DependentClip: null }]
+            && title.Stereoscopic3D is null
+            && title.Streams is { Count: > 0 }
+            && title.DurationSeconds is > 0
+            && title.SizeBytes is > 0)
+            .GroupBy(title => title.Segments![0].Clip, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.ToArray(), StringComparer.OrdinalIgnoreCase);
+        retained.RemoveAll(title =>
+        {
+            if (title.Source?.Path?.StartsWith("BDMV/STREAM/", StringComparison.OrdinalIgnoreCase) != true
+                || title.Segments is not [{ StartSeconds: 0, Angle: null, DependentClip: null } segment]
+                || title.Stereoscopic3D is not null
+                || title.Chapters is { Count: > 0 }
+                || title.Streams is not { Count: > 0 }
+                || dolbyVisionClips.Contains(segment.Clip)
+                || stillPlaylistClips.Contains(segment.Clip)
+                || title.DurationSeconds is not > 0
+                || segment.DurationSeconds != title.DurationSeconds
+                || !chaptered.TryGetValue(segment.Clip, out var candidates))
+            {
+                return false;
+            }
+
+            // Presentation duration can include a CLPI-backed tail beyond the authored
+            // segment: SpongeBob's 00255.mpls covers 01101 once that tail is included.
+            var original = candidates.FirstOrDefault(candidate =>
+                candidate.SizeBytes == title.SizeBytes
+                && candidate.DurationSeconds == title.DurationSeconds
+                && SelectsNoStreamBeyond(title, candidate));
+            if (original is null)
+            {
+                return false;
+            }
+
+            diagnostics.Add(new ManifestDiagnostic
+            {
+                Severity = "info",
+                Code = "ODM_BD_TITLE_DUPLICATE",
+                Message = $"Stream is covered by chaptered playlist {original.Source!.Path} with the same clip, presentation duration and size, and selects no stream it lacks; it is not emitted separately.",
+                Path = title.Source.Path,
             });
             return true;
         });
@@ -386,7 +445,8 @@ internal static class BluRayTitleReconciler
     internal static ManifestTitle AttributeSingleClipTitleToStream(
         ManifestTitle title,
         IReadOnlySet<string> streamPaths,
-        Func<string, double?> clipDurationSeconds)
+        Func<string, double?> clipDurationSeconds,
+        ICollection<ManifestDiagnostic> diagnostics)
     {
         if (title.Segments is not { Count: 1 }
             || title.Stereoscopic3D is not null
@@ -412,6 +472,17 @@ internal static class BluRayTitleReconciler
             || Math.Abs(clipDuration - played) > SingleFrameSeconds)
         {
             return title;
+        }
+
+        if (!string.Equals(title.Source?.Path, streamPath, StringComparison.OrdinalIgnoreCase))
+        {
+            diagnostics.Add(new ManifestDiagnostic
+            {
+                Severity = "info",
+                Code = "ODM_BD_STREAM_TITLE_ATTRIBUTED",
+                Message = $"Attributed {title.Source?.Path ?? "an unnamed title"} (part {title.Source?.Part?.ToString(CultureInfo.InvariantCulture) ?? "none"}) to clip {segment.Clip}: one full-clip segment, no alternate angle or stereoscopic pairing, {title.Chapters?.Count ?? 0} chapter mark(s) removed; played seconds={played.ToString(CultureInfo.InvariantCulture)}, clip seconds={clipDuration.ToString(CultureInfo.InvariantCulture)}.",
+                Path = streamPath,
+            });
         }
 
         return title with

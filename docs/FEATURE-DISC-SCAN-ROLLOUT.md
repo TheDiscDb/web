@@ -36,7 +36,11 @@ phases so that MakeMKV logs can eventually be retired.
   - New manifests retain ordered scanner diagnostics in the schema-supported extension
     `thediscdb.optical-disc-manifest/scan-diagnostics`. The comparison detail page exposes them,
     including authored chapter marks, final chapter-mark ticks, sentinel exclusions, parse failures, duplicate playlist
-    exclusions and per-stream promotion reasons. Older manifests remain supported.
+    exclusions and per-stream promotion reasons. `ODM_BD_STREAM_TITLE_ATTRIBUTED` records
+    playlist-to-stream attribution separately from `ODM_BD_STREAM_TITLE_PROMOTED`, including
+    the original playlist/part, clip, duration evidence and removed chapter-mark count.
+    These describe reconciliation decisions; later duplicate exclusions may remove a candidate.
+    Older manifests remain supported.
 - **Admin dashboard.** `/admin/disc-scan-parity` shows match rates, using the latest comparison for
   each disc, broken down by format, producer version, MakeMKV version and browser.
   `/admin/disc-scan-parity/{discId}` shows the title-by-title differences, links to download the
@@ -89,6 +93,14 @@ as used. A usable partial backup remains eligible when the primary is unsuccessf
 Preserve reconciliation stage order, stream-evidence precedence, diagnostics and read metrics
 when changing these collaborators. The parser fixture suite and characterization tests cover
 directory order, backup failures, partial DVD joins and MPLS/CLPI stream precedence.
+
+Single-clip chaptered playlists suppress a duplicate standalone stream only when the
+presentation duration and byte size match and the stream adds no selected tracks.
+Dolby Vision and still-playlist clips remain separate candidates. Narrower trailing
+play items use the NTSC half-second boundary (0.5005 seconds, rounded to 45 kHz ticks)
+when their video rate declares 23.976, 29.97 or 59.94 fps; longer tails, equal stream
+tables and stereoscopic playlists are preserved. These generator fixes affect future
+submissions, not manifests already stored.
 
 ## Phase 3 (future)
 
