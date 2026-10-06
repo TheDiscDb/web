@@ -102,6 +102,12 @@ when their video rate declares 23.976, 29.97 or 59.94 fps; longer tails, equal s
 tables and stereoscopic playlists are preserved. These generator fixes affect future
 submissions, not manifests already stored.
 
+Standalone promotion excludes clips whose nonempty CLPI program and extension stream
+declarations are entirely Interactive Graphics (`0x91`). The scanner records
+`ODM_BD_STREAM_TITLE_MENU_ONLY_EXCLUDED` for these menu assets. Missing/empty metadata,
+CLPI warning/error diagnostics, mixed stream declarations and unknown coding types
+do not qualify for this exclusion; video-only candidates remain supported.
+
 ## Phase 3 (future)
 
 - Move the disc scan before the TMDB lookup so that the content hash can find existing releases

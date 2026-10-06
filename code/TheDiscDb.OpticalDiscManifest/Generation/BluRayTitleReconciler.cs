@@ -178,10 +178,28 @@ internal static class BluRayTitleReconciler
                 GetClipDurationSeconds(Path.GetFileNameWithoutExtension(item.Path), clpiByClip)))
             .OrderBy(item => item.Path, StringComparer.OrdinalIgnoreCase)
             .ToArray();
+        int promotedCount = 0;
         foreach (var file in promoted)
         {
             string clipId = Path.GetFileNameWithoutExtension(file.Path);
-            retained.Add(CreateBluRayStreamTitle(file, clipId, GetClip(clipId, clpiByClip)));
+            var clip = GetClip(clipId, clpiByClip);
+            bool incompleteEvidence = diagnostics.Any(item =>
+                item.Severity is "warning" or "error"
+                && string.Equals(Path.GetFileName(item.Path), $"{clipId}.clpi", StringComparison.OrdinalIgnoreCase));
+            if (IsMenuOnlyClip(clip, incompleteEvidence))
+            {
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_BD_STREAM_TITLE_MENU_ONLY_EXCLUDED",
+                    Message = $"Clip {clipId} declares only Interactive Graphics menu streams in CLPI, with no video, audio or other stream declarations; it is not promoted to a standalone title.",
+                    Path = file.Path,
+                });
+                continue;
+            }
+
+            retained.Add(CreateBluRayStreamTitle(file, clipId, clip));
+            promotedCount++;
             diagnostics.Add(new ManifestDiagnostic
             {
                 Severity = "info",
@@ -191,15 +209,28 @@ internal static class BluRayTitleReconciler
             });
         }
 
-        if (promoted.Length > 0)
+        if (promotedCount > 0)
         {
             diagnostics.Add(new ManifestDiagnostic
             {
                 Severity = "info",
                 Code = "ODM_BD_STREAM_TITLES",
-                Message = $"Promoted {promoted.Length} stream file(s) to titles because no playlist references them, a Dolby Vision playlist plays them or a playlist holding a still plays them.",
+                Message = $"Promoted {promotedCount} stream file(s) to titles because no playlist references them, a Dolby Vision playlist plays them or a playlist holding a still plays them.",
             });
         }
+    }
+
+    internal static bool IsMenuOnlyClip(ClpiFile? clip, bool incompleteEvidence)
+    {
+        if (incompleteEvidence || clip is null || clip.Programs.Count == 0
+            || clip.Programs.Any(program => program.Streams.Count == 0))
+        {
+            return false;
+        }
+
+        return clip.Programs.SelectMany(program => program.Streams)
+            .Concat(clip.ExtensionStreams)
+            .All(stream => stream.CodingTypeCode == 0x91);
     }
 
     private static void AttributeFullClipTitles(
