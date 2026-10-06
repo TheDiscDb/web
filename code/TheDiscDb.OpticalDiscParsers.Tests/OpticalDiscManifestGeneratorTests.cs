@@ -614,18 +614,35 @@ public sealed class OpticalDiscManifestGeneratorTests
             ["00003"] = 93.460022,
         };
         Func<string, double?> durationOf = clip => clipDurations.TryGetValue(clip, out var value) ? value : null;
+        var diagnostics = new List<ManifestDiagnostic>();
 
         var single = CreateSegmentTitle(("00001", 0d, 10d, null));
         Assert.Equal(
             "BDMV/STREAM/00001.m2ts",
-            BluRayTitleReconciler.AttributeSingleClipTitleToStream(single, streams, durationOf).Source!.Path);
+            BluRayTitleReconciler.AttributeSingleClipTitleToStream(single, streams, durationOf, diagnostics).Source!.Path);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("ODM_BD_STREAM_TITLE_ATTRIBUTED", diagnostic.Code);
+        Assert.Equal("info", diagnostic.Severity);
+        Assert.Equal("BDMV/STREAM/00001.m2ts", diagnostic.Path);
+        Assert.Contains("BDMV/PLAYLIST/00050.mpls", diagnostic.Message);
+        Assert.Contains("played seconds=10, clip seconds=10", diagnostic.Message);
+        Assert.Contains("0 chapter mark(s) removed", diagnostic.Message);
+        diagnostics.Clear();
 
         // A lone chapter mark is just the title's start, so it still adds nothing, and a
         // stream-sourced title carries no chapters, as in MakeMKV.
         var oneChapter = single with { Chapters = [new ManifestChapter { StartSeconds = 0 }] };
-        var attributed = BluRayTitleReconciler.AttributeSingleClipTitleToStream(oneChapter, streams, durationOf);
+        var attributed = BluRayTitleReconciler.AttributeSingleClipTitleToStream(oneChapter, streams, durationOf, diagnostics);
         Assert.Equal("BDMV/STREAM/00001.m2ts", attributed.Source!.Path);
         Assert.Null(attributed.Chapters);
+        Assert.Contains("1 chapter mark(s) removed", Assert.Single(diagnostics).Message);
+        diagnostics.Clear();
+        BluRayTitleReconciler.AttributeSingleClipTitleToStream(attributed, streams, durationOf, diagnostics);
+        Assert.Empty(diagnostics);
+        var part = single with { Source = single.Source! with { Part = 1 } };
+        BluRayTitleReconciler.AttributeSingleClipTitleToStream(part, streams, durationOf, diagnostics);
+        Assert.Contains("(part 1)", Assert.Single(diagnostics).Message);
+        diagnostics.Clear();
 
         // Everything the playlist genuinely contributes keeps the playlist attribution.
         var chaptered = single with
@@ -643,12 +660,13 @@ public sealed class OpticalDiscManifestGeneratorTests
         {
             Assert.Equal(
                 "BDMV/PLAYLIST/00050.mpls",
-                BluRayTitleReconciler.AttributeSingleClipTitleToStream(title, streams, durationOf).Source!.Path);
+                BluRayTitleReconciler.AttributeSingleClipTitleToStream(title, streams, durationOf, diagnostics).Source!.Path);
         }
 
         Assert.Equal(
             "BDMV/PLAYLIST/00050.mpls",
-            BluRayTitleReconciler.AttributeSingleClipTitleToStream(unknownClipDuration, streams, _ => null).Source!.Path);
+            BluRayTitleReconciler.AttributeSingleClipTitleToStream(unknownClipDuration, streams, _ => null, diagnostics).Source!.Path);
+        Assert.Empty(diagnostics);
     }
 
     [Fact]

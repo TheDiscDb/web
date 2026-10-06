@@ -35,7 +35,7 @@ internal static class BluRayTitleReconciler
         RemoveUnchapteredPresentations(retained, diagnostics);
         var referenced = CollectReferencedClips(retained, subPathClips);
         PromoteStreamTitles(retained, files, clpiByClip, referenced, dolbyVisionClips, stillPlaylistClips, diagnostics);
-        AttributeFullClipTitles(retained, files, clpiByClip);
+        AttributeFullClipTitles(retained, files, clpiByClip, diagnostics);
         RemoveDuplicateStreamSources(retained, diagnostics);
         return retained;
     }
@@ -202,7 +202,8 @@ internal static class BluRayTitleReconciler
     private static void AttributeFullClipTitles(
         List<ManifestTitle> retained,
         IReadOnlyList<NormalizedFile> files,
-        IReadOnlyDictionary<string, ClpiFile> clpiByClip)
+        IReadOnlyDictionary<string, ClpiFile> clpiByClip,
+        ICollection<ManifestDiagnostic> diagnostics)
     {
         var streamPaths = files
             .Where(item => DiscFileCatalog.IsControlFile(item.Path, "BDMV/STREAM", ".m2ts"))
@@ -213,7 +214,8 @@ internal static class BluRayTitleReconciler
             retained[index] = AttributeSingleClipTitleToStream(
                 retained[index],
                 streamPaths,
-                clipId => GetClipDurationSeconds(clipId, clpiByClip));
+                clipId => GetClipDurationSeconds(clipId, clpiByClip),
+                diagnostics);
         }
     }
 
@@ -386,7 +388,8 @@ internal static class BluRayTitleReconciler
     internal static ManifestTitle AttributeSingleClipTitleToStream(
         ManifestTitle title,
         IReadOnlySet<string> streamPaths,
-        Func<string, double?> clipDurationSeconds)
+        Func<string, double?> clipDurationSeconds,
+        ICollection<ManifestDiagnostic> diagnostics)
     {
         if (title.Segments is not { Count: 1 }
             || title.Stereoscopic3D is not null
@@ -412,6 +415,17 @@ internal static class BluRayTitleReconciler
             || Math.Abs(clipDuration - played) > SingleFrameSeconds)
         {
             return title;
+        }
+
+        if (!string.Equals(title.Source?.Path, streamPath, StringComparison.OrdinalIgnoreCase))
+        {
+            diagnostics.Add(new ManifestDiagnostic
+            {
+                Severity = "info",
+                Code = "ODM_BD_STREAM_TITLE_ATTRIBUTED",
+                Message = $"Attributed {title.Source?.Path ?? "an unnamed title"} (part {title.Source?.Part?.ToString(CultureInfo.InvariantCulture) ?? "none"}) to clip {segment.Clip}: one full-clip segment, no alternate angle or stereoscopic pairing, {title.Chapters?.Count ?? 0} chapter mark(s) removed; played seconds={played.ToString(CultureInfo.InvariantCulture)}, clip seconds={clipDuration.ToString(CultureInfo.InvariantCulture)}.",
+                Path = streamPath,
+            });
         }
 
         return title with
