@@ -17,19 +17,23 @@ public class SitemapGenerator
         this.dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
     }
 
-    public async Task<IEnumerable<SitemapNode>> Build(string siteBase)
+    // Grouped by category (rather than one flat set) so SitemapMiddleware can emit one
+    // child sitemap per category and keep each comfortably under Google's 50,000-URL
+    // per-sitemap limit. Discs and titles are split into their own categories because,
+    // combined, they already approach that limit for the larger media types.
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<SitemapNode>>> BuildByCategory(string siteBase)
     {
-        var nodes = new HashSet<SitemapNode>();
+        var buckets = SitemapCategories.All.ToDictionary(c => c, c => new HashSet<SitemapNode>());
 
         using (var dbContext = this.dbFactory.CreateDbContext())
         {
-            await this.GenerateMediaItemUrls(siteBase, dbContext, nodes);
-            await this.GenerateBoxsetUrls(siteBase, dbContext, nodes);
-            await this.GenerateLeaderboardUrls(siteBase, dbContext, nodes);
+            await this.GenerateMediaItemUrls(siteBase, dbContext, buckets);
+            await this.GenerateBoxsetUrls(siteBase, dbContext, buckets[SitemapCategories.Boxsets]);
+            await this.GenerateLeaderboardUrls(siteBase, dbContext, buckets[SitemapCategories.Leaderboard]);
             //await this.GenerateGroupUrls(siteBase, dbContext, nodes);
         }
 
-        return nodes;
+        return buckets.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<SitemapNode>)kv.Value.ToList());
     }
 
     public async Task<IEnumerable<SitemapNode>> BuildGroupsMap(string siteBase)
@@ -73,7 +77,7 @@ public class SitemapGenerator
         }
     }
 
-    private async Task GenerateMediaItemUrls(string siteBase, SqlServerDataContext dbContext, ICollection<SitemapNode> results)
+    private async Task GenerateMediaItemUrls(string siteBase, SqlServerDataContext dbContext, IReadOnlyDictionary<string, HashSet<SitemapNode>> buckets)
     {
         var mediaItems = dbContext.MediaItems
             .Include(p => p.Releases)
@@ -85,25 +89,33 @@ public class SitemapGenerator
 
         await foreach (var item in mediaItems)
         {
+            // Only "Movie" and "Series" exist today (see TheDiscDb.InputModels.Movie/Series);
+            // anything else falls back to the movie buckets rather than being dropped.
+            bool isSeries = string.Equals(item.Type, "Series", StringComparison.OrdinalIgnoreCase);
+            var topBucket = buckets[isSeries ? SitemapCategories.Series : SitemapCategories.Movies];
+            var releasesBucket = buckets[isSeries ? SitemapCategories.SeriesReleases : SitemapCategories.MoviesReleases];
+            var discsBucket = buckets[isSeries ? SitemapCategories.SeriesDiscs : SitemapCategories.MoviesDiscs];
+            var titlesBucket = buckets[isSeries ? SitemapCategories.SeriesTitles : SitemapCategories.MoviesTitles];
+
             string relativeUrl = $"/{item.Type}/{item.Slug}";
-            results.Add(CreateSitemapNode(siteBase, relativeUrl, priority: 1));
+            topBucket.Add(CreateSitemapNode(siteBase, relativeUrl, priority: 1));
 
             foreach (var release in item.Releases)
             {
                 relativeUrl = $"/{item.Type}/{item.Slug}/releases/{release.Slug}";
-                results.Add(CreateSitemapNode(siteBase, relativeUrl));
+                releasesBucket.Add(CreateSitemapNode(siteBase, relativeUrl));
 
                 foreach (var disc in release.Discs)
                 {
                     relativeUrl = $"/{item.Type}/{item.Slug}/releases/{release.Slug}/discs/{disc.SlugOrIndex()}";
-                    results.Add(CreateSitemapNode(siteBase, relativeUrl));
+                    discsBucket.Add(CreateSitemapNode(siteBase, relativeUrl));
 
                     foreach (var title in disc.Titles)
                     {
                         if (title.Item != null)
                         {
                             relativeUrl = $"/{item.Type}/{item.Slug}/releases/{release.Slug}/discs/{disc.SlugOrIndex()}/{GetTitleUrl(title)}";
-                            results.Add(CreateSitemapNode(siteBase, relativeUrl));
+                            titlesBucket.Add(CreateSitemapNode(siteBase, relativeUrl));
                         }
                     }
                 }
