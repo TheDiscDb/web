@@ -369,6 +369,71 @@ public sealed class OpticalDiscManifestGeneratorTests
             file => Assert.Equal(0, file.ReadCount));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ReconcileBluRayTitles_ExcludesOnlyKnownMenuOnlyPromotions(bool incompleteEvidence)
+    {
+        var bytes = await File.ReadAllBytesAsync(Path.Combine(fixturesPath, "CLPI", "BD-A", "00000.clpi"),
+            TestContext.Current.CancellationToken);
+        var parsed = (await new ClpiParser(new MemoryOpticalDiscReader(bytes)).ParseAsync()).Value!;
+        var menu = parsed.Programs[0].Streams[0] with
+        {
+            Category = "interactiveGraphics", CodingTypeCode = 0x91, CodingType = "Interactive Graphics"
+        };
+        var clip = parsed with
+        {
+            Programs = [parsed.Programs[0] with { Streams = [menu] }],
+            ExtensionStreams = []
+        };
+        Assert.True(BluRayTitleReconciler.IsMenuOnlyClip(clip, false));
+        Assert.False(BluRayTitleReconciler.IsMenuOnlyClip(clip, true));
+        Assert.False(BluRayTitleReconciler.IsMenuOnlyClip(null, false));
+        Assert.False(BluRayTitleReconciler.IsMenuOnlyClip(clip with { Programs = [] }, false));
+        Assert.False(BluRayTitleReconciler.IsMenuOnlyClip(
+            clip with { Programs = [clip.Programs[0] with { Streams = [] }] }, false));
+        foreach (int coding in new[] { 0x1b, 0x81, 0x90, 0xff })
+        {
+            Assert.False(BluRayTitleReconciler.IsMenuOnlyClip(
+                clip with { ExtensionStreams = [menu with { CodingTypeCode = coding }] }, false));
+            Assert.False(BluRayTitleReconciler.IsMenuOnlyClip(
+                clip with { Programs = [clip.Programs[0] with { Streams = [menu, menu with { CodingTypeCode = coding }] }] },
+                false));
+        }
+
+        var menuFile = RecordingFile.Payload("BDMV/STREAM/00010.m2ts", 3698688);
+        var unknownFile = RecordingFile.Payload("BDMV/STREAM/00999.m2ts", 1000);
+        var diagnostics = new List<ManifestDiagnostic>();
+        if (incompleteEvidence)
+        {
+            diagnostics.Add(new ManifestDiagnostic
+            {
+                Severity = "warning", Code = "CL_TEST", Message = "Incomplete stream table",
+                Path = "BDMV/BACKUP/CLIPINF/00010.clpi"
+            });
+        }
+        var titles = BluRayTitleReconciler.ReconcileBluRayTitles(
+            [], [new(menuFile.Path, menuFile, 0), new(unknownFile.Path, unknownFile, 1)],
+            new Dictionary<string, ClpiFile> { ["00010"] = clip },
+            new HashSet<string>(), new HashSet<string>(), new HashSet<string>(), diagnostics);
+        Assert.Equal(incompleteEvidence ? 2 : 1, titles.Count);
+        Assert.Contains(titles, title => title.Source?.Path == unknownFile.Path);
+        if (!incompleteEvidence)
+        {
+            var excluded = Assert.Single(diagnostics, d => d.Code == "ODM_BD_STREAM_TITLE_MENU_ONLY_EXCLUDED");
+            Assert.Equal(menuFile.Path, excluded.Path);
+            Assert.DoesNotContain(diagnostics, d => d.Code == "ODM_BD_STREAM_TITLE_PROMOTED" && d.Path == menuFile.Path);
+        }
+        else
+        {
+            Assert.DoesNotContain(diagnostics, d => d.Code == "ODM_BD_STREAM_TITLE_MENU_ONLY_EXCLUDED");
+        }
+        Assert.Contains(diagnostics, d => d.Code == "ODM_BD_STREAM_TITLES"
+            && d.Message.StartsWith($"Promoted {(incompleteEvidence ? 2 : 1)} stream", StringComparison.Ordinal));
+        Assert.Equal(0, menuFile.ReadCount);
+        Assert.Equal(0, unknownFile.ReadCount);
+    }
+
     [Fact]
     public async Task GenerateAsync_BluRay_DoesNotPromoteStreamsOnlyASubPathPlays()
     {
