@@ -94,6 +94,14 @@ Preserve reconciliation stage order, stream-evidence precedence, diagnostics and
 when changing these collaborators. The parser fixture suite and characterization tests cover
 directory order, backup failures, partial DVD joins and MPLS/CLPI stream precedence.
 
+Single-clip chaptered playlists suppress a duplicate standalone stream only when the
+presentation duration and byte size match and the stream adds no selected tracks.
+Dolby Vision and still-playlist clips remain separate candidates. Narrower trailing
+play items use the NTSC half-second boundary (0.5005 seconds, rounded to 45 kHz ticks)
+when their video rate declares 23.976, 29.97 or 59.94 fps; longer tails, equal stream
+tables and stereoscopic playlists are preserved. These generator fixes affect future
+submissions, not manifests already stored.
+
 ## Phase 3 (future)
 
 - Move the disc scan before the TMDB lookup so that the content hash can find existing releases

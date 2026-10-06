@@ -1050,6 +1050,123 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.All(trimmed.Marks, mark => Assert.True(mark.PlayItemReference < expected.Length));
     }
 
+    [Theory]
+    [InlineData(4, 22499u, true)]
+    [InlineData(4, 22500u, true)]
+    [InlineData(4, 22522u, true)]
+    [InlineData(4, 22523u, true)]
+    [InlineData(4, 22524u, false)]
+    [InlineData(4, 46921u, false)]
+    [InlineData(1, 22523u, true)]
+    [InlineData(7, 22523u, true)]
+    [InlineData(2, 22500u, false)]
+    [InlineData(0, 22500u, false)]
+    public void TrimTrailingNarrowerPlayItems_UsesNtscHalfSecondBoundary(int rateCode, uint ticks, bool trim)
+    {
+        var playlist = CreateMultiItemPlaylist([("00017", 1, 0), ("00009", 1, 0)], [(0, 0u), (1, 0u)]);
+        var video = new MplsStream
+        {
+            Category = "video", StreamTypeCode = 1, CodingTypeCode = 2,
+            CodingType = "MPEG-2 Video", RateCode = rateCode
+        };
+        var first = playlist.PlayItems[0];
+        var last = playlist.PlayItems[1];
+        playlist = playlist with
+        {
+            PlayItems =
+            [
+                first with
+                {
+                    StreamTable = first.StreamTable with { VideoStreams = [video], AudioStreams = [video with { Category = "audio" }] }
+                },
+                last with { OutTime = ticks, StreamTable = last.StreamTable with { VideoStreams = [video] } }
+            ]
+        };
+        var trimmed = BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(playlist);
+        Assert.Equal(trim ? 1 : 2, trimmed.PlayItems.Count);
+        Assert.Equal(trim ? 1 : 2, trimmed.Marks.Count);
+
+        var sameStreams = playlist with
+        {
+            PlayItems = [playlist.PlayItems[0] with { StreamTable = playlist.PlayItems[1].StreamTable }, playlist.PlayItems[1]]
+        };
+        Assert.Same(sameStreams, BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(sameStreams));
+        var stereo = playlist with { StereoVideoRelationships = [CreateMvcStereoRelationship()] };
+        Assert.Same(stereo, BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(stereo));
+    }
+
+    [Fact]
+    public void RemoveStreamsCoveredByChapteredPlaylists_RemovesSpongeBobDuplicateButKeepsDistinctCandidates()
+    {
+        var video = new ManifestStream { Type = "video", Codec = "AVC Video", Pid = 4113 };
+        var playlist = CreateSegmentTitle(("01101", 0d, 153.194689, null)) with
+        {
+            Source = new ManifestTitleSource { Path = "BDMV/PLAYLIST/00255.mpls" },
+            DurationSeconds = 155.196689,
+            SizeBytes = 380995584,
+            Streams = [video],
+            Chapters = [new() { StartSeconds = 0 }, new() { StartSeconds = 152.944444 }]
+        };
+        var stream = CreateSegmentTitle(("01101", 0d, 155.196689, null)) with
+        {
+            Source = new ManifestTitleSource { Path = "BDMV/STREAM/01101.m2ts" },
+            DurationSeconds = 155.196689, SizeBytes = 380995584, Streams = [video]
+        };
+        var diagnostics = new List<ManifestDiagnostic>();
+        var titles = BluRayTitleReconciler.ReconcileBluRayTitles(
+            [stream, playlist], [], new Dictionary<string, ClpiFile>(),
+            new HashSet<string>(), new HashSet<string>(), new HashSet<string>(), diagnostics);
+        Assert.Equal([playlist], titles);
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("ODM_BD_TITLE_DUPLICATE", diagnostic.Code);
+        Assert.Equal(stream.Source.Path, diagnostic.Path);
+        Assert.Contains("00255.mpls", diagnostic.Message);
+
+        var distinctStreams = new[]
+        {
+            stream with { DurationSeconds = 153.194689 },
+            stream with { SizeBytes = 380995583 },
+            stream with { Streams = [video, new ManifestStream { Type = "audio", Codec = "AC-3", Pid = 4352 }] },
+            stream with { Streams = null },
+            stream with { Segments = [stream.Segments![0] with { Angle = 1 }] },
+            stream with { Segments = [stream.Segments![0] with { DependentClip = "01102" }] },
+            stream with { Segments = [stream.Segments![0] with { Clip = "01102" }] },
+            stream with { Chapters = [new() { StartSeconds = 0 }] },
+            stream with { Segments = [stream.Segments![0] with { DurationSeconds = 153.194689 }] }
+        };
+        foreach (var distinct in distinctStreams)
+        {
+            titles = [playlist, distinct];
+            diagnostics.Clear();
+            BluRayTitleReconciler.RemoveStreamsCoveredByChapteredPlaylists(titles,
+                new HashSet<string>(), new HashSet<string>(), diagnostics);
+            Assert.Equal(2, titles.Count);
+            Assert.Empty(diagnostics);
+        }
+
+        foreach (var candidate in new[]
+        {
+            playlist with { DurationSeconds = 153.194689 },
+            playlist with { Chapters = [new() { StartSeconds = 0 }] },
+            playlist with { Streams = null },
+            playlist with { Segments = [playlist.Segments![0] with { Angle = 1 }] },
+            playlist with { Segments = [playlist.Segments![0], new ManifestSegment { Clip = "01102" }] }
+        })
+        {
+            titles = [candidate, stream];
+            BluRayTitleReconciler.RemoveStreamsCoveredByChapteredPlaylists(titles,
+                new HashSet<string>(), new HashSet<string>(), diagnostics);
+            Assert.Equal(2, titles.Count);
+        }
+        titles = [playlist, stream];
+        BluRayTitleReconciler.RemoveStreamsCoveredByChapteredPlaylists(titles,
+            new HashSet<string> { "01101" }, new HashSet<string>(), diagnostics);
+        Assert.Equal(2, titles.Count);
+        BluRayTitleReconciler.RemoveStreamsCoveredByChapteredPlaylists(titles,
+            new HashSet<string>(), new HashSet<string> { "01101" }, diagnostics);
+        Assert.Equal(2, titles.Count);
+    }
+
     [Fact]
     public void CollapseRepeatedPlayItems_KeepsDistinctAndNonConsecutivePlayItems()
     {
