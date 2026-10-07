@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
@@ -63,8 +64,30 @@ public static partial class DiscLogManifestComparer
 
             var logTitles = CollectTitles(logDiscInfo);
             var manifestTitles = CollectTitles(manifestDiscInfo);
+            var anglePerspectiveKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var duplicate in logTitles.DuplicateKeys)
             {
+                var matchingManifestModels = manifest.Disc?.Titles?
+                    .Where(title => string.Equals(
+                        ManifestSourceKey(title),
+                        duplicate,
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToArray() ?? [];
+                if (manifestTitles.TitlesByKey.TryGetValue(duplicate, out var matchingManifestTitles)
+                    && matchingManifestTitles.Count == 1
+                    && matchingManifestModels.Length == 1
+                    && logTitles.TitlesByKey.TryGetValue(duplicate, out var matchingLogTitles)
+                    && TryResolveAnglePerspectiveTitles(
+                        duplicate,
+                        matchingLogTitles,
+                        matchingManifestModels[0]))
+                {
+                    anglePerspectiveKeys.Add(duplicate);
+                    differences.ArtifactWarnings.Add(
+                        $"Playlist {duplicate} has complete MakeMKV title rows for its explicitly declared alternate angles. The comparison checks chapter count and length, but skips segment map, size and display size because the manifest represents all angle alternatives in one title.");
+                    continue;
+                }
+
                 differences.TitleDifferences.Add(new TitleDifference(duplicate, "DuplicateLogTitle", "duplicate", null));
             }
 
@@ -91,10 +114,19 @@ public static partial class DiscLogManifestComparer
             {
                 Title logTitle = logTitles.ByKey[key];
                 Title manifestTitle = manifestTitles.ByKey[key];
-                CompareTitle(key, logTitle, manifestTitle, differences);
+                if (anglePerspectiveKeys.Contains(key))
+                {
+                    CompareAnglePerspectiveTitle(key, logTitle, manifestTitle, differences);
+                }
+                else
+                {
+                    CompareTitle(key, logTitle, manifestTitle, differences);
+                }
             }
 
-            var logOrder = logTitles.OrderedKeys.Where(matchedKeys.Contains).ToArray();
+            var logOrder = logTitles.OrderedKeys.Where(matchedKeys.Contains)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
             var manifestOrder = manifestTitles.OrderedKeys.Where(matchedKeys.Contains).ToArray();
             bool orderMatches = logOrder.SequenceEqual(manifestOrder, StringComparer.OrdinalIgnoreCase);
             if (!orderMatches)
@@ -127,6 +159,156 @@ public static partial class DiscLogManifestComparer
                 orderMatches: false,
                 differences);
         }
+    }
+
+    private static void CompareAnglePerspectiveTitle(
+        string key,
+        Title logTitle,
+        Title manifestTitle,
+        DiscLogManifestDifferences differences)
+    {
+        AddHardDifference(differences, key, "ChapterCount", logTitle.ChapterCount.ToString(), manifestTitle.ChapterCount.ToString());
+        AddHardDifference(differences, key, "Length", logTitle.Length ?? string.Empty, manifestTitle.Length ?? string.Empty);
+    }
+
+    private static bool TryResolveAnglePerspectiveTitles(
+        string sourceKey,
+        IReadOnlyList<Title> logTitles,
+        OpticalDiscManifestTitle manifestTitle)
+    {
+        if (!sourceKey.EndsWith(".mpls", StringComparison.OrdinalIgnoreCase)
+            || logTitles.Count < 2
+            || !TryGetAnglePerspectiveChoices(manifestTitle, out var choices, out long perspectiveCount)
+            || perspectiveCount != logTitles.Count)
+        {
+            return false;
+        }
+
+        var seenPerspectives = new HashSet<string>(StringComparer.Ordinal);
+        Title? representative = null;
+        foreach (Title title in logTitles)
+        {
+            string[] segments = (title.SegmentMap ?? string.Empty)
+                .Split(',', StringSplitOptions.None)
+                .Select(segment => segment.Trim())
+                .ToArray();
+            if (segments.Length != choices.Count
+                || segments.Where((segment, index) => !choices[index].Contains(segment)).Any()
+                || !seenPerspectives.Add(string.Join(",", segments)))
+            {
+                return false;
+            }
+
+            if (representative is null)
+            {
+                representative = title;
+            }
+            else if (title.ChapterCount != representative.ChapterCount
+                || !string.Equals(title.Length, representative.Length, StringComparison.Ordinal))
+            {
+                return false;
+            }
+        }
+
+        return representative is not null && seenPerspectives.Count == perspectiveCount;
+    }
+
+    private static bool TryGetAnglePerspectiveChoices(
+        OpticalDiscManifestTitle manifestTitle,
+        out IReadOnlyList<HashSet<string>> choices,
+        out long perspectiveCount)
+    {
+        choices = [];
+        perspectiveCount = 1;
+        if (manifestTitle.Segments.Count == 0
+            || manifestTitle.Segments.Any(segment => segment.DependentClip is not null))
+        {
+            return false;
+        }
+
+        var segmentChoices = new List<HashSet<string>>();
+        bool foundAngleGroup = false;
+        for (int i = 0; i < manifestTitle.Segments.Count;)
+        {
+            OpticalDiscManifestSegment segment = manifestTitle.Segments[i];
+            string? clip = OpticalDiscManifestMapper.NormalizeClipId(segment.Clip);
+            if (clip is null)
+            {
+                return false;
+            }
+
+            if (segment.Angle is null)
+            {
+                segmentChoices.Add(new HashSet<string>([clip], StringComparer.Ordinal));
+                i++;
+                continue;
+            }
+
+            if (segment.StartSeconds is null || segment.DurationSeconds is null)
+            {
+                return false;
+            }
+
+            var angleGroup = new List<OpticalDiscManifestSegment>();
+            while (i < manifestTitle.Segments.Count
+                && manifestTitle.Segments[i].Angle is not null
+                && manifestTitle.Segments[i].StartSeconds == segment.StartSeconds
+                && manifestTitle.Segments[i].DurationSeconds == segment.DurationSeconds)
+            {
+                angleGroup.Add(manifestTitle.Segments[i]);
+                i++;
+            }
+
+            int[] angles = angleGroup.Select(item => item.Angle!.Value).Order().ToArray();
+            if (angleGroup.Count < 2
+                || !angles.SequenceEqual(Enumerable.Range(1, angleGroup.Count))
+                || angleGroup.Select(item => OpticalDiscManifestMapper.NormalizeClipId(item.Clip)).Any(item => item is null)
+                || angleGroup.Select(item => OpticalDiscManifestMapper.NormalizeClipId(item.Clip)).Distinct(StringComparer.Ordinal).Count() != angleGroup.Count)
+            {
+                return false;
+            }
+
+            var angleChoices = angleGroup
+                .Select(item => OpticalDiscManifestMapper.NormalizeClipId(item.Clip)!)
+                .ToHashSet(StringComparer.Ordinal);
+            if (perspectiveCount > long.MaxValue / angleChoices.Count)
+            {
+                return false;
+            }
+
+            segmentChoices.Add(angleChoices);
+            foundAngleGroup = true;
+            perspectiveCount *= angleChoices.Count;
+        }
+
+        if (!foundAngleGroup)
+        {
+            return false;
+        }
+
+        choices = segmentChoices;
+        return true;
+    }
+
+    private static string? ManifestSourceKey(OpticalDiscManifestTitle title)
+    {
+        if (title.Source is not { Path: { } path } source || string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        string? fileName = NormalizeFileName(path);
+        return source.Part is > 0 && fileName is not null
+            ? $"{fileName}({source.Part.Value.ToString(CultureInfo.InvariantCulture)})"
+            : fileName;
+    }
+
+    private static string? NormalizeFileName(string path)
+    {
+        string normalized = path.Replace('\\', '/');
+        int separator = normalized.LastIndexOf('/');
+        string name = separator >= 0 ? normalized[(separator + 1)..] : normalized;
+        return name.Length == 0 ? null : name;
     }
 
     public static string? ExtractMakeMkvVersion(string logText)
@@ -287,6 +469,7 @@ public static partial class DiscLogManifestComparer
     private static TitleCollection CollectTitles(DiscInfo discInfo)
     {
         var byKey = new Dictionary<string, Title>(StringComparer.OrdinalIgnoreCase);
+        var titlesByKey = new Dictionary<string, List<Title>>(StringComparer.OrdinalIgnoreCase);
         var orderedKeys = new List<string>();
         var duplicateKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -300,13 +483,24 @@ public static partial class DiscLogManifestComparer
             }
 
             orderedKeys.Add(key);
+            if (!titlesByKey.TryGetValue(key, out var titles))
+            {
+                titles = [];
+                titlesByKey.Add(key, titles);
+            }
+
+            titles.Add(title);
             if (!byKey.TryAdd(key, title))
             {
                 duplicateKeys.Add(key);
             }
         }
 
-        return new TitleCollection(byKey, orderedKeys, duplicateKeys);
+        return new TitleCollection(
+            byKey,
+            titlesByKey.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<Title>)pair.Value, StringComparer.OrdinalIgnoreCase),
+            orderedKeys,
+            duplicateKeys);
     }
 
     // DVD titles are keyed by title number, which MakeMKV may zero-pad ("01") and the scan does not ("1").
@@ -376,5 +570,6 @@ public sealed record TitleDifference(string SourceKey, string Field, string? Log
 
 internal sealed record TitleCollection(
     Dictionary<string, Title> ByKey,
+    IReadOnlyDictionary<string, IReadOnlyList<Title>> TitlesByKey,
     IReadOnlyList<string> OrderedKeys,
     IReadOnlySet<string> DuplicateKeys);

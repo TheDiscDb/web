@@ -33,6 +33,21 @@ phases so that MakeMKV logs can eventually be retired.
     and standalone stream size disagreements. They do not change parity status or prove a
     different disc: the identity hash compares the scan with the contribution record, not
     independently with the MakeMKV log.
+  - For a playlist whose manifest has explicit, timed alternate-angle groups, the comparer
+    recognizes duplicate MakeMKV rows only when they form the complete set of distinct
+    playback perspectives described by those groups. It compares chapter count and length,
+    but deliberately does not compare size, display size or segment map: one manifest title currently
+    represents all alternate clips while MakeMKV reports one selected perspective per row.
+    Partial, repeated, or otherwise unaccounted-for rows remain hard mismatches. This does
+    not resolve the manifest's angle-specific size or identification risk; selecting and
+    sizing one perspective correctly needs a model/schema change rather than an inferred
+    default angle.
+  - A final Blu-ray entry mark in the existing 1.001-second terminal-sentinel window is
+    excluded unless both its final chapter interval and distance to playlist end repeat
+    the preceding authored chapter interval. Repeated spacing is evidence that the final
+    mark is authored, including when all marks reference one PlayItem or when they cross
+    PlayItems. The evidence-backed tolerance and the separate short-title start guard
+    remain unchanged.
   - New manifests retain ordered scanner diagnostics in the schema-supported extension
     `thediscdb.optical-disc-manifest/scan-diagnostics`. The comparison detail page exposes them,
     including authored chapter marks, final chapter-mark ticks, sentinel exclusions, parse failures, duplicate playlist
@@ -74,6 +89,8 @@ keeps the log as its source, so that title indices don't shift.
    rather than requiring users to rescan.
 3. Inspect artifact warnings and scanner diagnostics before changing chapter or stream rules.
    Do not mask hard differences with a duration tolerance or a blanket audio requirement.
+   Multi-angle comparisons that are explicitly identified above have unverified per-angle
+   size and segment-map parity until the manifest can represent the selected perspective.
 4. Check the MakeMKV version. Logs from 1.15 and 1.16 (the CellTrim era) list zero-length DVD
    titles that newer versions skip.
 5. Download both blobs. If the generator is wrong, add a fixture to
@@ -107,6 +124,10 @@ declarations are entirely Interactive Graphics (`0x91`). The scanner records
 `ODM_BD_STREAM_TITLE_MENU_ONLY_EXCLUDED` for these menu assets. Missing/empty metadata,
 CLPI warning/error diagnostics, mixed stream declarations and unknown coding types
 do not qualify for this exclusion; video-only candidates remain supported.
+
+Do not add duration-based dropping for short standalone clips: production comparisons 2629
+and 2630 contain video in candidates lasting 0.041689 and 5.046689 seconds. Also leave the
+observed 1.001-second / 24,576-byte tail rule unchanged; its cause has not been established.
 
 ## Phase 3 (future)
 

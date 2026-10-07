@@ -32,24 +32,28 @@ internal static class BluRayChapterMapper
 
     /// <summary>
     /// Determines whether a final entry mark's distance from playlist end falls within
-    /// the terminal chapter-end sentinel tolerance band (strictly before end, at most 1.001 s).
+    /// the terminal sentinel tolerance band without repeating the preceding chapter interval.
     /// </summary>
     internal static bool IsTerminalChapterSentinel(long ticksFromEnd)
         => ticksFromEnd >= TerminalSentinelMinimumTicksFromEnd
             && ticksFromEnd <= TerminalSentinelMaximumTicksFromEnd;
 
-    internal static bool ShouldExcludeTerminalChapterSentinel(long startTicks, long ticksFromEnd)
+    internal static bool ShouldExcludeTerminalChapterSentinel(
+        long startTicks,
+        long ticksFromEnd,
+        bool repeatsPreviousChapterInterval)
         => startTicks >= TerminalSentinelMinimumStartTicks
-            && IsTerminalChapterSentinel(ticksFromEnd);
+            && IsTerminalChapterSentinel(ticksFromEnd)
+            && !repeatsPreviousChapterInterval;
 
     /// <summary>
     /// Maps authored MPLS playlist marks to chapters. Only <see cref="MplsPlaylistMark.IsEntryMark"/>
-    /// marks are emitted as chapters (link marks are never chapters). A final entry mark
-    /// that lands within the terminal chapter-end sentinel tolerance
-    /// (<see cref="TerminalSentinelMinimumTicksFromEnd"/>..<see cref="TerminalSentinelMaximumTicksFromEnd"/>
-    /// ticks before playlist end) is excluded as a MakeMKV-style terminal sentinel, not a
-    /// legitimate chapter. Parser-authored marks themselves are never mutated -- only
-    /// which marks are converted into manifest chapters is affected.
+    /// marks are emitted as chapters (link marks are never chapters). A final mark within the
+    /// terminal-sentinel window is excluded unless both its chapter interval and distance from
+    /// playlist end repeat the preceding authored interval. Repeated spacing is evidence of an
+    /// authored final chapter, even when its distance from the end is exactly 45,045 ticks. Parser-authored
+    /// marks themselves are never mutated -- only which marks are converted into manifest chapters
+    /// is affected.
     /// </summary>
     internal static IReadOnlyList<ManifestChapter> CreateBluRayChapters(
         MplsPlaylist playlist,
@@ -109,6 +113,16 @@ internal static class BluRayChapterMapper
             if (i == resolved.Count - 1)
             {
                 long ticksFromEnd = totalDurationTicks45k - startTicks;
+                long? previousChapterIntervalTicks = i >= 2
+                    ? resolved[i - 1].StartTicks - resolved[i - 2].StartTicks
+                    : null;
+                long? finalChapterIntervalTicks = i >= 1
+                    ? startTicks - resolved[i - 1].StartTicks
+                    : null;
+                bool repeatsPreviousInterval = previousChapterIntervalTicks is > 0
+                    && finalChapterIntervalTicks is > 0
+                    && previousChapterIntervalTicks == finalChapterIntervalTicks
+                    && finalChapterIntervalTicks == ticksFromEnd;
                 diagnostics.Add(new ManifestDiagnostic
                 {
                     Severity = "info",
@@ -116,7 +130,7 @@ internal static class BluRayChapterMapper
                     Message = $"Resolved {resolved.Count} entry marks from {playlist.Marks.Count} authored marks. Final entry mark {mark.Index} references play item {mark.PlayItemReference}, timestamp {mark.Time}, duration {mark.Duration}; playlist start {startTicks}, playlist end {totalDurationTicks45k}, distance from end {ticksFromEnd} ticks (45 kHz).",
                     Path = path,
                 });
-                if (ShouldExcludeTerminalChapterSentinel(startTicks, ticksFromEnd))
+                if (ShouldExcludeTerminalChapterSentinel(startTicks, ticksFromEnd, repeatsPreviousInterval))
                 {
                     diagnostics.Add(new ManifestDiagnostic
                     {
@@ -126,6 +140,17 @@ internal static class BluRayChapterMapper
                         Path = path,
                     });
                     continue;
+                }
+
+                if (repeatsPreviousInterval && IsTerminalChapterSentinel(ticksFromEnd))
+                {
+                    diagnostics.Add(new ManifestDiagnostic
+                    {
+                        Severity = "info",
+                        Code = "ODM_BD_CHAPTER_REPEATED_INTERVAL_PRESERVED",
+                        Message = $"Preserved a final entry mark {ticksFromEnd} ticks (45 kHz) before playlist end because its chapter interval and end distance repeat the preceding authored chapter interval.",
+                        Path = path,
+                    });
                 }
             }
 
