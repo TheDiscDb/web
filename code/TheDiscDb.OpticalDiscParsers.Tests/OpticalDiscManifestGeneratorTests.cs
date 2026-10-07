@@ -1834,6 +1834,42 @@ public sealed class OpticalDiscManifestGeneratorTests
             item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
     }
 
+    [Theory]
+    [InlineData(false)] // All authored marks reference PlayItem 0.
+    [InlineData(true)] // The same chapter cadence crosses PlayItems 0, 1 and 2.
+    public void CreateBluRayChapters_PreservesAuthoredFinalChapterAtOnePointZeroZeroOneSecondsFromEnd(
+        bool marksSpanPlayItems)
+    {
+        var diagnostics = new List<ManifestDiagnostic>();
+        MplsPlaylist playlist = marksSpanPlayItems
+            ? CreateSyntheticPlaylist(
+                [45_045, 45_045, 45_045],
+                [
+                    (0, MplsPlaylistMark.EntryMarkType, 0, 0u, 45_000u),
+                    (1, MplsPlaylistMark.EntryMarkType, 1, 0u, 45_000u),
+                    (2, MplsPlaylistMark.EntryMarkType, 2, 0u, 45_000u),
+                ])
+            : CreateSyntheticPlaylist(
+                135_135,
+                [
+                    (0, MplsPlaylistMark.EntryMarkType, 0u, 45_000u),
+                    (1, MplsPlaylistMark.EntryMarkType, 45_045u, 45_000u),
+                    (2, MplsPlaylistMark.EntryMarkType, 90_090u, 45_000u),
+                ]);
+
+        var chapters = BluRayChapterMapper.CreateBluRayChapters(
+            playlist, diagnostics, "BDMV/PLAYLIST/00120.mpls");
+
+        Assert.Equal(3, chapters.Count);
+        Assert.Equal(2.002, chapters[2].StartSeconds);
+        Assert.Contains(
+            diagnostics,
+            item => item.Code == "ODM_BD_CHAPTER_REPEATED_INTERVAL_PRESERVED");
+        Assert.DoesNotContain(
+            diagnostics,
+            item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
+    }
+
     [Fact]
     public async Task GenerateAsync_ShortPlaylist_PreservesLegitimateSecondChapter()
     {
@@ -2147,6 +2183,13 @@ public sealed class OpticalDiscManifestGeneratorTests
     private static MplsPlaylist CreateSyntheticPlaylist(
         long outTime,
         IReadOnlyList<(int Index, int MarkType, uint Time, uint Duration)> marks)
+        => CreateSyntheticPlaylist(
+            [outTime],
+            marks.Select(mark => (mark.Index, mark.MarkType, PlayItemReference: 0, mark.Time, mark.Duration)).ToArray());
+
+    private static MplsPlaylist CreateSyntheticPlaylist(
+        IReadOnlyList<long> playItemDurations,
+        IReadOnlyList<(int Index, int MarkType, int PlayItemReference, uint Time, uint Duration)> marks)
     {
         var streamTable = new MplsStreamTable
         {
@@ -2157,27 +2200,37 @@ public sealed class OpticalDiscManifestGeneratorTests
             SecondaryAudioStreams = [],
             SecondaryVideoStreams = [],
         };
-        var playItem = new MplsPlayItem
-        {
-            Index = 0,
-            ClipId = "00000",
-            CodecId = "M2TS",
-            ConnectionCondition = 1,
-            IsMultiAngle = false,
-            StcId = 0,
-            InTime = 0,
-            OutTime = (uint)outTime,
-            RandomAccessFlag = true,
-            StillMode = 0,
-            Clips = [new MplsClipReference { ClipId = "00000", CodecId = "M2TS", StcId = 0 }],
-            StreamTable = streamTable,
-        };
+        var playItems = playItemDurations
+            .Select((duration, index) => new MplsPlayItem
+            {
+                Index = index,
+                ClipId = index.ToString("D5", System.Globalization.CultureInfo.InvariantCulture),
+                CodecId = "M2TS",
+                ConnectionCondition = 1,
+                IsMultiAngle = false,
+                StcId = 0,
+                InTime = 0,
+                OutTime = (uint)duration,
+                RandomAccessFlag = true,
+                StillMode = 0,
+                Clips =
+                [
+                    new MplsClipReference
+                    {
+                        ClipId = index.ToString("D5", System.Globalization.CultureInfo.InvariantCulture),
+                        CodecId = "M2TS",
+                        StcId = 0,
+                    },
+                ],
+                StreamTable = streamTable,
+            })
+            .ToArray();
         var playlistMarks = marks
             .Select(mark => new MplsPlaylistMark
             {
                 Index = mark.Index,
                 MarkType = mark.MarkType,
-                PlayItemReference = 0,
+                PlayItemReference = mark.PlayItemReference,
                 Time = mark.Time,
                 EntryElementaryStreamPid = 0,
                 Duration = mark.Duration,
@@ -2201,7 +2254,7 @@ public sealed class OpticalDiscManifestGeneratorTests
                 LosslessBypassFlag = false,
                 MvcBaseViewRFlag = false,
             },
-            PlayItems = [playItem],
+            PlayItems = playItems,
             SubPaths = [],
             Marks = playlistMarks,
             ExtensionData = null,
