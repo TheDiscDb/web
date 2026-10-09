@@ -784,13 +784,13 @@ internal sealed class DvdIfoParseSession
         return new DvdTitlePlaybackFlags
         {
             RawValue = value,
-            IsMultiOrRandomPgcTitle = (value & 0x02) != 0,
-            HasJumpLinkCallInCellCommand = (value & 0x04) != 0,
-            HasJumpLinkCallInPrePostCommand = (value & 0x08) != 0,
-            HasJumpLinkCallInButtonCommand = (value & 0x10) != 0,
-            HasJumpLinkCallInTitleDomain = (value & 0x20) != 0,
-            ChapterSearchOrPlay = (value & 0x40) != 0,
-            TitleOrTimePlay = (value & 0x80) != 0
+            IsMultiOrRandomPgcTitle = (value & 0x40) != 0,
+            HasJumpLinkCallInCellCommand = (value & 0x20) != 0,
+            HasJumpLinkCallInPrePostCommand = (value & 0x10) != 0,
+            HasJumpLinkCallInButtonCommand = (value & 0x08) != 0,
+            HasJumpLinkCallInTitleDomain = (value & 0x04) != 0,
+            ChapterSearchOrPlay = (value & 0x02) != 0,
+            TitleOrTimePlay = (value & 0x01) != 0
         };
     }
 

@@ -11,6 +11,34 @@ namespace TheDiscDb.OpticalDiscParsers.Tests;
 /// </summary>
 public class DvdIfoParserTests
 {
+    [Theory]
+    [InlineData(0x01, 6)]
+    [InlineData(0x02, 5)]
+    [InlineData(0x04, 4)]
+    [InlineData(0x08, 3)]
+    [InlineData(0x10, 2)]
+    [InlineData(0x20, 1)]
+    [InlineData(0x40, 0)]
+    [InlineData(0x80, -1)]
+    public async Task ParseVmgiAsync_DecodesEachPlaybackFlagInDiscBitOrder(byte value, int expected)
+    {
+        var bytes = await File.ReadAllBytesAsync(
+            Path.Combine(fixturesPath, "DVD-A", "VIDEO_TS.IFO"), TestContext.Current.CancellationToken);
+        int table = checked((int)System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(0xC4, 4)) * 2048);
+        bytes[table + 8] = value;
+        var parsed = await new DvdIfoParser(new MemoryOpticalDiscReader(bytes)).ParseVmgiAsync();
+        var flags = parsed.Value!.Titles[0].PlaybackFlags;
+
+        Assert.Equal(value, flags.RawValue);
+        bool[] actual =
+        [
+            flags.IsMultiOrRandomPgcTitle, flags.HasJumpLinkCallInCellCommand,
+            flags.HasJumpLinkCallInPrePostCommand, flags.HasJumpLinkCallInButtonCommand,
+            flags.HasJumpLinkCallInTitleDomain, flags.ChapterSearchOrPlay, flags.TitleOrTimePlay,
+        ];
+        Assert.Equal(Enumerable.Range(0, 7).Select(index => index == expected), actual);
+    }
+
     private readonly string fixturesPath = Path.Combine(
         AppContext.BaseDirectory, 
         "fixtures"
