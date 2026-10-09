@@ -49,9 +49,8 @@ internal static class BluRayChapterMapper
     /// <summary>
     /// Maps authored MPLS playlist marks to chapters. Only <see cref="MplsPlaylistMark.IsEntryMark"/>
     /// marks are emitted as chapters (link marks are never chapters). A final mark within the
-    /// terminal-sentinel window is excluded unless both its chapter interval and distance from
-    /// playlist end repeat the preceding authored interval. Repeated spacing is evidence of an
-    /// authored final chapter, even when its distance from the end is exactly 45,045 ticks. Parser-authored
+    /// terminal-sentinel window is excluded unless its spacing repeats the preceding authored
+    /// interval or it starts a new play item with at least one second remaining. Parser-authored
     /// marks themselves are never mutated -- only which marks are converted into manifest chapters
     /// is affected.
     /// </summary>
@@ -123,6 +122,10 @@ internal static class BluRayChapterMapper
                     && finalChapterIntervalTicks is > 0
                     && previousChapterIntervalTicks == finalChapterIntervalTicks
                     && finalChapterIntervalTicks == ticksFromEnd;
+                var finalPlayItem = playlist.PlayItems[mark.PlayItemReference];
+                bool startsNewPlayItem = mark.PlayItemReference > 0
+                    && mark.Time == finalPlayItem.InTime
+                    && ticksFromEnd >= TerminalSentinelMinimumStartTicks;
                 diagnostics.Add(new ManifestDiagnostic
                 {
                     Severity = "info",
@@ -130,7 +133,8 @@ internal static class BluRayChapterMapper
                     Message = $"Resolved {resolved.Count} entry marks from {playlist.Marks.Count} authored marks. Final entry mark {mark.Index} references play item {mark.PlayItemReference}, timestamp {mark.Time}, duration {mark.Duration}; playlist start {startTicks}, playlist end {totalDurationTicks45k}, distance from end {ticksFromEnd} ticks (45 kHz).",
                     Path = path,
                 });
-                if (ShouldExcludeTerminalChapterSentinel(startTicks, ticksFromEnd, repeatsPreviousInterval))
+                if (!startsNewPlayItem
+                    && ShouldExcludeTerminalChapterSentinel(startTicks, ticksFromEnd, repeatsPreviousInterval))
                 {
                     diagnostics.Add(new ManifestDiagnostic
                     {
@@ -149,6 +153,17 @@ internal static class BluRayChapterMapper
                         Severity = "info",
                         Code = "ODM_BD_CHAPTER_REPEATED_INTERVAL_PRESERVED",
                         Message = $"Preserved a final entry mark {ticksFromEnd} ticks (45 kHz) before playlist end because its chapter interval and end distance repeat the preceding authored chapter interval.",
+                        Path = path,
+                    });
+                }
+
+                if (startsNewPlayItem && IsTerminalChapterSentinel(ticksFromEnd))
+                {
+                    diagnostics.Add(new ManifestDiagnostic
+                    {
+                        Severity = "info",
+                        Code = "ODM_BD_CHAPTER_PLAY_ITEM_START_PRESERVED",
+                        Message = $"Preserved a final entry mark {ticksFromEnd} ticks (45 kHz) before playlist end because it starts play item {mark.PlayItemReference}.",
                         Path = path,
                     });
                 }

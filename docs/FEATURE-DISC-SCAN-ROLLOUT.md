@@ -99,6 +99,34 @@ keeps the log as its source, so that title indices don't shift.
 
 ## Generator maintenance
 
+DVD title-playback flags are decoded in disc bit order: multi/random PGC is bit 6,
+while chapter search and title/time play are bits 1 and 0. Chapter-search permission
+must not disable timing, sizes or cell maps for a sequential title. True multi/random
+PGC and multi-angle navigation remain unsupported; their missing metadata is reported
+as `Unavailable (not recorded)` in comparisons, not a measured zero. Structural fake-title
+checks still apply when all chapter/cell references are accounted for.
+
+Sequential, single-angle Blu-ray playlists may split at non-seamless boundaries only
+when a shared primary audio/video PID has incompatible known codec, format or rate
+declarations. Stream-count or language changes alone never split titles. Ambiguous
+CLPI program declarations, warning/error evidence, subpaths, stills, random playback
+and stereoscopic relationships do not qualify. Parts retain their original ordinal
+(`source.part`) even if subsequent reconciliation attributes an earlier part to a
+stream. Each part gets rebased segments/chapters, its own streams and clip sizes;
+`ODM_BD_PLAYLIST_SPLIT` records the decision. This is not general HDMV/BD-J navigation
+resolution, and non-seamless connections alone remain insufficient evidence.
+
+A final chapter at the exact start of a later play item is preserved when at least
+one second remains, including the 45,045-tick case in comparison 2638. Subsecond
+terminal tails and the existing repeated-interval exception retain their prior rules.
+`ODM_BD_CHAPTER_PLAY_ITEM_START_PRESERVED` records this additional exception.
+
+Comparisons explicitly report `TitleGrouping` when MakeMKV and the manifest describe
+different part keys of the same playlist. This does not invent matches or suppress
+log-only/scan-only entries: zero differences among exact-key matches does not establish
+parity for unmatched features. Re-comparing stored artifacts can improve reporting,
+but the generator changes above require a fresh physical scan to validate in production.
+
 `OpticalDiscManifestGenerator` is the public orchestration entry point. Internal DVD and
 Blu-ray builders own format-specific assembly; Blu-ray playlist rules, chapter/segment
 mapping, stream projection and ordered title reconciliation are separate collaborators.
