@@ -278,7 +278,7 @@ public static class OpticalDiscManifestMapper
         return source.DurationSeconds;
     }
 
-    private static string? NormalizeClipId(string? clip)
+    internal static string? NormalizeClipId(string? clip)
     {
         string? name = FileName(clip);
         if (name is null)

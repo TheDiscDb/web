@@ -735,6 +735,95 @@ public class DiscLogManifestComparerTests
     }
 
     [Test]
+    public async Task Compare_CompleteAnglePerspectives_AreComparedAsOnePlaylistTitle()
+    {
+        var title = new OpticalDiscManifestTitle
+        {
+            Source = new OpticalDiscManifestTitleSource { Path = "BDMV/PLAYLIST/00243.mpls" },
+            ChapterCount = 2,
+            SizeBytes = 6_000,
+            DurationSeconds = 4
+        };
+        for (int angle = 1; angle <= 5; angle++)
+        {
+            title.Segments.Add(new OpticalDiscManifestSegment
+            {
+                Clip = angle.ToString("D5", System.Globalization.CultureInfo.InvariantCulture),
+                StartSeconds = 0,
+                DurationSeconds = 1,
+                Angle = angle
+            });
+        }
+
+        title.Segments.Add(new OpticalDiscManifestSegment
+        {
+            Clip = "00336",
+            StartSeconds = 1,
+            DurationSeconds = 3
+        });
+        var manifest = CreateManifest(title);
+        Title[] perspectives = Enumerable.Range(1, 5)
+            .Select(angle => CreateLogTitle(
+                "00243.mpls",
+                chapters: 2,
+                size: 1_000 + angle,
+                length: "0:00:04",
+                segmentMap: $"{angle},336"))
+            .ToArray();
+
+        var result = DiscLogManifestComparer.Compare(
+            CreateDiscInfo(perspectives),
+            string.Empty,
+            manifest,
+            OpticalDiscManifestMapper.ToDiscInfo(manifest),
+            "HASH");
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Match);
+        await Assert.That(result.MatchedTitleCount).IsEqualTo(1);
+        await Assert.That(result.Differences.TitleDifferences).IsEmpty();
+        await Assert.That(result.Differences.ArtifactWarnings.Any(w =>
+            w.Contains("complete MakeMKV title rows", StringComparison.Ordinal))).IsTrue();
+        await Assert.That(result.OrderMatches).IsTrue();
+    }
+
+    [Test]
+    public async Task Compare_IncompleteAnglePerspectives_StillReportDuplicateLogTitles()
+    {
+        var title = new OpticalDiscManifestTitle
+        {
+            Source = new OpticalDiscManifestTitleSource { Path = "BDMV/PLAYLIST/00243.mpls" }
+        };
+        title.Segments.Add(new OpticalDiscManifestSegment
+        {
+            Clip = "00001",
+            StartSeconds = 0,
+            DurationSeconds = 1,
+            Angle = 1
+        });
+        title.Segments.Add(new OpticalDiscManifestSegment
+        {
+            Clip = "00002",
+            StartSeconds = 0,
+            DurationSeconds = 1,
+            Angle = 2
+        });
+        title.Segments.Add(new OpticalDiscManifestSegment { Clip = "00336", StartSeconds = 1, DurationSeconds = 3 });
+        var manifest = CreateManifest(title);
+        var result = DiscLogManifestComparer.Compare(
+            CreateDiscInfo(
+                CreateLogTitle("00243.mpls", 2, 2_000, "0:00:04", "1,336"),
+                CreateLogTitle("00243.mpls", 2, 2_000, "0:00:04", "2,336"),
+                CreateLogTitle("00243.mpls", 2, 2_000, "0:00:04", "3,336")),
+            string.Empty,
+            manifest,
+            OpticalDiscManifestMapper.ToDiscInfo(manifest),
+            "HASH");
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Mismatch);
+        await Assert.That(result.Differences.TitleDifferences.Any(d => d.Field == "DuplicateLogTitle")).IsTrue();
+    }
+
+    [Test]
     public async Task Compare_OrderSwap_DoesNotMakeMismatch()
     {
         var manifest = CreateManifest(
