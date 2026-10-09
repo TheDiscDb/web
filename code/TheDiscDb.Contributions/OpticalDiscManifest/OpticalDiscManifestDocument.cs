@@ -75,13 +75,45 @@ public sealed class OpticalDiscManifestFile
 
 public sealed class OpticalDiscManifestTitle
 {
+    private int? chapterCount;
+    private IList<OpticalDiscManifestChapter> chapters = [];
+    private IList<OpticalDiscManifestSegment> segments = [];
+
     public OpticalDiscManifestTitleSource? Source { get; set; }
     public double? DurationSeconds { get; set; }
     public long? SizeBytes { get; set; }
     public string? DisplaySize { get; set; }
-    public int? ChapterCount { get; set; }
-    public IList<OpticalDiscManifestChapter> Chapters { get; set; } = [];
-    public IList<OpticalDiscManifestSegment> Segments { get; set; } = [];
+    public int? ChapterCount
+    {
+        get => chapterCount;
+        set
+        {
+            chapterCount = value;
+            HasChapterMetadata |= value is not null;
+        }
+    }
+    public IList<OpticalDiscManifestChapter> Chapters
+    {
+        get => chapters;
+        set
+        {
+            chapters = value ?? [];
+            HasChapterMetadata = value is not null || chapterCount is not null;
+        }
+    }
+    public IList<OpticalDiscManifestSegment> Segments
+    {
+        get => segments;
+        set
+        {
+            segments = value ?? [];
+            HasSegmentMetadata = value is not null;
+        }
+    }
+    [JsonIgnore]
+    public bool HasChapterMetadata { get; private set; }
+    [JsonIgnore]
+    public bool HasSegmentMetadata { get; private set; }
     public IList<OpticalDiscManifestStream> Streams { get; set; } = [];
 }
 

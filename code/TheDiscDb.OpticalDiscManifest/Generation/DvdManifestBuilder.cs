@@ -123,26 +123,17 @@ internal static partial class DvdManifestBuilder
 
         bool timingSupported = title.NumberOfAngles == 1
             && !title.PlaybackFlags.IsMultiOrRandomPgcTitle;
-        if (!timingSupported)
-        {
-            diagnostics.Add(new ManifestDiagnostic
-            {
-                Severity = "info",
-                Code = "ODM_DVD_TIMING_PARTIAL",
-                Message = title.NumberOfAngles > 1
-                    ? $"Chapter timing for logical title {title.Number} is omitted because it has {title.NumberOfAngles} angles."
-                    : $"Chapter timing for logical title {title.Number} is omitted because it uses multi/random PGC playback.",
-            });
-        }
-
         var chapters = new List<ManifestChapter>(titleMap.Parts.Count);
         var segments = new List<ManifestSegment>();
         double elapsedSeconds = 0;
         long sizeBytes = 0;
         bool sizeComplete = timingSupported;
-        bool timingComplete = timingSupported;
+        bool timingComplete = timingSupported && completeParts;
         bool anyChapterMark = false;
         bool anyCells = false;
+        bool joinsComplete = completeParts;
+        bool rangesComplete = true;
+        double declaredWholeSeconds = 0;
         foreach (var part in titleMap.Parts.OrderBy(item => item.Number))
         {
             var pgc = vtsi.ProgramChains.SingleOrDefault(
@@ -153,12 +144,14 @@ internal static partial class DvdManifestBuilder
                     $"Logical title {title.Number} part {part.Number} references unavailable PGC {part.ProgramChainNumber}, program {part.ProgramNumber}."));
                 timingComplete = false;
                 sizeComplete = false;
+                joinsComplete = false;
                 chapters.Add(new ManifestChapter { StartSeconds = 0 });
                 continue;
             }
 
             if (!TryGetProgramCells(pgc, part.ProgramNumber, out var programCells))
             {
+                rangesComplete = false;
                 timingComplete = false;
                 sizeComplete = false;
                 chapters.Add(new ManifestChapter { StartSeconds = 0 });
@@ -174,6 +167,8 @@ internal static partial class DvdManifestBuilder
             {
                 continue;
             }
+
+            declaredWholeSeconds += playedCells.Sum(cell => Math.Floor(cell.PlaybackTime.ToTimeSpan().TotalSeconds));
 
             if (sizeComplete && TryGetCellSizeBytes(playedCells, out long programBytes))
             {
@@ -215,7 +210,7 @@ internal static partial class DvdManifestBuilder
             elapsedSeconds += duration;
         }
 
-        if (timingSupported && !anyCells)
+        if (title.NumberOfAngles == 1 && joinsComplete && !anyCells)
         {
             // MakeMKV does not list a title none of whose programs resolve to cells, such as
             // United 93's PGC 2 titles whose program map reads [1, 0].
@@ -233,9 +228,7 @@ internal static partial class DvdManifestBuilder
         // fake title", MSG 3026, about 1,500 times across the TheDiscDb log corpus), so it is
         // not listed: Avatar's titles 2-4 and 6-9 are built from 0.52 s cells. Only old
         // MakeMKV builds falling back to CellTrim ever listed 0:00:00 DVD titles.
-        if (timingComplete
-            && segments.Count > 0
-            && segments.Sum(segment => Math.Floor(segment.DurationSeconds ?? 0)) == 0)
+        if (title.NumberOfAngles == 1 && joinsComplete && rangesComplete && anyCells && declaredWholeSeconds == 0)
         {
             diagnostics.Add(new ManifestDiagnostic
             {
@@ -244,6 +237,18 @@ internal static partial class DvdManifestBuilder
                 Message = $"Logical title {title.Number} is omitted because its cells declare no whole seconds, which MakeMKV treats as a fake title.",
             });
             return new DvdTitleResult(null, DvdTitleDisposition.Skipped);
+        }
+
+        if (!timingSupported)
+        {
+            diagnostics.Add(new ManifestDiagnostic
+            {
+                Severity = "info",
+                Code = "ODM_DVD_TIMING_PARTIAL",
+                Message = title.NumberOfAngles > 1
+                    ? $"Chapter timing for logical title {title.Number} is omitted because it has {title.NumberOfAngles} angles."
+                    : $"Chapter timing for logical title {title.Number} is omitted because it uses multi/random PGC playback.",
+            });
         }
 
         // A chapter starts where a program does. When every played program had its first cells

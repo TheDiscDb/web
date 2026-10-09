@@ -1296,6 +1296,146 @@ public sealed class OpticalDiscManifestGeneratorTests
         };
     }
 
+    [Theory]
+    [InlineData(45_045, 2)]
+    [InlineData(22_523, 1)]
+    public void CreateBluRayChapters_PreservesOneSecondPlayItemStartButNotSubsecondTails(long tailTicks, int expectedChapters)
+    {
+        var playlist = CreateSyntheticPlaylist(
+            [56_561_505, tailTicks],
+            [(0, 1, 0, 0u, 0u), (1, 1, 1, 0u, 0u)]);
+        var diagnostics = new List<ManifestDiagnostic>();
+        var chapters = BluRayChapterMapper.CreateBluRayChapters(playlist, diagnostics, "BDMV/PLAYLIST/00003.mpls");
+
+        Assert.Equal(expectedChapters, chapters.Count);
+        if (expectedChapters == 2)
+        {
+            Assert.Equal(1256.922333, chapters[1].StartSeconds);
+            Assert.Equal(1.001, chapters[1].DurationSeconds);
+            Assert.Contains(diagnostics, item => item.Code == "ODM_BD_CHAPTER_PLAY_ITEM_START_PRESERVED");
+            Assert.DoesNotContain(diagnostics, item => item.Code == "ODM_BD_CHAPTER_TERMINAL_SENTINEL_EXCLUDED");
+        }
+    }
+
+    [Theory]
+    [InlineData(1, 3, 2)]
+    [InlineData(5, 3, 1)]
+    [InlineData(6, 3, 1)]
+    [InlineData(1, 6, 1)]
+    [InlineData(1, 0, 1)]
+    public void SplitIncompatiblePlayItems_RequiresNonSeamlessKnownFormatChange(int connection, int secondFormat, int expectedParts)
+    {
+        var playlist = CreateSyntheticPlaylist(
+            [45_000L * 1528, 45_000L * 364],
+            [(0, 1, 0, 0u, 0u), (1, 1, 1, 0u, 0u)]);
+        var audio = new MplsStream
+        {
+            Category = "Audio", StreamTypeCode = 1, Pid = 4352,
+            CodingType = "AC-3", CodingTypeCode = 0x81, FormatCode = 6, RateCode = 1,
+        };
+        playlist = playlist with
+        {
+            PlayItems =
+            [
+                playlist.PlayItems[0] with { StreamTable = playlist.PlayItems[0].StreamTable with { AudioStreams = [audio] } },
+                playlist.PlayItems[1] with
+                {
+                    ConnectionCondition = connection,
+                    StreamTable = playlist.PlayItems[1].StreamTable with { AudioStreams = [audio with { FormatCode = secondFormat }] },
+                },
+            ],
+        };
+
+        var parts = BluRayPlaylistRules.SplitIncompatiblePlayItems(playlist, new Dictionary<string, ClpiFile>());
+        Assert.Equal(expectedParts, parts.Count);
+        if (expectedParts == 2)
+        {
+            Assert.Equal(0, Assert.Single(parts[1].PlayItems).Index);
+            Assert.Equal(0, Assert.Single(parts[1].Marks).PlayItemReference);
+            var diagnostics = new List<ManifestDiagnostic>();
+            Assert.Equal(0, Assert.Single(BluRayChapterMapper.CreateBluRayChapters(parts[1], diagnostics, "test")).StartSeconds);
+        }
+    }
+
+    [Fact]
+    public void SplitIncompatiblePlayItems_PreservesAnglesAndRandomPlayback()
+    {
+        var playlist = CreateMultiItemPlaylist([("00000", 1, 0), ("00001", 1, 0)], []);
+        var anglePlaylist = playlist with { PlayItems = [playlist.PlayItems[0] with { IsMultiAngle = true }, playlist.PlayItems[1]] };
+        var randomPlaylist = playlist with { AppInfo = playlist.AppInfo with { PlaybackTypeCode = 2 } };
+        var clips = new Dictionary<string, ClpiFile>();
+        Assert.Same(anglePlaylist, Assert.Single(BluRayPlaylistRules.SplitIncompatiblePlayItems(anglePlaylist, clips)));
+        Assert.Same(randomPlaylist, Assert.Single(BluRayPlaylistRules.SplitIncompatiblePlayItems(randomPlaylist, clips)));
+    }
+
+    [Fact]
+    public async Task SplitIncompatiblePlayItems_ProjectsProductionSplitShapeWithClipEvidence()
+    {
+        // Comparison 2648: the first four clips use multichannel AC-3, the last two stereo.
+        double[] seconds = [937.311356, 82.874444, 132.006867, 375.833778, 195.945733, 168.835333];
+        string[] clipIds = ["00016", "00017", "00018", "00019", "00036", "00037"];
+        long[] ticks = seconds.Select(value => (long)Math.Round(value * 45_000)).ToArray();
+        var marks = Enumerable.Range(0, 6)
+            .Select(index => (index, MplsPlaylistMark.EntryMarkType, index, 0u, 0u))
+            .Append((6, MplsPlaylistMark.EntryMarkType, 5, (uint)(ticks[5] - 11_262), 0u)).ToArray();
+        var playlist = CreateSyntheticPlaylist(ticks, marks);
+        var audio = new MplsStream
+        {
+            Category = "Audio", StreamTypeCode = 1, Pid = 4352,
+            CodingType = "AC-3", CodingTypeCode = 0x81, FormatCode = 6, RateCode = 1,
+        };
+        playlist = playlist with
+        {
+            PlayItems = playlist.PlayItems.Select((item, index) => item with
+            {
+                ClipId = clipIds[index],
+                Clips = [item.Clips[0] with { ClipId = clipIds[index] }],
+                StreamTable = item.StreamTable with { AudioStreams = [audio] },
+            }).ToArray(),
+        };
+        var clpi = (await new ClpiParser(new MemoryOpticalDiscReader(
+            await File.ReadAllBytesAsync(Path.Combine(fixturesPath, "CLPI", "UHD-A", "00589.clpi"),
+                TestContext.Current.CancellationToken))).ParseAsync()).Value!;
+        var clips = clipIds.Select((clipId, index) => (clipId, clip: clpi with
+        {
+            // No presentation-end extension is involved in this production case.
+            PresentationSummary = null,
+            Programs = [clpi.Programs[0] with
+            {
+                Streams = [clpi.Programs[0].Streams[0] with
+                {
+                    Pid = 4352, Category = "Audio", CodingType = "AC-3", CodingTypeCode = 0x81,
+                    FormatCode = index < 4 ? 6 : 3, RateCode = 1,
+                }],
+            }],
+        })).ToDictionary(item => item.clipId, item => item.clip);
+        var diagnostics = new List<ManifestDiagnostic>();
+        var files = DiscFileCatalog.NormalizeFiles(clipIds.Select(clip =>
+            RecordingFile.Payload($"BDMV/STREAM/{clip}.m2ts", 4096)).ToArray(), diagnostics);
+
+        var parts = BluRayPlaylistRules.SplitIncompatiblePlayItems(playlist, clips);
+        Assert.Equal(2, parts.Count);
+        var titles = parts.Select((part, index) => BluRayTitleMapper.CreateBluRayTitle(
+            "BDMV/PLAYLIST/00032.mpls", part, files, clips, diagnostics, index)).ToArray();
+        Assert.Equal([0, 1], titles.Select(title => title.Source.Part));
+        Assert.Equal(1528.026444, titles[0].DurationSeconds);
+        Assert.Equal(364.781067, titles[1].DurationSeconds);
+        Assert.Equal([4, 2], titles.Select(title => title.Chapters!.Count));
+        Assert.Equal([16384L, 8192L], titles.Select(title => title.SizeBytes));
+        Assert.Equal(clipIds.Take(4), titles[0].Segments!.Select(segment => segment.Clip));
+        Assert.Equal(clipIds.Skip(4), titles[1].Segments!.Select(segment => segment.Clip));
+        Assert.Equal(0, titles[1].Segments![0].StartSeconds);
+        Assert.Equal(0, titles[1].Chapters![0].StartSeconds);
+        Assert.Equal(3, Assert.Single(titles[1].Streams!).FormatCode);
+
+        var ambiguous = clips["00036"] with
+        {
+            Programs = [clips["00036"].Programs[0], clips["00016"].Programs[0]],
+        };
+        clips["00036"] = ambiguous;
+        Assert.Same(playlist, Assert.Single(BluRayPlaylistRules.SplitIncompatiblePlayItems(playlist, clips)));
+    }
+
     private static ManifestTitle CreateSegmentTitle(
         params (string Clip, double Start, double Duration, int? Angle)[] segments)
         => new()
@@ -1545,7 +1685,7 @@ public sealed class OpticalDiscManifestGeneratorTests
 
         Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
         var titles = result.Manifest.Disc.Titles!;
-        Assert.Equal(6, titles.Count);
+        Assert.Equal(4, titles.Count);
 
         var main = titles[0];
         Assert.Equal(2, main.Source.TitleSet);
@@ -1564,7 +1704,8 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.All(main.Streams!.Where(stream => stream.Type == "subtitle"), stream => Assert.Equal("RLE", stream.Codec));
         Assert.Contains("\"line21ClosedCaptionFields\":[1]", System.Text.RegularExpressions.Regex.Replace(System.Text.Encoding.UTF8.GetString(result.Json), @"\s", string.Empty));
 
-        // Multi/random-PGC titles keep counts but omit timing and size rather than guessing.
+        // Titles 5 and 6 declare no whole seconds. The remaining true multi/random
+        // titles stay partial; title-search flags no longer masquerade as playback flags.
         Assert.All(titles.Skip(1), title =>
         {
             Assert.Null(title.DurationSeconds);

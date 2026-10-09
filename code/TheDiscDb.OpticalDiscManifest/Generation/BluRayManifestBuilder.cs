@@ -163,7 +163,30 @@ internal static class BluRayManifestBuilder
                 }
             }
 
-            titles.Add(BluRayTitleMapper.CreateBluRayTitle(result.Path, playlist, files, clpiByClip, diagnostics, null));
+            var evidencePaths = playlist.PlayItems.Select(item => $"BDMV/CLIPINF/{item.ClipId}.clpi")
+                .Append(result.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            bool incompleteEvidence = diagnostics.Any(diagnostic => diagnostic.Severity is "warning" or "error"
+                && diagnostic.Path is not null
+                && evidencePaths.Contains(diagnostic.Path.Replace("/BACKUP/", "/", StringComparison.OrdinalIgnoreCase)));
+            var parts = incompleteEvidence
+                ? [playlist]
+                : BluRayPlaylistRules.SplitIncompatiblePlayItems(playlist, clpiByClip);
+            if (parts.Count > 1)
+            {
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_BD_PLAYLIST_SPLIT",
+                    Message = $"Playlist is emitted as {parts.Count} parts because primary stream formats change at non-seamless play-item boundaries.",
+                    Path = result.Path,
+                });
+            }
+
+            for (int part = 0; part < parts.Count; part++)
+            {
+                titles.Add(BluRayTitleMapper.CreateBluRayTitle(
+                    result.Path, parts[part], files, clpiByClip, diagnostics, parts.Count > 1 ? part : null));
+            }
         }
 
         return new PlaylistCandidates(

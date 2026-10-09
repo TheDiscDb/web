@@ -565,6 +565,52 @@ public class OpticalDiscManifestMapperTests
 public class DiscLogManifestComparerTests
 {
     [Test]
+    public async Task Compare_PartialDvdMetadataReportsUnavailableRatherThanZero()
+    {
+        var document = System.Text.Json.JsonSerializer.Deserialize<OpticalDiscManifestDocument>(
+            """{"disc":{"format":"dvd","titles":[{"source":{"title":1}}]}}""",
+            OpticalDiscManifestDocument.SerializerOptions)!;
+        var result = DiscLogManifestComparer.Compare(
+            CreateDiscInfo(CreateLogTitle("01", 6, 1194741760, "0:22:32", "1-5,6")),
+            string.Empty, document, OpticalDiscManifestMapper.ToDiscInfo(document));
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Mismatch);
+        await Assert.That(result.Differences.TitleDifferences.Count).IsEqualTo(4);
+        await Assert.That(result.Differences.TitleDifferences.All(
+            difference => difference.ManifestValue == "Unavailable (not recorded)")).IsTrue();
+        await Assert.That(result.Differences.SoftDifferences).IsEmpty();
+    }
+
+    [Test]
+    public async Task Compare_ExplicitZeroMetadataRemainsComparable()
+    {
+        var document = System.Text.Json.JsonSerializer.Deserialize<OpticalDiscManifestDocument>(
+            """{"disc":{"format":"dvd","titles":[{"source":{"title":1},"durationSeconds":0,"sizeBytes":0,"chapters":[],"segments":[]}]}}""",
+            OpticalDiscManifestDocument.SerializerOptions)!;
+        var mapped = OpticalDiscManifestMapper.ToDiscInfo(document);
+        var result = DiscLogManifestComparer.Compare(mapped, string.Empty, document, mapped);
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Match);
+        await Assert.That(result.Differences.TitleDifferences).IsEmpty();
+    }
+
+    [Test]
+    public async Task Compare_UnmatchedSplitFeatureReportsGroupingDespiteNoExactKeyMatch()
+    {
+        var manifest = CreateManifest(CreateTitle("BDMV/PLAYLIST/00004.mpls", 8, 23219478528, 6637.047067, "9,4"));
+        var log = CreateDiscInfo(CreateLogTitle("00004.mpls(1)", 7, 23218765824, "1:50:26", "4"));
+        var result = DiscLogManifestComparer.Compare(
+            log, string.Empty, manifest, OpticalDiscManifestMapper.ToDiscInfo(manifest));
+
+        await Assert.That(result.MatchedTitleCount).IsEqualTo(0);
+        await Assert.That(result.Differences.LogOnlyTitles).Contains("00004.mpls(1)");
+        await Assert.That(result.Differences.ManifestOnlyTitles).Contains("00004.mpls");
+        var grouping = result.Differences.TitleDifferences.Single();
+        await Assert.That(grouping.Field).IsEqualTo("TitleGrouping");
+        await Assert.That(grouping.LogValue).Contains("1:50:26");
+        await Assert.That(grouping.ManifestValue).Contains("1:50:37");
+    }
+
+    [Test]
     public async Task Compare_MissingSourceAndStreamSize_ReportWarningsWithoutChangingMismatch()
     {
         var manifest = CreateManifest(

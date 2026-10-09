@@ -6,6 +6,113 @@ internal static class BluRayPlaylistRules
 {
     internal const int InfiniteStillMode = 2;
 
+    internal static IReadOnlyList<MplsPlaylist> SplitIncompatiblePlayItems(
+        MplsPlaylist playlist,
+        IReadOnlyDictionary<string, ClpiFile> clpiByClip)
+    {
+        var items = playlist.PlayItems.OrderBy(item => item.Index).ToArray();
+        if (items.Length < 2
+            || playlist.StereoVideoRelationships.Count > 0
+            || playlist.SubPaths.Count > 0 || playlist.ExtensionSubPaths.Count > 0
+            || items.Any(item => item.IsMultiAngle || item.Clips.Count > 1 || item.StillMode != 0)
+            || playlist.AppInfo.PlaybackTypeCode != 1)
+        {
+            return [playlist];
+        }
+
+        var starts = new List<int> { 0 };
+        for (int index = 1; index < items.Length; index++)
+        {
+            if (items[index].ConnectionCondition == 1
+                && HasIncompatibleStreams(items[index - 1], items[index], clpiByClip))
+            {
+                starts.Add(index);
+            }
+        }
+
+        if (starts.Count == 1)
+        {
+            return [playlist];
+        }
+
+        var parts = new List<MplsPlaylist>(starts.Count);
+        for (int part = 0; part < starts.Count; part++)
+        {
+            var kept = items[starts[part]..(part + 1 < starts.Count ? starts[part + 1] : items.Length)];
+            var indexMap = kept.Select((item, index) => (item.Index, NewIndex: index))
+                .ToDictionary(pair => pair.Index, pair => pair.NewIndex);
+            parts.Add(playlist with
+            {
+                PlayItems = kept.Select((item, index) => item with { Index = index }).ToArray(),
+                Marks = playlist.Marks.Where(mark => indexMap.ContainsKey(mark.PlayItemReference))
+                    .Select((mark, index) => mark with
+                    {
+                        Index = index,
+                        PlayItemReference = indexMap[mark.PlayItemReference],
+                    }).ToArray(),
+            });
+        }
+
+        return parts;
+    }
+
+    private static bool HasIncompatibleStreams(
+        MplsPlayItem previous,
+        MplsPlayItem current,
+        IReadOnlyDictionary<string, ClpiFile> clips)
+    {
+        var before = previous.StreamTable.VideoStreams.Concat(previous.StreamTable.AudioStreams);
+        var after = current.StreamTable.VideoStreams.Concat(current.StreamTable.AudioStreams);
+        foreach (var stream in before.Where(stream => stream.StreamTypeCode == 1 && stream.Pid is not null))
+        {
+            var next = after.FirstOrDefault(next => next.StreamTypeCode == 1
+                && next.Category == stream.Category && next.Pid == stream.Pid);
+            if (next is null)
+            {
+                continue;
+            }
+
+            var left = FindEvidence(previous.ClipId, stream);
+            var right = FindEvidence(current.ClipId, next);
+            if (left is null || right is null)
+            {
+                continue;
+            }
+
+            if (left.Coding != right.Coding
+                || (left.Format is > 0 && right.Format is > 0 && left.Format != right.Format)
+                || (left.Rate is > 0 && right.Rate is > 0 && left.Rate != right.Rate))
+            {
+                return true;
+            }
+        }
+
+        return false;
+
+        StreamFormat? FindEvidence(string clipId, MplsStream stream)
+        {
+            var formats = clips.TryGetValue(clipId, out var clip)
+                ? clip.Programs.SelectMany(program => program.Streams)
+                    .Where(candidate => candidate.Pid == stream.Pid)
+                    .Select(candidate => new StreamFormat(candidate.CodingTypeCode, candidate.FormatCode, candidate.RateCode))
+                    .Distinct().ToArray()
+                : [];
+            if (formats.Length > 1)
+            {
+                return null;
+            }
+
+            var format = formats.SingleOrDefault()
+                ?? new StreamFormat(stream.CodingTypeCode, stream.FormatCode, stream.RateCode);
+            bool knownCodec = stream.Category == "Video"
+                ? format.Coding is 0x01 or 0x02 or 0x1B or 0x24 or 0xEA
+                : format.Coding is >= 0x80 and <= 0x86 or 0xA1 or 0xA2;
+            return knownCodec ? format : null;
+        }
+    }
+
+    private sealed record StreamFormat(int Coding, int? Format, int? Rate);
+
     /// <summary>
     /// Ends the playlist at the first play item that repeats the play item immediately
     /// before it: same clip, same in-time and same out-time. Discs loop background video

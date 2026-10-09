@@ -64,6 +64,7 @@ public static partial class DiscLogManifestComparer
 
             var logTitles = CollectTitles(logDiscInfo);
             var manifestTitles = CollectTitles(manifestDiscInfo);
+            ReportPlaylistGroupingDifferences(logTitles, manifestTitles, differences);
             var anglePerspectiveKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var duplicate in logTitles.DuplicateKeys)
             {
@@ -120,7 +121,9 @@ public static partial class DiscLogManifestComparer
                 }
                 else
                 {
-                    CompareTitle(key, logTitle, manifestTitle, differences);
+                    var model = manifest.Disc?.Titles.FirstOrDefault(
+                        title => string.Equals(ManifestSourceKey(title), key, StringComparison.OrdinalIgnoreCase));
+                    CompareTitle(key, logTitle, manifestTitle, model, differences);
                 }
             }
 
@@ -292,6 +295,11 @@ public static partial class DiscLogManifestComparer
 
     private static string? ManifestSourceKey(OpticalDiscManifestTitle title)
     {
+        if (title.Source is { Path: null } dvdSource)
+        {
+            return (dvdSource.Title ?? dvdSource.TitleSetTitle)?.ToString(CultureInfo.InvariantCulture);
+        }
+
         if (title.Source is not { Path: { } path } source || string.IsNullOrWhiteSpace(path))
         {
             return null;
@@ -436,20 +444,58 @@ public static partial class DiscLogManifestComparer
             differences,
             SerializeDifferences(differences));
 
-    private static void CompareTitle(string key, Title logTitle, Title manifestTitle, DiscLogManifestDifferences differences)
+    private static void CompareTitle(
+        string key, Title logTitle, Title manifestTitle,
+        OpticalDiscManifestTitle? model, DiscLogManifestDifferences differences)
     {
-        AddHardDifference(differences, key, "ChapterCount", logTitle.ChapterCount.ToString(), manifestTitle.ChapterCount.ToString());
-        AddHardDifference(differences, key, "SizeBytes", logTitle.Size.ToString(), manifestTitle.Size.ToString());
-        AddHardDifference(differences, key, "Length", logTitle.Length ?? string.Empty, manifestTitle.Length ?? string.Empty);
-        AddHardDifference(differences, key, "SegmentMap", logTitle.SegmentMap ?? string.Empty, manifestTitle.SegmentMap ?? string.Empty);
+        const string Unavailable = "Unavailable (not recorded)";
+        AddHardDifference(differences, key, "ChapterCount", logTitle.ChapterCount.ToString(),
+            model is not null && model.DurationSeconds is null && !model.HasChapterMetadata && model.Chapters.Count == 0
+                ? Unavailable : manifestTitle.ChapterCount.ToString());
+        AddHardDifference(differences, key, "SizeBytes", logTitle.Size.ToString(),
+            model is not null && model.SizeBytes is null ? Unavailable : manifestTitle.Size.ToString());
+        AddHardDifference(differences, key, "Length", logTitle.Length ?? string.Empty,
+            model is not null && model.DurationSeconds is null ? Unavailable : manifestTitle.Length ?? string.Empty);
+        AddHardDifference(differences, key, "SegmentMap", logTitle.SegmentMap ?? string.Empty,
+            model is not null && model.DurationSeconds is null && !model.HasSegmentMetadata && model.Segments.Count == 0
+                ? Unavailable : manifestTitle.SegmentMap ?? string.Empty);
 
-        if (!string.Equals(logTitle.DisplaySize ?? string.Empty, manifestTitle.DisplaySize ?? string.Empty, StringComparison.Ordinal))
+        if ((model is null || model.SizeBytes is not null || model.DisplaySize is not null)
+            && !string.Equals(logTitle.DisplaySize ?? string.Empty, manifestTitle.DisplaySize ?? string.Empty, StringComparison.Ordinal))
         {
             differences.SoftDifferences.Add(new TitleDifference(
                 key,
                 "DisplaySize",
                 logTitle.DisplaySize,
                 manifestTitle.DisplaySize));
+        }
+    }
+
+    private static void ReportPlaylistGroupingDifferences(
+        TitleCollection log, TitleCollection manifest, DiscLogManifestDifferences differences)
+    {
+        static string? PlaylistGroup(string key)
+            => SplitPlaylistSourceRegex().IsMatch(key) ? key.Split('(')[0] : null;
+
+        var logGroups = log.ByKey.Keys.Where(key => PlaylistGroup(key) is not null)
+            .GroupBy(key => PlaylistGroup(key)!, StringComparer.OrdinalIgnoreCase);
+        foreach (var group in logGroups)
+        {
+            var scanKeys = manifest.ByKey.Keys
+                .Where(key => string.Equals(PlaylistGroup(key), group.Key, StringComparison.OrdinalIgnoreCase))
+                .Order(StringComparer.OrdinalIgnoreCase).ToArray();
+            var logKeys = group.Order(StringComparer.OrdinalIgnoreCase).ToArray();
+            if (scanKeys.Length == 0 || logKeys.SequenceEqual(scanKeys, StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            static string Describe(IEnumerable<string> keys, TitleCollection titles)
+                => string.Join("; ", keys.Select(key =>
+                    $"{key}: {titles.ByKey[key].Length}, {titles.ByKey[key].ChapterCount} chapters, segments {titles.ByKey[key].SegmentMap}"));
+
+            differences.TitleDifferences.Add(new TitleDifference(
+                group.Key, "TitleGrouping", Describe(logKeys, log), Describe(scanKeys, manifest)));
         }
     }
 
@@ -522,6 +568,9 @@ public static partial class DiscLogManifestComparer
 
     [GeneratedRegex(@"^[0-9]{5}\.(?:mpls|m2ts)$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex BluRaySourceRegex();
+
+    [GeneratedRegex(@"^[0-9]{5}\.mpls(?:\([0-9]+\))?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex SplitPlaylistSourceRegex();
 }
 
 public sealed record DiscLogManifestComparisonResult(
