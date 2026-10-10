@@ -103,6 +103,7 @@ internal static class BluRayManifestBuilder
 
             parsedPlaylists++;
             isUhd |= result.Value.Version == "0300";
+            BluRayPlaylistDiagnostics.AddAuthoredEvidence(result.Path, result.Value, clpiByClip, diagnostics);
             var collapsed = BluRayPlaylistRules.CollapseRepeatedPlayItems(result.Value);
             if (collapsed.PlayItems.Count < result.Value.PlayItems.Count)
             {
@@ -168,9 +169,8 @@ internal static class BluRayManifestBuilder
             bool incompleteEvidence = diagnostics.Any(diagnostic => diagnostic.Severity is "warning" or "error"
                 && diagnostic.Path is not null
                 && evidencePaths.Contains(diagnostic.Path.Replace("/BACKUP/", "/", StringComparison.OrdinalIgnoreCase)));
-            var parts = incompleteEvidence
-                ? [playlist]
-                : BluRayPlaylistRules.SplitIncompatiblePlayItems(playlist, clpiByClip);
+            var parts = BluRayPlaylistRules.SplitIncompatiblePlayItems(
+                playlist, clpiByClip, diagnostics, result.Path, incompleteEvidence);
             if (parts.Count > 1)
             {
                 diagnostics.Add(new ManifestDiagnostic

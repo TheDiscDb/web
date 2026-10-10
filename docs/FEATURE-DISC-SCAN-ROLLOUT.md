@@ -116,6 +116,23 @@ stream. Each part gets rebased segments/chapters, its own streams and clip sizes
 `ODM_BD_PLAYLIST_SPLIT` records the decision. This is not general HDMV/BD-J navigation
 resolution, and non-seamless connections alone remain insufficient evidence.
 
+Fresh scans also record informational `ODM_BD_PLAYLIST_AUTHORED_EVIDENCE` diagnostics
+before any loop, tail or split rule: original play-item indices, clip/STC references,
+in/out ticks, connection/still/angle flags, selected primary STN formats and CLPI
+presentation bounds, individual ATC/STC ranges/ID offsets and program formats/packet
+starts. Evidence is batched in groups of 16
+play items without truncation. `ODM_BD_PLAYLIST_SPLIT_DECISION` records exclusion
+guards or each evaluated boundary, including absent/unknown/ambiguous format evidence.
+`ODM_BD_PLAYLIST_PRESENTATION_TIMING` records each mapped part's play-item ticks,
+trailing-clip extension and resulting presentation ticks, plus rounded segment timing.
+All tick values use 45 kHz; alternate-angle segments share playback time and must not
+be summed as sequential content. These diagnostics use already parsed control files,
+read no payload bytes and do not change title selection or timing.
+Use them to investigate comparisons such as Gladiator Blu-ray 2671 (substantial
+extra-duration differences) and Dune Blu-ray 2668 (unsplit title parts). Do not replace
+authored ranges with full CLPI clip lengths without establishing why the ranges differ.
+Existing stored manifests cannot acquire this evidence through Re-compare.
+
 A final chapter at the exact start of a later play item is preserved when at least
 one second remains, including the 45,045-tick case in comparison 2638. Subsecond
 terminal tails and the existing repeated-interval exception retain their prior rules.
