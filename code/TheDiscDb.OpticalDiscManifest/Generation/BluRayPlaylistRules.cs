@@ -1,4 +1,5 @@
 using TheDiscDb.OpticalDiscParsers.Bdmv.Models;
+using TheDiscDb.OpticalDiscManifest.Models;
 
 namespace TheDiscDb.OpticalDiscManifest.Generation;
 
@@ -8,28 +9,43 @@ internal static class BluRayPlaylistRules
 
     internal static IReadOnlyList<MplsPlaylist> SplitIncompatiblePlayItems(
         MplsPlaylist playlist,
-        IReadOnlyDictionary<string, ClpiFile> clpiByClip)
+        IReadOnlyDictionary<string, ClpiFile> clpiByClip,
+        ICollection<ManifestDiagnostic>? diagnostics = null,
+        string? path = null,
+        bool incompleteEvidence = false)
     {
         var items = playlist.PlayItems.OrderBy(item => item.Index).ToArray();
-        if (items.Length < 2
-            || playlist.StereoVideoRelationships.Count > 0
-            || playlist.SubPaths.Count > 0 || playlist.ExtensionSubPaths.Count > 0
-            || items.Any(item => item.IsMultiAngle || item.Clips.Count > 1 || item.StillMode != 0)
-            || playlist.AppInfo.PlaybackTypeCode != 1)
+        var exclusions = new List<string>();
+        if (incompleteEvidence) exclusions.Add("warning/error evidence");
+        if (items.Length < 2) exclusions.Add("fewer than two play items");
+        if (playlist.StereoVideoRelationships.Count > 0) exclusions.Add("stereoscopic relationships");
+        if (playlist.SubPaths.Count > 0 || playlist.ExtensionSubPaths.Count > 0) exclusions.Add("subpaths");
+        if (items.Any(item => item.IsMultiAngle || item.Clips.Count > 1)) exclusions.Add("alternate angles");
+        if (items.Any(item => item.StillMode != 0)) exclusions.Add("still mode");
+        if (playlist.AppInfo.PlaybackTypeCode != 1) exclusions.Add("non-sequential playback");
+        if (exclusions.Count > 0)
         {
+            RecordDecision($"Split not evaluated: {string.Join(", ", exclusions)}.");
             return [playlist];
         }
 
         var starts = new List<int> { 0 };
+        var boundaries = new List<string>();
         for (int index = 1; index < items.Length; index++)
         {
-            if (items[index].ConnectionCondition == 1
-                && HasIncompatibleStreams(items[index - 1], items[index], clpiByClip))
+            bool incompatible = items[index].ConnectionCondition == 1
+                && HasIncompatibleStreams(items[index - 1], items[index], clpiByClip);
+            boundaries.Add($"item={items[index].Index},connection={items[index].ConnectionCondition}: "
+                + (items[index].ConnectionCondition != 1 ? "not a non-seamless boundary"
+                    : incompatible ? "incompatible known shared primary stream"
+                    : "no incompatible known shared primary stream (compatible, absent, unknown or ambiguous evidence)"));
+            if (incompatible)
             {
                 starts.Add(index);
             }
         }
 
+        RecordDecision($"Emitted parts={starts.Count}. {string.Join("; ", boundaries)}");
         if (starts.Count == 1)
         {
             return [playlist];
@@ -54,6 +70,17 @@ internal static class BluRayPlaylistRules
         }
 
         return parts;
+
+        void RecordDecision(string message)
+        {
+            diagnostics?.Add(new ManifestDiagnostic
+            {
+                Severity = "info",
+                Code = "ODM_BD_PLAYLIST_SPLIT_DECISION",
+                Path = path,
+                Message = message,
+            });
+        }
     }
 
     private static bool HasIncompatibleStreams(
