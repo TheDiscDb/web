@@ -10,7 +10,7 @@ public class MiddlewareTests(AspireAppFixture fixture)
     #region Sitemap
 
     [Test]
-    public async Task SitemapXml_ReturnsValidXml()
+    public async Task SitemapXml_ReturnsSitemapIndexWithCategoryEntries()
     {
         var response = await Client.GetAsync("/sitemap.xml");
 
@@ -19,7 +19,55 @@ public class MiddlewareTests(AspireAppFixture fixture)
 
         var content = await response.Content.ReadAsStringAsync();
         var doc = XDocument.Parse(content);
-        await Assert.That(doc.Root?.Name.LocalName).IsEqualTo("urlset");
+        await Assert.That(doc.Root?.Name.LocalName).IsEqualTo("sitemapindex");
+
+        XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
+        var locs = doc.Root!.Elements(ns + "sitemap").Elements(ns + "loc").Select(e => e.Value).ToList();
+
+        await Assert.That(locs.Any(l => l.Contains("/sitemap-movies.xml"))).IsTrue();
+        await Assert.That(locs.Any(l => l.Contains("/sitemap-movies-releases.xml"))).IsTrue();
+        await Assert.That(locs.Any(l => l.Contains("/sitemap-movies-discs.xml"))).IsTrue();
+        await Assert.That(locs.Any(l => l.Contains("/sitemap-movies-titles.xml"))).IsTrue();
+        await Assert.That(locs.Any(l => l.Contains("/sitemap-series.xml"))).IsTrue();
+        await Assert.That(locs.Any(l => l.Contains("/sitemap-series-releases.xml"))).IsTrue();
+        await Assert.That(locs.Any(l => l.Contains("/sitemap-series-discs.xml"))).IsTrue();
+        await Assert.That(locs.Any(l => l.Contains("/sitemap-series-titles.xml"))).IsTrue();
+        await Assert.That(locs.Any(l => l.Contains("/sitemap-boxsets.xml"))).IsTrue();
+        await Assert.That(locs.Any(l => l.Contains("/sitemap-leaderboard.xml"))).IsTrue();
+    }
+
+    [Test]
+    public async Task SitemapXml_EachChildSitemapReturnsValidUrlset()
+    {
+        var indexResponse = await Client.GetAsync("/sitemap.xml");
+        var indexContent = await indexResponse.Content.ReadAsStringAsync();
+        var indexDoc = XDocument.Parse(indexContent);
+
+        XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
+        var locs = indexDoc.Root!.Elements(ns + "sitemap").Elements(ns + "loc").Select(e => e.Value).ToList();
+
+        await Assert.That(locs).IsNotEmpty();
+
+        foreach (var loc in locs)
+        {
+            var relativePath = "/" + new Uri(loc).Segments[^1];
+            var response = await Client.GetAsync(relativePath);
+
+            await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+            await Assert.That(response.Content.Headers.ContentType?.MediaType).IsEqualTo("application/xml");
+
+            var content = await response.Content.ReadAsStringAsync();
+            var doc = XDocument.Parse(content);
+            await Assert.That(doc.Root?.Name.LocalName).IsEqualTo("urlset");
+        }
+    }
+
+    [Test]
+    public async Task SitemapCategoryXml_UnknownStem_ReturnsNotFound()
+    {
+        var response = await Client.GetAsync("/sitemap-bogus.xml");
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
     }
 
     [Test]
