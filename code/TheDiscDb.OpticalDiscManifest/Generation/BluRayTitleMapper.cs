@@ -15,7 +15,17 @@ internal static class BluRayTitleMapper
         int? part = null)
     {
         var playback = CreateSegments(path, playlist, clpiByClip, diagnostics);
-        long presentationTicks = playback.DurationTicks + BluRayPlaylistRules.GetTrailingClipTicks(playlist, clpiByClip);
+        long trailingTicks = BluRayPlaylistRules.GetTrailingClipTicks(playlist, clpiByClip);
+        long presentationTicks = playback.DurationTicks + trailingTicks;
+        diagnostics.Add(new ManifestDiagnostic
+        {
+            Severity = "info",
+            Code = "ODM_BD_PLAYLIST_PRESENTATION_TIMING",
+            Path = path,
+            Message = $"Mapped playlist part={part?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "none"}: playItemTicks={playback.DurationTicks},trailingClipTicks={trailingTicks},presentationTicks={presentationTicks} (45 kHz). Segment values are rounded seconds, alternate angles share a timeline: "
+                + string.Join("; ", playback.Segments.Select(segment => FormattableString.Invariant(
+                    $"clip={segment.Clip},angle={segment.Angle},start={segment.StartSeconds},duration={segment.DurationSeconds}"))),
+        });
         var chapters = BluRayChapterMapper.CreateBluRayChapters(playlist, diagnostics, path, presentationTicks);
         var streams = ManifestStreamMapper.CreateBluRayStreams(playlist, clpiByClip);
         var stereoscopic3D = CreateStereoscopicView(playlist, diagnostics, path);

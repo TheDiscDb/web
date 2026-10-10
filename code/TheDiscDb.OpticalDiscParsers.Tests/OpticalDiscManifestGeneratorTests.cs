@@ -38,6 +38,17 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Contains(
             persistedDiagnostics.EnumerateArray(),
             item => item.GetProperty("code").GetString() == "ODM_BD_CHAPTER_FINAL_MARK");
+        foreach (string code in new[]
+        {
+            "ODM_BD_PLAYLIST_AUTHORED_EVIDENCE",
+            "ODM_BD_PLAYLIST_SPLIT_DECISION",
+            "ODM_BD_PLAYLIST_PRESENTATION_TIMING",
+        })
+        {
+            Assert.Contains(persistedDiagnostics.EnumerateArray(),
+                item => item.GetProperty("code").GetString() == code
+                    && item.GetProperty("severity").GetString() == "info");
+        }
         Assert.Equal(
             System.Text.Json.JsonSerializer.SerializeToElement(
                 first.Diagnostics.ToArray(),
@@ -1346,8 +1357,14 @@ public sealed class OpticalDiscManifestGeneratorTests
             ],
         };
 
-        var parts = BluRayPlaylistRules.SplitIncompatiblePlayItems(playlist, new Dictionary<string, ClpiFile>());
+        var decisions = new List<ManifestDiagnostic>();
+        var parts = BluRayPlaylistRules.SplitIncompatiblePlayItems(
+            playlist, new Dictionary<string, ClpiFile>(), decisions, "test");
         Assert.Equal(expectedParts, parts.Count);
+        var decision = Assert.Single(decisions);
+        Assert.Equal("ODM_BD_PLAYLIST_SPLIT_DECISION", decision.Code);
+        Assert.Contains($"Emitted parts={expectedParts}", decision.Message);
+        Assert.Contains($"item=1,connection={connection}", decision.Message);
         if (expectedParts == 2)
         {
             Assert.Equal(0, Assert.Single(parts[1].PlayItems).Index);
@@ -1433,7 +1450,131 @@ public sealed class OpticalDiscManifestGeneratorTests
             Programs = [clips["00036"].Programs[0], clips["00016"].Programs[0]],
         };
         clips["00036"] = ambiguous;
-        Assert.Same(playlist, Assert.Single(BluRayPlaylistRules.SplitIncompatiblePlayItems(playlist, clips)));
+        var decisions = new List<ManifestDiagnostic>();
+        Assert.Same(playlist, Assert.Single(BluRayPlaylistRules.SplitIncompatiblePlayItems(
+            playlist, clips, decisions, "test")));
+        Assert.Contains("unknown or ambiguous evidence", Assert.Single(decisions).Message);
+    }
+
+    [Theory]
+    [InlineData("warning/error evidence")]
+    [InlineData("alternate angles")]
+    [InlineData("still mode")]
+    [InlineData("non-sequential playback")]
+    [InlineData("fewer than two play items")]
+    public void PlaylistSplitDiagnostics_ReportExclusionsWithoutChangingPlaylist(string reason)
+    {
+        var playlist = CreateMultiItemPlaylist([("00000", 1, 0), ("00001", 1, 0)], []);
+        playlist = reason switch
+        {
+            "alternate angles" => playlist with
+            {
+                PlayItems = [playlist.PlayItems[0] with { IsMultiAngle = true }, playlist.PlayItems[1]],
+            },
+            "still mode" => playlist with
+            {
+                PlayItems = [playlist.PlayItems[0] with { StillMode = 2 }, playlist.PlayItems[1]],
+            },
+            "non-sequential playback" => playlist with { AppInfo = playlist.AppInfo with { PlaybackTypeCode = 2 } },
+            "fewer than two play items" => playlist with { PlayItems = [playlist.PlayItems[0]] },
+            _ => playlist,
+        };
+        var diagnostics = new List<ManifestDiagnostic>();
+        var parts = BluRayPlaylistRules.SplitIncompatiblePlayItems(
+            playlist, new Dictionary<string, ClpiFile>(), diagnostics, "test",
+            incompleteEvidence: reason == "warning/error evidence");
+        Assert.Same(playlist, Assert.Single(parts));
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("info", diagnostic.Severity);
+        Assert.Equal("test", diagnostic.Path);
+        Assert.Contains($"Split not evaluated: {reason}", diagnostic.Message);
+    }
+
+    [Fact]
+    public async Task PlaylistDiagnostics_PreserveOriginalRangesAndClipEvidenceInOrderedBatches()
+    {
+        var playlist = CreateSyntheticPlaylist(Enumerable.Repeat(45_000L, 17).ToArray(), []);
+        var first = playlist.PlayItems[0] with
+        {
+            InTime = 9_000_000, OutTime = 9_045_000, ConnectionCondition = 5,
+        };
+        playlist = playlist with { PlayItems = playlist.PlayItems.Select((item, index) => index == 0 ? first : item).ToArray() };
+        var clpi = (await new ClpiParser(new MemoryOpticalDiscReader(
+            await File.ReadAllBytesAsync(Path.Combine(fixturesPath, "CLPI", "UHD-A", "00589.clpi"),
+                TestContext.Current.CancellationToken))).ParseAsync()).Value!;
+        clpi = clpi with
+        {
+            AtcSequences =
+            [
+                clpi.AtcSequences[0] with
+                {
+                    OffsetStcId = 7,
+                    StcSequences =
+                    [
+                        clpi.AtcSequences[0].StcSequences[0] with
+                        {
+                            Index = 1, PresentationStartTime = 8_955_000, PresentationEndTime = 9_090_000,
+                        },
+                    ],
+                },
+            ],
+            PresentationSummary = new ClpiPresentationSummary
+            {
+                StartTime = 8_955_000, EndTime = 9_090_000, DurationTicks45k = 135_000, StcSequenceCount = 2,
+            },
+        };
+        var diagnostics = new List<ManifestDiagnostic>();
+        var clips = new Dictionary<string, ClpiFile> { [first.ClipId] = clpi };
+        BluRayPlaylistDiagnostics.AddAuthoredEvidence("test", playlist, clips, diagnostics);
+
+        Assert.Equal(2, diagnostics.Count);
+        Assert.All(diagnostics, diagnostic =>
+        {
+            Assert.Equal("ODM_BD_PLAYLIST_AUTHORED_EVIDENCE", diagnostic.Code);
+            Assert.Equal("info", diagnostic.Severity);
+            Assert.Equal("test", diagnostic.Path);
+        });
+        Assert.Contains("in=9000000,out=9045000,connection=5", diagnostics[0].Message);
+        Assert.Contains("start=8955000,end=9090000,duration=135000,stcCount=2", diagnostics[0].Message);
+        Assert.Contains("programStreams=[", diagnostics[0].Message);
+        Assert.Contains("offsetStcId=7,stcIndex=1,start=8955000,end=9090000", diagnostics[0].Message);
+        Assert.Contains("CLPI unavailable", diagnostics[0].Message);
+        Assert.Contains("item=15,", diagnostics[0].Message);
+        Assert.DoesNotContain("item=16,", diagnostics[0].Message);
+        Assert.Contains("item=16,", diagnostics[1].Message);
+        Assert.Equal(9_000_000u, playlist.PlayItems[0].InTime);
+        Assert.Equal(9_045_000u, playlist.PlayItems[0].OutTime);
+    }
+
+    [Fact]
+    public async Task PlaylistPresentationDiagnostics_DistinguishAuthoredDurationFromTrailingClipExtension()
+    {
+        var playlist = CreateSyntheticPlaylist([45_000L], []);
+        var item = playlist.PlayItems[0] with { InTime = 9_000_000, OutTime = 9_045_000 };
+        playlist = playlist with { PlayItems = [item] };
+        var clpi = (await new ClpiParser(new MemoryOpticalDiscReader(
+            await File.ReadAllBytesAsync(Path.Combine(fixturesPath, "CLPI", "UHD-A", "00589.clpi"),
+                TestContext.Current.CancellationToken))).ParseAsync()).Value!;
+        clpi = clpi with
+        {
+            PresentationSummary = new ClpiPresentationSummary
+            {
+                StartTime = 8_955_000, EndTime = 9_090_000, DurationTicks45k = 135_000, StcSequenceCount = 1,
+            },
+        };
+        var diagnostics = new List<ManifestDiagnostic>();
+        var files = DiscFileCatalog.NormalizeFiles(
+            [RecordingFile.Payload($"BDMV/STREAM/{item.ClipId}.m2ts", 4096)], diagnostics);
+        var title = BluRayTitleMapper.CreateBluRayTitle(
+            "test", playlist, files, new Dictionary<string, ClpiFile> { [item.ClipId] = clpi }, diagnostics, 1);
+
+        Assert.Equal(2, title.DurationSeconds);
+        Assert.Equal(1, Assert.Single(title.Segments!).DurationSeconds);
+        Assert.Equal(4096L, title.SizeBytes);
+        var timing = Assert.Single(diagnostics, diagnostic => diagnostic.Code == "ODM_BD_PLAYLIST_PRESENTATION_TIMING");
+        Assert.Equal("info", timing.Severity);
+        Assert.Contains("part=1: playItemTicks=45000,trailingClipTicks=45000,presentationTicks=90000", timing.Message);
+        Assert.Contains("start=0,duration=1", timing.Message);
     }
 
     private static ManifestTitle CreateSegmentTitle(
