@@ -42,7 +42,12 @@ public static class NavigationExtensions
             return string.Empty;
         }
 
-        return $"{parentItem.ReleaseListUrl()}/{release.Slug}";
+        // Release slugs are sourced verbatim from release.json and are not guaranteed to be
+        // lowercase (e.g. "Smokey-Bandit-3-Movie-Collection-Blu-ray"). LowercaseUrlMiddleware
+        // 301-redirects any uppercase path to its lowercase form, so rendering a mixed-case slug
+        // here would make every link to the page generate an avoidable redirect (flagged by
+        // Search Console as "Page with redirect"). Lowercase it up front instead.
+        return $"{parentItem.ReleaseListUrl()}/{release.Slug?.ToLower()}";
     }
 
     public static string DiscDetailUrl(this IDisc disc, Release release, IDisplayItem parentItem)
@@ -52,7 +57,9 @@ public static class NavigationExtensions
             return string.Empty;
         }
 
-        return $"{release.ReleaseDetailUrl(parentItem)}/discs/{disc.SlugOrIndex()}";
+        // Disc slugs (e.g. "S07D04") are also sourced verbatim from disc*.json and are frequently
+        // mixed-case; lowercase for the same reason as the release slug above.
+        return $"{release.ReleaseDetailUrl(parentItem)}/discs/{disc.SlugOrIndex().ToLower()}";
     }
 
     ///Movie/the-marvels-2023/releases/2024-cinematic-universe-edition-4k/discs/1/00801/mpls
