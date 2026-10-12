@@ -42,11 +42,7 @@ public static class NavigationExtensions
             return string.Empty;
         }
 
-        // Release slugs are sourced verbatim from release.json and are not guaranteed to be
-        // lowercase (e.g. "Smokey-Bandit-3-Movie-Collection-Blu-ray"). LowercaseUrlMiddleware
-        // 301-redirects any uppercase path to its lowercase form, so rendering a mixed-case slug
-        // here would make every link to the page generate an avoidable redirect (flagged by
-        // Search Console as "Page with redirect"). Lowercase it up front instead.
+        // Make sure the slug from the file is lowercased
         return $"{parentItem.ReleaseListUrl()}/{release.Slug?.ToLower()}";
     }
 
@@ -57,8 +53,7 @@ public static class NavigationExtensions
             return string.Empty;
         }
 
-        // Disc slugs (e.g. "S07D04") are also sourced verbatim from disc*.json and are frequently
-        // mixed-case; lowercase for the same reason as the release slug above.
+         // Make sure the slug from the file is lowercased
         return $"{release.ReleaseDetailUrl(parentItem)}/discs/{disc.SlugOrIndex().ToLower()}";
     }
 
