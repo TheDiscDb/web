@@ -42,7 +42,8 @@ public static class NavigationExtensions
             return string.Empty;
         }
 
-        return $"{parentItem.ReleaseListUrl()}/{release.Slug}";
+        // Make sure the slug from the file is lowercased
+        return $"{parentItem.ReleaseListUrl()}/{release.Slug?.ToLower()}";
     }
 
     public static string DiscDetailUrl(this IDisc disc, Release release, IDisplayItem parentItem)
@@ -52,7 +53,8 @@ public static class NavigationExtensions
             return string.Empty;
         }
 
-        return $"{release.ReleaseDetailUrl(parentItem)}/discs/{disc.SlugOrIndex()}";
+         // Make sure the slug from the file is lowercased
+        return $"{release.ReleaseDetailUrl(parentItem)}/discs/{disc.SlugOrIndex().ToLower()}";
     }
 
     ///Movie/the-marvels-2023/releases/2024-cinematic-universe-edition-4k/discs/1/00801/mpls

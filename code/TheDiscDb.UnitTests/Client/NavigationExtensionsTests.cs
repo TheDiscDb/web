@@ -314,6 +314,52 @@ public class NavigationExtensionsTests
         await Assert.That(result).IsEqualTo(string.Empty);
     }
 
+    [Test]
+    public async Task ReleaseDetailUrl_NullRelease_ReturnsEmpty()
+    {
+        Release? release = null;
+        var item = new TestDisplayItem { Type = "Movie", Slug = "the-matrix" };
+
+        var result = release!.ReleaseDetailUrl(item);
+
+        await Assert.That(result).IsEqualTo(string.Empty);
+    }
+
+    [Test]
+    public async Task ReleaseDetailUrl_MixedCaseSlug_IsLowercased()
+    {
+        var item = new TestDisplayItem { Type = "Movie", Slug = "the-fifth-element-1997" };
+        var release = new Release { Slug = "The-Fifth-Element-UHD-Steelbook" };
+
+        var result = release.ReleaseDetailUrl(item);
+
+        await Assert.That(result).IsEqualTo("/movie/the-fifth-element-1997/releases/the-fifth-element-uhd-steelbook");
+    }
+
+    [Test]
+    public async Task DiscDetailUrl_NullDisc_ReturnsEmpty()
+    {
+        IDisc? disc = null;
+        var item = new TestDisplayItem { Type = "Series", Slug = "band-of-brothers-2001" };
+        var release = new Release { Slug = "2015-blu-ray" };
+
+        var result = disc!.DiscDetailUrl(release, item);
+
+        await Assert.That(result).IsEqualTo(string.Empty);
+    }
+
+    [Test]
+    public async Task DiscDetailUrl_MixedCaseSlug_IsLowercased()
+    {
+        var item = new TestDisplayItem { Type = "Series", Slug = "band-of-brothers-2001" };
+        var release = new Release { Slug = "2015-blu-ray" };
+        var disc = new Disc { Slug = "S01D06" };
+
+        var result = disc.DiscDetailUrl(release, item);
+
+        await Assert.That(result).IsEqualTo("/series/band-of-brothers-2001/releases/2015-blu-ray/discs/s01d06");
+    }
+
     private class TestDisplayItem : IDisplayItem
     {
         public string? Title { get; set; }
