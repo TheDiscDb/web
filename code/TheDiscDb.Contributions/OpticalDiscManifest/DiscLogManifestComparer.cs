@@ -141,7 +141,7 @@ public static partial class DiscLogManifestComparer
             bool titleSetsEqual = differences.LogOnlyTitles.Count == 0
                 && differences.ManifestOnlyTitles.Count == 0;
             bool hardDifferences = differences.TitleDifferences.Count > 0;
-            var status = titleSetsEqual && !hardDifferences
+            var status = titleSetsEqual && !hardDifferences && orderMatches
                 ? DiscLogManifestComparisonStatus.Match
                 : DiscLogManifestComparisonStatus.Mismatch;
 

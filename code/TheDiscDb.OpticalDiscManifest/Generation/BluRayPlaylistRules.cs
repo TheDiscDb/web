@@ -7,6 +7,35 @@ internal static class BluRayPlaylistRules
 {
     internal const int InfiniteStillMode = 2;
 
+    internal static IReadOnlyList<string> GetStandaloneStillClips(
+        MplsPlaylist playlist,
+        ICollection<ManifestDiagnostic> diagnostics,
+        string path)
+    {
+        var stillClips = playlist.PlayItems
+            .Where(item => item.StillMode == InfiniteStillMode)
+            .Select(item => item.ClipId)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (stillClips.Length > 2)
+        {
+            diagnostics.Add(new ManifestDiagnostic
+            {
+                Severity = "info",
+                Code = "ODM_BD_STILL_GALLERY_STREAMS_SKIPPED",
+                Message = $"Playlist has {stillClips.Length} distinct infinite-still clips; galleries with more than two do not promote standalone stream titles.",
+                Path = path,
+            });
+            return [];
+        }
+
+        // A gallery cut from a single clip remains represented by its playlist alone.
+        return playlist.PlayItems.Select(item => item.ClipId)
+            .Distinct(StringComparer.OrdinalIgnoreCase).Skip(1).Any()
+            ? stillClips
+            : [];
+    }
+
     internal static IReadOnlyList<MplsPlaylist> SplitIncompatiblePlayItems(
         MplsPlaylist playlist,
         IReadOnlyDictionary<string, ClpiFile> clpiByClip,

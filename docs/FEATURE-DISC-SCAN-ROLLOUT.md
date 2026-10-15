@@ -27,8 +27,10 @@ phases so that MakeMKV logs can eventually be retired.
   - Titles are matched by source key: the playlist or stream file on Blu-ray, the title number on
     DVD.
   - Chapters, size, length and segment map are hard differences. Display size is a soft difference.
-  - `OrderMatches` is tracked separately and never causes a mismatch on its own, because Chromium
-    lists files in name order.
+  - UX parity is order-sensitive: the disc identify page must offer the same items in the
+    same order as today's MakeMKV-backed flow. `Match` requires equal title sets, no hard
+    differences and `OrderMatches`. A title-order swap alone is a `Mismatch`, even if
+    Chromium enumerates files in name order.
   - Blu-ray artifact-consistency warnings report log sources missing from the scan inventory
     and standalone stream size disagreements. They do not change parity status or prove a
     different disc: the identity hash compares the scan with the contribution record, not
@@ -158,11 +160,24 @@ directory order, backup failures, partial DVD joins and MPLS/CLPI stream precede
 
 Single-clip chaptered playlists suppress a duplicate standalone stream only when the
 presentation duration and byte size match and the stream adds no selected tracks.
-Dolby Vision and still-playlist clips remain separate candidates. Narrower trailing
-play items use the NTSC half-second boundary (0.5005 seconds, rounded to 45 kHz ticks)
+Dolby Vision clips remain separate candidates. Multi-clip still playlists promote only
+their actual infinite-still clips, and only when there are at most two distinct such
+clips. This preserves Monsters University's two-still candidates without promoting
+ordinary or finite-still play items alongside them. Larger galleries remain playlist
+candidates but do not promote their clips as extra standalone choices;
+`ODM_BD_STILL_GALLERY_STREAMS_SKIPPED` records the playlist and distinct infinite-still
+clip count. The observed eight-playlist, 16-still-per-playlist gallery therefore avoids
+128 extra stream choices. A gallery cut from one clip remains represented by its
+playlist alone. These rules do not change independent orphan or Dolby Vision promotion.
+
+Narrower trailing play items use the NTSC half-second boundary (0.5005 seconds, rounded to 45 kHz ticks)
 when their video rate declares 23.976, 29.97 or 59.94 fps; longer tails, equal stream
 tables and stereoscopic playlists are preserved. These generator fixes affect future
 submissions, not manifests already stored.
+
+The unresolved playlist grouping/timing mismatches in comparisons 2813 and 2822 remain
+mismatches pending further evidence; these UX-parity fixes do not change their scanner
+grouping or timing behavior.
 
 Standalone promotion excludes clips whose nonempty CLPI program and extension stream
 declarations are entirely Interactive Graphics (`0x91`). The scanner records
