@@ -116,22 +116,9 @@ internal static class BluRayManifestBuilder
                 });
             }
 
-            // A playlist that holds a still frame indefinitely waits on the viewer, like a
-            // menu, and MakeMKV still lists each of its clips as a stream title: on Monsters
-            // University (UHD) 00002.mpls (stills 150, 151) and 00015.mpls (150, then still
-            // 57) are listed, and so are 00150.m2ts, 00151.m2ts and 00057.m2ts. Clips of
-            // looping playlists without stills are not: 00020.mpls plays 40 then 41 on
-            // repeat and neither 00040.m2ts nor 00041.m2ts is listed. A still gallery cut
-            // from one clip is that clip's playlist, and the clip is not listed again: on the
-            // Monsters University bonus disc 00100.mpls holds 366 stills of clip 914, and
-            // 00914.m2ts is not listed.
-            if (collapsed.PlayItems.Any(item => item.StillMode == BluRayPlaylistRules.InfiniteStillMode)
-                && collapsed.PlayItems.Select(item => item.ClipId).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1)
+            foreach (var clip in BluRayPlaylistRules.GetStandaloneStillClips(collapsed, diagnostics, result.Path))
             {
-                foreach (var item in collapsed.PlayItems)
-                {
-                    stillPlaylistClips.Add(item.ClipId);
-                }
+                stillPlaylistClips.Add(clip);
             }
 
             var playlist = BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(collapsed);

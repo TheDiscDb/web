@@ -1275,6 +1275,93 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Same(mixed, BluRayPlaylistRules.CollapseRepeatedPlayItems(mixed));
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(16)]
+    public void GetStandaloneStillClips_PromotesAtMostTwoDistinctInfiniteStillClips(int stillCount)
+    {
+        var items = Enumerable.Range(0, stillCount)
+            .Select(index => (Clip: index.ToString("D5"), ConnectionCondition: 1, StillMode: 2))
+            .ToArray();
+        var playlist = CreateMultiItemPlaylist(
+            [("00998", 1, 0), .. items, .. items, ("00999", 1, 1)], []);
+        var diagnostics = new List<ManifestDiagnostic>();
+        const string path = "BDMV/PLAYLIST/00001.mpls";
+
+        var clips = BluRayPlaylistRules.GetStandaloneStillClips(playlist, diagnostics, path);
+
+        Assert.Equal(stillCount <= 2 ? items.Select(item => item.Clip) : [], clips);
+        if (stillCount > 2)
+        {
+            var diagnostic = Assert.Single(diagnostics);
+            Assert.Equal("ODM_BD_STILL_GALLERY_STREAMS_SKIPPED", diagnostic.Code);
+            Assert.Equal("info", diagnostic.Severity);
+            Assert.Equal(path, diagnostic.Path);
+            Assert.Contains($"{stillCount} distinct infinite-still clips", diagnostic.Message);
+        }
+        else
+        {
+            Assert.Empty(diagnostics);
+        }
+    }
+
+    [Fact]
+    public void GetStandaloneStillClips_DoesNotPromoteSingleClipGallery()
+    {
+        var playlist = CreateMultiItemPlaylist(
+            [("00914", 1, 2), ("00914", 1, 2), ("00914", 1, 2)], []);
+        var diagnostics = new List<ManifestDiagnostic>();
+
+        Assert.Empty(BluRayPlaylistRules.GetStandaloneStillClips(
+            playlist, diagnostics, "BDMV/PLAYLIST/00100.mpls"));
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void ReconcileBluRayTitles_LargeStillGalleriesDoNotAdd128StandaloneChoices()
+    {
+        var files = new List<NormalizedFile>();
+        var playlists = new List<MplsPlaylist>();
+        for (int index = 0; index < 8; index++)
+        {
+            var items = Enumerable.Range(index * 16, 16)
+                .Select(clip => (Clip: clip.ToString("D5"), ConnectionCondition: 1, StillMode: 2))
+                .ToArray();
+            playlists.Add(CreateMultiItemPlaylist(items, [(0, 0u)]));
+            foreach (var item in items)
+            {
+                var file = RecordingFile.Payload($"BDMV/STREAM/{item.Clip}.m2ts", 6144);
+                files.Add(new(file.Path, file, files.Count));
+            }
+        }
+        var diagnostics = new List<ManifestDiagnostic>();
+        var catalog = DiscFileCatalog.NormalizeFiles(files.Select(file => file.File).ToArray(), diagnostics);
+        var clpi = new Dictionary<string, ClpiFile>();
+        var stillClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var candidates = playlists.Select((playlist, index) =>
+        {
+            string path = $"BDMV/PLAYLIST/{index:D5}.mpls";
+            stillClips.UnionWith(BluRayPlaylistRules.GetStandaloneStillClips(playlist, diagnostics, path));
+            return BluRayTitleMapper.CreateBluRayTitle(path, playlist, catalog, clpi, diagnostics);
+        }).ToArray();
+
+        var titles = BluRayTitleReconciler.ReconcileBluRayTitles(
+            candidates, files, clpi, new HashSet<string>(), new HashSet<string>(), stillClips, diagnostics);
+
+        Assert.Equal(128, files.Count);
+        Assert.Equal(candidates.Select(title => title.Source!.Path), titles.Select(title => title.Source!.Path));
+        Assert.Equal(8, titles.Count);
+        Assert.Empty(stillClips);
+        Assert.Equal(
+            candidates.Select(title => title.Source!.Path),
+            diagnostics.Where(d => d.Code == "ODM_BD_STILL_GALLERY_STREAMS_SKIPPED").Select(d => d.Path));
+        Assert.DoesNotContain(diagnostics, d => d.Code == "ODM_BD_STREAM_TITLE_PROMOTED");
+        Assert.All(files, file => Assert.Equal(0, ((RecordingFile)file.File).ReadCount));
+    }
+
     private static MplsPlaylist CreateMultiItemPlaylist(
         IReadOnlyList<(string Clip, int ConnectionCondition, int StillMode)> items,
         IReadOnlyList<(int PlayItem, uint Time)> marks)

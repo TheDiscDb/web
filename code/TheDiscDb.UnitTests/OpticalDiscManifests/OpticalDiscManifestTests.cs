@@ -870,7 +870,7 @@ public class DiscLogManifestComparerTests
     }
 
     [Test]
-    public async Task Compare_OrderSwap_DoesNotMakeMismatch()
+    public async Task Compare_OrderSwap_IsMismatch()
     {
         var manifest = CreateManifest(
             CreateTitle("BDMV/PLAYLIST/00002.mpls", chapters: 1, size: 100, lengthSeconds: 10, segmentMap: "2"),
@@ -882,8 +882,13 @@ public class DiscLogManifestComparerTests
 
         var result = DiscLogManifestComparer.Compare(logInfo, string.Empty, manifest, manifestInfo, "HASH");
 
-        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Match);
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Mismatch);
         await Assert.That(result.OrderMatches).IsFalse();
+        await Assert.That(result.Differences.LogOnlyTitles).IsEmpty();
+        await Assert.That(result.Differences.ManifestOnlyTitles).IsEmpty();
+        await Assert.That(result.Differences.TitleDifferences).IsEmpty();
+        await Assert.That(result.Differences.LogOrder!.SequenceEqual(["00001.mpls", "00002.mpls"])).IsTrue();
+        await Assert.That(result.Differences.ManifestOrder!.SequenceEqual(["00002.mpls", "00001.mpls"])).IsTrue();
     }
 
     [Test]
