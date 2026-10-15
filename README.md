@@ -32,6 +32,18 @@ To run the site locally, you'll need the following tools installed:
 
 **TODO: Provide a command line only way to clone and run the site**
 
+### Six Labors license
+
+Release builds require a valid Six Labors license. For local builds, set the
+`SixLaborsLicenseFile` environment variable to the absolute path of your
+`sixlabors.lic` file. License files are ignored by Git and must not be committed.
+
+The **Build and deploy Blazor app** GitHub Actions workflow reads the
+`SIXLABORS_LICENSE` secret from the `production` environment (or repository
+secrets). Store the complete license file contents in that secret. The workflow
+writes it to the runner's temporary directory, exposes its path to MSBuild, and
+removes the file after publishing, including when a build or test fails.
+
 ### Release import behavior
 
 Imports merge a media item's releases by slug. A contribution workspace may contain
