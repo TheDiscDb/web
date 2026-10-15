@@ -20,12 +20,28 @@ jobs:
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Restore
       run: dotnet restore "code/TheDiscDb/TheDiscDb.csproj"
+    - name: Configure Six Labors license
+      shell: bash
+      env:
+        SIXLABORS_LICENSE: ${{ secrets.SIXLABORS_LICENSE }}
+      run: |
+        if [ -z "$SIXLABORS_LICENSE" ]; then
+          echo "::error::SIXLABORS_LICENSE is not configured"
+          exit 1
+        fi
+        umask 077
+        printf '%s' "$SIXLABORS_LICENSE" > "$RUNNER_TEMP/sixlabors.lic"
+        echo "SixLaborsLicenseFile=$RUNNER_TEMP/sixlabors.lic" >> "$GITHUB_ENV"
     - name: Build
       run: dotnet build "code/TheDiscDb/TheDiscDb.csproj" --configuration Release --no-restore
     - name: Test
       run: dotnet test "code/TheDiscDb.UnitTests/TheDiscDb.UnitTests.csproj" --configuration Release
     - name: Publish
       run: dotnet publish "code/TheDiscDb/TheDiscDb.csproj" --configuration Release --no-build --output publish
+    - name: Remove Six Labors license
+      if: always()
+      shell: bash
+      run: rm -f "$RUNNER_TEMP/sixlabors.lic"
     - name: Log in to Azure
       uses: azure/login@v2
       with:

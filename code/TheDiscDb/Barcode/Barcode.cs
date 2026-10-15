@@ -131,18 +131,21 @@
                     }
                 };
 
-                while (pos < encodedData.Length)
+                imageContext.Paint(drawingOptions, canvas =>
                 {
-                    if (encodedData[pos] == '1')
+                    while (pos < encodedData.Length)
                     {
-                        imageContext.DrawLine(drawingOptions, pen,
-                            new PointF(pos * iBarWidth + shiftAdjustment + halfBarWidth, 0),
-                            new PointF(pos * iBarWidth + shiftAdjustment + halfBarWidth, Height - labelHeight)
-                        );
-                    }
+                        if (encodedData[pos] == '1')
+                        {
+                            canvas.DrawLine(pen,
+                                new PointF(pos * iBarWidth + shiftAdjustment + halfBarWidth, 0),
+                                new PointF(pos * iBarWidth + shiftAdjustment + halfBarWidth, Height - labelHeight)
+                            );
+                        }
 
-                    pos++;
-                }
+                        pos++;
+                    }
+                });
             });
 
             if (ShowLabel && labelTextOptions != null)
@@ -174,7 +177,8 @@
 
                 labelTextOptions.Origin = new Point(labelX, labelY);
 
-                image.Mutate(x => x.DrawText(labelTextOptions, Data, ForegroundColor));
+                image.Mutate(x => x.Paint(canvas =>
+                    canvas.DrawText(labelTextOptions, Data, Brushes.Solid(ForegroundColor), pen: null)));
             }
 
             return image;
