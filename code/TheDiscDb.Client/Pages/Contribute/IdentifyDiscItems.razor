@@ -158,7 +158,7 @@
                     </button>
                 </HeaderTemplate>
                 <ChildContent>
-                    <span title="@context.SegmentMap">@Truncate(context.SegmentMap, 12)</span>
+                    <span title="@context.SegmentMap">@MakeMkv.IdentifyTitlePresentation.SegmentMapText(context.SegmentMap)</span>
                 </ChildContent>
             </TemplateColumn>
             <TemplateColumn Title="Playlist" Sortable="true" SortBy="SortPlaylistNumber">
@@ -255,7 +255,7 @@
                         {
                             <SfButton IconCss="@GetSubtitleIconCss(context)" OnClick="() => NameSubtitleTracks(context)" title="@GetSubtitleButtonToolTip(context)" />
                         }
-                        @if (context.ChapterCount > 1)
+                        @if (MakeMkv.IdentifyTitlePresentation.CanLabelChapters(context.ChapterCount))
                         {
                             <SfButton IconCss="@GetChapterIconCss(context)" OnClick="() => InputChapters(context)" title="@GetChapterButtonToolTip(context)" />
                         }

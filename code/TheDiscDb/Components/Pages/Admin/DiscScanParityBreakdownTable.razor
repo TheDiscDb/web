@@ -6,15 +6,21 @@
         <thead>
             <tr>
                 <th>Group</th>
-                <th>Matches</th>
-                <th>Rate</th>
+                <th>Identify matches / measured</th>
+                <th>Identify rate</th>
+                <th>Not comparable / not measured</th>
+                <th>Technical matches</th>
+                <th>Technical rate</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var row in Rows)
             {
-                <tr>
+                <tr @key="row.Label">
                     <td>@row.Label</td>
+                    <td>@row.IdentifyExperience.Matches / @row.IdentifyExperience.Measured</td>
+                    <td>@row.IdentifyExperience.Rate</td>
+                    <td>@row.IdentifyExperience.NotComparable / @row.IdentifyExperience.NotMeasured</td>
                     <td>@row.Stats.Matches / @row.Stats.Total</td>
                     <td>@FormatRate(row.Stats)</td>
                 </tr>

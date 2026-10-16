@@ -587,6 +587,78 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Null(standalone.Language);
     }
 
+    [Theory]
+    [InlineData("Audio", 1, "mono")]
+    [InlineData("Audio", 3, "stereo")]
+    [InlineData("SecondaryAudio", 1, "mono")]
+    [InlineData("SecondaryAudio", 3, "stereo")]
+    [InlineData("Audio", 6, null)]
+    [InlineData("Audio", 12, null)]
+    [InlineData("Audio", 0, null)]
+    [InlineData("Audio", 15, null)]
+    [InlineData("Audio", null, null)]
+    [InlineData("SecondaryAudio", 6, null)]
+    [InlineData("SecondaryAudio", 12, null)]
+    [InlineData("Video", 3, null)]
+    public async Task CreateStreams_ProjectsOnlyExplicitAudioLayouts(string category, int? format, string? expected)
+    {
+        var parsed = await new ClpiParser(new MemoryOpticalDiscReader(
+            await File.ReadAllBytesAsync(
+                Path.Combine(fixturesPath, "CLPI", "UHD-A", "00589.clpi"),
+                TestContext.Current.CancellationToken))).ParseAsync();
+        Assert.NotNull(parsed.Value);
+        var clpi = parsed.Value;
+        var evidence = clpi.Programs.SelectMany(program => program.Streams).First() with
+        {
+            Category = category,
+            Pid = 4352,
+            CodingType = "AC-3",
+            CodingTypeCode = 0x81,
+            FormatCode = format,
+        };
+        clpi = clpi with
+        {
+            Programs = [clpi.Programs[0] with { Streams = [evidence] }],
+            ExtensionStreams = [],
+        };
+        var mplsStream = new MplsStream
+        {
+            Category = category,
+            Pid = 4352,
+            StreamTypeCode = 1,
+            CodingType = "AC-3",
+            CodingTypeCode = 0x81,
+            FormatCode = format,
+        };
+        var playlist = CreateSyntheticPlaylist(90_000, []);
+        var item = playlist.PlayItems[0];
+        playlist = playlist with
+        {
+            PlayItems = [item with { StreamTable = item.StreamTable with { AudioStreams = [mplsStream] } }],
+        };
+
+        var fallback = Assert.Single(ManifestStreamMapper.CreateBluRayStreams(playlist, new Dictionary<string, ClpiFile>()));
+        var enriched = Assert.Single(ManifestStreamMapper.CreateBluRayStreams(playlist,
+            new Dictionary<string, ClpiFile> { [item.ClipId] = clpi }));
+        var standalone = Assert.Single(ManifestStreamMapper.CreateClpiStreams(clpi));
+        foreach (var stream in new[] { fallback, enriched, standalone })
+        {
+            Assert.Equal(expected, stream.AudioLayout);
+            Assert.Equal("AC-3", stream.Codec);
+            Assert.Equal(format, stream.FormatCode);
+        }
+
+        // Explicit CLPI stereo overrides the MPLS mono fallback, using the same evidence
+        // precedence as the other stream attributes.
+        if (category is "Audio" or "SecondaryAudio" && format == 1)
+        {
+            clpi = clpi with { Programs = [clpi.Programs[0] with { Streams = [evidence with { FormatCode = 3 }] }] };
+            var overridden = Assert.Single(ManifestStreamMapper.CreateBluRayStreams(playlist,
+                new Dictionary<string, ClpiFile> { [item.ClipId] = clpi }));
+            Assert.Equal("stereo", overridden.AudioLayout);
+        }
+    }
+
     [Fact]
     public void CreateBluRayCompositionKey_DistinguishesTitlesThatPlayDifferently()
     {
@@ -778,6 +850,36 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
+    public void OrderBluRayTitles_UsesClipInfoOrderRatherThanStreamFileOrder()
+    {
+        static ManifestTitle At(string path) => new() { Source = new ManifestTitleSource { Path = path } };
+        string[] inventory =
+        [
+            "BDMV/PLAYLIST/00000.mpls",
+            "BDMV/CLIPINF/00002.clpi",
+            "BDMV/CLIPINF/00001.clpi",
+            "BDMV/STREAM/00001.m2ts",
+            "BDMV/STREAM/00002.m2ts",
+            "BDMV/STREAM/00003.m2ts",
+        ];
+        var ordered = BluRayTitleReconciler.OrderBluRayTitles(
+        [
+            At("BDMV/STREAM/00001.m2ts"),
+            At("BDMV/STREAM/00003.m2ts"),
+            At("BDMV/PLAYLIST/00000.mpls"),
+            At("BDMV/STREAM/00002.m2ts"),
+        ], path =>
+        {
+            int index = Array.IndexOf(inventory, path);
+            return index >= 0 ? index : int.MaxValue;
+        });
+
+        Assert.Equal(
+            ["BDMV/PLAYLIST/00000.mpls", "BDMV/STREAM/00002.m2ts", "BDMV/STREAM/00001.m2ts", "BDMV/STREAM/00003.m2ts"],
+            ordered.Select(title => title.Source!.Path));
+    }
+
+    [Fact]
     public void OrderBluRayTitles_FallsBackToClipOrderForStreamsWithoutDiscOrder()
     {
         static ManifestTitle At(string path) => new() { Source = new ManifestTitleSource { Path = path } };
@@ -808,10 +910,9 @@ public sealed class OpticalDiscManifestGeneratorTests
         // Real control files from Hell on Wheels Season 1 Disc 1 (fixture set BD-C),
         // compared with a MakeMKV 1.18.3 log of the same disc. The chapter counts and
         // h:mm:ss lengths (partial seconds truncated) match MakeMKV's. One known difference
-        // remains: MakeMKV splits 00005.mpls and 00009.mpls at their non-seamless
-        // connections, listing 00005.mpls(1) and 00010.m2ts where 00005.mpls appears here,
-        // and nothing where 00009.mpls appears. Playlists are not split, because Spartacus
-        // (UHD) has 21 playlists with the same connections that MakeMKV lists whole.
+        // remains: MakeMKV splits 00005.mpls, listing 00005.mpls(1) and 00010.m2ts
+        // where 00005.mpls appears here. 00009.mpls now splits at its primary-stream
+        // membership change and is covered by the existing standalone stream choices.
         (string Clip, long Size)[] streams =
         [
             ("00000", 7910012928), ("00001", 15003648), ("00002", 5812224), ("00003", 5407795200),
@@ -850,7 +951,6 @@ public sealed class OpticalDiscManifestGeneratorTests
                 ("00004.mpls", 6, 2694, 7910012928),
                 ("00005.mpls", 3, 101, 250638336),
                 ("00006.mpls", 2, 93, 246521856),
-                ("00009.mpls", 2, 16, 15028224),
                 ("00012.mpls", 6, 2571, 7580424192),
                 ("00013.mpls", 6, 2557, 5895487488),
                 ("00001.m2ts", 0, 15, 15003648),
@@ -1131,13 +1231,16 @@ public sealed class OpticalDiscManifestGeneratorTests
     [InlineData(4, 22500u, true)]
     [InlineData(4, 22522u, true)]
     [InlineData(4, 22523u, true)]
-    [InlineData(4, 22524u, false)]
+    [InlineData(4, 22524u, true)]
+    [InlineData(4, 45045u, true)]
+    [InlineData(4, 45046u, false)]
     [InlineData(4, 46921u, false)]
     [InlineData(1, 22523u, true)]
     [InlineData(7, 22523u, true)]
-    [InlineData(2, 22500u, false)]
-    [InlineData(0, 22500u, false)]
-    public void TrimTrailingNarrowerPlayItems_UsesNtscHalfSecondBoundary(int rateCode, uint ticks, bool trim)
+    [InlineData(2, 45000u, true)]
+    [InlineData(2, 45001u, false)]
+    [InlineData(0, 45001u, false)]
+    public void TrimTrailingNarrowerPlayItems_UsesNtscOneSecondBoundary(int rateCode, uint ticks, bool trim)
     {
         var playlist = CreateMultiItemPlaylist([("00017", 1, 0), ("00009", 1, 0)], [(0, 0u), (1, 0u)]);
         var video = new MplsStream
@@ -1169,6 +1272,127 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.Same(sameStreams, BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(sameStreams));
         var stereo = playlist with { StereoVideoRelationships = [CreateMvcStereoRelationship()] };
         Assert.Same(stereo, BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(stereo));
+    }
+
+    [Theory]
+    [InlineData("random")]
+    [InlineData("angle")]
+    [InlineData("still")]
+    [InlineData("incomplete")]
+    public void TrimTrailingNarrowerPlayItems_DoesNotExtendThresholdForComplexOrIncompleteEvidence(string reason)
+    {
+        var playlist = CreateSyntheticPlaylist([90_000L, 45_045L], []);
+        var video = new MplsStream
+        {
+            Category = "Video", StreamTypeCode = 1, Pid = 4113,
+            CodingType = "AVC", CodingTypeCode = 0x1B, FormatCode = 6, RateCode = 1,
+        };
+        playlist = playlist with
+        {
+            AppInfo = playlist.AppInfo with { PlaybackTypeCode = reason == "random" ? 2 : 1 },
+            PlayItems = playlist.PlayItems.Select((item, index) => item with
+            {
+                IsMultiAngle = reason == "angle",
+                StillMode = reason == "still" ? 2 : 0,
+                StreamTable = item.StreamTable with
+                {
+                    VideoStreams = [video],
+                    AudioStreams = index == 0 ? [video with { Category = "Audio" }] : [],
+                },
+            }).ToArray(),
+        };
+        Assert.Same(playlist, BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(playlist, reason == "incomplete"));
+    }
+
+    [Fact]
+    public void PlaylistRules_TrimDiscoveryTailAndSeparateEpisodesWhenOneAudioPidDisappears()
+    {
+        long[] ticks = [4_500_000L, 3_600_000L, 4_050_000L, 3_150_000L, 45_045L];
+        var playlist = CreateSyntheticPlaylist(ticks,
+            Enumerable.Range(0, ticks.Length).Select(index => (index, 1, index, 0u, 0u)).ToArray());
+        var video = new MplsStream
+        {
+            Category = "Video", StreamTypeCode = 1, Pid = 4113,
+            CodingType = "AVC", CodingTypeCode = 0x1B, FormatCode = 6, RateCode = 1,
+        };
+        var audio = video with { Category = "Audio", Pid = 4352, CodingType = "AC-3", CodingTypeCode = 0x81 };
+        playlist = playlist with
+        {
+            PlayItems = playlist.PlayItems.Select((item, index) => item with
+            {
+                StreamTable = item.StreamTable with
+                {
+                    VideoStreams = [video],
+                    AudioStreams = index < 2 ? [audio, audio with { Pid = 4358 }] : index < 4 ? [audio] : [],
+                },
+            }).ToArray(),
+        };
+        var trimmed = BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(playlist);
+        var clips = new Dictionary<string, ClpiFile>();
+        var parts = BluRayPlaylistRules.SplitIncompatiblePlayItems(trimmed, clips);
+        var diagnostics = new List<ManifestDiagnostic>();
+        var files = DiscFileCatalog.NormalizeFiles(
+            playlist.PlayItems.Select(item => RecordingFile.Payload($"BDMV/STREAM/{item.ClipId}.m2ts", 4096)).ToArray(),
+            diagnostics);
+        var titles = parts.Select((part, index) => BluRayTitleMapper.CreateBluRayTitle(
+            "BDMV/PLAYLIST/00200.mpls", part, files, clips, diagnostics, index)).ToArray();
+
+        Assert.Equal([0, 1], titles.Select(title => title.Source.Part));
+        Assert.Equal([180d, 160d], titles.Select(title => title.DurationSeconds!.Value));
+        Assert.Equal([8192L, 8192L], titles.Select(title => title.SizeBytes!.Value));
+        Assert.Equal([2, 2], titles.Select(title => title.Chapters!.Count));
+        Assert.Equal(["00000", "00001"], titles[0].Segments!.Select(segment => segment.Clip));
+        Assert.Equal(["00002", "00003"], titles[1].Segments!.Select(segment => segment.Clip));
+        Assert.Equal(0, titles[1].Segments![0].StartSeconds);
+        Assert.Equal(0, titles[1].Chapters![0].StartSeconds);
+    }
+
+    [Theory]
+    [InlineData(1, true, 2)]
+    [InlineData(1, false, 2)]
+    [InlineData(5, true, 1)]
+    [InlineData(6, true, 1)]
+    public void SplitIncompatiblePlayItems_SplitsKnownPrimaryMembershipChanges(int connection, bool adding, int expectedParts)
+    {
+        var playlist = CreateMultiItemPlaylist([("00000", 1, 0), ("00001", 1, 0)], [(0, 0u), (1, 0u)]);
+        var video = new MplsStream
+        {
+            Category = "Video", StreamTypeCode = 1, Pid = 4113,
+            CodingType = "AVC", CodingTypeCode = 0x1B, FormatCode = 6, RateCode = 1,
+        };
+        var audio = video with { Category = "Audio", Pid = 4358, CodingType = "AC-3", CodingTypeCode = 0x81 };
+        playlist = playlist with
+        {
+            PlayItems = playlist.PlayItems.Select((item, index) => item with
+            {
+                ConnectionCondition = index == 0 ? 1 : connection,
+                StreamTable = item.StreamTable with
+                {
+                    VideoStreams = [video],
+                    AudioStreams = (index == 1) == adding ? [audio] : [],
+                },
+            }).ToArray(),
+        };
+        var clips = new Dictionary<string, ClpiFile>();
+        var parts = BluRayPlaylistRules.SplitIncompatiblePlayItems(playlist, clips);
+        Assert.Equal(expectedParts, parts.Count);
+        if (expectedParts == 2)
+        {
+            Assert.All(parts, part => Assert.Equal(0, Assert.Single(part.Marks).PlayItemReference));
+        }
+
+        var unknown = playlist with
+        {
+            PlayItems = playlist.PlayItems.Select(item => item with
+            {
+                StreamTable = item.StreamTable with
+                {
+                    AudioStreams = item.StreamTable.AudioStreams.Select(stream => stream with { CodingTypeCode = 0 }).ToArray(),
+                },
+            }).ToArray(),
+        };
+        Assert.Same(unknown, Assert.Single(BluRayPlaylistRules.SplitIncompatiblePlayItems(unknown, clips)));
+        Assert.Same(playlist, Assert.Single(BluRayPlaylistRules.SplitIncompatiblePlayItems(playlist, clips, incompleteEvidence: true)));
     }
 
     [Fact]
