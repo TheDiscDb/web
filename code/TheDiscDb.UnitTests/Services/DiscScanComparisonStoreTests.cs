@@ -49,4 +49,27 @@ public class DiscScanComparisonStoreTests
         await Assert.That(DiscScanComparisonStore.Deserialize("not json")).IsNull();
         await Assert.That(DiscScanComparisonStore.Deserialize("")).IsNull();
     }
+
+    [Test]
+    public async Task Serialize_PreservesGradedCountsAndOptionalHistoricalScores()
+    {
+        var disc = new MakeMkv.DiscInfo();
+        disc.Titles.Add(new MakeMkv.Title { Playlist = "1" });
+        var measured = IdentifyExperienceComparer.Compare(disc, disc);
+        var file = new DiscScanComparisonFile
+        {
+            Comparisons =
+            [
+                new DiscScanComparisonRecord { Differences = new() { IdentifyExperience = measured } },
+                new DiscScanComparisonRecord { Differences = new() { IdentifyExperience = measured with { Similarity = null } } }
+            ]
+        };
+        var restored = DiscScanComparisonStore.Deserialize(DiscScanComparisonStore.Serialize(file))!;
+        var score = restored.Comparisons[0].Differences.IdentifyExperience!.Similarity!;
+        await Assert.That(score.Overall).IsEqualTo(100d);
+        await Assert.That(score.RowPresentation.Matching).IsEqualTo(7L);
+        await Assert.That(score.Ordering.Total).IsEqualTo(1L);
+        await Assert.That(restored.Comparisons[1].Differences.IdentifyExperience!.Status).IsEqualTo(IdentifyExperienceStatus.Match);
+        await Assert.That(restored.Comparisons[1].Differences.IdentifyExperience!.Similarity).IsNull();
+    }
 }

@@ -156,6 +156,7 @@ public class IdentifyExperienceTests
         var result = DiscLogManifestComparer.Compare(OpticalDiscManifestMapper.ToDiscInfo(manifest), "", manifest,
             OpticalDiscManifestMapper.ToDiscInfo(manifest), "OTHER");
         await Assert.That(result.Differences.IdentifyExperience!.Status).IsEqualTo(IdentifyExperienceStatus.NotComparable);
+        await Assert.That(result.Differences.IdentifyExperience.Similarity).IsNull();
     }
 
     [Test]
@@ -200,6 +201,7 @@ public class IdentifyExperienceTests
         };
         var result = Compare(manifest, OpticalDiscManifestMapper.ToDiscInfo(manifest));
         await Assert.That(result.Differences.IdentifyExperience!.Status).IsEqualTo(IdentifyExperienceStatus.NotComparable);
+        await Assert.That(result.Differences.IdentifyExperience.Similarity).IsNull();
     }
 
     [Test]

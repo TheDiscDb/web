@@ -77,8 +77,9 @@ phases so that MakeMKV logs can eventually be retired.
     the original playlist/part, clip, duration evidence and removed chapter-mark count.
     These describe reconciliation decisions; later duplicate exclusions may remove a candidate.
     Older manifests remain supported.
-- **Admin dashboard.** `/admin/disc-scan-parity` leads with same-identify-experience match rates
-  among measured comparisons and separately reports not-comparable/not-measured coverage.
+- **Admin dashboard.** `/admin/disc-scan-parity` leads with graded similarity and also shows
+  strict same-identify-experience match rates among measured comparisons, with separate
+  not-comparable/not-measured coverage for both versions.
   Technical parity remains visible independently. It uses the latest comparison for
   each disc, broken down by format, producer version, MakeMKV version and browser.
   `/admin/disc-scan-parity/{discId}` shows the title-by-title differences, links to download the
@@ -89,6 +90,58 @@ phases so that MakeMKV logs can eventually be retired.
 - **CLI.** `thediscdb-scan` (`code/TheDiscDb.DiscScan.Cli`) produces the same manifest from a
   local disc on Windows, macOS and Linux. It is released by `.github/workflows/publish-scan-cli.yml`
   when a `scan-cli-v*` tag is pushed. Contributors upload its output on the Disc Manifest tab.
+
+## Graded identify similarity v1
+
+`differences.identifyExperience.similarity` is optional and separately versioned.
+It does **not** replace strict identify v1 or technical pass/fail. Historical strict
+measurements without it remain strict measured / graded **Not measured**. Unknown
+graded versions are not interpreted. Empty acquisitions, different discs and errors
+have no score; absent references are not successful 0%/100% fallback measurements.
+
+Alignment uses exact source identity (ordinal case-insensitive, trimmed source key;
+DVD integer padding normalized only for identity). Different playlists, stream aliases,
+split parts and equivalent clip sets are not interchangeable. For duplicates, the nth
+occurrence on the log side pairs with the nth on the scan side, without choosing the
+best-looking metadata match. Indistinguishable duplicate swaps cannot be detected as
+ordering changes; metadata differences remain visible. Unknown/blank sources never pair.
+Missing/extra lists preserve occurrences and acquisition row numbers.
+
+Let `M` be aligned occurrences, `missing=L-M`, `extra=R-M`, and
+`U=M+missing+extra`. Components are percentages, using unrounded counts:
+
+| Component | Numerator / denominator | Weight |
+|---|---|---|
+| Choice coverage | `M / U` | 40% |
+| Row presentation | Equal checks on aligned rows / `7U` | 25% |
+| Ordering | Concordant aligned occurrence pairs / `U(U-1)/2` | 15% |
+| Labeling | Equal checks on aligned rows / `7U` | 20% |
+
+Presentation checks: displayed chapter count, formatted size, length, playlist label,
+full segment map, comment-column visibility and displayed comment. Truncated segment-map
+text and full tooltip get **one** vote (the full map determines both), unlike strict v1's
+separate checks. Visibility is assessed for the whole acquisition and voted once per row.
+Labeling checks: chapter/audio/subtitle action availability, audio/subtitle dialog counts,
+and audio/subtitle ordered name-list equality. Counts and names are reported separately;
+a count mismatch also makes the full ordered name-list check fail. Both-empty lists
+agree on absence, not on invented names. All seven checks are fixed for every union slot.
+
+Missing/extra occurrences fail all fourteen row/label checks and all ordering pairs
+involving those occurrences. Unrelated inserted rows therefore do not cause positional
+cascades, but omissions are never rewarded by shrinking to only matched denominators.
+For the sole union choice (`U=1`), ordering is `1/1` if aligned (trivially ordered).
+With no aligned sources all components are 0%, not vacuous 100%. Empty acquisitions
+are not comparable. Ordering uses a Fenwick tree, O(n log n) time and O(n) memory.
+
+Overall = `0.40 coverage + 0.25 presentation + 0.15 ordering + 0.20 labeling`.
+There are no main-feature weights, caps or hidden confidence adjustments. Only display
+rounds (one decimal); JSON retains full precision and component numerator/denominator.
+The admin dashboard and breakdowns use the **arithmetic mean of measured per-disc**
+overall/component percentages, not pooled rows. They show measured/not-comparable/
+not-measured counts and total missing/extra occurrences. Disc lists/history show each
+disc's overall, components and missing/extra counts; details include aligned field diffs
+and missing/extra identities. A high score does not excuse a missing main choice or
+establish playback correctness, UI layout fidelity or whole-corpus accuracy.
 
 ## Switching to phase 2
 

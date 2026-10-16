@@ -24,6 +24,8 @@ public sealed record IdentifyExperienceComparison(
     IReadOnlyList<IdentifyExperienceDifference> Differences,
     string? Reason = null)
 {
+    public IdentifySimilarityScore? Similarity { get; init; }
+
     public const int CurrentVersion = 1;
     public const string ScopeText = "Default ordered identify table, full segment-map tooltip, comment column, "
         + "labeling availability after identification, and ordered audio/subtitle dialog names. "
@@ -84,7 +86,10 @@ public static class IdentifyExperienceComparer
 
         return new(IdentifyExperienceComparison.CurrentVersion,
             differences.Count == 0 ? IdentifyExperienceStatus.Match : IdentifyExperienceStatus.Mismatch,
-            log.Titles.Count, scan.Titles.Count, matchingRows, differences);
+            log.Titles.Count, scan.Titles.Count, matchingRows, differences)
+        {
+            Similarity = IdentifySimilarityComparer.Compare(log, scan)
+        };
 
         void Add(int? row, string field, string? left, string? right)
         {

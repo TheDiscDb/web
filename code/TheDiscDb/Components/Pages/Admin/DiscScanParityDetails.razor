@@ -80,6 +80,32 @@ else
     </section>
 
     <section class="info-card mb-3">
+        <h2>Identify similarity (graded v1)</h2>
+        <p>@Latest.IdentifySimilarityLabel</p>
+        <p>@IdentifySimilarityScore.Formula</p>
+        <p class="text-muted">@IdentifySimilarityScore.Scope</p>
+        @if (Latest.IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion,
+            Status: IdentifyExperienceStatus.Match or IdentifyExperienceStatus.Mismatch, Similarity: { IsMeasured: true } score })
+        {
+            <p>Missing choices: @(score.MissingChoices.Count == 0 ? "None" : string.Join("; ", score.MissingChoices))</p>
+            <p>Extra choices: @(score.ExtraChoices.Count == 0 ? "None" : string.Join("; ", score.ExtraChoices))</p>
+            <details>
+                <summary>Aligned presentation / labeling differences (@score.Differences.Count)</summary>
+                <table class="table table-sm">
+                    <thead><tr><th>Log row</th><th>Scan row</th><th>Field</th><th>Log</th><th>Scan</th></tr></thead>
+                    <tbody>
+                        @foreach (var difference in score.Differences)
+                        {
+                            <tr><td>@difference.LogRow</td><td>@difference.ManifestRow</td><td>@difference.Field</td>
+                                <td>@difference.LogValue</td><td>@difference.ManifestValue</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </details>
+        }
+    </section>
+
+    <section class="info-card mb-3">
         <h2>Same identify experience</h2>
         <p class="text-muted">@IdentifyExperienceComparison.ScopeText</p>
         @if (Differences?.IdentifyExperience is not { Version: IdentifyExperienceComparison.CurrentVersion } experience)
@@ -166,6 +192,7 @@ else
         <QuickGrid Items="History.AsQueryable()" Class="striped-grid">
             <PropertyColumn Property="@(item => item.ComparedAt)" Title="Compared" Format="yyyy-MM-dd HH:mm" />
             <PropertyColumn Property="@(item => item.IdentifyExperienceLabel)" Title="Identify experience" />
+            <PropertyColumn Property="@(item => item.IdentifySimilarityLabel)" Title="Graded similarity / components" />
             <PropertyColumn Property="@(item => item.Status)" Title="Technical parity" />
             <PropertyColumn Property="@(item => item.MatchedTitleCount)" Title="Matched" />
             <PropertyColumn Property="@(item => item.LogTitleCount)" Title="Log" />
