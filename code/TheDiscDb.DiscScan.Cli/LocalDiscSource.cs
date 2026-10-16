@@ -4,13 +4,6 @@ namespace TheDiscDb.DiscScan.Cli;
 
 public sealed class LocalDiscSource
 {
-    private static readonly EnumerationOptions RecursiveEnumeration = new()
-    {
-        RecurseSubdirectories = true,
-        IgnoreInaccessible = true,
-        AttributesToSkip = FileAttributes.System,
-    };
-
     private LocalDiscSource(
         string rootPath,
         string displayPath,
@@ -39,7 +32,8 @@ public sealed class LocalDiscSource
 
     public IReadOnlyList<string> Warnings { get; }
 
-    public static bool TryOpen(string path, out LocalDiscSource? source, out string error)
+    public static bool TryOpen(
+        string path, out LocalDiscSource? source, out string error, bool requireCompleteInventory = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
 
@@ -60,7 +54,7 @@ public sealed class LocalDiscSource
         }
 
         var warnings = new List<string>();
-        var files = EnumerateFiles(discRoot, warnings);
+        var files = EnumerateFiles(discRoot, warnings, requireCompleteInventory);
         string format = DetectFormat(files);
         if (format == "unknown")
         {
@@ -117,12 +111,19 @@ public sealed class LocalDiscSource
 
     private static IReadOnlyList<IManifestDiscFile> EnumerateFiles(
         string root,
-        ICollection<string> warnings)
+        ICollection<string> warnings,
+        bool requireCompleteInventory)
     {
         var files = new List<IManifestDiscFile>();
+        var enumeration = new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = !requireCompleteInventory,
+            AttributesToSkip = FileAttributes.System,
+        };
         try
         {
-            foreach (string path in Directory.EnumerateFiles(root, "*", RecursiveEnumeration))
+            foreach (string path in Directory.EnumerateFiles(root, "*", enumeration))
             {
                 if (IsIgnoredPath(path))
                 {
