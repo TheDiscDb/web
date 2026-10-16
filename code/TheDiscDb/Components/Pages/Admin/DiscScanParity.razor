@@ -44,6 +44,11 @@
 else
 {
     <section class="info-card mb-3">
+        <h2>Identify similarity (graded v1)</h2>
+        <p>@dashboard.Similarity.Summary</p>
+        <p>@TheDiscDb.Contributions.OpticalDiscManifest.IdentifySimilarityScore.Formula.
+            Arithmetic mean of measured per-disc scores, not pooled rows; unmeasured discs excluded, not treated as 0% or 100%.</p>
+        <p>@TheDiscDb.Contributions.OpticalDiscManifest.IdentifySimilarityScore.Scope</p>
         <h2>Same identify experience</h2>
         <p class="parity-rate">@dashboard.IdentifyExperience.Rate</p>
         <p>@dashboard.IdentifyExperience.Matches of @dashboard.IdentifyExperience.Measured measured comparisons match;
@@ -75,6 +80,7 @@ else
                     <a href="/admin/disc-scan-parity/@context.DiscId">@context.ReleaseTitle - @context.DiscName</a>
                 </TemplateColumn>
                 <PropertyColumn Property="@(item => item.IdentifyExperienceLabel)" Title="Identify experience" />
+                <PropertyColumn Property="@(item => item.IdentifySimilarityLabel)" Title="Graded similarity / components" />
                 <PropertyColumn Property="@(item => item.Status)" Title="Technical parity" />
                 <PropertyColumn Property="@(item => item.ComparedAt)" Title="Compared" Format="yyyy-MM-dd HH:mm" />
             </QuickGrid>
@@ -94,6 +100,7 @@ else
                     <a href="/admin/disc-scan-parity/@context.DiscId">@context.ReleaseTitle - @context.DiscName</a>
                 </TemplateColumn>
                 <PropertyColumn Property="@(item => item.Status)" Title="Status" />
+                <PropertyColumn Property="@(item => item.IdentifySimilarityLabel)" Title="Graded similarity / components" />
                 <PropertyColumn Property="@(item => item.Format)" Title="Format" />
                 <PropertyColumn Property="@(item => item.ProducerVersion)" Title="Producer" />
                 <PropertyColumn Property="@(item => item.MakeMkvVersion)" Title="MakeMKV" />

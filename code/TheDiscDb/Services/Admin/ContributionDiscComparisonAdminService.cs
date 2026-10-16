@@ -207,6 +207,12 @@ public sealed record ContributionDiscComparisonListItem(
 
     public string IdentifyExperienceLabel => IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion } experience
         ? experience.Status.ToString() : "Not measured";
+
+    public string IdentifySimilarityLabel => IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion,
+        Status: IdentifyExperienceStatus.NotComparable } ? "Not comparable"
+        : IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion,
+            Status: IdentifyExperienceStatus.Match or IdentifyExperienceStatus.Mismatch, Similarity: { IsMeasured: true } score }
+            ? score.Summary : "Not measured";
 }
 
 public sealed record ContributionDiscParityDashboard(
@@ -218,6 +224,7 @@ public sealed record ContributionDiscParityDashboard(
     IReadOnlyList<ContributionDiscComparisonListItem> NonMatches,
     IReadOnlyList<string> ProducerVersions)
 {
+    public IdentifySimilarityAggregate Similarity { get; init; } = IdentifySimilarityAggregate.Create([]);
     public IdentifyExperienceStats IdentifyExperience { get; init; } = new(0, 0, 0, 0);
 
     public IReadOnlyList<ContributionDiscComparisonListItem> IdentifyExperienceNonMatches { get; init; } = [];
@@ -225,6 +232,7 @@ public sealed record ContributionDiscParityDashboard(
 
 public sealed record ContributionDiscParityBreakdown(string Label, ContributionDiscParityStats Stats)
 {
+    public IdentifySimilarityAggregate Similarity { get; init; } = IdentifySimilarityAggregate.Create([]);
     public IdentifyExperienceStats IdentifyExperience { get; init; } = new(0, 0, 0, 0);
 }
 
@@ -259,6 +267,7 @@ public static class DiscScanParityAggregator
                 .Order(StringComparer.OrdinalIgnoreCase)
                 .ToList()!)
         {
+            Similarity = IdentifySimilarityAggregate.Create(latest.Select(item => item.IdentifyExperience)),
             IdentifyExperience = CreateExperienceStats(latest),
             IdentifyExperienceNonMatches = latest.Where(item =>
                 item.IdentifyExperience is not { Version: IdentifyExperienceComparison.CurrentVersion, Status: IdentifyExperienceStatus.Match }).ToList()
@@ -304,6 +313,7 @@ public static class DiscScanParityAggregator
             .GroupBy(item => NormalizeLabel(keySelector(item)), StringComparer.OrdinalIgnoreCase)
             .Select(group => new ContributionDiscParityBreakdown(group.Key, CreateStats(group))
             {
+                Similarity = IdentifySimilarityAggregate.Create(group.Select(item => item.IdentifyExperience)),
                 IdentifyExperience = CreateExperienceStats(group)
             })
             .OrderByDescending(item => item.Stats.Total)

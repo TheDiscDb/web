@@ -65,6 +65,36 @@ public class DiscScanParityAggregatorTests
         await Assert.That(latest[3].IdentifyExperienceLabel).IsEqualTo("Not measured");
     }
 
+    [Test]
+    public async Task CreateDashboard_GradedCoverageAndBreakdownsRemainSeparateFromStrictMatches()
+    {
+        var log = new MakeMkv.DiscInfo();
+        log.Titles.Add(new MakeMkv.Title { Playlist = "1" });
+        var measured = IdentifyExperienceComparer.Compare(log, log);
+        var current = CreateItem(1, DiscLogManifestComparisonStatus.Mismatch, "dvd", "1", "1", "CLI") with
+        {
+            IdentifyExperience = measured
+        };
+        var historical = CreateItem(2, DiscLogManifestComparisonStatus.Match, "dvd", "1", "1", "CLI") with
+        {
+            IdentifyExperience = measured with { Similarity = null }
+        };
+        var future = current with { DiscId = 3, IdentifyExperience = measured with { Similarity = measured.Similarity! with { Version = 99 } } };
+        var error = current with { DiscId = 4, IdentifyExperience = IdentifyExperienceComparison.NotComparable("error") };
+        var dashboard = DiscScanParityAggregator.CreateDashboard([current, historical, future, error]);
+        await Assert.That(dashboard.Similarity.Measured).IsEqualTo(1);
+        await Assert.That(dashboard.Similarity.NotMeasured).IsEqualTo(2);
+        await Assert.That(dashboard.Similarity.NotComparable).IsEqualTo(1);
+        await Assert.That(dashboard.Similarity.Overall).IsEqualTo(100d);
+        await Assert.That(dashboard.ByFormat.Single().Similarity.Measured).IsEqualTo(1);
+        await Assert.That(dashboard.Overall.Matches).IsEqualTo(1);
+        await Assert.That(dashboard.IdentifyExperience.Matches).IsEqualTo(3);
+        await Assert.That(historical.IdentifySimilarityLabel).IsEqualTo("Not measured");
+        await Assert.That(future.IdentifySimilarityLabel).IsEqualTo("Not measured");
+        await Assert.That(error.IdentifySimilarityLabel).IsEqualTo("Not comparable");
+        await Assert.That(current.IdentifySimilarityLabel).Contains("100.0%");
+    }
+
     private static ContributionDiscComparisonListItem CreateItem(
         int discId,
         DiscLogManifestComparisonStatus status,
