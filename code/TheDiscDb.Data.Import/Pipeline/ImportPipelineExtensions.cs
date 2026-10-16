@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddSingleton<DataImportPipelineBuilder>();
             services.AddSingleton<DataImportItemFactory>();
+            services.AddSingleton<NewReleaseImportSelector>();
             services.AddSingleton<DatabaseImportMiddleware>();
             services.AddSingleton<ExceptionHandlingMiddleware>();
             services.AddSingleton<GroupImportMiddleware>();

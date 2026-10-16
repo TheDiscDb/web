@@ -27,26 +27,36 @@ public class DataImportItemFactory
     }
 
     public async Task<IEnumerable<ImportItem>> FindMediaItemsToProcess(string baseDirectory, CancellationToken cancellationToken = default)
+        => await this.FindMediaItemsToProcess(baseDirectory, null, cancellationToken);
+
+    public async Task<IEnumerable<ImportItem>> FindMediaItemsToProcess(string baseDirectory, ReleaseImportScope? releaseScope, CancellationToken cancellationToken)
     {
         HashSet<string> mediaItemQueue = new();
         HashSet<string> boxsetQueue = new();
 
-        await this.fileSystem.VisitAsync(baseDirectory, async (item, token) =>
+        if (releaseScope != null)
         {
-            var type = await DetermineType(item, cancellationToken);
-            if (type == ImportFolderType.MediaItemRoot)
+            mediaItemQueue.Add(this.fileSystem.Path.GetDirectoryName(releaseScope.Directory));
+        }
+        else
+        {
+            await this.fileSystem.VisitAsync(baseDirectory, async (item, token) =>
             {
-                mediaItemQueue.Add(item.Path);
-            }
-            else if (type == ImportFolderType.Boxset)
-            {
-                boxsetQueue.Add(item.Path);
-            }
-            else if (type == ImportFolderType.Release)
-            {
-                mediaItemQueue.Add(this.fileSystem.Path.GetDirectoryName(item.Path));
-            }
-        });
+                var type = await DetermineType(item, token);
+                if (type == ImportFolderType.MediaItemRoot)
+                {
+                    mediaItemQueue.Add(item.Path);
+                }
+                else if (type == ImportFolderType.Boxset)
+                {
+                    boxsetQueue.Add(item.Path);
+                }
+                else if (type == ImportFolderType.Release)
+                {
+                    mediaItemQueue.Add(this.fileSystem.Path.GetDirectoryName(item.Path));
+                }
+            }, cancellationToken);
+        }
 
         List<ImportItem> results = new();
 
@@ -113,13 +123,20 @@ public class DataImportItemFactory
                     item = movie;
                 }
 
-                await foreach (var releaseFolder in this.fileSystem.Directory.EnumerateDirectories(inputDirectory, cancellationToken))
+                var releaseFolders = releaseScope == null
+                    ? await this.fileSystem.Directory.GetDirectories(inputDirectory, cancellationToken)
+                    : new[] { releaseScope.Directory };
+                foreach (var releaseFolder in releaseFolders)
                 {
                     string releaseFilePath = this.fileSystem.Path.Combine(releaseFolder, ReleaseFile.Filename);
                     if (await this.fileSystem.File.Exists(releaseFilePath, cancellationToken))
                     {
                         json = await this.fileSystem.File.ReadAllText(releaseFilePath, cancellationToken);
                         var releaseFile = JsonSerializer.Deserialize<ReleaseFile>(json, DataImporter.JsonOptions);
+                        if (releaseScope != null && !string.Equals(releaseFile?.Slug, releaseScope.ReleaseSlug, StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new InvalidOperationException($"Release identity changed while importing '{releaseFolder}'.");
+                        }
 
                         if (releaseFile.DateAdded == default)
                         {
@@ -176,7 +193,8 @@ public class DataImportItemFactory
                     ImdbData = imdbTitle,
                     TmdbData = tmdbData,
                     Metadata = metadata,
-                    BasePath = inputDirectory
+                    BasePath = inputDirectory,
+                    ReleaseScope = releaseScope
                 });
             }
         }

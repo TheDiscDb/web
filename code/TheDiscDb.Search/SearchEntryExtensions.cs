@@ -161,7 +161,7 @@ public static partial class SearchEntryExtensions
         return names.ToList();
     }
 
-    private static SearchEntry ToSearchEntry(MediaItem item)
+    public static SearchEntry ToSearchEntry(this MediaItem item)
     {
         return new SearchEntry
         {
@@ -203,7 +203,7 @@ public static partial class SearchEntryExtensions
         return ids;
     }
 
-    private static IList<string> CollectGroupNames(MediaItem item, Release? release = null)
+    public static IList<string> CollectGroupNames(this MediaItem item, Release? release = null)
     {
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -232,7 +232,7 @@ public static partial class SearchEntryExtensions
     {
         return new SearchEntry
         {
-            id = SanitizeKey(string.Join('-', "Release", release.Slug)),
+            id = ReleaseKey(release.Slug),
             Type = "Release",
             Title = release.Title,
             ImageUrl = release.ImageUrl,
@@ -257,7 +257,7 @@ public static partial class SearchEntryExtensions
         {
             var searchItem = new SearchEntry
             {
-                id = SanitizeKey(string.Join('-', disc.Id, "Disc")),
+                id = DiscKey(disc.Id),
                 Type = "Disc",
                 Title = disc.Name,
                 ImageUrl = release.ImageUrl,
@@ -291,7 +291,7 @@ public static partial class SearchEntryExtensions
             {
                 var searchItem = new SearchEntry
                 {
-                    id = SanitizeKey(string.Join('-', title.Id, "Title")),
+                    id = TitleKey(title.Id),
                     Type = title.Item.Type,
                     Title = title.Item.Title,
                     ImageUrl = release.ImageUrl,
@@ -316,5 +316,10 @@ public static partial class SearchEntryExtensions
                 yield return searchItem;
             }
         }
+
     }
+
+    public static string ReleaseKey(string? slug) => SanitizeKey(string.Join('-', "Release", slug));
+    public static string DiscKey(int id) => SanitizeKey(string.Join('-', id, "Disc"));
+    public static string TitleKey(int id) => SanitizeKey(string.Join('-', id, "Title"));
 }

@@ -17,6 +17,12 @@ public class ExceptionHandlingMiddleware : IMiddleware
         }
         catch (Exception e)
         {
+            if (item.Diagnostics != null)
+            {
+                item.Diagnostics.Failed = true;
+                item.Diagnostics.FailureException ??= e;
+                item.Diagnostics.FailedStages.Add(nameof(ExceptionHandlingMiddleware));
+            }
             var itemLabel = item.MediaItem?.Slug
                 ?? item.Boxset?.Slug
                 ?? item.BasePath

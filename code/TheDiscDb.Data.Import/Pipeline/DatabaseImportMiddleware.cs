@@ -57,6 +57,13 @@ namespace TheDiscDb.Data.Import.Pipeline
             // identity conflict during DetectChanges).
             this.GetDbContext().ChangeTracker.Clear();
 
+            if (item.ReleaseScope != null)
+            {
+                await this.ImportNewRelease(item, item.ReleaseScope, cancellationToken);
+                await this.Next(item, cancellationToken);
+                return;
+            }
+
             if (item.MediaItem != null)
             {
                 var canonicalByHashAndFormat = new Dictionary<string, Disc>(StringComparer.OrdinalIgnoreCase);
@@ -171,7 +178,53 @@ namespace TheDiscDb.Data.Import.Pipeline
             await this.Next(item, cancellationToken);
         }
 
-        private async Task CanonicalizeReleaseDiscs(ICollection<ReleaseDisc> releaseDiscs, Dictionary<string, Disc> canonicalByHashAndFormat, CancellationToken cancellationToken)
+        private async Task ImportNewRelease(ImportItem item, ReleaseImportScope scope, CancellationToken cancellationToken)
+        {
+            var incoming = item.MediaItem ?? throw new InvalidOperationException("A scoped import requires a media item.");
+            var release = incoming.Releases.Single();
+            var database = this.GetDbContext();
+            var parent = await database.MediaItems
+                .Include(value => value.Externalids)
+                .Include(value => value.MediaItemGroups).ThenInclude(link => link.Group)
+                .AsSplitQuery()
+                .SingleAsync(value => value.Id == scope.MediaItemId, cancellationToken);
+            if (!string.Equals(parent.Slug, incoming.Slug, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(parent.Type, incoming.Type, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(release.Slug, scope.ReleaseSlug, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("The scoped release no longer matches its parent identity.");
+            }
+
+            if (await database.Releases.AnyAsync(
+                value => value.MediaItem!.Id == parent.Id && value.Slug == scope.ReleaseSlug, cancellationToken))
+            {
+                throw new InvalidOperationException($"Release '{scope.ReleaseSlug}' was imported concurrently. Run the import again to update it.");
+            }
+
+            var storedDates = await database.Releases
+                .Where(value => value.MediaItem!.Id == parent.Id)
+                .Select(value => value.ReleaseDate)
+                .ToListAsync(cancellationToken);
+            var latestStoredDate = storedDates.DefaultIfEmpty().Max();
+            if (latestStoredDate > incoming.LatestReleaseDate)
+            {
+                incoming.LatestReleaseDate = latestStoredDate;
+            }
+
+            scope.OriginalParentGroups.UnionWith(parent.MediaItemGroups
+                .Where(link => !string.IsNullOrWhiteSpace(link.Group?.Name))
+                .Select(link => link.Group!.Name!));
+            await this.CanonicalizeReleaseDiscs(
+                release.Discs, new Dictionary<string, Disc>(StringComparer.OrdinalIgnoreCase), cancellationToken, scope);
+            this.mediaItemHandler.TryUpdate(parent, incoming);
+            await this.HandleContributorsOnUpdate(parent, incoming, cancellationToken);
+            item.MediaItem = parent;
+            await this.NormalizeReleaseDiscGlobalIds(release.Discs, cancellationToken);
+            await this.NormalizeReleaseDiscFingerprint(release.Discs, cancellationToken);
+            await this.SaveChangesAsync();
+        }
+
+        private async Task CanonicalizeReleaseDiscs(ICollection<ReleaseDisc> releaseDiscs, Dictionary<string, Disc> canonicalByHashAndFormat, CancellationToken cancellationToken, ReleaseImportScope? scope = null)
         {
             var seenSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var seenIndexes = new HashSet<int>();
@@ -237,7 +290,7 @@ namespace TheDiscDb.Data.Import.Pipeline
 
                 if (canonicalFromLocal != null)
                 {
-                    this.discItemHandler.TryUpdate(canonicalFromLocal, inputDisc);
+                    this.UpdateCanonicalDisc(canonicalFromLocal, inputDisc, scope);
                     releaseDisc.Disc = canonicalFromLocal;
                     canonicalByHashAndFormat[key] = canonicalFromLocal;
                     continue;
@@ -258,7 +311,7 @@ namespace TheDiscDb.Data.Import.Pipeline
 
                 if (canonicalFromDb != null)
                 {
-                    this.discItemHandler.TryUpdate(canonicalFromDb, inputDisc);
+                    this.UpdateCanonicalDisc(canonicalFromDb, inputDisc, scope);
                     releaseDisc.Disc = canonicalFromDb;
                     canonicalByHashAndFormat[key] = canonicalFromDb;
                     continue;
@@ -267,6 +320,27 @@ namespace TheDiscDb.Data.Import.Pipeline
                 canonicalByHashAndFormat[key] = inputDisc;
             }
         }
+
+        private void UpdateCanonicalDisc(Disc canonical, Disc incoming, ReleaseImportScope? scope)
+        {
+            var originalTitles = scope == null ? null : canonical.Titles
+                .Where(title => title.Id != 0)
+                .ToDictionary(title => title.Id, title => new TitleSearchState(title.Item?.Title, title.Item?.Type));
+            this.discItemHandler.TryUpdate(canonical, incoming);
+            if (originalTitles != null)
+            {
+                foreach (var original in originalTitles)
+                {
+                    var updated = canonical.Titles.FirstOrDefault(title => title.Id == original.Key);
+                    if (original.Value != new TitleSearchState(updated?.Item?.Title, updated?.Item?.Type))
+                    {
+                        scope!.ChangedTitleIds.Add(original.Key);
+                    }
+                }
+            }
+        }
+
+        private sealed record TitleSearchState(string? Title, string? Type);
 
         private async Task NormalizeReleaseDiscGlobalIds(
             IEnumerable<ReleaseDisc> releaseDiscs,

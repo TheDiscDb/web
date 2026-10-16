@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Azure.Search.Documents.Indexes;
+using Azure.Search.Documents;
 using Azure.Search.Documents.Indexes.Models;
 using Azure.Search.Documents.Models;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +30,17 @@ public class SearchIndexService : ISearchIndexService
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = 10)
+    public Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = 10)
+        => this.IndexActions(entries.Select(entry => IndexDocumentsAction.MergeOrUpload(entry)), batchSize);
+
+    public Task<BuildIndexSummary> MergeItems(IEnumerable<SearchDocumentUpdate> updates, int batchSize = 10)
+        => this.IndexActions(updates.Select(update =>
+        {
+            var document = new SearchDocument(update.Fields) { ["id"] = update.Key };
+            return IndexDocumentsAction.Merge(document);
+        }), batchSize);
+
+    private async Task<BuildIndexSummary> IndexActions<T>(IEnumerable<IndexDocumentsAction<T>> actions, int batchSize)
     {
         var stopwatch = Stopwatch.StartNew();
 
@@ -39,12 +50,11 @@ public class SearchIndexService : ISearchIndexService
             Success = true
         };
 
-        foreach (var batch in entries.Batch(batchSize))
+        foreach (var batch in actions.Batch(batchSize))
         {
             try
             {
-                var a = batch.Select(b => IndexDocumentsAction.MergeOrUpload(b));
-                var searchEntryBatch = IndexDocumentsBatch.Create(a.ToArray());
+                var searchEntryBatch = IndexDocumentsBatch.Create(batch.ToArray());
                 var itemResult = await searchClient.IndexDocumentsAsync(searchEntryBatch);
 
                 if (!itemResult.Value.Results.All(r => r.Succeeded))
@@ -63,10 +73,11 @@ public class SearchIndexService : ISearchIndexService
                     // Surface the first error message in the summary for callers/UI.
                     if (string.IsNullOrEmpty(result.ErrorMessage))
                     {
-                        var errorItem = itemResult.Value.Results.FirstOrDefault(r => !string.IsNullOrEmpty(r.ErrorMessage));
+                        var errorItem = itemResult.Value.Results.FirstOrDefault(r => !r.Succeeded);
                         if (errorItem != null)
                         {
-                            result.ErrorMessage = errorItem.ErrorMessage;
+                            result.ErrorMessage = $"Search document '{errorItem.Key}' failed (HTTP {errorItem.Status}): " +
+                                (errorItem.ErrorMessage ?? "No error details were returned.");
                         }
                     }
                 }
@@ -76,7 +87,7 @@ public class SearchIndexService : ISearchIndexService
             catch (Exception e)
             {
                 result.Success = false;
-                result.ErrorMessage = e.Message;
+                result.ErrorMessage ??= e.Message;
                 this.logger.LogError(e, "Failed to push a batch of {BatchSize} documents to the search index '{IndexName}'.", batchSize, IndexName);
             }
         }
@@ -89,7 +100,7 @@ public class SearchIndexService : ISearchIndexService
 
     public async Task<BuildIndexSummary> BuildIndex()
     {
-        BuildIndexSummary summary = new();
+        BuildIndexSummary summary = new() { Success = true };
         var stopwatch = Stopwatch.StartNew();
 
         var index = new SearchIndex(IndexName, this.GetIndexFields());
@@ -98,10 +109,8 @@ public class SearchIndexService : ISearchIndexService
 
         using (var dbContext = this.dbFactory.CreateDbContext())
         {
-            var searchClient = this.client.GetSearchClient(IndexName);
-
             var actions = this.BuildMediaItemIndex(dbContext);
-            var mediaItemresult = await this.IndexItems(actions, BatchSize);
+            var mediaItemresult = await this.IndexItems(actions, RebuildBatchSize);
             summary.ItemCount += mediaItemresult.ItemCount;
             if (!mediaItemresult.Success)
             {
@@ -114,7 +123,7 @@ public class SearchIndexService : ISearchIndexService
             }
 
             var boxsetActions = this.BuildBoxsetIndex(dbContext);
-            var boxsetResult = await this.IndexItems(boxsetActions, BatchSize);
+            var boxsetResult = await this.IndexItems(boxsetActions, RebuildBatchSize);
             summary.ItemCount += boxsetResult.ItemCount;
             if (!boxsetResult.Success)
             {
@@ -214,187 +223,72 @@ public class SearchIndexService : ISearchIndexService
         return field;
     }
 
-    private const int BatchSize = 10;
+    private const int RebuildBatchSize = 1000;
+    private const int RebuildPageSize = 100;
 
     private IEnumerable<SearchEntry> BuildBoxsetIndex(SqlServerDataContext dbContext)
     {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        foreach (var item in dbContext.BoxSets
-            .Include(p => p.Release)
-            .ThenInclude(r => r.Discs)
-            .ThenInclude(d => d.Disc!)
-            .ThenInclude(d => d.Titles)
-            .ThenInclude(t => t.Item)
-            .Include(p => p.Release)
-            .ThenInclude(r => r.ReleaseGroups)
-            .ThenInclude(rg => rg.Group)
-            )
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
+        int lastId = 0;
+        while (true)
         {
-            var searchItem = new SearchEntry
+            var page = dbContext.BoxSets
+                .Where(item => item.Id > lastId)
+                .OrderBy(item => item.Id)
+                .Take(RebuildPageSize)
+                .Include(item => item.Release).ThenInclude(release => release!.Discs)
+                .ThenInclude(link => link.Disc!).ThenInclude(disc => disc.Titles.Where(title => title.Item != null))
+                .ThenInclude(title => title.Item)
+                .Include(item => item.Release).ThenInclude(release => release!.ReleaseGroups).ThenInclude(link => link.Group)
+                .AsSplitQuery()
+                .AsNoTracking()
+                .ToList();
+            if (page.Count == 0)
             {
-                id = SearchEntryExtensions.SanitizeKey(string.Join('-', item.Id, "Boxset")),
-                Type = "Boxset",
-                Title = item.Title,
-                ImageUrl = item.ImageUrl,
-                RelativeUrl = $"/boxset/{item.Slug}",
-                Identifiers = CollectIdentifiers(release: item.Release),
-                Groups = CollectGroupNames(releaseGroups: item.Release?.ReleaseGroups),
-                MediaItem = new ItemInfo
-                {
-                    Slug = item.Slug,
-                    ImageUrl = item.ImageUrl
-                }
-            };
-
-            yield return searchItem;
-
-            if (item?.Release == null)
-            {
-                // Skip just this boxset; never abort the whole rebuild for one bad record.
-                continue;
+                yield break;
             }
 
-            foreach (var disc in item.Release.Discs)
+            foreach (var item in page)
             {
-                searchItem = new SearchEntry
+                foreach (var entry in item.ToSearchEntries())
                 {
-                    id = SearchEntryExtensions.SanitizeKey(string.Join('-', "BoxsetDisc", disc.SlugOrIndex())),
-                    Type = "BoxsetDisc",
-                    Title = disc.Name,
-                    ImageUrl = item.ImageUrl,
-                    RelativeUrl = $"/boxset/{item.Slug}/discs/{disc.Index}",
-                    MediaItem = new ItemInfo
-                    {
-                        Slug = item.Slug,
-                        ImageUrl = item.ImageUrl
-                    },
-                    Release = new ItemInfo
-                    {
-                        Slug = item.Release.Slug,
-                        ImageUrl = item.Release.ImageUrl
-                    },
-                    Disc = new ItemInfo
-                    {
-                        Slug = disc.Slug
-                    }
-                };
-
-                yield return searchItem;
-
-                foreach (var title in disc.Titles)
-                {
-                    if (title.Item != null)
-                    {
-                        searchItem = new SearchEntry
-                        {
-                            id = SearchEntryExtensions.SanitizeKey(string.Join('-', "BoxsetTitle", item.Slug, disc.SlugOrIndex(), title.SegmentMap, title.SourceFile)),
-                            Type = title.Item.Type,
-                            Title = title.Item.Title,
-                            ImageUrl = item.ImageUrl,
-                            RelativeUrl = $"/boxset/{item.Slug}/discs/{disc.Index}",
-                            MediaItem = new ItemInfo
-                            {
-                                Slug = item.Slug,
-                                ImageUrl = item.ImageUrl
-                            },
-                            Release = new ItemInfo
-                            {
-                                Slug = item.Release.Slug,
-                                ImageUrl = item.Release.ImageUrl
-                            },
-                            Disc = new ItemInfo
-                            {
-                                Slug = disc.Slug
-                            }
-                        };
-
-                        yield return searchItem;
-                    }
+                    yield return entry;
                 }
             }
+            lastId = page[^1].Id;
         }
     }
 
     private IEnumerable<SearchEntry> BuildMediaItemIndex(SqlServerDataContext dbContext)
     {
-        List<SearchEntry> actions = new();
-        foreach (var item in dbContext.MediaItems
-            .Include(p => p.Externalids)
-            .Include(p => p.MediaItemGroups)
-            .ThenInclude(mig => mig.Group)
-            .Include(p => p.Releases)
-            .ThenInclude(r => r.Discs)
-            .ThenInclude(d => d.Disc!)
-            .ThenInclude(d => d.Titles)
-            .ThenInclude(t => t.Item)
-            .Include(p => p.Releases)
-            .ThenInclude(r => r.ReleaseGroups)
-            .ThenInclude(rg => rg.Group)
-            )
+        int lastId = 0;
+        while (true)
         {
-            actions.AddRange(item.ToSearchEntries());
-        }
-
-        return actions;
-    }
-
-    private static IList<string> CollectIdentifiers(
-        InputModels.ExternalIds? externalIds = null,
-        IEnumerable<InputModels.Release>? releases = null,
-        InputModels.Release? release = null)
-    {
-        var ids = new List<string>();
-
-        if (externalIds != null)
-        {
-            if (!string.IsNullOrWhiteSpace(externalIds.Imdb)) ids.Add(externalIds.Imdb);
-            if (!string.IsNullOrWhiteSpace(externalIds.Tmdb)) ids.Add(externalIds.Tmdb);
-            if (!string.IsNullOrWhiteSpace(externalIds.Tvdb)) ids.Add(externalIds.Tvdb);
-        }
-
-        if (releases != null)
-        {
-            foreach (var r in releases)
+            var page = dbContext.MediaItems
+                .Where(item => item.Id > lastId)
+                .OrderBy(item => item.Id)
+                .Take(RebuildPageSize)
+                .Include(item => item.Externalids)
+                .Include(item => item.MediaItemGroups).ThenInclude(link => link.Group)
+                .Include(item => item.Releases).ThenInclude(release => release.Discs)
+                .ThenInclude(link => link.Disc!).ThenInclude(disc => disc.Titles.Where(title => title.Item != null))
+                .ThenInclude(title => title.Item)
+                .Include(item => item.Releases).ThenInclude(release => release.ReleaseGroups).ThenInclude(link => link.Group)
+                .AsSplitQuery()
+                .AsNoTracking()
+                .ToList();
+            if (page.Count == 0)
             {
-                if (!string.IsNullOrWhiteSpace(r.Upc)) ids.Add(r.Upc);
-                if (!string.IsNullOrWhiteSpace(r.Asin)) ids.Add(r.Asin);
+                yield break;
             }
-        }
 
-        if (release != null)
-        {
-            if (!string.IsNullOrWhiteSpace(release.Upc)) ids.Add(release.Upc);
-            if (!string.IsNullOrWhiteSpace(release.Asin)) ids.Add(release.Asin);
-        }
-
-        return ids;
-    }
-
-    private static IList<string> CollectGroupNames(
-        IEnumerable<InputModels.MediaItemGroup>? mediaItemGroups = null,
-        IEnumerable<InputModels.ReleaseGroup>? releaseGroups = null)
-    {
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        if (mediaItemGroups != null)
-        {
-            foreach (var mig in mediaItemGroups)
+            foreach (var item in page)
             {
-                if (!string.IsNullOrWhiteSpace(mig.Group?.Name))
-                    names.Add(mig.Group.Name);
+                foreach (var entry in item.ToSearchEntries())
+                {
+                    yield return entry;
+                }
             }
+            lastId = page[^1].Id;
         }
-
-        if (releaseGroups != null)
-        {
-            foreach (var rg in releaseGroups)
-            {
-                if (!string.IsNullOrWhiteSpace(rg.Group?.Name))
-                    names.Add(rg.Group.Name);
-            }
-        }
-
-        return names.ToList();
     }
 }
