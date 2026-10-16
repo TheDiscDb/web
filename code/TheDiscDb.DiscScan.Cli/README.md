@@ -65,6 +65,15 @@ chmod +x ./thediscdb-scan
 
 Upload the generated `.odm.json` file on the **Disc Manifest** tab at <https://thediscdb.com/contribute>.
 
+## Shared filesystem adapter
+
+Developer tools can reuse `LocalDiscSource.TryOpen` with
+`requireCompleteInventory: true`. This disables skipping inaccessible directories
+during enumeration and reports failures through `Warnings`. Callers requiring a
+replayable capture, such as OdmScanner in the tools repository, must reject any
+warnings rather than accepting a partial inventory. Existing CLI callers retain
+the default best-effort enumeration behavior.
+
 ## Local release builds
 
 Install the .NET 10 SDK and PowerShell 7.4 or newer. Run these commands from the

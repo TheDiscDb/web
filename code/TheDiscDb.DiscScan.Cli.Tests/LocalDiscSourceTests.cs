@@ -7,13 +7,17 @@ public sealed class LocalDiscSourceTests
 {
     private readonly string fixturesPath = Path.Combine(AppContext.BaseDirectory, "fixtures");
 
-    [Fact]
-    public async Task LocalDiscSource_DvdFixture_GeneratesSameManifestAsDirectGenerator()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LocalDiscSource_DvdFixture_GeneratesSameManifestAsDirectGenerator(bool requireCompleteInventory)
     {
         string root = CreateDvdFixtureDiscRoot("DVD-A");
         try
         {
-            Assert.True(LocalDiscSource.TryOpen(root, out LocalDiscSource? source, out string error), error);
+            Assert.True(LocalDiscSource.TryOpen(root, out LocalDiscSource? source, out string error,
+                requireCompleteInventory), error);
+            Assert.Empty(source!.Warnings);
 
             var result = await new OpticalDiscManifestGenerator().GenerateAsync(
                 new ManifestGenerationRequest
