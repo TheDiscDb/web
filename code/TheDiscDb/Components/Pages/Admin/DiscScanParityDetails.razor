@@ -58,7 +58,9 @@ else
     <section class="info-card mb-3">
         <h2>@Latest.ReleaseTitle - @Latest.DiscName</h2>
         <dl class="row mb-0">
-            <dt class="col-sm-3">Status</dt>
+            <dt class="col-sm-3">Identify experience</dt>
+            <dd class="col-sm-9">@Latest.IdentifyExperienceLabel</dd>
+            <dt class="col-sm-3">Technical parity</dt>
             <dd class="col-sm-9">@Latest.Status</dd>
             <dt class="col-sm-3">Counts</dt>
             <dd class="col-sm-9">@Latest.MatchedTitleCount matched / @Latest.LogTitleCount log / @Latest.ManifestTitleCount scan</dd>
@@ -78,7 +80,38 @@ else
     </section>
 
     <section class="info-card mb-3">
-        <h2>Differences</h2>
+        <h2>Same identify experience</h2>
+        <p class="text-muted">@IdentifyExperienceComparison.ScopeText</p>
+        @if (Differences?.IdentifyExperience is not { Version: IdentifyExperienceComparison.CurrentVersion } experience)
+        {
+            <p>Not measured. Re-compare with the current comparer to measure this metric.</p>
+        }
+        else
+        {
+            <p>@experience.Status: @experience.MatchingRowCount same-position rows match /
+                @experience.LogRowCount log rows / @experience.ManifestRowCount scan rows. @experience.Reason</p>
+            @if (experience.Differences.Count > 0)
+            {
+                <table class="table table-sm">
+                    <thead><tr><th>Row</th><th>Field</th><th>Log</th><th>Scan</th></tr></thead>
+                    <tbody>
+                        @foreach (var difference in experience.Differences)
+                        {
+                            <tr @key="difference">
+                                <td>@(difference.Row?.ToString() ?? "Table")</td>
+                                <td>@difference.Field</td>
+                                <td>@difference.LogValue</td>
+                                <td>@difference.ManifestValue</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+    </section>
+
+    <section class="info-card mb-3">
+        <h2>Technical differences</h2>
         @if (Differences == null)
         {
             <p>Differences could not be parsed.</p>
@@ -132,7 +165,8 @@ else
         <h2>History</h2>
         <QuickGrid Items="History.AsQueryable()" Class="striped-grid">
             <PropertyColumn Property="@(item => item.ComparedAt)" Title="Compared" Format="yyyy-MM-dd HH:mm" />
-            <PropertyColumn Property="@(item => item.Status)" Title="Status" />
+            <PropertyColumn Property="@(item => item.IdentifyExperienceLabel)" Title="Identify experience" />
+            <PropertyColumn Property="@(item => item.Status)" Title="Technical parity" />
             <PropertyColumn Property="@(item => item.MatchedTitleCount)" Title="Matched" />
             <PropertyColumn Property="@(item => item.LogTitleCount)" Title="Log" />
             <PropertyColumn Property="@(item => item.ManifestTitleCount)" Title="Scan" />

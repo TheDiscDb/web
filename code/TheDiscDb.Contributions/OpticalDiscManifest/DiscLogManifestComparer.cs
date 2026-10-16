@@ -52,6 +52,7 @@ public static partial class DiscLogManifestComparer
                 && !string.Equals(normalizedExpectedHash, normalizedManifestHash, StringComparison.OrdinalIgnoreCase))
             {
                 differences.DifferentDisc = true;
+                differences.IdentifyExperience = IdentifyExperienceComparison.NotComparable("The acquisitions identify different discs.");
                 return CreateResult(
                     DiscLogManifestComparisonStatus.DifferentDisc,
                     logDiscInfo,
@@ -61,6 +62,10 @@ public static partial class DiscLogManifestComparer
                     orderMatches: false,
                     differences);
             }
+
+            differences.IdentifyExperience = differences.ScanDiagnostics.Any(d => d.Severity == "error")
+                ? IdentifyExperienceComparison.NotComparable("The scan contains error diagnostics.")
+                : IdentifyExperienceComparer.Compare(logDiscInfo, manifestDiscInfo);
 
             var logTitles = CollectTitles(logDiscInfo);
             var manifestTitles = CollectTitles(manifestDiscInfo);
@@ -151,7 +156,8 @@ public static partial class DiscLogManifestComparer
         {
             var differences = new DiscLogManifestDifferences
             {
-                Error = ex.Message
+                Error = ex.Message,
+                IdentifyExperience = IdentifyExperienceComparison.NotComparable(ex.Message)
             };
             return CreateResult(
                 DiscLogManifestComparisonStatus.Error,
@@ -588,6 +594,8 @@ public sealed record DiscLogManifestComparisonResult(
 
 public sealed class DiscLogManifestDifferences
 {
+    public IdentifyExperienceComparison? IdentifyExperience { get; set; }
+
     public string? ExpectedContentHash { get; set; }
 
     public string? ManifestContentHash { get; set; }

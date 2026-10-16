@@ -173,7 +173,10 @@ public sealed class ContributionDiscComparisonAdminService : IContributionDiscCo
                     run.MatchedTitleCount,
                     run.OrderMatches,
                     run.Status,
-                    JsonSerializer.Serialize(run.Differences, DifferencesJsonOptions)));
+                    JsonSerializer.Serialize(run.Differences, DifferencesJsonOptions))
+                {
+                    IdentifyExperience = run.Differences.IdentifyExperience
+                });
             }
         }
 
@@ -198,7 +201,13 @@ public sealed record ContributionDiscComparisonListItem(
     int MatchedTitleCount,
     bool OrderMatches,
     DiscLogManifestComparisonStatus Status,
-    string DifferencesJson);
+    string DifferencesJson)
+{
+    public IdentifyExperienceComparison? IdentifyExperience { get; init; }
+
+    public string IdentifyExperienceLabel => IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion } experience
+        ? experience.Status.ToString() : "Not measured";
+}
 
 public sealed record ContributionDiscParityDashboard(
     ContributionDiscParityStats Overall,
@@ -207,9 +216,24 @@ public sealed record ContributionDiscParityDashboard(
     IReadOnlyList<ContributionDiscParityBreakdown> ByMakeMkvVersion,
     IReadOnlyList<ContributionDiscParityBreakdown> ByBrowser,
     IReadOnlyList<ContributionDiscComparisonListItem> NonMatches,
-    IReadOnlyList<string> ProducerVersions);
+    IReadOnlyList<string> ProducerVersions)
+{
+    public IdentifyExperienceStats IdentifyExperience { get; init; } = new(0, 0, 0, 0);
 
-public sealed record ContributionDiscParityBreakdown(string Label, ContributionDiscParityStats Stats);
+    public IReadOnlyList<ContributionDiscComparisonListItem> IdentifyExperienceNonMatches { get; init; } = [];
+}
+
+public sealed record ContributionDiscParityBreakdown(string Label, ContributionDiscParityStats Stats)
+{
+    public IdentifyExperienceStats IdentifyExperience { get; init; } = new(0, 0, 0, 0);
+}
+
+public sealed record IdentifyExperienceStats(int Matches, int Mismatches, int NotComparable, int NotMeasured)
+{
+    public int Measured => Matches + Mismatches;
+
+    public string Rate => Measured == 0 ? "Not measured" : ((double)Matches / Measured).ToString("P1");
+}
 
 public sealed record ContributionDiscParityStats(int Total, int Matches)
 {
@@ -233,7 +257,12 @@ public static class DiscScanParityAggregator
                 .Where(item => !string.IsNullOrWhiteSpace(item))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Order(StringComparer.OrdinalIgnoreCase)
-                .ToList()!);
+                .ToList()!)
+        {
+            IdentifyExperience = CreateExperienceStats(latest),
+            IdentifyExperienceNonMatches = latest.Where(item =>
+                item.IdentifyExperience is not { Version: IdentifyExperienceComparison.CurrentVersion, Status: IdentifyExperienceStatus.Match }).ToList()
+        };
 
     public static string BrowserName(string? userAgent)
     {
@@ -273,7 +302,10 @@ public static class DiscScanParityAggregator
         Func<ContributionDiscComparisonListItem, string?> keySelector)
         => latest
             .GroupBy(item => NormalizeLabel(keySelector(item)), StringComparer.OrdinalIgnoreCase)
-            .Select(group => new ContributionDiscParityBreakdown(group.Key, CreateStats(group)))
+            .Select(group => new ContributionDiscParityBreakdown(group.Key, CreateStats(group))
+            {
+                IdentifyExperience = CreateExperienceStats(group)
+            })
             .OrderByDescending(item => item.Stats.Total)
             .ThenBy(item => item.Label, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -296,4 +328,27 @@ public static class DiscScanParityAggregator
 
     private static string NormalizeLabel(string? value)
         => string.IsNullOrWhiteSpace(value) ? "Unknown" : value.Trim();
+
+    private static IdentifyExperienceStats CreateExperienceStats(IEnumerable<ContributionDiscComparisonListItem> items)
+    {
+        int matches = 0, mismatches = 0, notComparable = 0, notMeasured = 0;
+        foreach (var item in items)
+        {
+            if (item.IdentifyExperience is not { Version: IdentifyExperienceComparison.CurrentVersion } experience)
+            {
+                notMeasured++;
+            }
+            else
+            {
+                switch (experience.Status)
+                {
+                    case IdentifyExperienceStatus.Match: matches++; break;
+                    case IdentifyExperienceStatus.Mismatch: mismatches++; break;
+                    default: notComparable++; break;
+                }
+            }
+        }
+
+        return new(matches, mismatches, notComparable, notMeasured);
+    }
 }

@@ -121,7 +121,12 @@ internal static class BluRayManifestBuilder
                 stillPlaylistClips.Add(clip);
             }
 
-            var playlist = BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(collapsed);
+            var evidencePaths = collapsed.PlayItems.Select(item => $"BDMV/CLIPINF/{item.ClipId}.clpi")
+                .Append(result.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            bool incompleteEvidence = diagnostics.Any(diagnostic => diagnostic.Severity is "warning" or "error"
+                && diagnostic.Path is not null
+                && evidencePaths.Contains(diagnostic.Path.Replace("/BACKUP/", "/", StringComparison.OrdinalIgnoreCase)));
+            var playlist = BluRayPlaylistRules.TrimTrailingNarrowerPlayItems(collapsed, incompleteEvidence);
             if (playlist.PlayItems.Count < collapsed.PlayItems.Count)
             {
                 diagnostics.Add(new ManifestDiagnostic
@@ -151,11 +156,6 @@ internal static class BluRayManifestBuilder
                 }
             }
 
-            var evidencePaths = playlist.PlayItems.Select(item => $"BDMV/CLIPINF/{item.ClipId}.clpi")
-                .Append(result.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            bool incompleteEvidence = diagnostics.Any(diagnostic => diagnostic.Severity is "warning" or "error"
-                && diagnostic.Path is not null
-                && evidencePaths.Contains(diagnostic.Path.Replace("/BACKUP/", "/", StringComparison.OrdinalIgnoreCase)));
             var parts = BluRayPlaylistRules.SplitIncompatiblePlayItems(
                 playlist, clpiByClip, diagnostics, result.Path, incompleteEvidence);
             if (parts.Count > 1)
@@ -164,7 +164,7 @@ internal static class BluRayManifestBuilder
                 {
                     Severity = "info",
                     Code = "ODM_BD_PLAYLIST_SPLIT",
-                    Message = $"Playlist is emitted as {parts.Count} parts because primary stream formats change at non-seamless play-item boundaries.",
+                    Message = $"Playlist is emitted as {parts.Count} parts because primary stream formats or membership change at non-seamless play-item boundaries.",
                     Path = result.Path,
                 });
             }

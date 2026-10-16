@@ -66,8 +66,8 @@ internal static class BluRayPlaylistRules
                 && HasIncompatibleStreams(items[index - 1], items[index], clpiByClip);
             boundaries.Add($"item={items[index].Index},connection={items[index].ConnectionCondition}: "
                 + (items[index].ConnectionCondition != 1 ? "not a non-seamless boundary"
-                    : incompatible ? "incompatible known shared primary stream"
-                    : "no incompatible known shared primary stream (compatible, absent, unknown or ambiguous evidence)"));
+                    : incompatible ? "incompatible known primary stream format or membership"
+                    : "no incompatible known primary stream (compatible, absent, unknown or ambiguous evidence)"));
             if (incompatible)
             {
                 starts.Add(index);
@@ -117,8 +117,17 @@ internal static class BluRayPlaylistRules
         MplsPlayItem current,
         IReadOnlyDictionary<string, ClpiFile> clips)
     {
-        var before = previous.StreamTable.VideoStreams.Concat(previous.StreamTable.AudioStreams);
-        var after = current.StreamTable.VideoStreams.Concat(current.StreamTable.AudioStreams);
+        var before = previous.StreamTable.VideoStreams.Concat(previous.StreamTable.AudioStreams).ToArray();
+        var after = current.StreamTable.VideoStreams.Concat(current.StreamTable.AudioStreams).ToArray();
+        // Only complete, unambiguous primary selections can establish a missing PID.
+        // Shared-PID format checks below can still use partial evidence.
+        if (HasKnownSelection(previous, before) && HasKnownSelection(current, after)
+            && !before.Select(stream => (stream.Category, stream.Pid))
+                .ToHashSet().SetEquals(after.Select(stream => (stream.Category, stream.Pid))))
+        {
+            return true;
+        }
+
         foreach (var stream in before.Where(stream => stream.StreamTypeCode == 1 && stream.Pid is not null))
         {
             var next = after.FirstOrDefault(next => next.StreamTypeCode == 1
@@ -144,6 +153,12 @@ internal static class BluRayPlaylistRules
         }
 
         return false;
+
+        bool HasKnownSelection(MplsPlayItem item, MplsStream[] streams)
+            => streams.Length > 0
+                && streams.All(stream => stream.StreamTypeCode == 1 && stream.Pid is not null
+                    && FindEvidence(item.ClipId, stream) is not null)
+                && streams.Select(stream => (stream.Category, stream.Pid)).Distinct().Count() == streams.Length;
 
         StreamFormat? FindEvidence(string clipId, MplsStream stream)
         {
@@ -242,13 +257,14 @@ internal static class BluRayPlaylistRules
     }
 
     /// <summary>
-    /// Drops trailing play items, each shorter than half a second, whose stream table is
+    /// Drops trailing play items, each no longer than one second (1.001 at NTSC rates), whose stream table is
     /// narrower than the first play item's: no category holds more streams and at least
     /// one holds fewer. MakeMKV does not carry such a tail into the title. On Super Mario
     /// Bros (3D Blu-ray) <c>01000.mpls</c> plays clip 0 (video and audio) then the 0.42 s
     /// clip 13 (video only), and MakeMKV reports segment map <c>0</c> with clip 0's size
     /// alone, and lists <c>00000.m2ts</c> as equal to it; <c>01003.mpls</c> plays clip 3
-    /// then clip 13, and MakeMKV lists only <c>00003.m2ts</c>. A longer tail is kept: Hell
+    /// then clip 13, and MakeMKV lists only <c>00003.m2ts</c>. Discovery's 1.001 s
+    /// video-only tails are omitted too. A longer tail is kept: Hell
     /// on Wheels Season 1 Disc 1 <c>00009.mpls</c> ends with the 1.04 s, video-only clip
     /// 17, and MakeMKV reports segments <c>1,17</c>. Trailing play items with the same
     /// stream table (<c>01001.mpls</c>, clips 1 and 12, both video only) are kept too.
@@ -256,9 +272,9 @@ internal static class BluRayPlaylistRules
     /// Stereoscopic playlists are left alone, because their pairing is declared per play
     /// item.
     /// </summary>
-    internal static MplsPlaylist TrimTrailingNarrowerPlayItems(MplsPlaylist playlist)
+    internal static MplsPlaylist TrimTrailingNarrowerPlayItems(MplsPlaylist playlist, bool incompleteEvidence = false)
     {
-        const uint MaximumTrimmedTicks = 45000 / 2;
+        const uint MaximumTrimmedTicks = 45000;
         var items = playlist.PlayItems.OrderBy(item => item.Index).ToArray();
         if (items.Length < 2 || playlist.StereoVideoRelationships.Count > 0)
         {
@@ -266,6 +282,10 @@ internal static class BluRayPlaylistRules
         }
 
         int[] first = CountStreams(items[0].StreamTable);
+        bool ordinaryPresentation = !incompleteEvidence
+            && playlist.AppInfo.PlaybackTypeCode == 1
+            && playlist.SubPaths.Count == 0 && playlist.ExtensionSubPaths.Count == 0
+            && items.All(candidate => !candidate.IsMultiAngle && candidate.Clips.Count <= 1 && candidate.StillMode == 0);
         int keep = items.Length;
         while (keep > 1)
         {
@@ -273,10 +293,14 @@ internal static class BluRayPlaylistRules
             int[] counts = CountStreams(item.StreamTable);
             bool narrower = counts.Zip(first).All(pair => pair.First <= pair.Second)
                 && counts.Sum() < first.Sum();
-            // Half a second at NTSC rates spans 12/15/30 frames in 0.5005 seconds.
-            // Allow integer-tick rounding, not an additional whole frame.
-            bool ntscHalfSecond = item.StreamTable.VideoStreams is [{ RateCode: 1 or 4 or 7 }];
-            uint maximumTicks = ntscHalfSecond ? 22_523u : MaximumTrimmedTicks - 1;
+            bool ntsc = item.StreamTable.VideoStreams is [{ RateCode: 1 or 4 or 7 }];
+            uint maximumTicks = ntsc ? 45_045u : MaximumTrimmedTicks;
+            // Retain the older half-second rule for complex authoring; the longer
+            // boundary is established only for ordinary sequential presentations.
+            if (!ordinaryPresentation)
+            {
+                maximumTicks = ntsc ? 22_523u : 22_499u;
+            }
             if (!narrower || item.OutTime < item.InTime || item.OutTime - item.InTime > maximumTicks)
             {
                 break;

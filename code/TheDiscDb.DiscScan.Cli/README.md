@@ -65,6 +65,25 @@ chmod +x ./thediscdb-scan
 
 Upload the generated `.odm.json` file on the **Disc Manifest** tab at <https://thediscdb.com/contribute>.
 
+## Blu-ray candidate reconciliation
+
+The shared generator removes trailing play items selecting fewer streams when
+they last at most one second (1.001 seconds at NTSC rates). The extended threshold
+requires ordinary sequential playback without angle, still, subpath or
+warning/error evidence; other presentations retain the earlier half-second rule.
+This does not suppress the discarded clip's standalone stream title.
+
+At non-seamless boundaries, complete known primary video/audio PID selections
+can split a playlist when stream membership changes, as well as when shared
+stream formats change. Unknown or ambiguous selections do not establish a
+membership change. Existing angle, still, subpath and incomplete-evidence
+exclusions continue to apply.
+
+Playlist titles follow playlist directory order; stream titles follow CLIPINF
+directory order, falling back to STREAM order when no matching CLPI is inventoried.
+These rules are shared by this CLI and OdmScanner. They do not resolve every
+duplicate-playlist, loop or DVD metadata discrepancy.
+
 ## Shared filesystem adapter
 
 Developer tools can reuse `LocalDiscSource.TryOpen` with

@@ -114,7 +114,7 @@ public static class OpticalDiscManifestMapper
         {
             Index = index,
             Type = type,
-            Name = source.Codec,
+            Name = MapStreamDisplayName(source.Codec, type),
             Resolution = source.Resolution,
             AspectRatio = source.AspectRatio
         };
@@ -130,11 +130,31 @@ public static class OpticalDiscManifestMapper
 
         if (type == "Audio")
         {
-            segment.AudioType = source.AudioLayout;
+            segment.AudioType = MapAudioDisplayLayout(source.AudioLayout);
         }
 
         return segment;
     }
+
+    // Translate presentation vocabulary only; the manifest's codec and layout remain unchanged.
+    private static string? MapStreamDisplayName(string? codec, string type) => (type, codec?.ToLowerInvariant()) switch
+    {
+        ("Audio", "ac-3") => "Dolby Digital",
+        ("Audio", "ac-3 plus") => "Dolby Digital plus",
+        ("Audio", "lpcm") => "Linear PCM",
+        ("Subtitles", "presentation graphics") => "HDMV PGS Subtitles",
+        ("Subtitles", "rle") => "Dvd Subtitles",
+        _ => codec
+    };
+
+    private static string? MapAudioDisplayLayout(string? layout) => layout?.ToLowerInvariant() switch
+    {
+        "mono" => "Mono",
+        "stereo" => "Stereo",
+        "5.1" => "Surround 5.1",
+        "7.1" => "Surround 7.1",
+        _ => layout
+    };
 
     private static string MapStreamType(string? type) => type?.Trim().ToLowerInvariant() switch
     {

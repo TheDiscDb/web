@@ -21,7 +21,11 @@ public class DiscScanComparisonStoreTests
                     LogTitleCount = 5,
                     ManifestTitleCount = 6,
                     MatchedTitleCount = 5,
-                    Differences = new DiscLogManifestDifferences { Error = "boom" }
+                    Differences = new DiscLogManifestDifferences
+                    {
+                        Error = "boom",
+                        IdentifyExperience = IdentifyExperienceComparison.NotComparable("boom")
+                    }
                 }
             ]
         };
@@ -36,6 +40,7 @@ public class DiscScanComparisonStoreTests
         await Assert.That(roundTripped.Comparisons[0].Status).IsEqualTo(DiscLogManifestComparisonStatus.Mismatch);
         await Assert.That(roundTripped.Comparisons[0].ManifestTitleCount).IsEqualTo(6);
         await Assert.That(roundTripped.Comparisons[0].Differences.Error).IsEqualTo("boom");
+        await Assert.That(roundTripped.Comparisons[0].Differences.IdentifyExperience!.Status).IsEqualTo(IdentifyExperienceStatus.NotComparable);
     }
 
     [Test]

@@ -44,7 +44,13 @@
 else
 {
     <section class="info-card mb-3">
-        <h2>Overall</h2>
+        <h2>Same identify experience</h2>
+        <p class="parity-rate">@dashboard.IdentifyExperience.Rate</p>
+        <p>@dashboard.IdentifyExperience.Matches of @dashboard.IdentifyExperience.Measured measured comparisons match;
+            @dashboard.IdentifyExperience.NotComparable not comparable; @dashboard.IdentifyExperience.NotMeasured not measured.</p>
+        <p class="text-muted">@TheDiscDb.Contributions.OpticalDiscManifest.IdentifyExperienceComparison.ScopeText</p>
+        <p>Older comparisons need a new comparison to measure this metric. Technical parity remains separate below.</p>
+        <h3>Technical parity</h3>
         <p class="parity-rate">@FormatRate(dashboard.Overall) match rate</p>
         <p>@dashboard.Overall.Matches of @dashboard.Overall.Total latest comparisons match.</p>
     </section>
@@ -57,7 +63,26 @@ else
     </div>
 
     <section class="info-card mt-3">
-        <h2>Non-matching latest comparisons</h2>
+        <h2>Identify experience: differences and missing measurements</h2>
+        @if (dashboard.IdentifyExperienceNonMatches.Count == 0)
+        {
+            <p>No differences or missing measurements.</p>
+        }
+        else
+        {
+            <QuickGrid Items="dashboard.IdentifyExperienceNonMatches.AsQueryable()" Class="striped-grid">
+                <TemplateColumn Title="Disc">
+                    <a href="/admin/disc-scan-parity/@context.DiscId">@context.ReleaseTitle - @context.DiscName</a>
+                </TemplateColumn>
+                <PropertyColumn Property="@(item => item.IdentifyExperienceLabel)" Title="Identify experience" />
+                <PropertyColumn Property="@(item => item.Status)" Title="Technical parity" />
+                <PropertyColumn Property="@(item => item.ComparedAt)" Title="Compared" Format="yyyy-MM-dd HH:mm" />
+            </QuickGrid>
+        }
+    </section>
+
+    <section class="info-card mt-3">
+        <h2>Technical parity: non-matching latest comparisons</h2>
         @if (dashboard.NonMatches.Count == 0)
         {
             <p>All latest comparisons match.</p>

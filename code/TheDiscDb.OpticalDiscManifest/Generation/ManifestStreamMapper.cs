@@ -128,6 +128,7 @@ internal static class ManifestStreamMapper
             ColorSpaceCode = clipEvidence?.ColorSpaceCode,
             HdrPlusFlag = clipEvidence?.HdrPlusFlag,
             Language = NormalizeLanguage(language),
+            AudioLayout = MapAudioLayout(formatCode, category),
             Resolution = MapVideoResolution(formatCode),
             AspectRatio = MapAspectRatio(clipEvidence?.AspectCode),
             FrameRate = MapFrameRate(rateCode),
@@ -214,6 +215,18 @@ internal static class ManifestStreamMapper
             _ => null,
         };
     }
+
+    private static string? MapAudioLayout(int? formatCode, string category)
+        => category is "Audio" or "SecondaryAudio"
+            ? formatCode switch
+            {
+                1 => "mono",
+                3 => "stereo",
+                // Multichannel (6) and combined stereo/multichannel (12) do not specify
+                // a speaker layout. In particular, neither proves 5.1, 7.1 or Atmos.
+                _ => null,
+            }
+            : null;
 
     internal static string? NormalizeLanguage(string? language)
         => string.IsNullOrWhiteSpace(language) || language == "und"

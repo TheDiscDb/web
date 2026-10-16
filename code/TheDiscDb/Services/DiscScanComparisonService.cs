@@ -144,7 +144,8 @@ public sealed class DiscScanComparisonService : IDiscScanComparisonService
             Differences = new DiscLogManifestDifferences
             {
                 ExpectedContentHash = string.IsNullOrWhiteSpace(disc.ContentHash) ? null : disc.ContentHash,
-                Error = error
+                Error = error,
+                IdentifyExperience = IdentifyExperienceComparison.NotComparable(error)
             }
         };
 }

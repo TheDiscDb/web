@@ -57,7 +57,7 @@ public class AudioTrackItem
     {
         if (this.Segment != null)
         {
-            return $"{Segment.Name} {Segment.AudioType}";
+            return MakeMkv.IdentifyTitlePresentation.AudioName(Segment.Name, Segment.AudioType);
         }
 
         return "";
@@ -73,7 +73,7 @@ public class SubtitleTrackItem
     {
         if (this.Segment != null)
         {
-            return $"{Segment.Name}".Trim();
+            return MakeMkv.IdentifyTitlePresentation.SubtitleName(Segment.Name);
         }
 
         return "";
@@ -260,7 +260,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
                 this.filteredTitles = allTitles;
                 InitializeLengthFilter();
 
-                this.commentColumnVisible = this.allTitles.Any(t => !string.IsNullOrEmpty(t.JavaComment));
+                this.commentColumnVisible = MakeMkv.IdentifyTitlePresentation.HasCommentColumn(this.allTitles.Select(t => t.JavaComment));
 
                 if (allTitles != null && disc?.Items != null)
                 {
@@ -537,16 +537,6 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         return identifiedTitles.ContainsKey(title);
     }
 
-    string Truncate(string? text, int maxLength)
-    {
-        if (string.IsNullOrEmpty(text))
-        {
-            return "";
-        }
-
-        return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
-    }
-
     string GetIdentifyButtonText(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title)
     {
         if (identifiedTitles.TryGetValue(title, out var item))
@@ -638,7 +628,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         return "Label Chapters";
     }
 
-    bool HasAudioSegments(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => title.Segments.Any(s => s.Type != null && s.Type.Equals("Audio", StringComparison.OrdinalIgnoreCase));
+    bool HasAudioSegments(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => title.Segments.Any(s => MakeMkv.IdentifyTitlePresentation.IsAudio(s.Type));
 
     bool HasAudioTracks(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => identifiedTitles.TryGetValue(title, out var item) && item.AudioTracks != null && item.AudioTracks.Any(c => !string.IsNullOrEmpty(c.Title));
 
@@ -687,7 +677,7 @@ public partial class IdentifyDiscItems : CancellableComponentBase
         }
     }
 
-    bool HasSubtitleSegments(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => title.Segments.Any(s => s.Type != null && s.Type.Equals("Subtitles", StringComparison.OrdinalIgnoreCase));
+    bool HasSubtitleSegments(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => title.Segments.Any(s => MakeMkv.IdentifyTitlePresentation.IsSubtitle(s.Type));
 
     bool HasSubtitleTracks(IGetDiscLogs_DiscLogs_DiscLogs_Info_Titles title) => identifiedTitles.TryGetValue(title, out var item) && item.SubtitleTracks != null && item.SubtitleTracks.Any(c => !string.IsNullOrEmpty(c.Title));
 

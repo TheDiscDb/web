@@ -341,11 +341,10 @@ internal static class BluRayTitleReconciler
     /// Orders titles the way MakeMKV presents them, so contributors labelling a disc see
     /// the same sequence they know from MakeMKV. Across the TheDiscDb log corpus MakeMKV
     /// lists every playlist-sourced title before every stream-sourced title, without
-    /// exception. Within each block MakeMKV follows the disc's directory order (verified
-    /// against the raw UDF directory listings of 2001: A Space Odyssey's feature and bonus
-    /// discs), so each block is ordered by <paramref name="enumerationIndexOf"/>, the
-    /// position of the title's source file in the caller's enumeration of the disc, with
-    /// the path as tie-breaker when the enumeration carries no order.
+    /// exception. Playlists follow their directory order. Stream titles follow CLIPINF
+    /// directory order, which can differ from STREAM order even on the same disc.
+    /// Without a CLPI inventory entry, fall back to the stream's directory order,
+    /// then its path when the enumeration carries no order.
     /// </summary>
     internal static List<ManifestTitle> OrderBluRayTitles(
         IReadOnlyList<ManifestTitle> titles,
@@ -359,7 +358,14 @@ internal static class BluRayTitleReconciler
             .OrderBy(title => enumerationIndexOf(title.Source?.Path))
             .Concat(titles
                 .Where(IsStreamSourced)
-                .OrderBy(title => enumerationIndexOf(title.Source!.Path))
+                .OrderBy(title =>
+                {
+                    string clipPath = $"BDMV/CLIPINF/{Path.GetFileNameWithoutExtension(title.Source!.Path)}.clpi";
+                    int clipIndex = enumerationIndexOf(clipPath);
+                    return clipIndex is >= 0 and < int.MaxValue
+                        ? clipIndex
+                        : enumerationIndexOf(title.Source.Path);
+                })
                 .ThenBy(title => title.Source!.Path, StringComparer.OrdinalIgnoreCase))
             .ToList();
     }

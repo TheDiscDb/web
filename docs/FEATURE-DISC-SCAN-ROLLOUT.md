@@ -27,10 +27,29 @@ phases so that MakeMKV logs can eventually be retired.
   - Titles are matched by source key: the playlist or stream file on Blu-ray, the title number on
     DVD.
   - Chapters, size, length and segment map are hard differences. Display size is a soft difference.
-  - UX parity is order-sensitive: the disc identify page must offer the same items in the
-    same order as today's MakeMKV-backed flow. `Match` requires equal title sets, no hard
+  - Technical parity is order-sensitive. Its existing `Match` requires equal title sets, no hard
     differences and `OrderMatches`. A title-order swap alone is a `Mismatch`, even if
     Chromium enumerates files in name order.
+  - **Same identify experience** is measured independently in the versioned
+    `differences.identifyExperience` result. It compares the actual default ordered rows,
+    including duplicates, displayed chapter count, formatted size, length, playlist label,
+    truncated segment map and full tooltip, conditional comment column and values,
+    audio/subtitle/chapter labeling availability after identification, and ordered names in
+    audio/subtitle labeling dialogs. The comparer and identify page share presentation helpers.
+    Source aliases, row splits, missing angle rows and order changes remain UX differences;
+    equal clips/bytes do not excuse them. Conversely, byte differences that do not change
+    any displayed value need not change this metric. Missing metadata is compared as
+    displayed by the production mapper, not ignored.
+    Saved identifications/labels, user sorting/filtering, external chapter suggestions,
+    clipboard state and visual layout are excluded. This is a data-level UX metric,
+    not a screenshot or playback check. Different discs, empty row sets and scan errors
+    are `NotComparable`. Historical comparisons without this metric are **not measured**,
+    never inferred matches. Re-compare computes it from stored artifacts without rescanning.
+    Manifest-to-identify projection translates known audio/subtitle codec names and explicit
+    layouts into MakeMKV display vocabulary without changing semantic manifest fields.
+    Blu-ray audio format codes expose mono/stereo only when explicitly declared; generic
+    multichannel evidence does not establish 5.1, 7.1 or Atmos. No subtitle duplicates or
+    embedded audio-core tracks are fabricated to improve parity.
   - Blu-ray artifact-consistency warnings report log sources missing from the scan inventory
     and standalone stream size disagreements. They do not change parity status or prove a
     different disc: the identity hash compares the scan with the contribution record, not
@@ -58,7 +77,9 @@ phases so that MakeMKV logs can eventually be retired.
     the original playlist/part, clip, duration evidence and removed chapter-mark count.
     These describe reconciliation decisions; later duplicate exclusions may remove a candidate.
     Older manifests remain supported.
-- **Admin dashboard.** `/admin/disc-scan-parity` shows match rates, using the latest comparison for
+- **Admin dashboard.** `/admin/disc-scan-parity` leads with same-identify-experience match rates
+  among measured comparisons and separately reports not-comparable/not-measured coverage.
+  Technical parity remains visible independently. It uses the latest comparison for
   each disc, broken down by format, producer version, MakeMKV version and browser.
   `/admin/disc-scan-parity/{discId}` shows the title-by-title differences, links to download the
   log, the manifest and the comparison file, and a Re-compare action. Re-compare all is on the

@@ -39,6 +39,32 @@ public class DiscScanParityAggregatorTests
         await Assert.That(dashboard.ByBrowser.Single(item => item.Label == "Firefox").Stats.Total).IsEqualTo(1);
     }
 
+    [Test]
+    public async Task CreateDashboard_SeparatesIdentifyMetricCoverageAndTechnicalParity()
+    {
+        var latest = new[]
+        {
+            CreateItem(1, DiscLogManifestComparisonStatus.Mismatch, "blu-ray", "1", "1", "CLI") with
+            { IdentifyExperience = new(1, IdentifyExperienceStatus.Match, 1, 1, 1, []) },
+            CreateItem(2, DiscLogManifestComparisonStatus.Match, "blu-ray", "1", "1", "CLI") with
+            { IdentifyExperience = new(1, IdentifyExperienceStatus.Mismatch, 1, 1, 0, []) },
+            CreateItem(3, DiscLogManifestComparisonStatus.Error, "dvd", "1", "1", "CLI") with
+            { IdentifyExperience = IdentifyExperienceComparison.NotComparable("error") },
+            CreateItem(4, DiscLogManifestComparisonStatus.Match, "dvd", "1", "1", "CLI"),
+            CreateItem(5, DiscLogManifestComparisonStatus.Match, "dvd", "1", "1", "CLI") with
+            { IdentifyExperience = new(99, IdentifyExperienceStatus.Match, 1, 1, 1, []) }
+        };
+        var dashboard = DiscScanParityAggregator.CreateDashboard(latest);
+        await Assert.That(dashboard.IdentifyExperience.Measured).IsEqualTo(2);
+        await Assert.That(dashboard.IdentifyExperience.Matches).IsEqualTo(1);
+        await Assert.That(dashboard.IdentifyExperience.Mismatches).IsEqualTo(1);
+        await Assert.That(dashboard.IdentifyExperience.NotComparable).IsEqualTo(1);
+        await Assert.That(dashboard.IdentifyExperience.NotMeasured).IsEqualTo(2);
+        await Assert.That(dashboard.IdentifyExperienceNonMatches.Count).IsEqualTo(4);
+        await Assert.That(dashboard.ByFormat.Single(g => g.Label == "blu-ray").IdentifyExperience.Matches).IsEqualTo(1);
+        await Assert.That(latest[3].IdentifyExperienceLabel).IsEqualTo("Not measured");
+    }
+
     private static ContributionDiscComparisonListItem CreateItem(
         int discId,
         DiscLogManifestComparisonStatus status,

@@ -108,6 +108,41 @@ public class OpticalDiscManifestValidatorTests
 
 public class OpticalDiscManifestMapperTests
 {
+    [Test]
+    [Arguments("audio", "AC-3", "stereo", "Dolby Digital", "Stereo")]
+    [Arguments("audio", "AC-3", "mono", "Dolby Digital", "Mono")]
+    [Arguments("audio", "AC-3", "5.1", "Dolby Digital", "Surround 5.1")]
+    [Arguments("audio", "AC-3 Plus", "7.1", "Dolby Digital plus", "Surround 7.1")]
+    [Arguments("audio", "LPCM", "stereo", "Linear PCM", "Stereo")]
+    [Arguments("audio", "TrueHD", null, "TrueHD", null)]
+    [Arguments("audio", "DTS-HD Master Audio", null, "DTS-HD Master Audio", null)]
+    [Arguments("audio", "Unknown codec", "6 channels", "Unknown codec", "6 channels")]
+    [Arguments("audio", "Dolby Digital", "Surround 5.1", "Dolby Digital", "Surround 5.1")]
+    [Arguments("subtitle", "Presentation Graphics", null, "HDMV PGS Subtitles", null)]
+    [Arguments("subtitle", "RLE", null, "Dvd Subtitles", null)]
+    [Arguments("subtitle", "HDMV PGS Subtitles", null, "HDMV PGS Subtitles", null)]
+    [Arguments("video", "LPCM", "stereo", "LPCM", null)]
+    public async Task ToDiscInfo_MapsOnlyKnownPresentationVocabulary(
+        string type, string codec, string? layout, string expectedName, string? expectedLayout)
+    {
+        var stream = new OpticalDiscManifestStream { Type = type, Codec = codec, AudioLayout = layout };
+        var document = new OpticalDiscManifestDocument
+        {
+            Disc = new OpticalDiscManifestDisc
+            {
+                Format = "blu-ray",
+                Titles = { new OpticalDiscManifestTitle { Streams = { stream } } }
+            }
+        };
+
+        Segment segment = OpticalDiscManifestMapper.ToDiscInfo(document).Titles[0].Segments.Single();
+
+        await Assert.That(segment.Name).IsEqualTo(expectedName);
+        await Assert.That(segment.AudioType).IsEqualTo(expectedLayout);
+        await Assert.That(stream.Codec).IsEqualTo(codec);
+        await Assert.That(stream.AudioLayout).IsEqualTo(layout);
+    }
+
     private static async Task<DiscInfo> MapSampleAsync()
     {
         var result = new OpticalDiscManifestValidator().Parse(await TestFiles.ReadManifestAsync());
@@ -830,6 +865,9 @@ public class DiscLogManifestComparerTests
         await Assert.That(result.Differences.ArtifactWarnings.Any(w =>
             w.Contains("complete MakeMKV title rows", StringComparison.Ordinal))).IsTrue();
         await Assert.That(result.OrderMatches).IsTrue();
+        await Assert.That(result.Differences.IdentifyExperience!.Status).IsEqualTo(IdentifyExperienceStatus.Mismatch);
+        await Assert.That(result.Differences.IdentifyExperience.LogRowCount).IsEqualTo(5);
+        await Assert.That(result.Differences.IdentifyExperience.ManifestRowCount).IsEqualTo(1);
     }
 
     [Test]
