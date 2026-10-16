@@ -51,10 +51,25 @@ only one release, so releases absent from an import are retained; deleting a rel
 requires the explicit release-deletion workflow. Disc, title, and track updates
 within an imported release retain their existing reconciliation behavior.
 
+ContributionBuddy can explicitly opt into a new-release-only import for an existing
+parent. This scope also limits asset and database processing; parent metadata, groups,
+latest release date, and complete search identifiers are maintained. Sibling search
+documents receive field-only updates when inherited groups change. Existing-release
+updates, online admin imports, full-folder imports, box sets, and database seeding
+retain their existing behavior.
+
 If releases were overwritten by an earlier import, deploy the corrected importer
 and re-import the media item's complete directory from the data repository.
 The site's media-item detail cache can retain the old result for up to 12 hours;
 restart the web app after repair to refresh it immediately.
+
+### Search index rebuilds
+
+Full search rebuilds load 100 parent items at a time using untracked split queries,
+including only mapped titles, and upload up to 1,000 documents per request. Incremental
+imports retain their existing batch size. The admin rebuild endpoint still runs
+synchronously and deletes/recreates the active index before uploading documents;
+avoid concurrent rebuilds and check the returned success/error summary.
 
 ---
 

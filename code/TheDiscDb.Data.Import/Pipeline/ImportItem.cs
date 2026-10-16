@@ -12,4 +12,6 @@ public class ImportItem
     public TitleData ImdbData { get; set; }
     public TmdbMetadata TmdbData { get; set; }
     public string BasePath { get; set; }
+    public ReleaseImportScope? ReleaseScope { get; set; }
+    public ImportDiagnostics? Diagnostics { get; set; }
 }

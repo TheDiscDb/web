@@ -121,6 +121,12 @@ namespace TheDiscDb.Data.Import.Pipeline
                     }
                     catch (Exception e)
                     {
+                        if (item.Diagnostics != null)
+                        {
+                            item.Diagnostics.Failed = true;
+                            item.Diagnostics.FailureException ??= e;
+                            item.Diagnostics.FailedStages.Add(nameof(GroupImportMiddleware));
+                        }
                         // Detach pending entities so they don't pollute subsequent items.
                         foreach (var entry in this.GetDbContext().ChangeTracker.Entries()
                             .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified)
@@ -292,7 +298,10 @@ namespace TheDiscDb.Data.Import.Pipeline
                 return releaseGroupMap;
             }
 
-            await foreach (var releaseDir in this.fileSystem.Directory.EnumerateDirectories(item.BasePath, cancellationToken))
+            var releaseDirectories = item.ReleaseScope == null
+                ? await this.fileSystem.Directory.GetDirectories(item.BasePath, cancellationToken)
+                : new[] { item.ReleaseScope.Directory };
+            foreach (var releaseDir in releaseDirectories)
             {
                 string releasePath = this.fileSystem.Path.Combine(releaseDir, ReleaseFile.Filename);
                 if (!await this.fileSystem.File.Exists(releasePath, cancellationToken))
@@ -334,7 +343,7 @@ namespace TheDiscDb.Data.Import.Pipeline
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception) when (item.ReleaseScope == null && !cancellationToken.IsCancellationRequested)
                 {
                     // Skip release files that can't be read or parsed
                 }
@@ -814,4 +823,3 @@ namespace TheDiscDb.Data.Import.Pipeline
         }
     }
 }
-

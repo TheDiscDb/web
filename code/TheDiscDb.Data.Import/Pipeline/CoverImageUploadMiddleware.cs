@@ -47,7 +47,10 @@ namespace TheDiscDb.Data.Import.Pipeline
                     }
                 }
 
-                foreach (var releaseFolder in await this.fileSystem.Directory.GetDirectories(item.BasePath))
+                var releaseFolders = item.ReleaseScope == null
+                    ? await this.fileSystem.Directory.GetDirectories(item.BasePath, cancellationToken)
+                    : new[] { item.ReleaseScope.Directory };
+                foreach (var releaseFolder in releaseFolders)
                 {
                     string frontCoverPath = this.fileSystem.Path.Combine(releaseFolder, "front.jpg");
                     if (await this.fileSystem.File.Exists(frontCoverPath, cancellationToken))
@@ -137,4 +140,3 @@ namespace TheDiscDb.Data.Import.Pipeline
         }
     }
 }
-

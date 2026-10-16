@@ -4,6 +4,7 @@ public interface ISearchIndexService
 {
     Task<BuildIndexSummary> BuildIndex();
     Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = 10);
+    Task<BuildIndexSummary> MergeItems(IEnumerable<SearchDocumentUpdate> updates, int batchSize = 10);
     Task DeleteItems(IEnumerable<string> keys);
 }
 
@@ -37,4 +38,9 @@ public class NullSearchIndexService : ISearchIndexService
     {
         return Task.CompletedTask;
     }
+
+    public Task<BuildIndexSummary> MergeItems(IEnumerable<SearchDocumentUpdate> updates, int batchSize = 10)
+        => Task.FromResult(new BuildIndexSummary { Success = true, ItemCount = updates.Count() });
 }
+
+public sealed record SearchDocumentUpdate(string Key, IDictionary<string, object> Fields);
