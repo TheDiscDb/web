@@ -50,6 +50,9 @@ public partial class EditSuggestionDetail : ComponentBase
         "chapterIndex", "trackIndex", "sourceFile", "hasItem",
     ];
 
+    private static readonly IReadOnlyCollection<string> DiscAddOnlyFields =
+        ["contentHash", "globalDiscId", "fingerprint"];
+
     private static readonly JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
 
     protected override async Task OnInitializedAsync()

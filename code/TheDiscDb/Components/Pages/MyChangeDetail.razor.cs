@@ -37,6 +37,9 @@ public partial class MyChangeDetail : AuthenticatedComponentBase
         "chapterIndex", "trackIndex", "sourceFile", "hasItem",
     ];
 
+    private static readonly IReadOnlyCollection<string> DiscAddOnlyFields =
+        ["contentHash", "globalDiscId", "fingerprint"];
+
     protected override async Task OnInitializedAsync()
     {
         suggestionId = IdEncoder.Decode(SuggestionSquid);

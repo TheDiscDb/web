@@ -107,6 +107,7 @@ else
                     <TheDiscDb.Client.Controls.JsonDiff
                         OriginalJson="@change.OriginalSnapshotJson"
                         ProposedJson="@change.ProposedJson"
+                        PreserveOnEmptyKeys="@(change.Type == TheDiscDb.Data.Changes.DiscFields.DiscFieldsUpdate.Key ? DiscAddOnlyFields : null)"
                         ExcludeKeys="@IdentityFields" />
                 }
 
