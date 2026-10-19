@@ -40,6 +40,12 @@ below reflects it.
   `ApproveAllPendingAsync` (approve-all within a suggestion), conflict resolution,
   and a bundle-status roll-up. Field-level **JSON diff preview** (`JsonDiff`
   control) in `EditSuggestionDetail.razor`.
+- **Disc identifier previews** - admin review and My Changes preserve existing
+  `contentHash`, `globalDiscId`, and `fingerprint` values in the displayed diff
+  when a disc-field proposal omits them or supplies null/empty values. These
+  add-only fields cannot be cleared by approval. Nonempty proposals remain
+  visible for review, including values requiring conflict resolution. This is
+  display-only and also covers suggestions submitted before the preview fix.
 - **Messaging** (`EditSuggestionMessage` / `SendMessage`), **history/audit trail**
   (`EditSuggestionHistoryService`), and **email notifications**
   (`EditSuggestionNotificationService`, still gated behind the global
