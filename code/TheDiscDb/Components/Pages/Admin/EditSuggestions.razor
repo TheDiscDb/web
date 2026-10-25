@@ -1,5 +1,7 @@
 @page "/admin/changes"
 @using TheDiscDb.Client.Controls
+@using Syncfusion.Blazor.Popups
+@using TheDiscDb.Services.EditSuggestions
 
 @rendermode InteractiveServer
 
@@ -9,41 +11,132 @@
 
 <h1>Edit Suggestions</h1>
 
-<div class="d-flex gap-3 align-items-center mb-3">
-    <label class="fw-bold">Status:</label>
-    <SfDropDownList TValue="EditSuggestionStatus"
-                    TItem="EditSuggestionStatus"
-                    DataSource="statusList"
-                    Value="selectedStatus"
-                    ValueChanged="OnStatusChanged"
-                    ValueExpression="@(() => selectedStatus)"
-                    Placeholder="Select status" />
-</div>
+@if (!string.IsNullOrEmpty(actionError))
+{
+    <div class="alert alert-danger" role="alert">@actionError</div>
+}
 
-@if (suggestions == null)
+@if (results.Count > 0)
 {
-    <p>Loading…</p>
+    <section class="mb-3" aria-label="Bulk review results" aria-live="polite">
+        <h2 class="h5">Bulk review results</h2>
+        <p>@results.Count suggestions processed. @results.Count(r => r.Outcome == BulkReviewOutcome.Failed) failed.</p>
+        <ul>
+            @foreach (var result in results)
+            {
+                <li>
+                    <a href="/admin/changes/@result.SuggestionId">@result.Label</a>:
+                    <strong>@GetOutcomeLabel(result.Outcome)</strong>. @result.Message
+                    @if (result.Counts is { } counts)
+                    {
+                        <span>Current changes: @counts.Applied applied, @counts.Conflicted conflicted, @counts.Rejected rejected, @counts.Pending pending.</span>
+                    }
+                </li>
+            }
+        </ul>
+    </section>
 }
-else if (suggestions.Count == 0)
+
+<fieldset @ref="selectionContainer" disabled="@ControlsDisabled">
+    <legend class="visually-hidden">Edit suggestion review</legend>
+    <div class="d-flex gap-3 align-items-center mb-3">
+        <label class="fw-bold">Status:</label>
+        <SfDropDownList TValue="EditSuggestionStatus"
+                        TItem="EditSuggestionStatus"
+                        DataSource="statusList"
+                        Value="selectedStatus"
+                        ValueChanged="OnStatusChanged"
+                        ValueExpression="@(() => selectedStatus)"
+                        Enabled="@(!ControlsDisabled)"
+                        Placeholder="Select status" />
+    </div>
+
+    @if (selectedStatus.IsReviewable())
+    {
+        <div class="d-flex gap-2 align-items-center mb-3">
+            <span aria-live="polite">@selection.Selected.Count selected</span>
+            <button type="button" class="btn btn-success" disabled="@(!CanApprove)"
+                    @onclick="() => OpenConfirmation(false)">Approve selected</button>
+            <button type="button" class="btn btn-danger" disabled="@(selection.Selected.Count == 0)"
+                    @onclick="() => OpenConfirmation(true)">Reject selected</button>
+        </div>
+        <p class="text-muted">Click a row to select it. Ctrl-click to toggle additional rows, or Shift-click a row or checkbox to select a range. Checkboxes also toggle individual selections.</p>
+    }
+
+    @if (suggestions == null)
+    {
+        <p>Loading…</p>
+    }
+    else if (suggestions.Count == 0)
+    {
+        <div class="alert alert-info">No suggestions with status <strong>@selectedStatus</strong>.</div>
+    }
+    else
+    {
+        <QuickGrid TGridItem="EditSuggestion" @ref="grid" ItemsProvider="LoadRows" ItemKey="@(s => s.Id)"
+                   RowClass="GetRowClass" Class="striped-grid">
+            @if (selectedStatus.IsReviewable())
+            {
+                <TemplateColumn Title="Select">
+                    <input type="checkbox" class="form-check-input"
+                           data-suggestion-id="@context.Id"
+                           aria-label="@($"Select {context.Summary ?? context.TargetEntityKey ?? "suggestion"}")"
+                           @bind:get="selection.Selected.Contains(context.Id)"
+                           @bind:set="(bool value) => SelectRow(context.Id, value)"
+                           @onclick="RecordModifiers" />
+                </TemplateColumn>
+            }
+            <TemplateColumn Title="ID">
+                <a href="/admin/changes/@context.Id">@context.Id</a>
+            </TemplateColumn>
+            <PropertyColumn Property="@(s => s.TargetEntityType)" Title="Entity" />
+            <PropertyColumn Property="@(s => s.TargetEntityKey)" Title="Target" />
+            <PropertyColumn Property="@(s => s.Summary)" Title="Summary" />
+            <TemplateColumn Title="Changes">
+                @context.Changes.Count
+            </TemplateColumn>
+            <PropertyColumn Property="@(s => s.Source)" Title="Source" />
+            <PropertyColumn Property="@(s => s.Created)" Title="Submitted" Format="g" Sortable="true" />
+            <TemplateColumn Title="Status">
+                <span class="badge @GetStatusBadge(context.Status)">@context.Status</span>
+            </TemplateColumn>
+        </QuickGrid>
+    }
+</fieldset>
+
+@if (isProcessing)
 {
-    <div class="alert alert-info">No suggestions with status <strong>@selectedStatus</strong>.</div>
+    <p role="status">Processing selected suggestions. Please wait...</p>
 }
-else
-{
-    <QuickGrid Items="suggestions.AsQueryable()" Class="striped-grid">
-        <TemplateColumn Title="ID">
-            <a href="/admin/changes/@context.Id">@context.Id</a>
-        </TemplateColumn>
-        <PropertyColumn Property="@(s => s.TargetEntityType)" Title="Entity" />
-        <PropertyColumn Property="@(s => s.TargetEntityKey)" Title="Target" />
-        <PropertyColumn Property="@(s => s.Summary)" Title="Summary" />
-        <TemplateColumn Title="Changes">
-            @context.Changes.Count
-        </TemplateColumn>
-        <PropertyColumn Property="@(s => s.Source)" Title="Source" />
-        <PropertyColumn Property="@(s => s.Created)" Title="Submitted" Format="g" Sortable="true" />
-        <TemplateColumn Title="Status">
-            <span class="badge @GetStatusBadge(context.Status)">@context.Status</span>
-        </TemplateColumn>
-    </QuickGrid>
-}
+
+<SfDialog Target="body" Width="600px" @bind-Visible="showConfirmation" IsModal="true"
+          ShowCloseIcon="@(!isProcessing)"
+          CloseOnEscape="@(!isProcessing)"
+          Header="@(rejecting ? "Reject selected suggestions" : "Approve selected suggestions")">
+    <DialogTemplates>
+        <Content>
+            <p>@(rejecting ? "Reject" : "Approve") @confirmedIds.Length selected suggestions?</p>
+            <p>Suggestions will be processed in submission order, oldest first, regardless of the table sort order.</p>
+            @if (rejecting)
+            {
+                @if (includesAppliedChanges)
+                {
+                    <p class="text-danger">Previously applied or synced data is not undone. Applied changes will only have their statuses corrected to rejected.</p>
+                }
+                <label for="bulk-rejection-reason" class="form-label">Reason for rejection (required for all selected suggestions)</label>
+                <input id="bulk-rejection-reason" class="form-control" disabled="@isProcessing"
+                       @bind="rejectionReason" @bind:event="oninput" />
+            }
+            else
+            {
+                <p>Only pending changes will be approved and applied. Conflicts will remain for individual review.</p>
+            }
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Cancel" CssClass="e-flat" OnClick="CancelConfirmation" Disabled="@isProcessing" />
+        <DialogButton Content="@(rejecting ? "Reject selected" : "Approve selected")"
+                      CssClass="@(rejecting ? "e-danger" : string.Empty)" IsPrimary="true" OnClick="ConfirmReview"
+                      Disabled="@(isProcessing || (rejecting && string.IsNullOrWhiteSpace(rejectionReason)))" />
+    </DialogButtons>
+</SfDialog>
