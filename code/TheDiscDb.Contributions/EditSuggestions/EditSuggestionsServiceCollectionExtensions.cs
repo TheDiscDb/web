@@ -63,6 +63,7 @@ public static class EditSuggestionsServiceCollectionExtensions
         services.AddScoped<IEditSuggestionRecipientResolver, EditSuggestionRecipientResolver>();
         services.AddScoped<IEditSuggestionService, EditSuggestionService>();
         services.AddScoped<IEditSuggestionReviewService, EditSuggestionReviewService>();
+        services.AddScoped<IEditSuggestionBulkReviewService, EditSuggestionBulkReviewService>();
         services.AddScoped<IEditSuggestionSyncService, EditSuggestionSyncService>();
         services.AddScoped<TheDiscDb.Services.DiscId.IDiscIdBackfillService, TheDiscDb.Services.DiscId.DiscIdBackfillService>();
 
