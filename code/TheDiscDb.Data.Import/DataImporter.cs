@@ -284,6 +284,7 @@
 
         private async Task<Disc> FindBoxsetDisc(string baseDirectory, BoxSetReleaseFile file, BoxSetDisc disc, CancellationToken cancellationToken = default)
         {
+            string lookupSlug = string.IsNullOrEmpty(disc.SourceDiscSlug) ? disc.Slug : disc.SourceDiscSlug;
             // TODO: handle "mixed" sets
             string mediaTypeDirectory = this.fileSystem.Path.Combine(baseDirectory, file.Type.ToLower());
             if (await this.fileSystem.Directory.Exists(mediaTypeDirectory, cancellationToken))
@@ -319,12 +320,12 @@
                                     }
                                     // Boxset members reference discs by Slug when present, otherwise by
                                     // Index (the SlugOrIndex convention used elsewhere on the site).
-                                    if (!string.IsNullOrEmpty(discFile.Slug) && discFile.Slug.Equals(disc.Slug, StringComparison.OrdinalIgnoreCase))
+                                    if (!string.IsNullOrEmpty(discFile.Slug) && discFile.Slug.Equals(lookupSlug, StringComparison.OrdinalIgnoreCase))
                                     {
                                         return discFile;
                                     }
                                     if (string.IsNullOrEmpty(discFile.Slug) &&
-                                        int.TryParse(disc.Slug, out var refIndex) &&
+                                        int.TryParse(lookupSlug, out var refIndex) &&
                                         discFile.Index == refIndex)
                                     {
                                         return discFile;

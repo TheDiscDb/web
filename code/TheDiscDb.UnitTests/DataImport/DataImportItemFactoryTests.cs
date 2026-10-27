@@ -181,6 +181,62 @@ public class DataImportItemFactoryTests
     }
 
     [Test]
+    [Arguments("barry-lyndon-4k", "4k")]
+    [Arguments("barry-lyndon-blu-ray-1", "blu-ray-1")]
+    [Arguments("eyes-wide-shut-4k", "4k")]
+    [Arguments("eyes-wide-shut-blu-ray-1", "blu-ray")]
+    public async Task MatchBoxsetDisc_CopiedDiscInMultiDiscRelease_UsesSourceSlug(string localSlug, string sourceSlug)
+    {
+        var sourceDisc = new Disc { Index = 1, Slug = sourceSlug };
+        var otherDisc = new Disc { Index = 2, Slug = localSlug };
+        var boxsetDisc = new BoxSetDisc
+        {
+            Index = 18,
+            Slug = localSlug,
+            SourceDiscSlug = sourceSlug.ToUpperInvariant(),
+        };
+
+        var result = DataImportItemFactory.MatchBoxsetDisc([otherDisc, sourceDisc], boxsetDisc);
+
+        await Assert.That(result).IsSameReferenceAs(sourceDisc);
+        DataImportItemFactory.ApplyBoxsetOverrides(result!, boxsetDisc);
+        await Assert.That(result!.Slug).IsEqualTo(localSlug);
+        await Assert.That(result.Index).IsEqualTo(18);
+    }
+
+    [Test]
+    public async Task MatchBoxsetDisc_ExplicitSourceSlugMissing_DoesNotUseSingleDiscFallback()
+    {
+        var disc = new Disc { Index = 1, Slug = "other-disc" };
+        var boxsetDisc = new BoxSetDisc
+        {
+            Slug = "other-disc",
+            SourceDiscSlug = "missing-disc",
+        };
+
+        var result = DataImportItemFactory.MatchBoxsetDisc([disc], boxsetDisc);
+
+        await Assert.That(result).IsNull();
+    }
+
+    [Test]
+    public async Task MatchBoxsetDisc_NumericSourceSlug_UsesSourceIndex()
+    {
+        var sourceDisc = new Disc { Index = 2 };
+        var otherDisc = new Disc { Index = 1 };
+        var boxsetDisc = new BoxSetDisc
+        {
+            Index = 19,
+            Slug = "movie-blu-ray",
+            SourceDiscSlug = "2",
+        };
+
+        var result = DataImportItemFactory.MatchBoxsetDisc([otherDisc, sourceDisc], boxsetDisc);
+
+        await Assert.That(result).IsSameReferenceAs(sourceDisc);
+    }
+
+    [Test]
     public async Task MatchBoxsetDisc_MultipleDiscsWithoutMatch_ReturnsNull()
     {
         Disc[] discs =
