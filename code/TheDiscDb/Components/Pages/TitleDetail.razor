@@ -132,7 +132,18 @@ else
                                     <td>@track.GetDesciption()</td>
                                     @if (groupType != "Video")
                                     {
-                                        <td>@track.Description</td>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(track.Description))
+                                            {
+                                                <div class="description-with-copy flex-nowrap">
+                                                    <span>@track.Description</span>
+                                                    <CopyButton Text="@track.Description"
+                                                                Title="Copy track name"
+                                                                CssClass="copy-button flex-shrink-0"
+                                                                @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+                                                </div>
+                                            }
+                                        </td>
                                     }
                                 </tr>
                             }

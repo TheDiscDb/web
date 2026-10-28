@@ -64,11 +64,35 @@ public class TrackNamingPageTests
         await Assert.That(html).Contains("PGS (French)");
         await Assert.That(html).Contains("Suggest edits to audio track names");
         await Assert.That(html).Contains("Suggest edits to subtitles track names");
+        await Assert.That(html.Split("title=\"Copy track name\"", StringSplitOptions.None).Length - 1).IsEqualTo(2);
         await Assert.That(html.Split("/tracks/edit", StringSplitOptions.None).Length - 1).IsEqualTo(2);
         var path = type == "boxset"
             ? "/boxset/the-movie/discs/disc-one/00001/mpls/tracks/edit"
             : $"/{type}/the-movie/releases/the-release-slug/discs/disc-one/00001/mpls/tracks/edit";
         await Assert.That(html).Contains(path);
+    }
+
+    [Test]
+    [Arguments(null)]
+    [Arguments("")]
+    [Arguments("   ")]
+    [Arguments("Director commentary")]
+    public async Task TitlePage_CopyButtonsOnlyAppearForNonblankTrackNames(string? name)
+    {
+        await using var services = await CreateServicesAsync("movie");
+        await using (var db = services.GetRequiredService<IDbContextFactory<SqlServerDataContext>>().CreateDbContext())
+        {
+            foreach (var track in await db.Set<Track>().ToListAsync())
+            {
+                track.Description = name;
+            }
+            await db.SaveChangesAsync();
+        }
+
+        var html = await RenderAsync<TitleDetail>(services, Parameters("movie"));
+        var expectedCount = string.IsNullOrWhiteSpace(name) ? 0 : 3;
+
+        await Assert.That(html.Split("title=\"Copy track name\"", StringSplitOptions.None).Length - 1).IsEqualTo(expectedCount);
     }
 
     [Test]
