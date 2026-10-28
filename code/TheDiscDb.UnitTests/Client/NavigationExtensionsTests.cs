@@ -306,6 +306,19 @@ public class NavigationExtensionsTests
     }
 
     [Test]
+    [Arguments("Subtitle")]
+    [Arguments("SUBTITLES")]
+    [Arguments("subtitles")]
+    public async Task GetDesciption_SubtitleVariants_PreserveTechnicalContext(string type)
+    {
+        var track = new Track { Type = type, Name = "PGS", Language = "English", Description = "Forced subtitles" };
+
+        await Assert.That(track.IsTrackType("Subtitles")).IsTrue();
+        await Assert.That(track.IsTrackType("Audio")).IsFalse();
+        await Assert.That(track.GetDesciption()).IsEqualTo("PGS (English)");
+    }
+
+    [Test]
     public async Task GetDesciption_NullType_ReturnsEmpty()
     {
         var track = new Track { Type = null };
