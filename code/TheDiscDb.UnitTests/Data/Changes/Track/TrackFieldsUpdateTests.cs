@@ -136,6 +136,58 @@ public class TrackFieldsUpdateTests
     }
 
     [Test]
+    [Arguments("Audio", "Director commentary")]
+    [Arguments("Subtitles", "Forced subtitles")]
+    [Arguments("Audio", "")]
+    [Arguments("Subtitles", "")]
+    public async Task ApplyAsync_DescriptionOnly_PreservesUpdatedTechnicalMetadata(string type, string description)
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Track.Type = type;
+        await db.SaveChangesAsync();
+        var original = TrackFieldsUpdate.SnapshotFrom(
+            seed.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug,
+            ChangeTestSeed.DiscSlug, ChangeTestSeed.TitleIndex);
+        var snapshot = JsonSerializer.Serialize(original, JsonOptions);
+
+        seed.Track.LanguageCode = "fra";
+        seed.Track.Language = "French";
+        await db.SaveChangesAsync();
+
+        var change = new TrackFieldsUpdate(original with { Description = description });
+        await change.ApplyAsync(db, new TestApplyContext("admin", 1, 1, snapshot), CancellationToken.None);
+        await db.SaveChangesAsync();
+
+        await Assert.That(seed.Track.Description).IsEqualTo(description);
+        await Assert.That(seed.Track.Name).IsEqualTo(original.Name);
+        await Assert.That(seed.Track.Type).IsEqualTo(type);
+        await Assert.That(seed.Track.Index).IsEqualTo(original.TrackIndex);
+        await Assert.That(seed.Track.LanguageCode).IsEqualTo("fra");
+        await Assert.That(seed.Track.Language).IsEqualTo("French");
+    }
+
+    [Test]
+    public async Task ValidateAsync_DescriptionEditConflictsWithNewerName()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        var original = TrackFieldsUpdate.SnapshotFrom(
+            seed.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug,
+            ChangeTestSeed.DiscSlug, ChangeTestSeed.TitleIndex);
+        var snapshot = JsonSerializer.Serialize(original, JsonOptions);
+
+        seed.Track.Description = "Another contributor's name";
+        await db.SaveChangesAsync();
+
+        var change = new TrackFieldsUpdate(original with { Description = "My name" });
+        var result = await change.ValidateAsync(db, snapshot, CancellationToken.None);
+
+        await Assert.That(result.IsConflict).IsTrue();
+        await Assert.That(result.ConflictReason).Contains("Description");
+    }
+
+    [Test]
     public async Task ValidateAsync_NotConflict_WhenUnproposedTrackFieldsDrift_DuringRebuild()
     {
         // Regression: a rebuild may correct LanguageCode/AudioType etc. after a suggestion
@@ -146,7 +198,8 @@ public class TrackFieldsUpdateTests
         var snapshotAtSubmit = TrackFieldsUpdate.SnapshotFrom(
             seed.Track, ChangeTestSeed.MediaItemSlug, null, ChangeTestSeed.ReleaseSlug,
             ChangeTestSeed.DiscSlug, ChangeTestSeed.TitleIndex)
-            with { LanguageCode = null, Language = null };
+            with
+        { LanguageCode = null, Language = null };
         var snapshotJson = JsonSerializer.Serialize(snapshotAtSubmit, JsonOptions);
 
         // Rebuild corrects language fields.

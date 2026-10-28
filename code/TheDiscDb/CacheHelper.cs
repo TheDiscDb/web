@@ -99,4 +99,17 @@ public class CacheHelper
 
         return dates ?? [];
     }
+
+    public async Task<Title?> GetDiscTitleAsync(int discId, string sourceFile, CancellationToken cancellationToken = default)
+    {
+        // Title pages and edit snapshots must reflect approved changes, not the
+        // long-lived release cache.
+        await using var database = await this.context.CreateDbContextAsync(cancellationToken);
+        return await database.Set<Title>()
+            .Include(t => t.Tracks)
+            .Include(t => t.Item!).ThenInclude(i => i.Chapters)
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(t => t.Disc != null && t.Disc.Id == discId
+                && t.SourceFile != null && t.SourceFile.ToLower() == sourceFile.ToLower(), cancellationToken);
+    }
 }

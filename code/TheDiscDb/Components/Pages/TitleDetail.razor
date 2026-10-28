@@ -98,24 +98,30 @@ else
         {
             <div class="d-flex align-items-center gap-2 mt-4 mb-2">
                 <h2 class="mb-0 h3">Tracks</h2>
-                @if (!string.IsNullOrEmpty(Disc.Slug))
-                {
-                    <a href="@GetTracksEditUrl()" class="icon-btn" title="Suggest edits to the track names"><i class="e-icons e-edit"></i></a>
-                }
             </div>
         }
         @foreach (var groupType in trackGroups)
         {
-            var groupTracks = Title.Tracks.Where(t => t.Type == groupType).ToList();
+            var groupTracks = Title.Tracks.Where(t => t.IsTrackType(groupType)).OrderBy(t => t.Index).ToList();
             if (groupTracks.Count > 0)
             {
-                <h3 class="mt-4 mb-2 h4">@groupType Tracks</h3>
+                <div class="d-flex align-items-center gap-2 mt-4 mb-2">
+                    <h3 class="mb-0 h4">@groupType Tracks</h3>
+                    @if (groupType != "Video" && !string.IsNullOrEmpty(Disc.Slug))
+                    {
+                        <a href="@GetTracksEditUrl()" class="icon-btn" title="@($"Suggest edits to {groupType.ToLowerInvariant()} track names")"><i class="e-icons e-edit"></i></a>
+                    }
+                </div>
                 <div class="table-responsive">
-                    <table class="table striped-grid mb-0">
+                    <table class="table striped-grid @(groupType != "Video" ? "track-table" : null) mb-0">
                         <thead>
                             <tr>
-                                <th scope="col" style="width: 5rem;">Index</th>
+                                <th scope="col" class="track-index">Index</th>
                                 <th scope="col">Description</th>
+                                @if (groupType != "Video")
+                                {
+                                    <th scope="col">Name</th>
+                                }
                             </tr>
                         </thead>
                         <tbody>
@@ -124,6 +130,10 @@ else
                                 <tr>
                                     <td>@track.Index</td>
                                     <td>@track.GetDesciption()</td>
+                                    @if (groupType != "Video")
+                                    {
+                                        <td>@track.Description</td>
+                                    }
                                 </tr>
                             }
                         </tbody>
