@@ -104,7 +104,7 @@ public class SearchIndexService : ISearchIndexService
         var stopwatch = Stopwatch.StartNew();
 
         var index = new SearchIndex(IndexName, this.GetIndexFields());
-        await this.client.DeleteIndexAsync(IndexName);
+        await this.client.DeleteIndexAsync(IndexName, CancellationToken.None);
         await this.client.CreateOrUpdateIndexAsync(index);
 
         using (var dbContext = this.dbFactory.CreateDbContext())

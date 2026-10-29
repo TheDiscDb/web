@@ -11,7 +11,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Schema\optical-disc-manifest-v1.schema.json"
                       LogicalName="TheDiscDb.OpticalDiscManifest.Schema.optical-disc-manifest-v1.schema.json" />
-    <PackageReference Include="JsonSchema.Net" Version="9.4.0" />
+    <PackageReference Include="JsonSchema.Net" Version="9.4.1" />
     <ProjectReference Include="..\TheDiscDb.OpticalDiscParsers\TheDiscDb.OpticalDiscParsers.csproj" />
     <ProjectReference Include="..\TheDiscDb.Core\TheDiscDb.Core.csproj" />
   </ItemGroup>

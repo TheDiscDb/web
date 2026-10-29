@@ -139,7 +139,11 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddScoped<TheDiscDb.Components.Account.IdentityRedirectManager>();
 
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JHaF5cWWdCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdlWXtfcXVcRWdYVk13XUtWYEo=");
+var syncfusionLicenseKey = builder.Configuration["Syncfusion:LicenseKey"];
+if (!string.IsNullOrWhiteSpace(syncfusionLicenseKey))
+{
+    Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense(syncfusionLicenseKey);
+}
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddScoped<SfDialogService>();
 
@@ -324,7 +328,7 @@ builder.Services.AddAzureClients(b =>
 
     var uri = new Uri(endpoint);
     var credential = new AzureKeyCredential(searchApiKey!);
-    b.AddSearchIndexClient(uri, credential);
+    DocumentsClientBuilderExtensions.AddSearchIndexClient(b, uri, credential);
 });
 
 if (!searchEnabled)
