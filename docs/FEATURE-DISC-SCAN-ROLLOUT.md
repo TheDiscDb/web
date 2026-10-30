@@ -1,5 +1,13 @@
 # Disc Scan Rollout (Replacing MakeMKV Logs)
 
+## Status (source reviewed 2026-10-29)
+
+🟡 **Implementation delivered through phase 2; rollout/publication incomplete.**
+The table below distinguishes built behavior from the checked-in defaults.
+`appsettings.json` has `DiscScanMode = Optional` and `ShowScanFileUpload = false`;
+production overrides and dashboard thresholds have not been verified by this
+source review. Built phase 2 is not evidence that the rollout gate was met.
+
 ## Overview
 
 The browser disc scan produces an Optical Disc Manifest (ODM, `.odm.json`) that reproduces the
@@ -9,7 +17,7 @@ phases so that MakeMKV logs can eventually be retired.
 | Phase | State | Description |
 |---|---|---|
 | 1. Collect both | 🟢 Built | The MakeMKV log is required and drives identification. After the log uploads, an interstitial page (`/contribution/{id}/discs/{discId}/scan`) offers a browser scan, or lets contributors skip to identify. A scan-file upload (from the CLI) is also offered there when `Contributions:ShowScanFileUpload` is `true` (off by default). The server stores both and compares them. |
-| 2. Scan by default | 🟢 Built, switched off | Set `Contributions:DiscScanMode` to `Default`. The scan becomes the first upload option and the identification source, and MakeMKV logs move to "Advanced". |
+| 2. Scan by default | 🟡 Built; off by source default | Set `Contributions:DiscScanMode` to `Default` after the parity gate below. The scan becomes the first upload option and the identification source, and MakeMKV logs move to "Advanced". |
 | 3. Scan first, no logs | 🔵 Proposed | The scan becomes the first contribution step, replacing the TMDB lookup, and MakeMKV logs are no longer accepted. |
 
 ## How it works
@@ -88,8 +96,39 @@ phases so that MakeMKV logs can eventually be retired.
 - **Publishing.** Approved contributions write `discNN.txt` and, when present, `discNN.odm.json`.
   The importer, the data-repo CI and the tools ignore `*.odm.json` when enumerating `disc*.json`.
 - **CLI.** `thediscdb-scan` (`code/TheDiscDb.DiscScan.Cli`) produces the same manifest from a
-  local disc on Windows, macOS and Linux. It is released by `.github/workflows/publish-scan-cli.yml`
-  when a `scan-cli-v*` tag is pushed. Contributors upload its output on the Disc Manifest tab.
+  local disc on Windows, macOS and Linux. Packaging/publication mechanisms exist,
+  but they do not prove a public release has been published; see below. The optional
+  post-log CLI upload is gated by `ShowScanFileUpload`.
+
+## Remaining rollout and publication work
+
+- **Collect evidence and investigate mismatches** before enabling phase 2. Record
+  results for the current producer version; a graded similarity score is not a
+  substitute for the exact-match gate.
+- **Publish and verify CLI packages.** As of 2026-10-29, the public GitHub release
+  lists for both `TheDiscDb/web` and `TheDiscDb/optical-disc-manifest` are empty.
+  This does not establish whether private draft releases exist.
+  [`Build-ScanCli.ps1`](../scripts/Build-ScanCli.ps1) builds all six runtimes;
+  [`Publish-ScanCli.ps1`](../scripts/Publish-ScanCli.ps1) targets
+  `TheDiscDb/optical-disc-manifest` and creates a **draft** by default (`-Publish`
+  makes it public). Smoke-test packages on their target platforms and verify
+  checksums before declaring publication complete.
+  The separate [tag-triggered workflow](../.github/workflows/publish-scan-cli.yml)
+  creates releases in **web**, not in the destination configured by the local scripts.
+- **Choose when to expose CLI-file uploads.** The flag exists and is false in
+  source defaults; do not assume the documented download/upload path is public
+  merely because the implementation exists.
+- **Implement phase 3** separately: scan-first entry flow and retirement of logs.
+- **Resolve remaining scanner limitations** with evidence: angle-specific
+  identity/size/segment modeling, unsupported DVD multi/random PGC and multi-angle
+  navigation, and unresolved playlist grouping/timing cases. General HDMV/BD-J
+  navigation resolution is not supplied by the current playlist heuristics.
+
+Already delivered: optional browser scans, stored comparison history, strict
+identify parity, graded similarity, re-comparison/admin dashboards, and manifest
+publication alongside approved contributions. The sibling tools repository also
+ships [OdmScanner](https://github.com/TheDiscDb/tools/blob/main/tools/OdmScanner/README.md) for local capture,
+comparison, and regression replay; it is not an unimplemented scanner/replay task.
 
 ## Graded identify similarity v1
 
@@ -182,11 +221,13 @@ PGC and multi-angle navigation remain unsupported; their missing metadata is rep
 as `Unavailable (not recorded)` in comparisons, not a measured zero. Structural fake-title
 checks still apply when all chapter/cell references are accounted for.
 
-Sequential, single-angle Blu-ray playlists may split at non-seamless boundaries only
-when a shared primary audio/video PID has incompatible known codec, format or rate
-declarations. Stream-count or language changes alone never split titles. Ambiguous
-CLPI program declarations, warning/error evidence, subpaths, stills, random playback
-and stereoscopic relationships do not qualify. Parts retain their original ordinal
+Sequential, single-angle Blu-ray playlists may split at non-seamless boundaries when
+a shared primary audio/video PID has incompatible known codec, format or rate
+declarations, or when complete, unambiguous known primary selections establish a
+change in stream membership. Stream counts or language changes without that evidence
+do not establish a split. Ambiguous CLPI program declarations, warning/error evidence,
+subpaths, stills, random playback and stereoscopic relationships do not qualify.
+Parts retain their original ordinal
 (`source.part`) even if subsequent reconciliation attributes an earlier part to a
 stream. Each part gets rebased segments/chapters, its own streams and clip sizes;
 `ODM_BD_PLAYLIST_SPLIT` records the decision. This is not general HDMV/BD-J navigation
@@ -244,10 +285,14 @@ clip count. The observed eight-playlist, 16-still-per-playlist gallery therefore
 128 extra stream choices. A gallery cut from one clip remains represented by its
 playlist alone. These rules do not change independent orphan or Dolby Vision promotion.
 
-Narrower trailing play items use the NTSC half-second boundary (0.5005 seconds, rounded to 45 kHz ticks)
-when their video rate declares 23.976, 29.97 or 59.94 fps; longer tails, equal stream
-tables and stereoscopic playlists are preserved. These generator fixes affect future
-submissions, not manifests already stored.
+Narrower trailing play items in ordinary sequential presentations are trimmed up
+to one second (1.001 seconds at NTSC rates). Warning/error evidence, angles, stills,
+subpaths, or non-sequential playback retain the older half-second rule; stereoscopic
+playlists are preserved. Longer tails and equal stream tables remain intact.
+The discarded clip may still be a standalone choice.
+[`BluRayPlaylistRules`](../code/TheDiscDb.OpticalDiscManifest/Generation/BluRayPlaylistRules.cs)
+is the implementation for both trimming and splitting. Generator changes affect
+fresh scans/replays, not manifests already stored.
 
 The unresolved playlist grouping/timing mismatches in comparisons 2813 and 2822 remain
 mismatches pending further evidence; these UX-parity fixes do not change their scanner

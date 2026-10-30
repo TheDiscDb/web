@@ -8,7 +8,7 @@
 > Where it lives in code:
 > - Schema + one-time rebuild: `20260618032717_AddReleaseDiscCanonicalization` migration
 >   (creates `ReleaseDiscs`, adds unique `(Format, ContentHash)` index, collapses
->   duplicate discs, re-points `Track`/`Chapter`/`Title` FKs, drops `ReleaseId/Name/Slug/Index`
+>   duplicate discs, re-points `Titles.DiscId`, drops `ReleaseId/Name/Slug/Index`
 >   from `Disc`).
 > - Import-time dedup: `DataImporter.ToReleaseDisc` resolves an existing canonical disc by
 >   `Format + ContentHash` (`code/TheDiscDb.Data.Import/DataImporter.cs`).
@@ -19,7 +19,39 @@
 
 ## Overview
 
-Phase 4 refactors the disc storage model to eliminate duplication of identical disc content across releases. Currently, if two releases contain discs with identical track and chapter data, that data is stored twice. This phase introduces a canonical disc model that stores content once and references it from multiple releases.
+Phase 4 stores shared disc content once as a canonical `Disc`, referenced by
+release-specific `ReleaseDisc` rows. The implementation and data-repo reference
+format are shipped; this is not a pending rebuild project.
+
+## Current implementation (source reviewed 2026-10-29)
+
+- [`DataImporter.ToReleaseDisc`](../code/TheDiscDb.Data.Import/DataImporter.cs)
+  resolves a canonical row by the existing **format + content hash** when both
+  are supplied. The hash is the legacy size-based **MD5**, not a SHA-256 digest
+  of serialized tracks/chapters. The newer inventory fingerprint is a separate
+  identifier and has not replaced this dedup key.
+- [`Disc`](../code/TheDiscDb.Core/InputModels/Disc.cs) owns `Titles`; tracks and
+  chapters belong to those titles. Release index/name/slug are stored on
+  [`ReleaseDisc`](../code/TheDiscDb.Core/InputModels/ReleaseDisc.cs), alongside
+  pressing-local `GlobalDiscId` and fingerprint data.
+- The [canonicalization migration](../code/TheDiscDb.DatabaseMigration/Migrations/20260618032717_AddReleaseDiscCanonicalization.cs)
+  groups existing rows by stored format/hash and re-points release-disc/title
+  relationships. It does not recompute the pseudocode track/chapter hash below.
+- [`DiscReferenceFile`](../code/TheDiscDb.Core/ImportModels/DiscReferenceFile.cs)
+  and importer resolution support `.ref` bundles, optional local name/identifier
+  overrides, and reference validation. The data repository already uses these files.
+- Exact-match contribution copy detection also ships. Remaining near-match,
+  merge/versioning/reporting ideas live in
+  [Disc Deduplication - Future Work](DISC-DEDUP-FUTURE-WORK.md).
+
+## Original design sketches (historical)
+
+The schemas, rebuild pseudocode, resolver examples, and timeline below preserve
+the original proposal, **not an implementation checklist or current API contract**.
+In particular, its SHA-256 track/chapter hash, `CreatedAt`, direct disc-level
+track/chapter collections, and contribution `int DiscId` sketch are not the
+shipped model. Use the source links above for current behavior; do not re-run the
+illustrative rebuild or create a second canonicalization project from it.
 
 ## Problem
 

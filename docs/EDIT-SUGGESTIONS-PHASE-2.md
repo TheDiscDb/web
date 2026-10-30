@@ -8,8 +8,13 @@ snapshot-diff edit suggestion, and admins review them in `/admin/changes`.
 
 Phase 2 broadens what can be suggested (beyond editing existing fields), fills
 in metadata gaps, and matures the admin review-to-publish workflow. This
-document is a backlog of candidate work — nothing here is committed or
-scheduled. Pick items off it as priorities allow.
+document records delivered work and a backlog of remaining candidates; the
+remaining items are not a delivery schedule.
+
+> **Source review: 2026-10-29.** Bulk review across suggestions is merged
+> ([web #122](https://github.com/TheDiscDb/web/pull/122)); `Source` has active Web
+> and GraphQL writers. Per-user preferences and partial-state work are owned by
+> their linked plans below, not separate duplicate implementations.
 
 ## Recap: What Phase 1 Shipped
 
@@ -40,6 +45,11 @@ below reflects it.
   `ApproveAllPendingAsync` (approve-all within a suggestion), conflict resolution,
   and a bundle-status roll-up. Field-level **JSON diff preview** (`JsonDiff`
   control) in `EditSuggestionDetail.razor`.
+- **Bulk review across suggestions** —
+  [`EditSuggestionBulkReviewService`](../code/TheDiscDb.Contributions/EditSuggestions/EditSuggestionBulkReviewService.cs)
+  and the admin queue support selecting multiple suggestions, approve/reject
+  confirmation, required rejection reasons, and per-suggestion results. Processing
+  is oldest-first with isolated scopes; unresolved conflicts stay for individual review.
 - **Disc identifier previews** - admin review and My Changes preserve existing
   `contentHash`, `globalDiscId`, and `fingerprint` values in the displayed diff
   when a disc-field proposal omits them or supplies null/empty values. These
@@ -48,8 +58,10 @@ below reflects it.
   display-only and also covers suggestions submitted before the preview fix.
 - **Messaging** (`EditSuggestionMessage` / `SendMessage`), **history/audit trail**
   (`EditSuggestionHistoryService`), and **email notifications**
-  (`EditSuggestionNotificationService`, still gated behind the global
-  `EditSuggestions:Notifications:Enabled` switch).
+  (`EditSuggestionNotificationService`, gated by
+  `EditSuggestions:Notifications:NotifyAdmins` / `NotifyUsers`). Checked-in
+  defaults enable admin mail and disable user mail; production overrides are not
+  established by this source review.
 - **DB → data-repo sync hooks** (`EditSuggestionSyncService`) — approvals apply to
   the DB and flag `SyncedToFilesAt = null`; `GetUnsyncedChangesAsync` /
   `MarkSyncedAsync` let the external ContributionBuddy tool PR the changes into the
@@ -72,7 +84,8 @@ Cover the release fields phase 1 doesn't yet let users suggest changes to:
 - Cast & crew
 - Categories / groups
 - Contributors
-- UPC / ASIN / identifiers
+
+UPC / ISBN / ASIN scalar edits are already delivered and are not remaining work.
 
 **Approach**: extend the existing snapshot-diff suggestion model and the
 `ReleaseEdit` page rather than introducing a new pipeline. Watch out for
@@ -85,6 +98,8 @@ than scalar fields, and must avoid storing unstable database `int` IDs.
 > `disc-item.delete`), **tracks** (`track.add` / `track.delete`), and **chapters**
 > (`chapter.add` / `chapter.delete`). **Still pending:** adding/removing a whole
 > **disc** on a release (no `disc.add` / `disc.delete` change type yet).
+> [Partial Contributions](FEATURE-PARTIAL-CONTRIBUTIONS.md) owns the proposed
+> add-missing-disc contribution flow; arbitrary disc removal remains here.
 
 Phase 1 mostly edits records that already exist. Phase 2 should let users
 suggest **structural** changes:
@@ -92,9 +107,10 @@ suggest **structural** changes:
 - Add a disc to a release / remove a disc
 - Add or remove a disc-item (title) on a disc
 
-**Approach**: model add/remove as first-class suggestion operations (not just
-field diffs). The admin review UI needs to render "added" / "removed" entities
-clearly, and the publish step must create/delete records in the `data` repo.
+**Approach**: retain the shipped structural operations for disc-items, tracks,
+and chapters. Route missing-disc additions through the retargeted contribution
+design in the Partial Contributions plan. Whole-disc removal still needs an
+explicit review operation and matching database/data-repo semantics.
 
 ### 3. Image suggestions (cover art)
 
@@ -117,20 +133,18 @@ existing `SfUploader` components where possible.
 > (`JsonDiff`), conflict detection/resolution, and DB→data-repo **sync hooks**
 > (`EditSuggestionSyncService`; the actual PR to `data/` is produced by the
 > external ContributionBuddy tool). **Still pending:** an **in-app** one-click
-> commit/PR to `data/` (vs. the external tool), and **bulk approve/reject across
-> multiple suggestions** (today's approve-all is scoped to one suggestion).
+> commit/PR to `data/` (vs. the external tool). **Bulk approve/reject across
+> multiple suggestions is also shipped** through `EditSuggestionBulkReviewService`
+> and the `/admin/changes` selection/confirmation UI.
 
-Today admins review suggestions; phase 2 should close the loop to the `data`
-repo:
+The DB-to-data-repo loop already works through ContributionBuddy `sync-edits`.
+The remaining candidate is a one-click **approve → commit/PR** flow inside the
+admin UI, rather than running the external tool.
 
-- One-click **approve → commit to the `data` repo** (branch/PR or direct
-  commit, TBD)
-- Rich **diff preview** in the admin detail page (field-level before/after)
-- **Bulk approve / reject** for batches of related suggestions
-
-**Approach**: this is the highest-leverage item — it turns suggestions from a
-queue admins manually transcribe into an automated publish flow. Decide the
-git strategy (PR vs. direct commit) and how approvals map to commits/authors.
+**Approach**: reuse the existing sync/export semantics rather than introducing
+a second change format. Decide how in-app actions invoke publishing and map
+approvals to commits/authors. Missing in-app publishing does not mean approved
+suggestions currently need manual transcription.
 
 ### 5. Non-movie media parity (TV / boxsets)
 
@@ -149,34 +163,23 @@ movie-specific.
 
 ### 6. Partial releases (incomplete multi-disc sets)
 
-> **Status: Pending.** No expected-disc-count, missing-disc placeholder, or
-> "partial / help wanted" surfacing exists yet. Pairs with whole-disc add/remove
-> from #2.
+> **Status: Pending; owned by [Partial Contributions](FEATURE-PARTIAL-CONTRIBUTIONS.md).**
+> No published partial/help-wanted markers or hub exist. Intake placeholders are
+> staging-only and do not implement this feature.
 
 Let a release represent the case where the database has **only some** of the
 discs from a known multi-disc set (e.g., a 4-disc boxset where we've documented
 2 discs). This surfaces exactly where the database needs help and tells users
 which specific discs are worth contributing.
 
-Pairs naturally with **add/remove discs (#2)**: marking a release as partial is
-the signal that invites the "add this missing disc" contribution flow.
+The Partial Contributions plan supersedes this workstream's original placeholder
+brainstorm: use a release-level `partial { reason, note }` declaration, not
+structured missing-disc slots, and add missing discs through an owned contribution
+targeting the existing release.
 
-**Approach**:
-
-- Represent the expected disc count / known-missing discs at the release level
-  (e.g., a known total vs. documented discs, or explicit placeholders for
-  missing discs). Decide whether a "missing disc" is a real placeholder record
-  or just a count delta.
-- Surface a **"partial / help wanted"** indicator on the release detail page and
-  in listings, ideally calling out which disc numbers/slots are missing.
-- Add a **"contribute this disc"** entry point on each missing slot that feeds
-  the add-disc flow from #2.
-- Consider a browseable view of partial releases ("releases needing discs") so
-  contributors can find gaps across the database.
-
-**Open questions**: how is "expected total discs" known/entered (manual vs.
-metadata source)? Is a missing disc a placeholder entity or a derived gap? How
-does a partial release render in search/SEO without looking like broken data?
+Declaration/persistence, detail-page badges, the browseable hub, resolution, and
+marker clearing are tracked there. Do not separately implement an expected-count
+or placeholder schema from this older backlog.
 
 ### 7. Per-user notification preferences
 
@@ -184,29 +187,16 @@ does a partial release render in search/SEO without looking like broken data?
 > static `List-Unsubscribe` header, but there is **no per-user preferences
 > store, UI, or gate**, and no wired one-click unsubscribe endpoint.
 
-Phase 1 ships edit-suggestion email notifications fully wired but **dormant**
-behind a single global config switch (`EditSuggestions:Notifications:Enabled`),
-with one summary email per suggestion at final resolution. Once notifications are
-turned on more broadly, individual users should be able to opt out of some or all
-of them.
+Email notifications are wired with separate audience gates (`NotifyAdmins` and
+`NotifyUsers` under `EditSuggestions:Notifications`), with one summary email per
+suggestion at final resolution. User mail is disabled in checked-in defaults;
+admin mail is enabled. Users still need category/master opt-out and a real
+one-click unsubscribe endpoint.
 
-**Approach**:
-
-- Add a user settings/preferences area where a user can toggle notification
-  categories (e.g., submission confirmations, resolution emails, message emails).
-- Persist preferences per user (new table or columns on the user/profile record).
-- Each `Notify*` call first checks the recipient's preferences and skips sending
-  if opted out — a **per-user gate layered on top of the global config switch**.
-  The existing `IEditSuggestionRecipientResolver` is the natural place to also
-  surface a recipient's notification preferences.
-- Honor the existing `List-Unsubscribe` email headers by wiring a one-click
-  unsubscribe endpoint to these preferences.
-- Consider unifying with contribution-email preferences so users manage all
-  TheDiscDb email in one place.
-
-**Open questions**: opt-out vs. opt-in defaults per category? Should
-transactional/critical messages (e.g., "your suggestion was rejected") be
-exempt from opt-out? One preferences surface for all email types, or per-feature?
+**Owner/design:** [User Preferences](FEATURE-USER-PREFERENCES.md) specifies one
+shared store/service for contribution and edit-suggestion user mail, opted-in
+defaults, category flags plus a master switch, and tokenized unsubscribe.
+Admin mail remains independent. These are no longer separate undecided designs here.
 
 ### 8. "My Suggested Changes" page design pass
 
@@ -233,35 +223,28 @@ review surface share components?
 
 ### 9. Evaluate the `EditSuggestionSource` enum
 
-> **Status: Pending.** The enum still exists (`Web`, `GraphQL`, `ApiKey`) with only
-> `Web` ever written; the keep-vs-remove decision below has not been made.
+> **Status: Original removal rationale superseded.** `Source` is on the
+> [`EditSuggestion`](../code/TheDiscDb.Data/Models/EditSuggestion.cs) bundle,
+> not `EditSuggestionChange`. Web pages write `Web`, while
+> [`DiscIdBackfillService`](../code/TheDiscDb.Contributions/DiscId/DiscIdBackfillService.cs)
+> writes `GraphQL` for Disc ID/fingerprint backfills and conflicts.
 
-`EditSuggestionChange` carries an `EditSuggestionSource` (`Web`, `GraphQL`,
-`ApiKey`). Today every suggestion comes from the web UI, so only `Web` is ever
-written and the other values are speculative. **Decide whether this field earns
-its place**:
-
-- **Remove it** if we don't foresee non-web submission paths, and reintroduce it
-  later if/when a GraphQL mutation or API-key ingestion path is actually built.
-- **Keep and extend it** if we want a single, uniform way to record provenance —
-  in which case also consider tracking other change origins the same way (e.g.
-  the existing contributions pipeline) so source attribution is consistent across
-  the system rather than edit-suggestion-only.
-
-Captured from PR review feedback; no action taken in phase 1 beyond this note.
+The enum now records real non-web provenance and is displayed in the admin
+queue. Removing it because only Web is used is no longer applicable. `ApiKey`
+remains an unused reserved value; broader provenance standardization is an
+optional follow-on, not an unresolved blocker for Phase 2.
 
 ## Suggested Sequencing
 
 A reasonable order, roughly by leverage and dependency:
 
-1. **Admin approve → publish automation (#4)** — makes every other suggestion
-   type actually reach production; highest payoff.
+1. **In-app publishing convenience (#4)** — optional replacement for invoking
+   the working external sync tool; not a prerequisite for publishing other edits.
 2. **Release-level metadata editing (#1)** — extends the existing pattern,
    relatively contained.
-3. **Add / remove discs and disc-items (#2)** — needs the structural-change
-   model and benefits from #4 being in place.
-4. **Partial releases (#6)** — builds directly on #2; turns "missing disc" into a
-   visible, contributable gap.
+3. **Whole-disc operations (#2)** — disc-item/track/chapter operations already ship.
+4. **Partial releases (#6)** — follow the dedicated plan for declarations and
+   retargeted missing-disc contributions.
 5. **Image suggestions (#3)** — independent; can slot in when image UX is a
    priority.
 6. **Non-movie media parity (#5)** — an audit pass that can run alongside the
@@ -269,8 +252,8 @@ A reasonable order, roughly by leverage and dependency:
 
 ## Open Questions
 
-- Publish strategy for approved suggestions: open a PR against `data`, or
-  commit directly? Who is the commit author/attribution?
+- In-app publishing integration: how should it invoke the existing external
+  branch/PR workflow, and preserve commit author/attribution?
 - How are collection-valued fields (cast, categories) diffed and merged without
   relying on unstable `int` IDs?
 - For add/remove operations, how do we represent a not-yet-existing entity in a

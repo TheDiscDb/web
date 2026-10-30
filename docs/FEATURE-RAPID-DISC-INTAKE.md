@@ -10,8 +10,20 @@ review, and import.
 
 ## Status
 
-🟡 **In progress** — implementation is on the `feature/rapid-disc-intake` branches in the `web`
-and `tools` repositories.
+🟢 **Shipped** (source reviewed 2026-10-29). The implementation and later
+enhancements are merged into `main` in both `web` and `tools`; it is not waiting
+on the old `feature/rapid-disc-intake` branches.
+
+Implementation evidence:
+- Web staging [models](../code/TheDiscDb.Data/Models/IntakeRelease.cs) and migrations,
+  [matching/promotion service](../code/TheDiscDb.Contributions/Contributions/IntakeMatchingService.cs),
+  and [admin management service](../code/TheDiscDb/Services/Admin/IntakeAdminService.cs).
+- ContributionBuddy [capture command](https://github.com/TheDiscDb/tools/blob/main/tools/ContributionBuddy/Intake/IntakeTask.cs),
+  persistence service, lookup CSV support, and Disc ID backfill coordination.
+  The [tools README](https://github.com/TheDiscDb/tools#rapid-disc-intake) describes the current operator flow.
+
+Physical-disc smoke-test completion is not recorded here. Merged implementation
+does not establish which production database migrations/configuration are active.
 
 ## Goals
 
@@ -28,23 +40,30 @@ and `tools` repositories.
    administrator.
 3. It scans the first disc's content hash and Global Disc ID before collecting release metadata.
    Discs already present in the published database or intake staging are reported, ejected, and
-   skipped.
-4. For a new disc, it asks for an optional ASIN, imports and caches available Amazon metadata by
-   ASIN, and uses the imported title to present the top three TMDB candidates or accept a manual
-   TMDB ID.
-5. It captures UPC, title/date, locale (default `en-us`), region (default `1`), a downloadable
-   front-image URL, an optional downloadable back-image URL, and one or more physical discs.
+   skipped. Missing published Disc IDs are backfilled through the approved-change
+   sync rail; conflicts go to review, and ambiguous published matches require selecting
+   the physical release.
+4. For a new disc, it asks for UPC and reads the configured lookup CSV. Matching
+   rows supply ASIN, external ID, type, format, and optional disc count; absent
+   values use the normal prompts. External ID `0` stages a release without TMDB.
+   Amazon metadata is cached by ASIN and its cleaned title seeds candidate lookup.
+5. It captures title/date, fixes locale to `en-us` and region to `1`, and uses available
+   Amazon front/back image URLs without prompting for missing images. A CSV disc
+   count controls how many physical discs to capture.
 6. Each disc records its format, content hash, optional Global Disc ID, optional name/slug, and a
    validated MakeMKV scan log.
 7. The save operation downloads supported JPG, PNG, or WebP images, creates or reuses normalized
    intake release/disc rows, persists immutable
    evidence assets, and records warnings for published or staged duplicates.
 8. Interrupted work remains in a resumable workspace draft. The draft is removed only after a
-   successful save.
+   successful save. Saving has no final confirmation and immediately returns to
+   intake for the next release.
 
 ## Promotion workflow
 
-- Release lookup requires an exact normalized external-provider, external-ID, and UPC match.
+- Automatic release metadata lookup requires TMDB plus an exact normalized
+  external-ID and UPC match. CLI support for no-TMDB intake is not a claim that
+  this release-prefill lookup supports arbitrary providers.
 - Disc lookup uses format plus content hash.
 - Evidence with an exact Global Disc ID is preferred. Otherwise the latest compatible evidence is
   used and the mismatch is retained as provenance for review.
@@ -66,6 +85,14 @@ The intake schema consists of:
 Intake rows are staging evidence, not published domain data. Approved contributions and the
 `data` repository remain authoritative.
 
+## Shipped admin management
+
+`/admin/intake` and its detail/edit pages support search/status filtering, release
+metadata edits, disc-link edits and ordering, shared-format confirmation, front/back
+image management, and deletion of staged releases. `IntakeReleaseDisc.IsPlaceholder`
+and `FailureReason` represent incomplete **staging** slots; they are not published
+partial-release markers or the contributor-facing partial-data hub.
+
 ## Security and failure behavior
 
 - Source capture is administrator-only.
@@ -78,7 +105,8 @@ Intake rows are staging evidence, not published domain data. Approved contributi
 
 - Directly publishing unidentified discs.
 - Contributor-facing bulk intake.
-- Partial-state declarations, missing-disc placeholders, badges, or a partial-data hub.
+- Published partial-state declarations, missing-disc help-wanted markers, badges, or
+  a partial-data hub; those belong to [Partial Contributions](FEATURE-PARTIAL-CONTRIBUTIONS.md).
 - Replacing contribution review or title identification.
 
 ## Verification

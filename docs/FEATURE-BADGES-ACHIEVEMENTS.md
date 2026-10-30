@@ -14,6 +14,13 @@ beats quality.
 
 🔵 **Proposed** — no implementation started.
 
+Source reviewed 2026-10-29: there are no achievement entities, award/reconciliation
+service, or achievement migrations.
+[`TheDiscDbUser`](../code/TheDiscDb.Data/Models/TheDiscDbUser.cs) remains a bare
+Identity user. Existing contributor profiles, release counts, and contribution
+statistics are foundations, not an implementation of badges or levels. Both
+phases below remain backlog.
+
 | Phase | Scope |
 |-------|-------|
 | **Phase 1** | Everything except the dedicated browse page: data model, launch backfill, the full achievement catalog, auto-derived levels, and display of badges/level/progress on the `/contributedby/{username}` public profile and the `/leaderboard`. |

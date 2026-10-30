@@ -1,5 +1,19 @@
 # Feature Spec: Disc Mapping Auto-Suggestions
 
+## Status
+
+🔵 **Proposed** (source reviewed 2026-10-29). No mapping-suggestion engine,
+accept/reject workflow, or heuristic relevance filter is implemented.
+[`IdentifyDiscItems`](../code/TheDiscDb.Client/Pages/Contribute/IdentifyDiscItems.razor.cs)
+already supports manual identification, episode-name lookup, chapter suggestions,
+and audio/subtitle naming; those do not implement the heuristics below.
+
+Remaining implementation is the rules engine plus the identify-page UX in section 5.
+DVDCompare is a separate, optional follow-on. The historical percentages below are
+inputs captured with the proposal, not measured accuracy of a shipped engine;
+validate the rules and false positives before using them to hide choices or
+bulk-assign mappings.
+
 ## 1. Problem Statement
 When users upload MakeMKV log files (`disc*.txt`) for a new disc, manually mapping the layout of the disc to useful items (like episodes, main movies, commentary tracks, featurettes) can be tedious. However, historical data shows distinct structural patterns based on the type of media (Movie, Series, etc.) and format.
 
