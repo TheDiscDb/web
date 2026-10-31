@@ -19,6 +19,9 @@ public partial class IdentifyTitle : ComponentBase
     [SupplyParameterFromQuery(Name = "boxsetId")]
     public string? BoxsetId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "discHash")]
+    public string? DiscHash { get; set; }
+
     string BreadcrumbText => $"Find {MediaType}";
 
     public string? SearchText { get; set; }
@@ -94,6 +97,10 @@ public partial class IdentifyTitle : ComponentBase
             {
                 url += $"?boxsetId={Uri.EscapeDataString(BoxsetId)}";
             }
+            if (!string.IsNullOrWhiteSpace(DiscHash))
+            {
+                url += $"{(url.Contains('?') ? "&" : "?")}discHash={Uri.EscapeDataString(DiscHash)}";
+            }
             NavigationManager.NavigateTo(url);
         }
     }
@@ -110,6 +117,15 @@ public partial class IdentifyTitle : ComponentBase
         {
             url += $"?boxsetId={Uri.EscapeDataString(BoxsetId)}";
         }
+        if (!string.IsNullOrWhiteSpace(DiscHash))
+        {
+            url += $"{(url.Contains('?') ? "&" : "?")}discHash={Uri.EscapeDataString(DiscHash)}";
+        }
         NavigationManager.NavigateTo(url);
     }
+
+    private string GetBackUrl()
+        => string.IsNullOrWhiteSpace(this.DiscHash)
+            ? "/contribute"
+            : $"/contribute/disc/{Uri.EscapeDataString(this.DiscHash)}";
 }

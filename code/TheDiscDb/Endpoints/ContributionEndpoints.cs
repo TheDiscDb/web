@@ -1,14 +1,20 @@
 ﻿using System.Text;
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Net.Http.Json;
 using FluentResults;
 using MakeMkv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Client;
+using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Contributions.OpticalDiscManifest;
 using TheDiscDb.Data.Import;
 using TheDiscDb.Services;
+using TheDiscDb.Services.DiscLookup;
 using TheDiscDb.Services.Server;
+using TheDiscDb.InputModels;
 using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.Web;
@@ -30,6 +36,13 @@ public class ContributionEndpoints
             .Accepts<string>("application/json");
         contribute.MapDelete("{contributionId}/discs/{discId}/logs/error", ClearDiscLogError)
             .AllowAnonymous();
+        contribute.MapPost("disc/{discHash}/scan", SavePreContributionDiscScanDraft)
+            .WithMetadata(new DisableRequestSizeLimitAttribute())
+            .Accepts<DiscScanDraft>("application/json");
+        contribute.MapGet("disc/{discHash}/scan", GetPreContributionDiscScanDraft);
+        contribute.MapDelete("disc/{discHash}/scan", DeletePreContributionDiscScanDraft);
+        contribute.MapPost("disc/{discHash}/scan/contribution/{contributionId}", LinkPreContributionDiscScanDraft);
+        contribute.MapPost("{contributionId}/discs/{discId}/scan/{discHash}/attach", AttachPreContributionDiscScanDraft);
         contribute.MapGet("externalsearch/{type}", ExternalSearch);
 
         contribute.MapPost("images/front/upload/{id:guid}", UploadFrontImage)
@@ -64,6 +77,364 @@ public class ContributionEndpoints
             .DisableAntiforgery();
 
         contribute.MapGet("images/{**path}", ServeContributionImage);
+    }
+
+    public async Task<IResult> SavePreContributionDiscScanDraft(
+        string discHash,
+        HttpRequest request,
+        UserManager<TheDiscDbUser> userManager,
+        HttpContext httpContext,
+        IStaticAssetStore assetStore,
+        IWebHostEnvironment environment,
+        CancellationToken cancellationToken)
+    {
+        if (!DiscScanDraft.TryDecodeHashFromRoute(discHash, out discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash route.");
+        }
+
+        if (!environment.IsDevelopment() && !DiscLookupQuery.IsValidDiscHash(discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash — must be a 32-character hex string.");
+        }
+
+        string? userId = userManager.GetUserId(httpContext.User);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        DiscScanDraft? draft = await request.ReadFromJsonAsync<DiscScanDraft>(cancellationToken);
+        if (draft is null || string.IsNullOrWhiteSpace(draft.ManifestJson)
+            || draft.HashFiles is null || draft.HashFiles.Count == 0
+            || draft.FingerprintFiles is null || draft.FingerprintFiles.Count == 0)
+        {
+            return TypedResults.BadRequest("The disc scan draft is incomplete.");
+        }
+
+        if (draft.HasManualHashOverride && !environment.IsDevelopment())
+        {
+            return TypedResults.BadRequest("Manual disc hash overrides are only allowed in Development.");
+        }
+
+        string normalizedHash = discHash.ToUpperInvariant();
+        string calculatedHash;
+        string calculatedFingerprint;
+        try
+        {
+            calculatedHash = draft.HashFiles
+                .OrderBy(file => file.Name, StringComparer.Ordinal)
+                .CalculateHash();
+            calculatedFingerprint = DiscFingerprint.Calculate(draft.FingerprintFiles);
+        }
+        catch (ArgumentException ex)
+        {
+            return TypedResults.BadRequest(ex.Message);
+        }
+
+        if (!string.Equals(draft.DiscHash, normalizedHash, StringComparison.OrdinalIgnoreCase)
+            || (!draft.HasManualHashOverride
+                && !string.Equals(calculatedHash, normalizedHash, StringComparison.OrdinalIgnoreCase))
+            || !string.Equals(draft.Fingerprint, calculatedFingerprint, StringComparison.Ordinal))
+        {
+            return TypedResults.BadRequest("The scan identifiers do not match the selected disc.");
+        }
+
+        if (!DiscFormatConstants.ContributionFormats.Contains(draft.Format, StringComparer.OrdinalIgnoreCase)
+            || (!string.IsNullOrWhiteSpace(draft.GlobalDiscId) && !DiscLookupQuery.IsValidDiscId(draft.GlobalDiscId)))
+        {
+            return TypedResults.BadRequest("The disc scan contains an unsupported format or invalid disc identifier.");
+        }
+
+        var parsed = new OpticalDiscManifestValidator().Parse(draft.ManifestJson);
+        if (!parsed.IsValid)
+        {
+            return TypedResults.BadRequest(parsed.Error);
+        }
+
+        if (parsed.Document?.Disc?.Format is not ("dvd" or "blu-ray" or "uhd-blu-ray"))
+        {
+            return TypedResults.BadRequest("The manifest contains an unsupported disc format.");
+        }
+
+        if (!string.Equals(draft.Format,
+            DiscFormatConstants.FromManifestFormat(parsed.Document.Disc.Format),
+            StringComparison.OrdinalIgnoreCase))
+        {
+            return TypedResults.BadRequest("The disc format does not match the scanned manifest.");
+        }
+
+        try
+        {
+            OpticalDiscManifestMapper.ToDiscInfo(parsed.Document!);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or ArgumentException)
+        {
+            return TypedResults.BadRequest("The manifest does not contain titles that can be identified.");
+        }
+
+        string path = GetPreContributionDraftPath(userId, normalizedHash);
+        await assetStore.Delete(path, cancellationToken);
+        var savedDraft = draft with
+        {
+            DiscHash = normalizedHash,
+            CreatedUtc = DateTimeOffset.UtcNow,
+            ContributionId = null,
+        };
+        await using var stream = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(savedDraft));
+        await assetStore.Save(stream, path, ContentTypes.JsonContentType, cancellationToken);
+        return TypedResults.Ok(new { discHash = normalizedHash.ToLowerInvariant() });
+    }
+
+    public async Task<IResult> GetPreContributionDiscScanDraft(
+        string discHash,
+        UserManager<TheDiscDbUser> userManager,
+        HttpContext httpContext,
+        IStaticAssetStore assetStore,
+        IWebHostEnvironment environment,
+        CancellationToken cancellationToken)
+    {
+        if (!DiscScanDraft.TryDecodeHashFromRoute(discHash, out discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash route.");
+        }
+
+        if (!environment.IsDevelopment() && !DiscLookupQuery.IsValidDiscHash(discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash — must be a 32-character hex string.");
+        }
+
+        string? userId = userManager.GetUserId(httpContext.User);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        string path = GetPreContributionDraftPath(userId, discHash.ToUpperInvariant());
+        if (!await assetStore.Exists(path, cancellationToken))
+        {
+            return TypedResults.NotFound();
+        }
+
+        DiscScanDraft? draft = (await assetStore.Download(path, cancellationToken))
+            .ToObjectFromJson<DiscScanDraft>();
+        if (draft is null || draft.CreatedUtc < DateTimeOffset.UtcNow.AddDays(-30))
+        {
+            await assetStore.Delete(path, cancellationToken);
+            return TypedResults.NotFound();
+        }
+
+        return TypedResults.Ok(draft);
+    }
+
+    public async Task<IResult> DeletePreContributionDiscScanDraft(
+        string discHash,
+        UserManager<TheDiscDbUser> userManager,
+        HttpContext httpContext,
+        IStaticAssetStore assetStore,
+        IWebHostEnvironment environment,
+        CancellationToken cancellationToken)
+    {
+        if (!DiscScanDraft.TryDecodeHashFromRoute(discHash, out discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash route.");
+        }
+
+        if (!environment.IsDevelopment() && !DiscLookupQuery.IsValidDiscHash(discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash — must be a 32-character hex string.");
+        }
+
+        string? userId = userManager.GetUserId(httpContext.User);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        await assetStore.Delete(GetPreContributionDraftPath(userId, discHash.ToUpperInvariant()), cancellationToken);
+        return TypedResults.NoContent();
+    }
+
+    public async Task<IResult> LinkPreContributionDiscScanDraft(
+        string discHash,
+        string contributionId,
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        HttpContext httpContext,
+        IStaticAssetStore assetStore,
+        IWebHostEnvironment environment,
+        CancellationToken cancellationToken)
+    {
+        if (!DiscScanDraft.TryDecodeHashFromRoute(discHash, out discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash route.");
+        }
+
+        if (!environment.IsDevelopment() && !DiscLookupQuery.IsValidDiscHash(discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash — must be a 32-character hex string.");
+        }
+
+        string? userId = userManager.GetUserId(httpContext.User);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        int contributionKey = idEncoder.Decode(contributionId);
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var contribution = await dbContext.UserContributions
+            .FirstOrDefaultAsync(item => item.Id == contributionKey, cancellationToken);
+        if (contribution is null || contribution.UserId != userId)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!contribution.Status.IsEditableByOwner())
+        {
+            return TypedResults.Conflict("This contribution is no longer editable.");
+        }
+
+        string path = GetPreContributionDraftPath(userId, discHash.ToUpperInvariant());
+        if (!await assetStore.Exists(path, cancellationToken))
+        {
+            return TypedResults.NotFound();
+        }
+
+        DiscScanDraft? draft = (await assetStore.Download(path, cancellationToken))
+            .ToObjectFromJson<DiscScanDraft>();
+        if (draft is null || !string.Equals(draft.DiscHash, discHash, StringComparison.OrdinalIgnoreCase))
+        {
+            return TypedResults.Conflict("The saved scan does not match this contribution.");
+        }
+
+        var linkedDraft = draft with { ContributionId = contributionId };
+        await assetStore.Delete(path, cancellationToken);
+        await using var stream = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(linkedDraft));
+        await assetStore.Save(stream, path, ContentTypes.JsonContentType, cancellationToken);
+        return TypedResults.Ok();
+    }
+
+    public async Task<IResult> AttachPreContributionDiscScanDraft(
+        string contributionId,
+        string discId,
+        string discHash,
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
+        IdEncoder idEncoder,
+        UserManager<TheDiscDbUser> userManager,
+        HttpContext httpContext,
+        IStaticAssetStore assetStore,
+        IDiscScanComparisonService comparisonService,
+        ILogger<ContributionEndpoints> logger,
+        IWebHostEnvironment environment,
+        CancellationToken cancellationToken)
+    {
+        if (!DiscScanDraft.TryDecodeHashFromRoute(discHash, out discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash route.");
+        }
+
+        if (!environment.IsDevelopment() && !DiscLookupQuery.IsValidDiscHash(discHash))
+        {
+            return TypedResults.BadRequest("Invalid disc hash — must be a 32-character hex string.");
+        }
+
+        string? userId = userManager.GetUserId(httpContext.User);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return TypedResults.Unauthorized();
+        }
+
+        int contributionKey = idEncoder.Decode(contributionId);
+        int discKey = idEncoder.Decode(discId);
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var contribution = await dbContext.UserContributions
+            .Include(item => item.Discs)
+            .FirstOrDefaultAsync(item => item.Id == contributionKey, cancellationToken);
+        if (contribution is null || contribution.UserId != userId)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (!contribution.Status.IsEditableByOwner())
+        {
+            return TypedResults.Conflict("This contribution is no longer editable.");
+        }
+
+        var disc = contribution.Discs.FirstOrDefault(item => item.Id == discKey);
+        if (disc is null || !string.Equals(disc.ContentHash, discHash, StringComparison.OrdinalIgnoreCase))
+        {
+            return TypedResults.NotFound();
+        }
+
+        string draftPath = GetPreContributionDraftPath(userId, discHash.ToUpperInvariant());
+        if (!await assetStore.Exists(draftPath, cancellationToken))
+        {
+            return TypedResults.NotFound();
+        }
+
+        DiscScanDraft? draft = (await assetStore.Download(draftPath, cancellationToken))
+            .ToObjectFromJson<DiscScanDraft>();
+        if (draft is null || !string.Equals(draft.DiscHash, discHash, StringComparison.OrdinalIgnoreCase))
+        {
+            return TypedResults.Conflict("The saved scan does not match this contribution disc.");
+        }
+
+        if (draft.HasManualHashOverride && !environment.IsDevelopment())
+        {
+            return TypedResults.BadRequest("Manual disc hash overrides are only allowed in Development.");
+        }
+
+        var saved = await SaveDiscManifestInternal(
+            dbContextFactory,
+            idEncoder,
+            assetStore,
+            contributionId,
+            discId,
+            draft.ManifestJson,
+            cancellationToken,
+            httpContext.Request.Headers.UserAgent.ToString(),
+            comparisonService,
+            logger);
+        if (saved.IsFailed)
+        {
+            return OkOrProblem(saved, $"Unable to attach the scan for contribution {contributionId}, disc {discId}");
+        }
+
+        if (draft.HasManualHashOverride)
+        {
+            var existingHashItems = await dbContext.UserContributionDiscHashItems
+                .Where(item => item.UserContribution.Id == contributionKey && item.DiscHash == draft.DiscHash)
+                .ToListAsync(cancellationToken);
+            dbContext.UserContributionDiscHashItems.RemoveRange(existingHashItems);
+            foreach (var file in draft.HashFiles)
+            {
+                dbContext.UserContributionDiscHashItems.Add(new UserContributionDiscHashItem
+                {
+                    UserContribution = contribution,
+                    DiscHash = draft.DiscHash,
+                    Index = file.Index,
+                    Name = file.Name ?? string.Empty,
+                    Size = file.Size,
+                    CreationTime = file.CreationTime,
+                });
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        await assetStore.Delete(draftPath, cancellationToken);
+        return TypedResults.Ok();
+    }
+
+    private static string GetPreContributionDraftPath(string userId, string discHash)
+    {
+        string ownerKey = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(userId))).ToLowerInvariant();
+        string storageKey = DiscLookupQuery.IsValidDiscHash(discHash)
+            ? discHash
+            : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(discHash)));
+        return ContributionDiscAssets.PreContributionDraftPath(ownerKey, storageKey);
     }
 
     private static async Task<IResult> DownloadDiscAsset(
@@ -376,9 +747,11 @@ public class ContributionEndpoints
         }
 
         byte[] bytes = Encoding.UTF8.GetBytes(manifest);
+        string manifestPath = ContributionDiscAssets.ManifestPath(contributionId, idEncoder.Encode(disc.Id));
+        await assetStore.Delete(manifestPath, cancellationToken);
         using (var memoryStream = new MemoryStream(bytes))
         {
-            await assetStore.Save(memoryStream, ContributionDiscAssets.ManifestPath(contributionId, idEncoder.Encode(disc.Id)), ContentTypes.JsonContentType, cancellationToken);
+            await assetStore.Save(memoryStream, manifestPath, ContentTypes.JsonContentType, cancellationToken);
         }
 
         disc.ManifestUploaded = true;

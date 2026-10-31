@@ -8,6 +8,7 @@ using Syncfusion.Blazor.Popups;
 using TheDiscDb.Client.Contributions;
 using TheDiscDb.Client.Controls;
 using TheDiscDb.Client.Interop;
+using TheDiscDb.Client.Services;
 using TheDiscDb.Core.DiscHash;
 using TheDiscDb.InputModels;
 using TheDiscDb.Services;
@@ -46,22 +47,31 @@ public partial class AddDisc : CancellableComponentBase
     public NavigationManager Navigation { get; set; } = default!;
 
     [Inject]
+    private HttpClient HttpClient { get; set; } = default!;
+
+    [Inject]
     public GetDiscDetailByContentHashQuery? Query { get; set; }
 
     [Inject]
     public SfDialogService DialogService { get; set; } = default!;
 
     [Inject]
+    public DiscScanUploader ScanUploader { get; set; } = default!;
+
+    [Inject]
     public IWebAssemblyHostEnvironment HostEnvironment { get; set; } = default!;
 
     string hash = string.Empty;
     IContributionDiscs_MyContributions_Nodes? contribution = null;
+    private bool UseScanFirstFlow => this.contribution?.Boxset is null;
     bool discSelected;
     bool isScanning;
+    string? scanProgress;
     bool manualHashMode;
     string manualHash = string.Empty;
     SlugInput? slugInput;
     string? copyFlowError;
+    string? scanDraftHash;
     IGetIntakeDiscMatch_IntakeDiscMatch? intakeDiscMatch;
     private ContributionNamingSuggestion? DiscNamingSuggestion =>
         ContributionInputGuard.GetNamingSuggestion(
@@ -113,6 +123,7 @@ public partial class AddDisc : CancellableComponentBase
     async Task OpenFolderAsync()
     {
         this.copyFlowError = null;
+        this.scanProgress = null;
         try
         {
             await using var selection = await this.DiscDirectoryPicker.PickAsync(
@@ -137,6 +148,7 @@ public partial class AddDisc : CancellableComponentBase
         finally
         {
             this.isScanning = false;
+            this.scanProgress = null;
         }
     }
 
@@ -200,6 +212,25 @@ public partial class AddDisc : CancellableComponentBase
         this.request.ContentHash = hash;
         this.discSelected = true;
 
+        if (this.UseScanFirstFlow)
+        {
+            var draftResult = await this.ScanUploader.SaveDraftAsync(
+                files,
+                this.Navigation.BaseUri,
+                ReportScanProgress,
+                this.CancellationToken,
+                scan);
+            if (!draftResult.Result.Uploaded || string.IsNullOrWhiteSpace(draftResult.DiscHash))
+            {
+                this.copyFlowError = draftResult.Result.Error ?? "Could not save the disc scan.";
+                this.discSelected = false;
+                return;
+            }
+
+            this.scanDraftHash = draftResult.DiscHash;
+            this.request.Format = draftResult.Result.Format!;
+        }
+
         var existingDiscResult = await TryCopyFromExistingDisc(hash);
         if (existingDiscResult.Copied)
         {
@@ -215,6 +246,13 @@ public partial class AddDisc : CancellableComponentBase
     async Task HandleValidSubmit()
     {
         this.copyFlowError = null;
+        if (this.UseScanFirstFlow && !this.manualHashMode && string.IsNullOrWhiteSpace(this.scanDraftHash))
+        {
+            this.copyFlowError = "The disc scan must finish successfully before this disc can be added.";
+            this.discSelected = false;
+            return;
+        }
+
         if (this.intakeDiscMatch is not null)
         {
             await PromoteIntakeDiscAsync();
@@ -248,6 +286,10 @@ public partial class AddDisc : CancellableComponentBase
         if (response.IsSuccessResult())
         {
             var createdDiscId = response.Data!.CreateDisc.UserContributionDisc!.EncodedId;
+            if (!await AttachScannedManifestAsync(createdDiscId))
+            {
+                return;
+            }
 
             if (!string.IsNullOrEmpty(this.request.ExistingDiscPath))
             {
@@ -255,8 +297,39 @@ public partial class AddDisc : CancellableComponentBase
                 return;
             }
 
-            this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/discs/{createdDiscId}");
+            this.Navigation!.NavigateTo(
+                string.IsNullOrEmpty(this.scanDraftHash)
+                    ? $"/contribution/{this.ContributionId}/discs/{createdDiscId}"
+                    : $"/contribution/{this.ContributionId}/discs/{createdDiscId}/identify");
         }
+    }
+
+    private async Task<bool> AttachScannedManifestAsync(string discId)
+    {
+        if (string.IsNullOrWhiteSpace(this.scanDraftHash))
+        {
+            return true;
+        }
+
+        using var response = await this.HttpClient.PostAsync(
+            $"api/contribute/{Uri.EscapeDataString(this.ContributionId!)}/discs/{Uri.EscapeDataString(discId)}/scan/{DiscScanDraft.EncodeHashForRoute(this.scanDraftHash)}/attach",
+            content: null,
+            this.CancellationToken);
+        if (response.IsSuccessStatusCode)
+        {
+            this.scanDraftHash = null;
+            return true;
+        }
+
+        string body = await response.Content.ReadAsStringAsync(this.CancellationToken);
+        this.copyFlowError = DiscScanUploader.ExtractErrorDetail(body, "disc scan");
+        return false;
+    }
+
+    private void ReportScanProgress(string message)
+    {
+        this.scanProgress = message;
+        this.InvokeAsync(this.StateHasChanged);
     }
 
     private static string? GetCreateDiscErrorMessage(IOperationResult<ICreateDiscResult> response)
@@ -435,6 +508,11 @@ public partial class AddDisc : CancellableComponentBase
         var createdDiscId = createDiscResponse.Data?.CreateDisc?.UserContributionDisc?.EncodedId;
         if (!string.IsNullOrEmpty(createdDiscId))
         {
+            if (!await AttachScannedManifestAsync(createdDiscId))
+            {
+                return new ExistingDiscCopyResult(true, false);
+            }
+
             this.Navigation!.NavigateTo($"/contribution/{this.ContributionId}/disc/{createdDiscId}/edit?returnUrl=/contribution/{this.ContributionId}");
         }
         else

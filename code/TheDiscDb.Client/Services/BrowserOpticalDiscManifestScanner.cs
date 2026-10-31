@@ -17,10 +17,10 @@ public sealed class BrowserOpticalDiscManifestScanner
     public async Task<ManifestGenerationResult> ScanAsync(
         IReadOnlyList<DiscScanFile> files,
         Action<string>? reportProgress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        DiscScanResult? identifierScan = null)
     {
-        reportProgress?.Invoke("Calculating disc identifiers");
-        var identifierScan = await DiscScanner.ScanAsync(files, cancellationToken);
+        identifierScan ??= await ScanIdentifiersAsync(files, reportProgress, cancellationToken);
         var identifiers = CreateIdentifiers(identifierScan);
 
         return await generator.GenerateAsync(
@@ -33,6 +33,15 @@ public sealed class BrowserOpticalDiscManifestScanner
                 ReportProgress = reportProgress,
             },
             cancellationToken);
+    }
+
+    private static async Task<DiscScanResult> ScanIdentifiersAsync(
+        IReadOnlyList<DiscScanFile> files,
+        Action<string>? reportProgress,
+        CancellationToken cancellationToken)
+    {
+        reportProgress?.Invoke("Calculating disc identifiers");
+        return await DiscScanner.ScanAsync(files, cancellationToken);
     }
 
     private static IReadOnlyList<ManifestIdentifier>? CreateIdentifiers(

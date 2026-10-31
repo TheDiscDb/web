@@ -243,8 +243,20 @@ internal sealed class MplsParseSession
             return EmptyStreamTable();
         }
 
+        ushort length = BinaryPrimitives.ReadUInt16BigEndian(data.Span[0..2]);
+        if (length < 14)
+        {
+            diagnostics.Warning(absoluteOffset, "MP007", $"STN table has invalid length {length}");
+            return EmptyStreamTable();
+        }
+
+        if (length > data.Length - 2)
+        {
+            diagnostics.Warning(absoluteOffset, "MP008", $"STN table length {length} exceeds available bytes {data.Length - 2}");
+        }
+
+        data = data[..Math.Min(data.Length, length + 2)];
         var span = data.Span;
-        ushort length = BinaryPrimitives.ReadUInt16BigEndian(span[0..2]);
         int offset = 4;
         int videoCount = span[offset++];
         int audioCount = span[offset++];
@@ -259,16 +271,12 @@ internal sealed class MplsParseSession
         var video = ParseStreams(data, ref offset, videoCount, "Video");
         var audio = ParseStreams(data, ref offset, audioCount, "Audio");
         var pg = ParseStreams(data, ref offset, pgCount, "PresentationGraphics");
+        // PiP graphics follow primary graphics, before interactive and secondary streams.
+        var pipPg = ParseStreams(data, ref offset, pipPgCount, "PictureInPicturePresentationGraphics");
         var ig = ParseStreams(data, ref offset, igCount, "InteractiveGraphics");
         var secondaryAudio = ParseStreams(data, ref offset, secondaryAudioCount, "SecondaryAudio");
         var secondaryVideo = ParseStreams(data, ref offset, secondaryVideoCount, "SecondaryVideo");
-        var pipPg = ParseStreams(data, ref offset, pipPgCount, "PictureInPicturePresentationGraphics");
         var dolbyVision = ParseStreams(data, ref offset, dolbyVisionCount, "DolbyVisionVideo");
-
-        if (length > data.Length - 2)
-        {
-            diagnostics.Warning(absoluteOffset, "MP008", $"STN table length {length} exceeds available bytes {data.Length - 2}");
-        }
 
         return new MplsStreamTable
         {
@@ -361,9 +369,10 @@ internal sealed class MplsParseSession
         }
 
         int streamLength = data.Span[offset++];
-        if (offset + streamLength > data.Length)
+        if (streamLength == 0 || offset + streamLength > data.Length)
         {
-            diagnostics.Warning(offset, "MP009", "Stream entry is truncated");
+            diagnostics.Warning(offset, "MP009", "Stream entry is empty or truncated");
+            offset = data.Length;
             return null;
         }
 
@@ -396,9 +405,10 @@ internal sealed class MplsParseSession
         }
 
         int attrLength = data.Span[offset++];
-        if (offset + attrLength > data.Length)
+        if (attrLength == 0 || offset + attrLength > data.Length)
         {
-            diagnostics.Warning(offset, "MP010", "Stream attribute entry is truncated");
+            diagnostics.Warning(offset, "MP010", "Stream attribute entry is empty or truncated");
+            offset = data.Length;
             return null;
         }
 

@@ -34,7 +34,7 @@
                 @if (isScanning)
                 {
                     <div class="scan-status">
-                        <LoadingIndicator Message="Reading disc and calculating identifiers…" />
+                        <LoadingIndicator Message="@(scanProgress ?? "Reading disc and calculating identifiers…")" />
                     </div>
                 }
                 @if (IsDevelopmentMode)

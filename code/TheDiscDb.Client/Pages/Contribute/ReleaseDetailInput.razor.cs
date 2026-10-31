@@ -1,12 +1,19 @@
 ﻿using System.Reflection.Metadata;
+using System.Net.Http.Json;
 using System.Web;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 using StrawberryShake;
 using Syncfusion.Blazor.Inputs;
 using Syncfusion.Blazor.Notifications;
 using TheDiscDb.Client.Contributions;
 using TheDiscDb.Client.Controls;
+using TheDiscDb.Client.Services;
+using TheDiscDb.Core.DiscHash;
+using TheDiscDb.InputModels;
+using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -22,6 +29,9 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     [SupplyParameterFromQuery(Name = "boxsetId")]
     public string? BoxsetId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "discHash")]
+    public string? DiscHash { get; set; }
+
     [Inject]
     public IContributionClient ContributionClient { get; set; } = default!;
 
@@ -33,6 +43,12 @@ public partial class ReleaseDetailInput : CancellableComponentBase
 
     [Inject]
     public HttpClient HttpClient { get; set; } = default!;
+
+    [Inject]
+    private ContributionDraftStorage DraftStorage { get; set; } = default!;
+
+    [Inject]
+    private GetDiscDetailByContentHashQuery ContentHashQuery { get; set; } = default!;
 
     private SlugInput? slugInput;
 
@@ -47,11 +63,12 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     // All properties pass through to `request`, so existing read/write sites are
     // unaffected.
     private ReleaseDetailFormBindings? form;
+    private EditContext? editContext;
 
     private string releaseDate = string.Empty;
     private string releaseDateValidationMessage = string.Empty;
     private IGetExternalData_ExternalData_ExternalMetadata? externalData;
-    private readonly Guid id = Guid.NewGuid();
+    private Guid id = Guid.NewGuid();
     private string frontImageUploadUrl => $"/api/contribute/images/front/upload/{id}";
     private string frontImageRemoveUrl => $"/api/contribute/images/front/remove/{id}";
     private string backImageUploadUrl => $"/api/contribute/images/back/upload/{id}";
@@ -60,6 +77,10 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     string backImagePreviewUrl = "";
     private string? boxsetTitle;
     private string? intakePrefillMessage;
+    private string? draftSaveError;
+    private string? DiscScanError { get; set; }
+    private DiscScanDraft? DiscScanDraft { get; set; }
+    private ReleaseDetailDraftState? savedDraftState;
     private string BreadcrumbText => $"{this.externalData!.Title} ({this.externalData!.Year}) Details";
     private ContributionNamingSuggestion? ReleaseNamingSuggestion =>
         ContributionInputGuard.GetNamingSuggestion(
@@ -83,14 +104,19 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     // and re-sync the form model. Without this, Blazor reuses the component instance and
     // submits the stale BoxsetId.
     private string? lastAppliedBoxsetId;
+    private string? lastAppliedDiscHash;
 
     protected override async Task OnInitializedAsync()
     {
         this.form = new ReleaseDetailFormBindings(this.request);
+        this.editContext = new EditContext(this.form);
+        this.editContext.OnFieldChanged += this.OnReleaseFormFieldChanged;
         this.request.MediaType = this.MediaType ?? "Movie";
         this.request.ExternalProvider = "TMDB";
         this.request.ExternalId = this.ExternalId ?? string.Empty;
         this.request.StorageId = this.id;
+
+        await this.LoadDiscScanDraftAsync();
 
         var result = await this.ContributionClient.GetExternalData.ExecuteAsync(new ExternalDataInput
         {
@@ -110,11 +136,161 @@ public partial class ReleaseDetailInput : CancellableComponentBase
             this.NavigationManager.NavigateTo($"/contribution/externalIdNotFound/{this.request.ExternalId}");
         }
 
+        await this.RestoreReleaseDraftAsync();
+        this.lastAppliedDiscHash = this.DiscHash;
+        await this.PersistReleaseDraftAsync();
+
         // TODO: Check for other releases in the database for this ExternalId - then prompt or redirect?
     }
 
+    private async Task LoadDiscScanDraftAsync()
+    {
+        this.DiscScanDraft = null;
+        this.DiscScanError = null;
+        if (string.IsNullOrWhiteSpace(this.DiscHash))
+        {
+            return;
+        }
+
+        try
+        {
+            this.DiscScanDraft = await this.HttpClient.GetFromJsonAsync<DiscScanDraft>(
+                GetDiscScanDraftUri(),
+                this.CancellationToken);
+            if (this.DiscScanDraft is null)
+            {
+                this.DiscScanError = "The saved disc scan could not be found. Return to the scan step and scan the disc again.";
+            }
+        }
+        catch (HttpRequestException)
+        {
+            this.DiscScanError = "The saved disc scan could not be found. Return to the scan step and scan the disc again.";
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            this.DiscScanError = "The saved disc scan could not be read. Return to the scan step and scan the disc again.";
+        }
+    }
+
+    private async Task RestoreReleaseDraftAsync()
+    {
+        if (string.IsNullOrWhiteSpace(this.DiscHash) || this.form is null)
+        {
+            return;
+        }
+
+        var saved = await this.DraftStorage.GetAsync<ReleaseDetailDraftState>(
+            this.DiscHash,
+            this.CancellationToken);
+        if (saved is null
+            || !string.Equals(saved.MediaType, this.request.MediaType, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(saved.ExternalId, this.request.ExternalId, StringComparison.Ordinal))
+        {
+            this.savedDraftState = null;
+            return;
+        }
+
+        this.savedDraftState = saved;
+        if (this.DiscScanDraft is not null
+            && !string.IsNullOrWhiteSpace(saved.ContributionId)
+            && string.IsNullOrWhiteSpace(this.DiscScanDraft.ContributionId))
+        {
+            this.DiscScanDraft = this.DiscScanDraft with { ContributionId = saved.ContributionId };
+        }
+
+        if (saved.StorageId != Guid.Empty)
+        {
+            this.id = saved.StorageId;
+            this.request.StorageId = this.id;
+        }
+
+        this.request.Asin = saved.Asin;
+        this.form.AsinNotAvailable = saved.AsinNotAvailable;
+        this.request.Upc = saved.Upc;
+        this.request.FrontImageUrl = saved.FrontImageUrl;
+        this.request.BackImageUrl = saved.BackImageUrl;
+        this.request.ReleaseTitle = saved.ReleaseTitle;
+        this.request.ReleaseSlug = saved.ReleaseSlug;
+        this.request.Locale = saved.Locale;
+        this.request.RegionCode = saved.RegionCode;
+        this.request.ReleaseDate = saved.ReleaseDate;
+        this.releaseDate = saved.ReleaseDateText;
+
+        if (!string.IsNullOrWhiteSpace(saved.FrontImageUrl))
+        {
+            this.frontImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/front.jpg";
+        }
+
+        if (!string.IsNullOrWhiteSpace(saved.BackImageUrl))
+        {
+            this.backImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/back.jpg";
+        }
+    }
+
+    private async Task PersistReleaseDraftAsync()
+    {
+        if (string.IsNullOrWhiteSpace(this.DiscHash) || this.form is null)
+        {
+            return;
+        }
+
+        var state = new ReleaseDetailDraftState
+        {
+            MediaType = this.request.MediaType,
+            ExternalId = this.request.ExternalId,
+            StorageId = this.id,
+            Asin = this.request.Asin ?? string.Empty,
+            AsinNotAvailable = this.form.AsinNotAvailable,
+            Upc = this.request.Upc ?? string.Empty,
+            FrontImageUrl = this.request.FrontImageUrl ?? string.Empty,
+            BackImageUrl = this.request.BackImageUrl,
+            ReleaseTitle = this.request.ReleaseTitle ?? string.Empty,
+            ReleaseSlug = this.request.ReleaseSlug ?? string.Empty,
+            Locale = this.request.Locale ?? string.Empty,
+            RegionCode = this.request.RegionCode ?? string.Empty,
+            ReleaseDate = this.request.ReleaseDate,
+            ReleaseDateText = this.releaseDate,
+            ContributionId = this.DiscScanDraft?.ContributionId,
+        };
+
+        await this.DraftStorage.SetAsync(this.DiscHash, state, this.CancellationToken);
+        this.savedDraftState = state;
+        this.draftSaveError = null;
+    }
+
+    private void OnReleaseFormFieldChanged(object? sender, FieldChangedEventArgs args)
+        => _ = PersistReleaseDraftSafelyAsync();
+
+    private async Task PersistReleaseDraftSafelyAsync()
+    {
+        try
+        {
+            await this.PersistReleaseDraftAsync();
+        }
+        catch (JSException)
+        {
+            this.draftSaveError = "Your release details could not be saved in this browser. Keep this page open until the contribution is created.";
+            await this.InvokeAsync(this.StateHasChanged);
+        }
+    }
+
+    private string GetDiscScanDraftUri()
+        => $"api/contribute/disc/{DiscScanDraft.EncodeHashForRoute(this.DiscHash ?? string.Empty)}/scan";
+
+    private string GetBackUrl()
+        => string.IsNullOrWhiteSpace(this.DiscHash)
+            ? $"/contribute/{this.MediaType}"
+            : $"/contribute/{this.MediaType}?discHash={Uri.EscapeDataString(this.DiscHash)}";
+
     protected override async Task OnParametersSetAsync()
     {
+        if (this.DiscHash != this.lastAppliedDiscHash && this.form is not null)
+        {
+            this.lastAppliedDiscHash = this.DiscHash;
+            await this.LoadDiscScanDraftAsync();
+            await this.RestoreReleaseDraftAsync();
+        }
+
         // Re-sync boxset linkage whenever the route's query string changes. Blazor reuses the
         // component instance across same-route navigations, so OnInitializedAsync only fires
         // once. Without this, the "create as standalone" link wouldn't actually clear the
@@ -328,12 +504,21 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         if (applied)
         {
             this.intakePrefillMessage = "Available release details were filled from matching intake evidence. Your entries were preserved.";
+            await this.PersistReleaseDraftAsync();
         }
     }
 
     async Task HandleValidSubmit()
     {
         this.submitErrorMessage = null;
+        await this.PersistReleaseDraftSafelyAsync();
+
+        if (!string.IsNullOrWhiteSpace(this.DiscHash) && this.DiscScanDraft is null)
+        {
+            this.submitErrorMessage = this.DiscScanError
+                ?? "The first disc scan is unavailable. Return to the scan step and try again.";
+            return;
+        }
 
         if (string.IsNullOrEmpty(this.releaseDate))
         {
@@ -353,59 +538,190 @@ public partial class ReleaseDetailInput : CancellableComponentBase
             this.request.ReleaseDate = date;
         }
 
-        var result = await this.ContributionClient.CreateContribution.ExecuteAsync(new CreateContributionInput
+        string contributionId = this.DiscScanDraft?.ContributionId
+            ?? this.savedDraftState?.ContributionId
+            ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(contributionId))
         {
-            Input = this.CreateSubmissionRequest()
-        });
-
-        if (result == null || !result.IsSuccessResult())
-        {
-            this.submitErrorMessage = result?.Errors.FirstOrDefault()?.Message
-                ?? "Failed to create the contribution. Please try again.";
-            return;
-        }
-
-        // Domain errors come back via the payload `errors` union, not the transport-level errors.
-        // When boxset linkage validation fails (BoxsetNotFound, InvalidOwnership,
-        // InvalidBoxsetStatus, InvalidId), `userContribution` is null.
-        var payload = result.Data?.CreateContribution;
-        if (payload?.Errors is { Count: > 0 } domainErrors)
-        {
-            this.submitErrorMessage = domainErrors[0] switch
+            var result = await this.ContributionClient.CreateContribution.ExecuteAsync(new CreateContributionInput
             {
-                ICreateContribution_CreateContribution_Errors_AuthenticationError e => e.Message,
-                ICreateContribution_CreateContribution_Errors_BoxsetNotFoundError e => e.Message,
-                ICreateContribution_CreateContribution_Errors_InvalidIdError e => e.Message,
-                ICreateContribution_CreateContribution_Errors_InvalidOwnershipError e => e.Message,
-                ICreateContribution_CreateContribution_Errors_InvalidBoxsetStatusError e => e.Message,
-                _ => "An unexpected error occurred while creating the contribution."
-            };
-            return;
-        }
-
-        var newContribution = payload?.UserContribution;
-        if (newContribution == null)
-        {
-            this.submitErrorMessage = "The contribution was not created. Please try again.";
-            return;
-        }
-
-        if (this.request.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
-        {
-            // Create the episode names for later use
-            var episodeResponse = await this.ContributionClient.GetEpisodeNames.ExecuteAsync(new EpisodeNamesInput
-            {
-                ContributionId = newContribution.EncodedId!
+                Input = this.CreateSubmissionRequest()
             });
 
-            if (episodeResponse == null || !episodeResponse.IsSuccessResult())
+            if (result is null || !result.IsSuccessResult())
             {
-                // TODO: Show an error message
-                var error = episodeResponse?.Errors.FirstOrDefault();
-                Console.WriteLine("Failed to create episode names. " + error?.Message);
+                this.submitErrorMessage = result?.Errors.FirstOrDefault()?.Message
+                    ?? "Failed to create the contribution. Please try again.";
+                return;
+            }
+
+            var payload = result.Data?.CreateContribution;
+            if (payload?.Errors is { Count: > 0 } domainErrors)
+            {
+                this.submitErrorMessage = domainErrors[0] switch
+                {
+                    ICreateContribution_CreateContribution_Errors_AuthenticationError e => e.Message,
+                    ICreateContribution_CreateContribution_Errors_BoxsetNotFoundError e => e.Message,
+                    ICreateContribution_CreateContribution_Errors_InvalidIdError e => e.Message,
+                    ICreateContribution_CreateContribution_Errors_InvalidOwnershipError e => e.Message,
+                    ICreateContribution_CreateContribution_Errors_InvalidBoxsetStatusError e => e.Message,
+                    _ => "An unexpected error occurred while creating the contribution."
+                };
+                return;
+            }
+
+            contributionId = payload?.UserContribution?.EncodedId ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(contributionId))
+            {
+                this.submitErrorMessage = "The contribution was not created. Please try again.";
+                return;
+            }
+
+            if (this.DiscScanDraft is not null)
+            {
+                this.DiscScanDraft = this.DiscScanDraft with { ContributionId = contributionId };
+                await this.PersistReleaseDraftSafelyAsync();
             }
         }
-        this.NavigationManager!.NavigateTo($"/contribution/{newContribution.EncodedId!}");
+
+        if (this.DiscScanDraft is not null)
+        {
+            using var linkResponse = await this.HttpClient.PostAsync(
+                $"api/contribute/disc/{DiscScanDraft.EncodeHashForRoute(this.DiscHash!)}/scan/contribution/{Uri.EscapeDataString(contributionId)}",
+                content: null,
+                this.CancellationToken);
+            if (!linkResponse.IsSuccessStatusCode)
+            {
+                this.submitErrorMessage = "The contribution was created, but its scanned disc could not be linked. Submit again to resume safely.";
+                return;
+            }
+
+            string? discId = await this.CreateAndAttachFirstDiscAsync(contributionId);
+            if (string.IsNullOrWhiteSpace(discId))
+            {
+                return;
+            }
+
+            await this.DraftStorage.RemoveAsync(this.DiscHash!, this.CancellationToken);
+            await this.GetEpisodeNamesAsync(contributionId);
+            this.NavigationManager.NavigateTo($"/contribution/{contributionId}/discs/{discId}/identify");
+            return;
+        }
+
+        await this.GetEpisodeNamesAsync(contributionId);
+        this.NavigationManager.NavigateTo($"/contribution/{contributionId}");
+    }
+
+    private async Task<string?> CreateAndAttachFirstDiscAsync(string contributionId)
+    {
+        var draft = this.DiscScanDraft!;
+        var lookup = await this.ContentHashQuery.ExecuteAsync(
+            draft.DiscHash, templates: null, cancellationToken: this.CancellationToken);
+        if (!lookup.IsSuccessResult())
+        {
+            this.submitErrorMessage = lookup.Errors.FirstOrDefault()?.Message
+                ?? "Could not check the existing disc name. Submit again to retry.";
+            return null;
+        }
+
+        var existingDisc = lookup.Data?.MediaItems?.Nodes?
+            .SelectMany(media => media.Releases)
+            .SelectMany(release => release.Discs)
+            .FirstOrDefault(disc => string.Equals(
+                disc.ContentHash, draft.DiscHash, StringComparison.OrdinalIgnoreCase)
+                && !string.IsNullOrWhiteSpace(disc.Name));
+        string discName = existingDisc?.Name ?? draft.Format switch
+        {
+            DiscFormatConstants.Dvd => "DVD",
+            DiscFormatConstants.FourK or DiscFormatConstants.Uhd => "4K",
+            _ => "Blu-ray",
+        };
+        string discSlug = !string.IsNullOrWhiteSpace(existingDisc?.Slug)
+            ? existingDisc.Slug
+            : discName.Slugify();
+        var createDiscResult = await this.ContributionClient.CreateDisc.ExecuteAsync(new CreateDiscInput
+        {
+            ContributionId = contributionId,
+            ContentHash = draft.DiscHash,
+            Format = draft.Format,
+            Name = discName,
+            Slug = discSlug,
+            GlobalDiscId = draft.GlobalDiscId,
+            Fingerprint = draft.Fingerprint,
+        }, this.CancellationToken);
+
+        var createDiscPayload = createDiscResult.Data?.CreateDisc;
+        if (!createDiscResult.IsSuccessResult()
+            || createDiscPayload?.Errors is { Count: > 0 }
+            || string.IsNullOrWhiteSpace(createDiscPayload?.UserContributionDisc?.EncodedId))
+        {
+            this.submitErrorMessage = createDiscPayload?.Errors?.FirstOrDefault()?.ToString()
+                ?? createDiscResult.Errors?.FirstOrDefault()?.Message
+                ?? "The scanned disc could not be added to the contribution. Submit again to retry.";
+            return null;
+        }
+
+        string discId = createDiscPayload.UserContributionDisc.EncodedId;
+        if (!draft.HasManualHashOverride)
+        {
+            var hashResult = await this.ContributionClient.HashDisc.ExecuteAsync(new HashDiscInput
+            {
+                ContributionId = contributionId,
+                Files = draft.HashFiles.Select(file => new FileHashInfoInput
+                {
+                    Index = file.Index,
+                    Name = file.Name,
+                    Size = file.Size,
+                    CreationTime = file.CreationTime,
+                }).ToList(),
+                FingerprintFiles = draft.FingerprintFiles.Select(file => new DiscFingerprintFileInput
+                {
+                    Path = file.Path,
+                    Size = file.Size,
+                }).ToList(),
+            }, this.CancellationToken);
+
+            if (!hashResult.IsSuccessResult()
+                || !string.Equals(
+                    hashResult.Data?.HashDisc?.DiscHash?.Hash,
+                    draft.DiscHash,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                this.submitErrorMessage = hashResult.Errors?.FirstOrDefault()?.Message
+                    ?? "The scanned disc hash could not be attached to the contribution. Submit again to retry.";
+                return null;
+            }
+        }
+
+        using var attachResponse = await this.HttpClient.PostAsync(
+            $"api/contribute/{Uri.EscapeDataString(contributionId)}/discs/{Uri.EscapeDataString(discId)}/scan/{DiscScanDraft.EncodeHashForRoute(draft.DiscHash)}/attach",
+            content: null,
+            this.CancellationToken);
+        if (!attachResponse.IsSuccessStatusCode)
+        {
+            string responseBody = await attachResponse.Content.ReadAsStringAsync(this.CancellationToken);
+            this.submitErrorMessage = DiscScanUploader.ExtractErrorDetail(responseBody, "disc scan");
+            return null;
+        }
+
+        return discId;
+    }
+
+    private async Task GetEpisodeNamesAsync(string contributionId)
+    {
+        if (!this.request.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var episodeResponse = await this.ContributionClient.GetEpisodeNames.ExecuteAsync(new EpisodeNamesInput
+        {
+            ContributionId = contributionId
+        }, this.CancellationToken);
+        if (episodeResponse is null || !episodeResponse.IsSuccessResult())
+        {
+            Console.WriteLine("Failed to create episode names. " + episodeResponse?.Errors.FirstOrDefault()?.Message);
+        }
     }
 
     private ContributionMutationRequestInput CreateSubmissionRequest()
@@ -444,6 +760,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
             {
                 await this.slugInput.RecheckAvailability(this.request.ReleaseSlug);
             }
+            await this.PersistReleaseDraftAsync();
         }
     }
 
@@ -461,6 +778,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         {
             await this.slugInput.RecheckAvailability(this.form.ReleaseSlug);
         }
+        await this.PersistReleaseDraftAsync();
     }
 
     private int? GetReleaseSlugYear(string title)
@@ -519,6 +837,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         {
             await this.slugInput.RecheckAvailability(this.request.ReleaseSlug);
         }
+        await this.PersistReleaseDraftAsync();
     }
 
     private static string CreateSlug(string title, int? year)
@@ -533,36 +852,42 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         return slug;
     }
 
-    private void FrontImageSelected(SelectedEventArgs args)
+    private async Task FrontImageSelected(SelectedEventArgs args)
     {
         this.request.FrontImageUrl = $"{this.id}/front.jpg";
+        await this.PersistReleaseDraftAsync();
     }
 
-    private void FrontImageUploadSuccess(SuccessEventArgs args)
+    private async Task FrontImageUploadSuccess(SuccessEventArgs args)
     {
         this.frontImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/front.jpg";
+        await this.PersistReleaseDraftAsync();
     }
 
-    private void FrontImageRemoved(RemovingEventArgs args)
+    private async Task FrontImageRemoved(RemovingEventArgs args)
     {
         this.request.FrontImageUrl = "";
         this.frontImagePreviewUrl = "";
+        await this.PersistReleaseDraftAsync();
     }
 
-    private void BackImageSelected(SelectedEventArgs args)
+    private async Task BackImageSelected(SelectedEventArgs args)
     {
         this.request.BackImageUrl = $"{this.id}/back.jpg";
+        await this.PersistReleaseDraftAsync();
     }
 
-    private void BackImageUploadSuccess(SuccessEventArgs args)
+    private async Task BackImageUploadSuccess(SuccessEventArgs args)
     {
         this.backImagePreviewUrl = $"/api/contribute/images/Contributions/releaseImages/{this.id}/back.jpg";
+        await this.PersistReleaseDraftAsync();
     }
 
-    private void BackImageRemoved(RemovingEventArgs args)
+    private async Task BackImageRemoved(RemovingEventArgs args)
     {
         this.request.BackImageUrl = "";
         this.backImagePreviewUrl = "";
+        await this.PersistReleaseDraftAsync();
     }
 
     private async Task ImportFromAmazon(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
@@ -642,6 +967,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         finally
         {
             IsAmazonImportInProgress = false;
+            await this.PersistReleaseDraftSafelyAsync();
         }
     }
 
@@ -704,6 +1030,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
             await this.HttpClient.PostAsync(this.frontImageRemoveUrl, null);
             this.request.FrontImageUrl = "";
             this.frontImagePreviewUrl = "";
+            await this.PersistReleaseDraftAsync();
         }
     }
 
@@ -715,6 +1042,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
             await this.HttpClient.PostAsync(this.backImageRemoveUrl, null);
             this.request.BackImageUrl = null;
             this.backImagePreviewUrl = "";
+            await this.PersistReleaseDraftAsync();
         }
     }
 
