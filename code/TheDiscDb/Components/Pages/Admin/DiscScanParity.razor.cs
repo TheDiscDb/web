@@ -64,7 +64,7 @@ public partial class DiscScanParity : ComponentBase
     }
 
     private static string FormatRate(ContributionDiscParityStats stats)
-        => stats.Total == 0 ? "0.0%" : stats.MatchRate.ToString("P1");
+        => stats.MatchRate is { } rate ? rate.ToString("P1") : "Not measured";
 
     private static (string Text, string Url) GetRootAdminLink() => ("Admin", "/admin");
 }

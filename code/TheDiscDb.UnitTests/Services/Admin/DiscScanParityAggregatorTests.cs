@@ -119,6 +119,32 @@ public class DiscScanParityAggregatorTests
         await Assert.That(current.IdentifySimilarityLabel).Contains("100.0%");
     }
 
+    [Test]
+    public async Task CreateDashboard_ExcludesKnownNonzeroMinimumLengthWithoutProducingRates()
+    {
+        var excluded = CreateItem(1, DiscLogManifestComparisonStatus.Excluded, "dvd", "1", "1", "CLI") with
+        {
+            MinimumLength = new(MakeMkvMinimumLengthStatus.NonZero, 1, "Filtered."),
+            IdentifyExperience = IdentifyExperienceComparison.Excluded("Filtered."),
+            UsefulContent = new UsefulContentComparison { Status = UsefulContentStatus.Excluded, Reason = "Filtered." }
+        };
+
+        var dashboard = DiscScanParityAggregator.CreateDashboard([excluded]);
+
+        await Assert.That(dashboard.Overall.Total).IsEqualTo(0);
+        await Assert.That(dashboard.Overall.Matches).IsEqualTo(0);
+        await Assert.That(dashboard.Overall.Excluded).IsEqualTo(1);
+        await Assert.That(dashboard.Overall.MatchRate).IsNull();
+        await Assert.That(dashboard.IdentifyExperience.Measured).IsEqualTo(0);
+        await Assert.That(dashboard.IdentifyExperience.Excluded).IsEqualTo(1);
+        await Assert.That(dashboard.IdentifyExperience.Rate).IsEqualTo("Not measured");
+        await Assert.That(dashboard.Similarity.Measured).IsEqualTo(0);
+        await Assert.That(dashboard.Similarity.Excluded).IsEqualTo(1);
+        await Assert.That(dashboard.Similarity.Overall).IsNull();
+        await Assert.That(dashboard.UsefulContent.MeasuredDiscs).IsEqualTo(0);
+        await Assert.That(dashboard.UsefulContent.Excluded).IsEqualTo(1);
+    }
+
     private static ContributionDiscComparisonListItem CreateItem(
         int discId,
         DiscLogManifestComparisonStatus status,

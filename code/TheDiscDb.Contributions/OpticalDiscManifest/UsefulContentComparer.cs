@@ -11,7 +11,7 @@ public sealed record UsefulContentReference(
     bool Incidental = false, IReadOnlyList<UsefulStreamLabel>? Labels = null);
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum UsefulContentStatus { Measured, NoUsefulReferences, AcquisitionReview, NotComparable }
+public enum UsefulContentStatus { Measured, NoUsefulReferences, AcquisitionReview, NotComparable, Excluded }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
 public enum UsefulChoiceAvailability

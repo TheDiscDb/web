@@ -11,7 +11,8 @@ public enum DiscLogManifestComparisonStatus
     Match,
     Mismatch,
     DifferentDisc,
-    Error
+    Error,
+    Excluded
 }
 
 public static partial class DiscLogManifestComparer
@@ -39,27 +40,24 @@ public static partial class DiscLogManifestComparer
             string? manifestContentHash = OpticalDiscManifestMapper.GetContentHash(manifest);
             string? normalizedExpectedHash = NormalizeHash(expectedContentHash);
             string? normalizedManifestHash = NormalizeHash(manifestContentHash);
+            var minimumLength = MakeMkvMinimumLengthAnalyzer.Analyze(logText);
             var differences = new DiscLogManifestDifferences
             {
                 ExpectedContentHash = normalizedExpectedHash,
                 ManifestContentHash = normalizedManifestHash,
-                MakeMkvVersion = ExtractMakeMkvVersion(logText)
+                MakeMkvVersion = ExtractMakeMkvVersion(logText),
+                MinimumLength = minimumLength
             };
             ReadScanDiagnostics(manifest, differences);
             CheckArtifactConsistency(logDiscInfo, manifest, differences);
-            differences.UsefulContent = UsefulContentComparer.Compare(
-                logDiscInfo, manifest, manifestDiscInfo, usefulReferences ?? [],
-                differentDisc: !string.IsNullOrEmpty(normalizedExpectedHash)
-                    && !string.IsNullOrEmpty(normalizedManifestHash)
-                    && !string.Equals(normalizedExpectedHash, normalizedManifestHash, StringComparison.OrdinalIgnoreCase),
-                acquisitionReview: differences.ArtifactWarnings.Count > 0,
-                scanErrors: differences.ScanDiagnostics.Any(diagnostic => diagnostic.Severity == "error"));
 
             if (!string.IsNullOrEmpty(normalizedExpectedHash)
                 && !string.IsNullOrEmpty(normalizedManifestHash)
                 && !string.Equals(normalizedExpectedHash, normalizedManifestHash, StringComparison.OrdinalIgnoreCase))
             {
                 differences.DifferentDisc = true;
+                differences.UsefulContent = UsefulContentComparer.Compare(
+                    logDiscInfo, manifest, manifestDiscInfo, usefulReferences ?? [], differentDisc: true);
                 differences.IdentifyExperience = IdentifyExperienceComparison.NotComparable("The acquisitions identify different discs.");
                 return CreateResult(
                     DiscLogManifestComparisonStatus.DifferentDisc,
@@ -71,6 +69,30 @@ public static partial class DiscLogManifestComparer
                     differences);
             }
 
+            if (minimumLength.ExcludesReference)
+            {
+                string reason = minimumLength.Reason
+                    ?? "The reference was acquired with a nonzero minimum length.";
+                differences.UsefulContent = new UsefulContentComparison
+                {
+                    Status = UsefulContentStatus.Excluded,
+                    Reason = reason
+                };
+                differences.IdentifyExperience = IdentifyExperienceComparison.Excluded(reason);
+                return CreateResult(
+                    DiscLogManifestComparisonStatus.Excluded,
+                    logDiscInfo,
+                    manifest,
+                    manifestDiscInfo,
+                    matchedTitleCount: 0,
+                    orderMatches: false,
+                    differences);
+            }
+
+            differences.UsefulContent = UsefulContentComparer.Compare(
+                logDiscInfo, manifest, manifestDiscInfo, usefulReferences ?? [],
+                acquisitionReview: differences.ArtifactWarnings.Count > 0,
+                scanErrors: differences.ScanDiagnostics.Any(diagnostic => diagnostic.Severity == "error"));
             differences.IdentifyExperience = differences.ScanDiagnostics.Any(d => d.Severity == "error")
                 ? IdentifyExperienceComparison.NotComparable("The scan contains error diagnostics.")
                 : IdentifyExperienceComparer.Compare(logDiscInfo, manifestDiscInfo);
@@ -602,6 +624,8 @@ public sealed record DiscLogManifestComparisonResult(
 
 public sealed class DiscLogManifestDifferences
 {
+    public MakeMkvMinimumLengthEvidence? MinimumLength { get; set; }
+
     public UsefulContentComparison? UsefulContent { get; set; }
 
     public IdentifyExperienceComparison? IdentifyExperience { get; set; }

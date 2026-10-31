@@ -155,6 +155,9 @@ public sealed class ContributionDiscComparisonAdminService : IContributionDiscCo
             for (int i = 0; i < file.Comparisons.Count; i++)
             {
                 var run = file.Comparisons[i];
+                bool isExcluded = run.Status == DiscLogManifestComparisonStatus.Excluded;
+                string exclusionReason = run.Differences.MinimumLength?.Reason
+                    ?? "The reference was acquired with a nonzero minimum length.";
                 items.Add(new ContributionDiscComparisonListItem(
                     file.Comparisons.Count - i,
                     disc.Id,
@@ -175,8 +178,17 @@ public sealed class ContributionDiscComparisonAdminService : IContributionDiscCo
                     run.Status,
                     JsonSerializer.Serialize(run.Differences, DifferencesJsonOptions))
                 {
-                    IdentifyExperience = run.Differences.IdentifyExperience,
-                    UsefulContent = run.Differences.UsefulContent,
+                    IdentifyExperience = isExcluded
+                        ? IdentifyExperienceComparison.Excluded(exclusionReason)
+                        : run.Differences.IdentifyExperience,
+                    UsefulContent = isExcluded
+                        ? new UsefulContentComparison
+                        {
+                            Status = UsefulContentStatus.Excluded,
+                            Reason = exclusionReason
+                        }
+                        : run.Differences.UsefulContent,
+                    MinimumLength = run.Differences.MinimumLength,
                     ComparerVersion = run.ComparerVersion,
                     ManifestSha256 = run.ManifestSha256,
                     ReferenceSha256 = run.ReferenceSha256
@@ -209,18 +221,25 @@ public sealed record ContributionDiscComparisonListItem(
 {
     public IdentifyExperienceComparison? IdentifyExperience { get; init; }
     public UsefulContentComparison? UsefulContent { get; init; }
+    public MakeMkvMinimumLengthEvidence? MinimumLength { get; init; }
+    public bool IsReferenceExcluded => Status == DiscLogManifestComparisonStatus.Excluded;
     public string? ComparerVersion { get; init; }
     public string? ManifestSha256 { get; init; }
     public string? ReferenceSha256 { get; init; }
 
-    public string IdentifyExperienceLabel => IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion } experience
-        ? experience.Status.ToString() : "Not measured";
+    public string IdentifyExperienceLabel => IsReferenceExcluded
+        ? "Excluded (nonzero minimum length)"
+        : IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion } experience
+            ? experience.Status.ToString() : "Not measured";
 
-    public string IdentifySimilarityLabel => IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion,
+    public string IdentifySimilarityLabel => IsReferenceExcluded ? "Excluded (nonzero minimum length)"
+        : IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion,
         Status: IdentifyExperienceStatus.NotComparable } ? "Not comparable"
         : IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion,
             Status: IdentifyExperienceStatus.Match or IdentifyExperienceStatus.Mismatch, Similarity: { IsMeasured: true } score }
             ? score.Summary : "Not measured";
+
+    public string MatchedTitleCountLabel => IsReferenceExcluded ? "Not measured" : MatchedTitleCount.ToString();
 }
 
 public sealed record ContributionDiscParityDashboard(
@@ -248,6 +267,8 @@ public sealed record ContributionDiscParityBreakdown(string Label, ContributionD
 
 public sealed record IdentifyExperienceStats(int Matches, int Mismatches, int NotComparable, int NotMeasured)
 {
+    public int Excluded { get; init; }
+
     public int Measured => Matches + Mismatches;
 
     public string Rate => Measured == 0 ? "Not measured" : ((double)Matches / Measured).ToString("P1");
@@ -255,7 +276,9 @@ public sealed record IdentifyExperienceStats(int Matches, int Mismatches, int No
 
 public sealed record ContributionDiscParityStats(int Total, int Matches)
 {
-    public double MatchRate => Total == 0 ? 0 : (double)Matches / Total;
+    public int Excluded { get; init; }
+
+    public double? MatchRate => Total == 0 ? null : (double)Matches / Total;
 }
 
 public static class DiscScanParityAggregator
@@ -336,8 +359,15 @@ public static class DiscScanParityAggregator
     {
         int total = 0;
         int matches = 0;
+        int excluded = 0;
         foreach (var item in items)
         {
+            if (item.IsReferenceExcluded)
+            {
+                excluded++;
+                continue;
+            }
+
             total++;
             if (item.Status == DiscLogManifestComparisonStatus.Match)
             {
@@ -345,7 +375,7 @@ public static class DiscScanParityAggregator
             }
         }
 
-        return new ContributionDiscParityStats(total, matches);
+        return new ContributionDiscParityStats(total, matches) { Excluded = excluded };
     }
 
     private static string NormalizeLabel(string? value)
@@ -353,10 +383,14 @@ public static class DiscScanParityAggregator
 
     private static IdentifyExperienceStats CreateExperienceStats(IEnumerable<ContributionDiscComparisonListItem> items)
     {
-        int matches = 0, mismatches = 0, notComparable = 0, notMeasured = 0;
+        int matches = 0, mismatches = 0, notComparable = 0, notMeasured = 0, excluded = 0;
         foreach (var item in items)
         {
-            if (item.IdentifyExperience is not { Version: IdentifyExperienceComparison.CurrentVersion } experience)
+            if (item.IsReferenceExcluded)
+            {
+                excluded++;
+            }
+            else if (item.IdentifyExperience is not { Version: IdentifyExperienceComparison.CurrentVersion } experience)
             {
                 notMeasured++;
             }
@@ -366,11 +400,12 @@ public static class DiscScanParityAggregator
                 {
                     case IdentifyExperienceStatus.Match: matches++; break;
                     case IdentifyExperienceStatus.Mismatch: mismatches++; break;
+                    case IdentifyExperienceStatus.Excluded: excluded++; break;
                     default: notComparable++; break;
                 }
             }
         }
 
-        return new(matches, mismatches, notComparable, notMeasured);
+        return new(matches, mismatches, notComparable, notMeasured) { Excluded = excluded };
     }
 }

@@ -160,6 +160,41 @@ public class IdentifyExperienceTests
     }
 
     [Test]
+    public async Task Compare_NonzeroMinimumLengthExcludesReferenceFromAllMetrics()
+    {
+        var manifest = Manifest();
+        var log = OpticalDiscManifestMapper.ToDiscInfo(manifest);
+        const string logText = "MSG:3025,0,2,\"Durée, filtrée\",\"Modèle, localisé\",\"0:00:30\",\"1\"";
+
+        var result = DiscLogManifestComparer.Compare(log, logText, manifest,
+            OpticalDiscManifestMapper.ToDiscInfo(manifest), "HASH");
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Excluded);
+        await Assert.That(result.MatchedTitleCount).IsEqualTo(0);
+        await Assert.That(result.OrderMatches).IsFalse();
+        await Assert.That(result.Differences.MinimumLength!.Status).IsEqualTo(MakeMkvMinimumLengthStatus.NonZero);
+        await Assert.That(result.Differences.IdentifyExperience!.Status).IsEqualTo(IdentifyExperienceStatus.Excluded);
+        await Assert.That(result.Differences.IdentifyExperience.Similarity).IsNull();
+        await Assert.That(result.Differences.UsefulContent!.Status).IsEqualTo(UsefulContentStatus.Excluded);
+        await Assert.That(result.Differences.UsefulContent.KnownUseful).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Compare_DifferentDiscStillTakesPrecedenceOverMinimumLengthExclusion()
+    {
+        var manifest = Manifest();
+        var log = OpticalDiscManifestMapper.ToDiscInfo(manifest);
+
+        var result = DiscLogManifestComparer.Compare(log,
+            "MSG:3025,0,2,\"title\",\"template\",\"0:00:30\",\"1\"",
+            manifest, OpticalDiscManifestMapper.ToDiscInfo(manifest), "OTHER");
+
+        await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.DifferentDisc);
+        await Assert.That(result.Differences.MinimumLength!.Status).IsEqualTo(MakeMkvMinimumLengthStatus.NonZero);
+        await Assert.That(result.Differences.IdentifyExperience!.Status).IsEqualTo(IdentifyExperienceStatus.NotComparable);
+    }
+
+    [Test]
     public async Task Compare_MissingMetadataIsComparedAsActuallyDisplayed()
     {
         var manifest = Manifest();

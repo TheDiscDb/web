@@ -10,7 +10,8 @@ public enum IdentifyExperienceStatus
 {
     NotComparable,
     Match,
-    Mismatch
+    Mismatch,
+    Excluded
 }
 
 public sealed record IdentifyExperienceDifference(int? Row, string Field, string? LogValue, string? ManifestValue);
@@ -35,6 +36,9 @@ public sealed record IdentifyExperienceComparison(
 
     public static IdentifyExperienceComparison NotComparable(string reason)
         => new(CurrentVersion, IdentifyExperienceStatus.NotComparable, 0, 0, 0, [], reason);
+
+    public static IdentifyExperienceComparison Excluded(string reason)
+        => new(CurrentVersion, IdentifyExperienceStatus.Excluded, 0, 0, 0, [], reason);
 }
 
 public static class IdentifyExperienceComparer

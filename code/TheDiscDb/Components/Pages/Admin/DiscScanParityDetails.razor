@@ -55,6 +55,18 @@ else
             </table>
         </details>
     }
+    @if (Differences?.MinimumLength is { } minimumLength)
+    {
+        <section class="info-card mb-3">
+            <h2>MakeMKV minimum length eligibility</h2>
+            <p>@minimumLength.Status
+                @if (minimumLength.ThresholdSeconds is { } threshold)
+                {
+                    <span>(@threshold seconds)</span>
+                }
+                @minimumLength.Reason</p>
+        </section>
+    }
     <section class="info-card mb-3">
         <h2>@Latest.ReleaseTitle - @Latest.DiscName</h2>
         <dl class="row mb-0">
@@ -63,7 +75,16 @@ else
             <dt class="col-sm-3">Technical parity</dt>
             <dd class="col-sm-9">@Latest.Status</dd>
             <dt class="col-sm-3">Counts</dt>
-            <dd class="col-sm-9">@Latest.MatchedTitleCount matched / @Latest.LogTitleCount log / @Latest.ManifestTitleCount scan</dd>
+            <dd class="col-sm-9">
+                @if (Latest.IsReferenceExcluded)
+                {
+                    <span>Not measured; @Latest.LogTitleCount reference rows / @Latest.ManifestTitleCount scan choices captured</span>
+                }
+                else
+                {
+                    <span>@Latest.MatchedTitleCount matched / @Latest.LogTitleCount log / @Latest.ManifestTitleCount scan</span>
+                }
+            </dd>
             <dt class="col-sm-3">Versions</dt>
             <dd class="col-sm-9">Producer @Display(Latest.ProducerVersion), MakeMKV @Display(Latest.MakeMkvVersion)</dd>
             <dt class="col-sm-3">Comparer</dt>
@@ -91,6 +112,10 @@ else
         @if (Differences?.UsefulContent is not { Version: UsefulContentComparison.CurrentVersion } useful)
         {
             <p>Not measured. Re-compare to assess identified choices and unknown content separately.</p>
+        }
+        else if (Latest.IsReferenceExcluded)
+        {
+            <p>Not measured because the reference was acquired with a nonzero minimum length. @useful.Reason</p>
         }
         else
         {
@@ -164,6 +189,10 @@ else
         {
             <p>Not measured. Re-compare with the current comparer to measure this metric.</p>
         }
+        else if (Latest.IsReferenceExcluded)
+        {
+            <p>Not measured because the reference was acquired with a nonzero minimum length. @experience.Reason</p>
+        }
         else
         {
             <p>@experience.Status: @experience.MatchingRowCount same-position rows match /
@@ -197,44 +226,51 @@ else
         }
         else
         {
-            @if (!string.IsNullOrEmpty(Differences.Error))
+            @if (Latest.IsReferenceExcluded)
             {
-                <div class="alert alert-warning">@Differences.Error</div>
+                <p>Not measured because the reference was acquired with a nonzero minimum length.</p>
             }
-            @if (Differences.LogOnlyTitles.Count > 0)
+            else
             {
-                <h3>Log-only titles</h3>
-                <p>@string.Join(", ", Differences.LogOnlyTitles)</p>
-            }
-            @if (Differences.ManifestOnlyTitles.Count > 0)
-            {
-                <h3>Scan-only titles</h3>
-                <p>@string.Join(", ", Differences.ManifestOnlyTitles)</p>
-            }
-            <DiscScanTitleDifferenceTable Title="Title differences" Rows="Differences.TitleDifferences" />
-            <DiscScanTitleDifferenceTable Title="Soft differences" Rows="Differences.SoftDifferences" />
-            @if (Differences.LogOrder is { Count: > 0 } || Differences.ManifestOrder is { Count: > 0 })
-            {
-                <h3>Order</h3>
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Position</th>
-                            <th>Log</th>
-                            <th>Scan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for (int i = 0; i < Math.Max(Differences.LogOrder?.Count ?? 0, Differences.ManifestOrder?.Count ?? 0); i++)
-                        {
+                @if (!string.IsNullOrEmpty(Differences.Error))
+                {
+                    <div class="alert alert-warning">@Differences.Error</div>
+                }
+                @if (Differences.LogOnlyTitles.Count > 0)
+                {
+                    <h3>Log-only titles</h3>
+                    <p>@string.Join(", ", Differences.LogOnlyTitles)</p>
+                }
+                @if (Differences.ManifestOnlyTitles.Count > 0)
+                {
+                    <h3>Scan-only titles</h3>
+                    <p>@string.Join(", ", Differences.ManifestOnlyTitles)</p>
+                }
+                <DiscScanTitleDifferenceTable Title="Title differences" Rows="Differences.TitleDifferences" />
+                <DiscScanTitleDifferenceTable Title="Soft differences" Rows="Differences.SoftDifferences" />
+                @if (Differences.LogOrder is { Count: > 0 } || Differences.ManifestOrder is { Count: > 0 })
+                {
+                    <h3>Order</h3>
+                    <table class="table table-sm">
+                        <thead>
                             <tr>
-                                <td>@(i + 1)</td>
-                                <td>@GetAt(Differences.LogOrder, i)</td>
-                                <td>@GetAt(Differences.ManifestOrder, i)</td>
+                                <th>Position</th>
+                                <th>Log</th>
+                                <th>Scan</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @for (int i = 0; i < Math.Max(Differences.LogOrder?.Count ?? 0, Differences.ManifestOrder?.Count ?? 0); i++)
+                            {
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td>@GetAt(Differences.LogOrder, i)</td>
+                                    <td>@GetAt(Differences.ManifestOrder, i)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
             }
         }
     </section>
@@ -246,7 +282,7 @@ else
             <PropertyColumn Property="@(item => item.IdentifyExperienceLabel)" Title="Identify experience" />
             <PropertyColumn Property="@(item => item.IdentifySimilarityLabel)" Title="Graded similarity / components" />
             <PropertyColumn Property="@(item => item.Status)" Title="Technical parity" />
-            <PropertyColumn Property="@(item => item.MatchedTitleCount)" Title="Matched" />
+            <PropertyColumn Property="@(item => item.MatchedTitleCountLabel)" Title="Matched" />
             <PropertyColumn Property="@(item => item.LogTitleCount)" Title="Log" />
             <PropertyColumn Property="@(item => item.ManifestTitleCount)" Title="Scan" />
         </QuickGrid>

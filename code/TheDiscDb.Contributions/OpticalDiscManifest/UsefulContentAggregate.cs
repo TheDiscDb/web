@@ -8,9 +8,11 @@ public sealed record UsefulContentAggregate(
     public string Summary => $"Known useful choices {Available}/{KnownUseful}; required choices unresolved {RequiredUnresolved}; "
         + $"all known useful available on {CompleteKnownUsefulDiscs}/{MeasuredDiscs} measured labeled discs. "
         + $"No useful references {NoUsefulReferences}; acquisition review {AcquisitionReview}; "
-        + $"not comparable {NotComparable}; not measured {NotMeasured}. "
+        + $"excluded {Excluded}; not comparable {NotComparable}; not measured {NotMeasured}. "
         + $"Unclassified reference/scan choices {UnclassifiedReferenceRows}/{UnclassifiedScanChoices}; "
         + $"named stream mapping review {NamedMappingReviewChoices}; caption review {CaptionReviewChoices}.";
+
+    public int Excluded { get; init; }
 
     public static UsefulContentAggregate Create(IEnumerable<UsefulContentComparison?> comparisons)
     {
@@ -29,6 +31,9 @@ public sealed record UsefulContentAggregate(
             current.Sum(item => item.UnclassifiedScanChoices),
             current.Sum(item => item.Choices.Count(choice => choice.Streams?.NamedLabelsNotSemanticallyVerified > 0)),
             current.Sum(item => item.Choices.Count(choice => choice.Streams is
-                { ReferenceClosedCaptions: true, DeclaredClosedCaptions: false })));
+                { ReferenceClosedCaptions: true, DeclaredClosedCaptions: false })))
+        {
+            Excluded = current.Count(item => item.Status == UsefulContentStatus.Excluded)
+        };
     }
 }
