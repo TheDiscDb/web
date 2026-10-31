@@ -23,6 +23,59 @@ preservation, plus all-491-pair replay results. These changes are not deployed
 evidence; capture-backed navigation fixes and semantic migration remain gated.
 Neither defaults nor rollout thresholds have changed.
 
+## Consolidated release candidate (2026-10-31)
+
+`feature/disc-scanner-release` now combines the two outstanding web branches:
+
+| Source | Included work |
+|---|---|
+| `fix/mpls-stream-table-parsing` (`7219095`) | MPLS/PiP stream-table ordering and bounds checks, browser-compatible content hashing, and the scan-first contribution entry/draft/lookup/attachment flow. Despite its name, this branch is not limited to parser changes. |
+| `fix/scanner-audit-priorities` (`687fab7`) | Conditional comparison-history persistence, truthful recompare outcomes/provenance, DVD codec fixes, stream/language/caption preservation, usefulness reporting, and the frozen audit evidence. |
+| Sibling tools `fix/odmscanner-scan-defaults` (`379ebb5`) | Scanner configuration, repeated-disc scan loop/ejection, inventory retries, and regression tests. These are retained on a matching `feature/disc-scanner-release` branch in the separate tools repository. |
+
+The contribution filename title fix is retained as a separate web commit.
+Neither repository's `main` has been merged or updated by this consolidation.
+
+**The new entry flow is not the existing optional post-log scan flow.** It adds
+`/contribute/scan`, saves a scan before a contribution exists, checks the content
+hash, and carries that scan through release creation. The contribution landing
+page now links to this flow directly; that link is not gated by the existing
+`Contributions:DiscScanMode` setting. Existing log/boxset workflows remain, but
+the entry-flow rollout needs explicit review before release. The phase table
+below describes the established rollout, not proof that this candidate is ready
+to replace it.
+
+Combined verification:
+
+- The web solution and scanner tools build successfully. Web unit tests,
+  optical-parser tests, scan-CLI tests, and OdmScanner tests total 1,414 passed;
+  one additional test requires a specific physical disc and was skipped.
+- Aspire's web resource became healthy. The contribution landing page and
+  authenticated scan-first page rendered without browser console errors.
+  Physical-disc folder selection, upload, release-draft recovery, and scan
+  attachment were not exercised end to end.
+- Replaying `B:\scans` regenerated all 117 captures (115 distinct content hashes)
+  without corpus errors: **35 technical matches, 78 mismatches, and four
+  ReferenceRequired results**. All 113 paired captures remained strict
+  identify-experience mismatches. This is not a representative random sample or
+  a satisfied rollout gate.
+- Compared with reports saved beside those captures, 24 mismatches became
+  technical matches and no match became a mismatch. Eight already-mismatching
+  captures gained a `00700.mpls(1)` extra-choice issue while losing the old
+  `00700.mpls` and `00089.mpls` extra-choice issues. Their split/choice changes
+  need investigation; a lower issue count alone is not proof of correctness.
+  These deltas use the captures' older baselines, not a fresh current-main
+  replay, and cannot be attributed solely to the two consolidated branches.
+
+The complete replay reports are retained outside the repositories at
+`B:\scanner-regressions\release-20261031-web-06409bd-tools-379ebb5`.
+Original captures and reports were not overwritten. As more discs are added,
+rebuild OdmScanner against the intended sibling web revision and replay into a
+new directory outside `B:\scans`; retain references and source revisions with
+each run. Priorities remain capture-backed navigation/stream differences,
+unresolved reference selection, and the full scan-first contribution walkthrough.
+Keep log fallback and hold the main merge while release readiness is unresolved.
+
 ## Overview
 
 The browser disc scan produces an Optical Disc Manifest (ODM, `.odm.json`) that reproduces the
