@@ -8,6 +8,21 @@ The table below distinguishes built behavior from the checked-in defaults.
 production overrides and dashboard thresholds have not been verified by this
 source review. Built phase 2 is not evidence that the rollout gate was met.
 
+## Saved-corpus audit (2026-10-30 UTC)
+
+The [full 491-comparison audit](audits/2026-10-30-disc-scan-parity/README.md)
+preserves the usefulness assessment, unresolved cases, ranked fixes and
+machine-readable results. It found comparison-history persistence and DVD
+audio-code decoding defects. The rollout gate is not met; continue optional
+collection and retain log fallback. This saved-artifact audit is not validation
+of fresh physical-disc scans or regenerated manifests.
+
+The [P0/P1 implementation follow-up](audits/2026-10-30-disc-scan-parity/IMPLEMENTATION-STATUS.md)
+records local persistence/codec fixes, usefulness reporting and stream/caption
+preservation, plus all-491-pair replay results. These changes are not deployed
+evidence; capture-backed navigation fixes and semantic migration remain gated.
+Neither defaults nor rollout thresholds have changed.
+
 ## Overview
 
 The browser disc scan produces an Optical Disc Manifest (ODM, `.odm.json`) that reproduces the

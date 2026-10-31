@@ -2,7 +2,9 @@ mutation GetDiscLogs($input: DiscLogsInput!) {
   discLogs(input: $input) {
     discLogs {
       info {
+        sourceKind
         titles {
+          hasDeclaredClosedCaptions
           index
           chapterCount
           length
@@ -16,6 +18,14 @@ mutation GetDiscLogs($input: DiscLogsInput!) {
             type
             name
             audioType
+            languageCode
+            language
+            pid
+            category
+            sourceCodec
+            codingTypeCode
+            formatCode
+            rateCode
           }
         }
       }

@@ -27,6 +27,10 @@
         public string? JavaComment { get; set; } //49
         public IList<Segment> Segments { get; set; } = new List<Segment>();
 
+        public bool HasDeclaredClosedCaptions => this.Segments.Any(segment =>
+            string.Equals(segment.Type, "Video", StringComparison.OrdinalIgnoreCase)
+            && segment.Line21ClosedCaptionFields is { Count: > 0 });
+
         [JsonIgnore]
         public TimeSpan LengthAsTimeSpan
         {

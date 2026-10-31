@@ -28,7 +28,8 @@ public static class OpticalDiscManifestMapper
         var info = new DiscInfo
         {
             Name = disc.Name,
-            Type = MapFormat(disc.Format)
+            Type = MapFormat(disc.Format),
+            SourceKind = "optical-disc-manifest"
         };
 
         foreach (var file in disc.Files)
@@ -116,7 +117,14 @@ public static class OpticalDiscManifestMapper
             Type = type,
             Name = MapStreamDisplayName(source.Codec, type),
             Resolution = source.Resolution,
-            AspectRatio = source.AspectRatio
+            AspectRatio = source.AspectRatio,
+            Category = source.Category,
+            SourceCodec = source.Codec,
+            Pid = source.Pid,
+            CodingTypeCode = source.CodingTypeCode,
+            FormatCode = source.FormatCode,
+            RateCode = source.RateCode,
+            Line21ClosedCaptionFields = source.Line21ClosedCaptionFields?.ToArray()
         };
 
         // MakeMKV only reports language on audio and subtitle tracks, and only reports the audio
@@ -124,7 +132,7 @@ public static class OpticalDiscManifestMapper
         // logs never carried.
         if (type is "Audio" or "Subtitles")
         {
-            segment.LanguageCode = source.Language;
+            segment.LanguageCode = LanguageCodes.Canonicalize(source.Language);
             segment.Language = source.LanguageName;
         }
 

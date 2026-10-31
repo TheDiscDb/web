@@ -1,0 +1,2457 @@
+[
+  {
+    "id": 2500,
+    "label": "2026 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2500"
+  },
+  {
+    "id": 2501,
+    "label": "2026 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2501"
+  },
+  {
+    "id": 2502,
+    "label": "2019 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2502"
+  },
+  {
+    "id": 2503,
+    "label": "2019 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2503"
+  },
+  {
+    "id": 2504,
+    "label": "2025 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2504"
+  },
+  {
+    "id": 2505,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 2 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2505"
+  },
+  {
+    "id": 2506,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 4 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2506"
+  },
+  {
+    "id": 2507,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 4 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2507"
+  },
+  {
+    "id": 2508,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 4 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2508"
+  },
+  {
+    "id": 2509,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 5 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2509"
+  },
+  {
+    "id": 2510,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 5 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2510"
+  },
+  {
+    "id": 2511,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 5 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2511"
+  },
+  {
+    "id": 2512,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 5 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2512"
+  },
+  {
+    "id": 2513,
+    "label": "2018 Boxset 1 - disc 5",
+    "detailPath": "/admin/disc-scan-parity/2513"
+  },
+  {
+    "id": 2514,
+    "label": "2018 Boxset 1 - disc 6",
+    "detailPath": "/admin/disc-scan-parity/2514"
+  },
+  {
+    "id": 2515,
+    "label": "Peter Davison Complete Season One - Disc 1: Castrovalva",
+    "detailPath": "/admin/disc-scan-parity/2515"
+  },
+  {
+    "id": 2516,
+    "label": "2025 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2516"
+  },
+  {
+    "id": 2517,
+    "label": "2018 Boxset 1 - Bonus Disc",
+    "detailPath": "/admin/disc-scan-parity/2517"
+  },
+  {
+    "id": 2518,
+    "label": "2018 Boxset 2 - disc 1",
+    "detailPath": "/admin/disc-scan-parity/2518"
+  },
+  {
+    "id": 2519,
+    "label": "2018 Boxset 2 - disc 2",
+    "detailPath": "/admin/disc-scan-parity/2519"
+  },
+  {
+    "id": 2520,
+    "label": "2018 Boxset 2 - disc 3",
+    "detailPath": "/admin/disc-scan-parity/2520"
+  },
+  {
+    "id": 2521,
+    "label": "2018 Boxset 2 - disc 4",
+    "detailPath": "/admin/disc-scan-parity/2521"
+  },
+  {
+    "id": 2522,
+    "label": "Blu-RAY + DVD + DIGITAL HD - blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2522"
+  },
+  {
+    "id": 2523,
+    "label": "2022 Blu-ray German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2523"
+  },
+  {
+    "id": 2524,
+    "label": "2017 Blu-ray German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2524"
+  },
+  {
+    "id": 2525,
+    "label": "2020 Blu-ray German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2525"
+  },
+  {
+    "id": 2526,
+    "label": "2006 Blu-ray German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2526"
+  },
+  {
+    "id": 2527,
+    "label": "2018 Boxset 2 - disc 5",
+    "detailPath": "/admin/disc-scan-parity/2527"
+  },
+  {
+    "id": 2528,
+    "label": "2018 Boxset 2 - disc 6",
+    "detailPath": "/admin/disc-scan-parity/2528"
+  },
+  {
+    "id": 2529,
+    "label": "2018 Boxset 2 - Bonus Disc",
+    "detailPath": "/admin/disc-scan-parity/2529"
+  },
+  {
+    "id": 2530,
+    "label": "Theatrical Blu-Ray - Blu-Ray",
+    "detailPath": "/admin/disc-scan-parity/2530"
+  },
+  {
+    "id": 2531,
+    "label": "Theatrical Blu-Ray - Blu-Ray",
+    "detailPath": "/admin/disc-scan-parity/2531"
+  },
+  {
+    "id": 2532,
+    "label": "Theatrical Blu-Ray - Blu-Ray",
+    "detailPath": "/admin/disc-scan-parity/2532"
+  },
+  {
+    "id": 2533,
+    "label": "Special Edition - Disc 1 (Feature)",
+    "detailPath": "/admin/disc-scan-parity/2533"
+  },
+  {
+    "id": 2534,
+    "label": "Special Edition - Disc 2 (Bonus)",
+    "detailPath": "/admin/disc-scan-parity/2534"
+  },
+  {
+    "id": 2535,
+    "label": "2026 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2535"
+  },
+  {
+    "id": 2536,
+    "label": "Blu-RAY + DVD + DIGITAL HD - dvd",
+    "detailPath": "/admin/disc-scan-parity/2536"
+  },
+  {
+    "id": 2537,
+    "label": "2015 Blu-ray Extended Cut German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2537"
+  },
+  {
+    "id": 2538,
+    "label": "2009 Blu-ray German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2538"
+  },
+  {
+    "id": 2539,
+    "label": "2026 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2539"
+  },
+  {
+    "id": 2540,
+    "label": "2026 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2540"
+  },
+  {
+    "id": 2541,
+    "label": "Season 1 Blu-ray - Season 1, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2541"
+  },
+  {
+    "id": 2542,
+    "label": "Season 1 Blu-ray - Season 1, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2542"
+  },
+  {
+    "id": 2544,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 6 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2544"
+  },
+  {
+    "id": 2545,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 6 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2545"
+  },
+  {
+    "id": 2546,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 6 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2546"
+  },
+  {
+    "id": 2547,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 6 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2547"
+  },
+  {
+    "id": 2548,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 7 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2548"
+  },
+  {
+    "id": 2549,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 7 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2549"
+  },
+  {
+    "id": 2550,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 7 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2550"
+  },
+  {
+    "id": 2551,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 7 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2551"
+  },
+  {
+    "id": 2552,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 8 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2552"
+  },
+  {
+    "id": 2553,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 8 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2553"
+  },
+  {
+    "id": 2554,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 8 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2554"
+  },
+  {
+    "id": 2555,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 9 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2555"
+  },
+  {
+    "id": 2556,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 9 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2556"
+  },
+  {
+    "id": 2557,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 9 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2557"
+  },
+  {
+    "id": 2558,
+    "label": "2026 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2558"
+  },
+  {
+    "id": 2559,
+    "label": "The Complete Series - Superfan Extended Episodes - Season 9 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2559"
+  },
+  {
+    "id": 2560,
+    "label": "2026 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2560"
+  },
+  {
+    "id": 2561,
+    "label": "Scream Factory Collector's Edition 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2561"
+  },
+  {
+    "id": 2562,
+    "label": "2015 Blu-ray German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2562"
+  },
+  {
+    "id": 2563,
+    "label": "2012 Blu-ray German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2563"
+  },
+  {
+    "id": 2565,
+    "label": "Scream Factory Collector's Edition 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2565"
+  },
+  {
+    "id": 2566,
+    "label": "4K Collector's Edition - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2566"
+  },
+  {
+    "id": 2567,
+    "label": "4K Collector's Edition - 4K",
+    "detailPath": "/admin/disc-scan-parity/2567"
+  },
+  {
+    "id": 2571,
+    "label": "Shout Select 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2571"
+  },
+  {
+    "id": 2572,
+    "label": "Shout Select 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2572"
+  },
+  {
+    "id": 2574,
+    "label": "Peter Davison Complete Season One - Disc 2: Four to Doomsday",
+    "detailPath": "/admin/disc-scan-parity/2574"
+  },
+  {
+    "id": 2576,
+    "label": "Shout Select Collector's Edition 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2576"
+  },
+  {
+    "id": 2577,
+    "label": "Shout Select Collector's Edition 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2577"
+  },
+  {
+    "id": 2578,
+    "label": "A24 4K Blu-ray - 4K",
+    "detailPath": "/admin/disc-scan-parity/2578"
+  },
+  {
+    "id": 2582,
+    "label": "3D + Blu-ray - Blu-ray [2D]",
+    "detailPath": "/admin/disc-scan-parity/2582"
+  },
+  {
+    "id": 2583,
+    "label": "Peter Davison Complete Season One - Disc 3: Kinda",
+    "detailPath": "/admin/disc-scan-parity/2583"
+  },
+  {
+    "id": 2584,
+    "label": "Kino Lorber 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2584"
+  },
+  {
+    "id": 2585,
+    "label": "Kino Lorber 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2585"
+  },
+  {
+    "id": 2586,
+    "label": "Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2586"
+  },
+  {
+    "id": 2587,
+    "label": "Peter Davison Complete Season One - Disc 4: The Visitation",
+    "detailPath": "/admin/disc-scan-parity/2587"
+  },
+  {
+    "id": 2588,
+    "label": "Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2588"
+  },
+  {
+    "id": 2589,
+    "label": "Peter Davison Complete Season One - Disc 5: Black Orchid",
+    "detailPath": "/admin/disc-scan-parity/2589"
+  },
+  {
+    "id": 2592,
+    "label": "3D + Blu-ray - Blu-ray [3D]",
+    "detailPath": "/admin/disc-scan-parity/2592"
+  },
+  {
+    "id": 2594,
+    "label": "3D + Blu-ray - DVD",
+    "detailPath": "/admin/disc-scan-parity/2594"
+  },
+  {
+    "id": 2595,
+    "label": "The Complete Collection - Season 1 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2595"
+  },
+  {
+    "id": 2596,
+    "label": "The Complete Collection - Season 1 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2596"
+  },
+  {
+    "id": 2597,
+    "label": "The Complete Collection - Season 1 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2597"
+  },
+  {
+    "id": 2598,
+    "label": "The Complete Collection - Season 1 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2598"
+  },
+  {
+    "id": 2599,
+    "label": "2023 Eureka Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2599"
+  },
+  {
+    "id": 2601,
+    "label": "Season 3 Blu-Ray - Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2601"
+  },
+  {
+    "id": 2602,
+    "label": "Season 3 Blu-Ray - Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2602"
+  },
+  {
+    "id": 2603,
+    "label": "Season 3 Blu-Ray - Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2603"
+  },
+  {
+    "id": 2604,
+    "label": "Season 3 Blu-Ray - Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2604"
+  },
+  {
+    "id": 2605,
+    "label": "DVD - Disc 1 (Feature)",
+    "detailPath": "/admin/disc-scan-parity/2605"
+  },
+  {
+    "id": 2606,
+    "label": "DVD - Disc 2 (Bonus)",
+    "detailPath": "/admin/disc-scan-parity/2606"
+  },
+  {
+    "id": 2608,
+    "label": "Peter Davison Complete Season One - Disc 7: Time-Flight",
+    "detailPath": "/admin/disc-scan-parity/2608"
+  },
+  {
+    "id": 2609,
+    "label": "Peter Davison Complete Season Two - Disc 9: The Five Doctors (Special Edition)",
+    "detailPath": "/admin/disc-scan-parity/2609"
+  },
+  {
+    "id": 2610,
+    "label": "Peter Davison Complete Season One - Disc 8: Special Features",
+    "detailPath": "/admin/disc-scan-parity/2610"
+  },
+  {
+    "id": 2611,
+    "label": "Arrow Video Limited Edition 4k - 4K",
+    "detailPath": "/admin/disc-scan-parity/2611"
+  },
+  {
+    "id": 2613,
+    "label": "A24 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2613"
+  },
+  {
+    "id": 2614,
+    "label": "20th Anniversary Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2614"
+  },
+  {
+    "id": 2615,
+    "label": "Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2615"
+  },
+  {
+    "id": 2616,
+    "label": "2025 4K - UK - UHD",
+    "detailPath": "/admin/disc-scan-parity/2616"
+  },
+  {
+    "id": 2617,
+    "label": "2025 4K - UK - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2617"
+  },
+  {
+    "id": 2618,
+    "label": "2025 4K - UK - 4K",
+    "detailPath": "/admin/disc-scan-parity/2618"
+  },
+  {
+    "id": 2619,
+    "label": "2025 4K - UK - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2619"
+  },
+  {
+    "id": 2621,
+    "label": "2022 4K - German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2621"
+  },
+  {
+    "id": 2623,
+    "label": "2022 4K - German - Specials",
+    "detailPath": "/admin/disc-scan-parity/2623"
+  },
+  {
+    "id": 2624,
+    "label": "2024 4K - Italian - 4K",
+    "detailPath": "/admin/disc-scan-parity/2624"
+  },
+  {
+    "id": 2625,
+    "label": "2024 4K - Italian - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2625"
+  },
+  {
+    "id": 2626,
+    "label": "2018 4K UHD - German - 4K",
+    "detailPath": "/admin/disc-scan-parity/2626"
+  },
+  {
+    "id": 2627,
+    "label": "2018 4K UHD - German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2627"
+  },
+  {
+    "id": 2628,
+    "label": "2017 4K UHD Final Cut - German - 4K",
+    "detailPath": "/admin/disc-scan-parity/2628"
+  },
+  {
+    "id": 2629,
+    "label": "2017 4K UHD Final Cut - German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2629"
+  },
+  {
+    "id": 2630,
+    "label": "Blu-Ray + Digital Copy - Movie & Special Features",
+    "detailPath": "/admin/disc-scan-parity/2630"
+  },
+  {
+    "id": 2631,
+    "label": "2026 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2631"
+  },
+  {
+    "id": 2634,
+    "label": "Arrow Video 4k - 4K",
+    "detailPath": "/admin/disc-scan-parity/2634"
+  },
+  {
+    "id": 2636,
+    "label": "The Complete First Season - Disc One",
+    "detailPath": "/admin/disc-scan-parity/2636"
+  },
+  {
+    "id": 2637,
+    "label": "Promo - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2637"
+  },
+  {
+    "id": 2638,
+    "label": "Arrow 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2638"
+  },
+  {
+    "id": 2639,
+    "label": "The Complete First Season - Disc Two",
+    "detailPath": "/admin/disc-scan-parity/2639"
+  },
+  {
+    "id": 2640,
+    "label": "The Complete First Season - Disc Three",
+    "detailPath": "/admin/disc-scan-parity/2640"
+  },
+  {
+    "id": 2641,
+    "label": "The Complete Series - DVD - Season 1 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2641"
+  },
+  {
+    "id": 2642,
+    "label": "Exclusive DVD Premiere - DVD",
+    "detailPath": "/admin/disc-scan-parity/2642"
+  },
+  {
+    "id": 2643,
+    "label": "Paramount Presents 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2643"
+  },
+  {
+    "id": 2644,
+    "label": "Paramount Presents 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2644"
+  },
+  {
+    "id": 2645,
+    "label": "Tom Baker Complete Season One - Disc 4: Genesis of the Daleks",
+    "detailPath": "/admin/disc-scan-parity/2645"
+  },
+  {
+    "id": 2646,
+    "label": "Tom Baker Complete Season One - Disc 5: Revenge of the Cybermen",
+    "detailPath": "/admin/disc-scan-parity/2646"
+  },
+  {
+    "id": 2647,
+    "label": "2024 Blu-ray - The Musical 4K UHD",
+    "detailPath": "/admin/disc-scan-parity/2647"
+  },
+  {
+    "id": 2648,
+    "label": "2017 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2648"
+  },
+  {
+    "id": 2649,
+    "label": "2-Side Widescreen DVD - Side A: Feature Film",
+    "detailPath": "/admin/disc-scan-parity/2649"
+  },
+  {
+    "id": 2650,
+    "label": "2-Disc Multi-Format Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2650"
+  },
+  {
+    "id": 2651,
+    "label": "Volume 3 - Disc 02",
+    "detailPath": "/admin/disc-scan-parity/2651"
+  },
+  {
+    "id": 2652,
+    "label": "2-Side Widescreen DVD - Side B: Special Features",
+    "detailPath": "/admin/disc-scan-parity/2652"
+  },
+  {
+    "id": 2653,
+    "label": "2-Disc Multi-Format Blu-ray - DVD",
+    "detailPath": "/admin/disc-scan-parity/2653"
+  },
+  {
+    "id": 2654,
+    "label": "Volume 3 - Disc 03",
+    "detailPath": "/admin/disc-scan-parity/2654"
+  },
+  {
+    "id": 2655,
+    "label": "Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2655"
+  },
+  {
+    "id": 2656,
+    "label": "Volume 3 - Disc 01",
+    "detailPath": "/admin/disc-scan-parity/2656"
+  },
+  {
+    "id": 2657,
+    "label": "2017 Blu-ray - Main Feature",
+    "detailPath": "/admin/disc-scan-parity/2657"
+  },
+  {
+    "id": 2658,
+    "label": "Tom Baker Complete Season One - Disc 6: Special Features",
+    "detailPath": "/admin/disc-scan-parity/2658"
+  },
+  {
+    "id": 2659,
+    "label": "4K Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2659"
+  },
+  {
+    "id": 2660,
+    "label": "2-Side Multi-Format DVD - Side A - Widescreen",
+    "detailPath": "/admin/disc-scan-parity/2660"
+  },
+  {
+    "id": 2661,
+    "label": "4K Blu-ray - 4K",
+    "detailPath": "/admin/disc-scan-parity/2661"
+  },
+  {
+    "id": 2662,
+    "label": "2-Side Multi-Format DVD - Side B - Fullscreen",
+    "detailPath": "/admin/disc-scan-parity/2662"
+  },
+  {
+    "id": 2663,
+    "label": "Colin Baker Complete Season Two - Disc 1: The Trial of a Time Lord - The Mysterious Planet",
+    "detailPath": "/admin/disc-scan-parity/2663"
+  },
+  {
+    "id": 2664,
+    "label": "Arrow Video Blu-Ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2664"
+  },
+  {
+    "id": 2665,
+    "label": "2024 4K UHD - German - 4K",
+    "detailPath": "/admin/disc-scan-parity/2665"
+  },
+  {
+    "id": 2666,
+    "label": "2024 4K UHD - German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2666"
+  },
+  {
+    "id": 2668,
+    "label": "2021 4K UHD - German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2668"
+  },
+  {
+    "id": 2669,
+    "label": "2019 4K UHD - German - 4K",
+    "detailPath": "/admin/disc-scan-parity/2669"
+  },
+  {
+    "id": 2670,
+    "label": "The Complete Series - Season One Disc One",
+    "detailPath": "/admin/disc-scan-parity/2670"
+  },
+  {
+    "id": 2671,
+    "label": "2019 4K UHD - German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2671"
+  },
+  {
+    "id": 2672,
+    "label": "The Complete Series - Season One Disc Two",
+    "detailPath": "/admin/disc-scan-parity/2672"
+  },
+  {
+    "id": 2673,
+    "label": "2018 4K UHD - German - 4K",
+    "detailPath": "/admin/disc-scan-parity/2673"
+  },
+  {
+    "id": 2674,
+    "label": "2018 4K UHD - German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2674"
+  },
+  {
+    "id": 2676,
+    "label": "2 Disc Platinum Edition - Disc 1 (Feature)",
+    "detailPath": "/admin/disc-scan-parity/2676"
+  },
+  {
+    "id": 2677,
+    "label": "Ben-Hur (1959) - Ben-Hur (1959) Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2677"
+  },
+  {
+    "id": 2678,
+    "label": "Ben-Hur (1959) - Ben-Hur (1959) Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2678"
+  },
+  {
+    "id": 2679,
+    "label": "Ben-Hur (1959) - Ben-Hur (1959) Bonus Disc",
+    "detailPath": "/admin/disc-scan-parity/2679"
+  },
+  {
+    "id": 2680,
+    "label": "Ben-Hur: A Tale of the Christ - Ben-Hur: A Tale of the Christ (1925)",
+    "detailPath": "/admin/disc-scan-parity/2680"
+  },
+  {
+    "id": 2683,
+    "label": "Extreme Edition Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2683"
+  },
+  {
+    "id": 2684,
+    "label": "2026 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2684"
+  },
+  {
+    "id": 2685,
+    "label": "Criterion 4k - 4K",
+    "detailPath": "/admin/disc-scan-parity/2685"
+  },
+  {
+    "id": 2686,
+    "label": "Warner Archive Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2686"
+  },
+  {
+    "id": 2687,
+    "label": "Warner Archive Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2687"
+  },
+  {
+    "id": 2688,
+    "label": "Warner Archive Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2688"
+  },
+  {
+    "id": 2689,
+    "label": "Warner Archive Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2689"
+  },
+  {
+    "id": 2690,
+    "label": "Warner Archive Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2690"
+  },
+  {
+    "id": 2691,
+    "label": "Criterion 4k - Supplements",
+    "detailPath": "/admin/disc-scan-parity/2691"
+  },
+  {
+    "id": 2693,
+    "label": "The Complete Series - Season Two Disc One",
+    "detailPath": "/admin/disc-scan-parity/2693"
+  },
+  {
+    "id": 2695,
+    "label": "4K Ultra HD - 4K Ultra HD Main Feature",
+    "detailPath": "/admin/disc-scan-parity/2695"
+  },
+  {
+    "id": 2696,
+    "label": "4K Ultra HD - Blu-Ray Main Feature",
+    "detailPath": "/admin/disc-scan-parity/2696"
+  },
+  {
+    "id": 2697,
+    "label": "4K Ultra HD - Special Features",
+    "detailPath": "/admin/disc-scan-parity/2697"
+  },
+  {
+    "id": 2698,
+    "label": "The Complete Series - Season Two Disc Two",
+    "detailPath": "/admin/disc-scan-parity/2698"
+  },
+  {
+    "id": 2700,
+    "label": "The Complete Series (Blu-ray) - Season 1 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2700"
+  },
+  {
+    "id": 2701,
+    "label": "Complete First Season - Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2701"
+  },
+  {
+    "id": 2702,
+    "label": "The Complete Series (Blu-ray) - Season 1 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2702"
+  },
+  {
+    "id": 2703,
+    "label": "Complete First Season - Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2703"
+  },
+  {
+    "id": 2704,
+    "label": "Complete First Season - Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2704"
+  },
+  {
+    "id": 2705,
+    "label": "Curious George 5 Movie Collection - DVD",
+    "detailPath": "/admin/disc-scan-parity/2705"
+  },
+  {
+    "id": 2706,
+    "label": "The Complete Series (Blu-ray) - Season 1 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2706"
+  },
+  {
+    "id": 2707,
+    "label": "The Complete Series (Blu-ray) - Season 1 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2707"
+  },
+  {
+    "id": 2708,
+    "label": "The Complete Series (Blu-ray) - Season 2 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2708"
+  },
+  {
+    "id": 2709,
+    "label": "The Complete Series (Blu-ray) - Season 2 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2709"
+  },
+  {
+    "id": 2710,
+    "label": "The Complete Series (Blu-ray) - Season 2 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2710"
+  },
+  {
+    "id": 2711,
+    "label": "Warner Archive Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2711"
+  },
+  {
+    "id": 2712,
+    "label": "The Complete Series (Blu-ray) - Season 2 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2712"
+  },
+  {
+    "id": 2713,
+    "label": "The Complete Series (Blu-ray) - Season 3 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2713"
+  },
+  {
+    "id": 2714,
+    "label": "The Complete Jacques Tati - Jour de Fête",
+    "detailPath": "/admin/disc-scan-parity/2714"
+  },
+  {
+    "id": 2715,
+    "label": "The Complete Jacques Tati - Monsieur Hulot's Holiday",
+    "detailPath": "/admin/disc-scan-parity/2715"
+  },
+  {
+    "id": 2716,
+    "label": "The Complete Series (Blu-ray) - Season 3 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2716"
+  },
+  {
+    "id": 2717,
+    "label": "2003 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2717"
+  },
+  {
+    "id": 2718,
+    "label": "The Complete Jacques Tati - Mon Oncle",
+    "detailPath": "/admin/disc-scan-parity/2718"
+  },
+  {
+    "id": 2719,
+    "label": "The Complete Jacques Tati - PlayTime",
+    "detailPath": "/admin/disc-scan-parity/2719"
+  },
+  {
+    "id": 2721,
+    "label": "4K UHD - Feature Film (4K UHD)",
+    "detailPath": "/admin/disc-scan-parity/2721"
+  },
+  {
+    "id": 2722,
+    "label": "The Complete Jacques Tati - Trafic",
+    "detailPath": "/admin/disc-scan-parity/2722"
+  },
+  {
+    "id": 2723,
+    "label": "The Complete Jacques Tati - Parade",
+    "detailPath": "/admin/disc-scan-parity/2723"
+  },
+  {
+    "id": 2724,
+    "label": "4K UHD - Bonus Disc",
+    "detailPath": "/admin/disc-scan-parity/2724"
+  },
+  {
+    "id": 2725,
+    "label": "4K UHD - Feature Film (Blu-ray)",
+    "detailPath": "/admin/disc-scan-parity/2725"
+  },
+  {
+    "id": 2727,
+    "label": "The Complete Series (Blu-ray) - Season 3 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2727"
+  },
+  {
+    "id": 2728,
+    "label": "The Complete Jacques Tati - Tati Shorts",
+    "detailPath": "/admin/disc-scan-parity/2728"
+  },
+  {
+    "id": 2729,
+    "label": "The Complete Series (Blu-ray) - Season 3 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2729"
+  },
+  {
+    "id": 2730,
+    "label": "Widescreen 30th Anniversary Edition - DVD",
+    "detailPath": "/admin/disc-scan-parity/2730"
+  },
+  {
+    "id": 2733,
+    "label": "The Complete Series - Season Three Disc One",
+    "detailPath": "/admin/disc-scan-parity/2733"
+  },
+  {
+    "id": 2734,
+    "label": "The Complete Series - Season Three Disc Two",
+    "detailPath": "/admin/disc-scan-parity/2734"
+  },
+  {
+    "id": 2735,
+    "label": "The Complete Series - Season Three Disc Three",
+    "detailPath": "/admin/disc-scan-parity/2735"
+  },
+  {
+    "id": 2736,
+    "label": "The Complete Series - Season Three Disc Four",
+    "detailPath": "/admin/disc-scan-parity/2736"
+  },
+  {
+    "id": 2737,
+    "label": "Curious George 5 Movie Collection - DVD",
+    "detailPath": "/admin/disc-scan-parity/2737"
+  },
+  {
+    "id": 2741,
+    "label": "15th Anniversary Edition - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2741"
+  },
+  {
+    "id": 2742,
+    "label": "Atlantis: The Lost Empire & Milo's Return - Atlantis: The Lost Empire & Milo's Return",
+    "detailPath": "/admin/disc-scan-parity/2742"
+  },
+  {
+    "id": 2743,
+    "label": "Atlantis: The Lost Empire & Milo's Return - Atlantis: The Lost Empire & Milo's Return",
+    "detailPath": "/admin/disc-scan-parity/2743"
+  },
+  {
+    "id": 2746,
+    "label": "Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2746"
+  },
+  {
+    "id": 2747,
+    "label": "The Complete Series - Season Four Disc One",
+    "detailPath": "/admin/disc-scan-parity/2747"
+  },
+  {
+    "id": 2748,
+    "label": "The Complete Series - Season Four Disc Two",
+    "detailPath": "/admin/disc-scan-parity/2748"
+  },
+  {
+    "id": 2749,
+    "label": "The Complete Series - Season Four Disc Three",
+    "detailPath": "/admin/disc-scan-parity/2749"
+  },
+  {
+    "id": 2750,
+    "label": "Atlantis: The Lost Empire & Milo's Return - Atlantis: Milo's Return DVD",
+    "detailPath": "/admin/disc-scan-parity/2750"
+  },
+  {
+    "id": 2751,
+    "label": "Atlantis: The Lost Empire & Milo's Return - Atlantis: The Lost Empire DVD",
+    "detailPath": "/admin/disc-scan-parity/2751"
+  },
+  {
+    "id": 2754,
+    "label": "2015 Blu-ray (Nordic) - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2754"
+  },
+  {
+    "id": 2757,
+    "label": "The Qatsi Trilogy - Koyaanisqatsi",
+    "detailPath": "/admin/disc-scan-parity/2757"
+  },
+  {
+    "id": 2760,
+    "label": "4K UHD - Feature Film (4K UHD)",
+    "detailPath": "/admin/disc-scan-parity/2760"
+  },
+  {
+    "id": 2762,
+    "label": "The Qatsi Trilogy - Powaqqatsi",
+    "detailPath": "/admin/disc-scan-parity/2762"
+  },
+  {
+    "id": 2763,
+    "label": "The Complete Series - Season Four Disc Four",
+    "detailPath": "/admin/disc-scan-parity/2763"
+  },
+  {
+    "id": 2764,
+    "label": "The Complete Series - Season Five Disc One",
+    "detailPath": "/admin/disc-scan-parity/2764"
+  },
+  {
+    "id": 2766,
+    "label": "The Qatsi Trilogy - Naqoyqatsi",
+    "detailPath": "/admin/disc-scan-parity/2766"
+  },
+  {
+    "id": 2768,
+    "label": "The Complete Series - Season Five Disc Two",
+    "detailPath": "/admin/disc-scan-parity/2768"
+  },
+  {
+    "id": 2770,
+    "label": "The Complete Series - Season Five Disc Three",
+    "detailPath": "/admin/disc-scan-parity/2770"
+  },
+  {
+    "id": 2776,
+    "label": "2021 Blu-ray - Disc 02",
+    "detailPath": "/admin/disc-scan-parity/2776"
+  },
+  {
+    "id": 2777,
+    "label": "2021 Blu-ray - Disc 03",
+    "detailPath": "/admin/disc-scan-parity/2777"
+  },
+  {
+    "id": 2779,
+    "label": "2022 Blu Ray - Disc 01",
+    "detailPath": "/admin/disc-scan-parity/2779"
+  },
+  {
+    "id": 2780,
+    "label": "Gilmore Girls: The Series - Season 2 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2780"
+  },
+  {
+    "id": 2783,
+    "label": "2010 Blu-ray - Disc 01",
+    "detailPath": "/admin/disc-scan-parity/2783"
+  },
+  {
+    "id": 2784,
+    "label": "2019 Blu-ray - Disc 01",
+    "detailPath": "/admin/disc-scan-parity/2784"
+  },
+  {
+    "id": 2785,
+    "label": "The Complete Series Blu-ray - Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2785"
+  },
+  {
+    "id": 2788,
+    "label": "Criterion 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2788"
+  },
+  {
+    "id": 2789,
+    "label": "Gilmore Girls: The Series - Season 3 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2789"
+  },
+  {
+    "id": 2793,
+    "label": "Arrow Video 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2793"
+  },
+  {
+    "id": 2795,
+    "label": "4K (UHD) - 4K (UHD)",
+    "detailPath": "/admin/disc-scan-parity/2795"
+  },
+  {
+    "id": 2796,
+    "label": "4K Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2796"
+  },
+  {
+    "id": 2797,
+    "label": "4K Blu-ray - 4K",
+    "detailPath": "/admin/disc-scan-parity/2797"
+  },
+  {
+    "id": 2798,
+    "label": "Collector's Edition Shout Select - 4K",
+    "detailPath": "/admin/disc-scan-parity/2798"
+  },
+  {
+    "id": 2799,
+    "label": "Collector's Edition Shout Select - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2799"
+  },
+  {
+    "id": 2800,
+    "label": "Season Two - Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2800"
+  },
+  {
+    "id": 2801,
+    "label": "Season Two - Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2801"
+  },
+  {
+    "id": 2805,
+    "label": "4K UHD / Blu-ray Amazon Exclusive Steelbook - Movie (4K IMAX Switching Aspect Ratio)",
+    "detailPath": "/admin/disc-scan-parity/2805"
+  },
+  {
+    "id": 2806,
+    "label": "The Complete Series Blu-ray - Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2806"
+  },
+  {
+    "id": 2807,
+    "label": "The Complete Series Blu-ray - Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2807"
+  },
+  {
+    "id": 2808,
+    "label": "The Complete Series Blu-ray - Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2808"
+  },
+  {
+    "id": 2809,
+    "label": "The Complete Series Blu-ray - Disc 5",
+    "detailPath": "/admin/disc-scan-parity/2809"
+  },
+  {
+    "id": 2810,
+    "label": "4K + Digital - 4K",
+    "detailPath": "/admin/disc-scan-parity/2810"
+  },
+  {
+    "id": 2812,
+    "label": "2025 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2812"
+  },
+  {
+    "id": 2813,
+    "label": "4K UHD - Feature Film (Blu-ray)",
+    "detailPath": "/admin/disc-scan-parity/2813"
+  },
+  {
+    "id": 2815,
+    "label": "4K UHD - Feature Film (4k UHD)",
+    "detailPath": "/admin/disc-scan-parity/2815"
+  },
+  {
+    "id": 2816,
+    "label": "4k UHD - Feature Film (4K UHD)",
+    "detailPath": "/admin/disc-scan-parity/2816"
+  },
+  {
+    "id": 2818,
+    "label": "2025 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2818"
+  },
+  {
+    "id": 2819,
+    "label": "2025 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2819"
+  },
+  {
+    "id": 2821,
+    "label": "Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2821"
+  },
+  {
+    "id": 2822,
+    "label": "Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2822"
+  },
+  {
+    "id": 2823,
+    "label": "Criterion Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2823"
+  },
+  {
+    "id": 2824,
+    "label": "4k UHD - Feature Film (Blu-ray)",
+    "detailPath": "/admin/disc-scan-parity/2824"
+  },
+  {
+    "id": 2826,
+    "label": "2023 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2826"
+  },
+  {
+    "id": 2828,
+    "label": "60th Anniversary Edition (4K UHD) - Feature Film (4K UHD)",
+    "detailPath": "/admin/disc-scan-parity/2828"
+  },
+  {
+    "id": 2835,
+    "label": "60th Anniversary Edition (4K UHD) - Feature Film (Blu-ray)",
+    "detailPath": "/admin/disc-scan-parity/2835"
+  },
+  {
+    "id": 2836,
+    "label": "60th Anniversary Edition (4K UHD) - Bonus Disc (Blu-ray)",
+    "detailPath": "/admin/disc-scan-parity/2836"
+  },
+  {
+    "id": 2840,
+    "label": "2025 DVD Blu-ray Combo - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2840"
+  },
+  {
+    "id": 2842,
+    "label": "2025 DVD Blu-ray Combo - DVD",
+    "detailPath": "/admin/disc-scan-parity/2842"
+  },
+  {
+    "id": 2845,
+    "label": "The Complete Twenty-Sixth Season Blu-ray - Season 26, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2845"
+  },
+  {
+    "id": 2846,
+    "label": "The Complete Series (Blu-ray) - Season 4 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2846"
+  },
+  {
+    "id": 2847,
+    "label": "The Complete Series (Blu-ray) - Season 4 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2847"
+  },
+  {
+    "id": 2849,
+    "label": "The Complete Series (Blu-ray) - Season 4 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2849"
+  },
+  {
+    "id": 2851,
+    "label": "The Complete Series (Blu-ray) - Season 4 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2851"
+  },
+  {
+    "id": 2854,
+    "label": "The Complete Series (Blu-ray) - Season 5 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2854"
+  },
+  {
+    "id": 2855,
+    "label": "The Complete Series (Blu-ray) - Season 5 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2855"
+  },
+  {
+    "id": 2856,
+    "label": "2025 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2856"
+  },
+  {
+    "id": 2857,
+    "label": "The Complete Series (Blu-ray) - Season 5 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2857"
+  },
+  {
+    "id": 2858,
+    "label": "The Complete Series (Blu-ray) - Season 5 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2858"
+  },
+  {
+    "id": 2859,
+    "label": "4K + Digital - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2859"
+  },
+  {
+    "id": 2860,
+    "label": "The Complete Series (Blu-ray) - Season 6 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2860"
+  },
+  {
+    "id": 2861,
+    "label": "The Complete Series (Blu-ray) - Season 6 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2861"
+  },
+  {
+    "id": 2862,
+    "label": "The Complete Series (Blu-ray) - Season 6 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2862"
+  },
+  {
+    "id": 2863,
+    "label": "Arrow Video 4K Limited Edition - 4K",
+    "detailPath": "/admin/disc-scan-parity/2863"
+  },
+  {
+    "id": 2865,
+    "label": "2017 4K UHD - German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2865"
+  },
+  {
+    "id": 2866,
+    "label": "2017 4K UHD - German - 4K",
+    "detailPath": "/admin/disc-scan-parity/2866"
+  },
+  {
+    "id": 2867,
+    "label": "2017 4K UHD - German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2867"
+  },
+  {
+    "id": 2868,
+    "label": "2017 4K UHD - German - 4K",
+    "detailPath": "/admin/disc-scan-parity/2868"
+  },
+  {
+    "id": 2869,
+    "label": "2017 4K UHD - German - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2869"
+  },
+  {
+    "id": 2870,
+    "label": "2017 4K UHD - German - 4K",
+    "detailPath": "/admin/disc-scan-parity/2870"
+  },
+  {
+    "id": 2872,
+    "label": "2017 4K UHD - German - 4K",
+    "detailPath": "/admin/disc-scan-parity/2872"
+  },
+  {
+    "id": 2874,
+    "label": "2017 4K UHD - German - 4K",
+    "detailPath": "/admin/disc-scan-parity/2874"
+  },
+  {
+    "id": 2875,
+    "label": "2021 4K UHD - Movie (4K UHD)",
+    "detailPath": "/admin/disc-scan-parity/2875"
+  },
+  {
+    "id": 2876,
+    "label": "2021 4K UHD - Movie (Blu-Ray)",
+    "detailPath": "/admin/disc-scan-parity/2876"
+  },
+  {
+    "id": 2879,
+    "label": "50th Anniversary Edition - Jaws @ 50: The Definitive Inside Story",
+    "detailPath": "/admin/disc-scan-parity/2879"
+  },
+  {
+    "id": 2880,
+    "label": "40th Aniversary - Movie (4K UHD)",
+    "detailPath": "/admin/disc-scan-parity/2880"
+  },
+  {
+    "id": 2883,
+    "label": "The Complete Collection Blu-ray - Season 1, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2883"
+  },
+  {
+    "id": 2884,
+    "label": "25th Anniversary 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2884"
+  },
+  {
+    "id": 2886,
+    "label": "The Complete Collection Blu-ray - Season 2, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2886"
+  },
+  {
+    "id": 2887,
+    "label": "25th Anniversary 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2887"
+  },
+  {
+    "id": 2889,
+    "label": "Pidax DVD - DVD 1",
+    "detailPath": "/admin/disc-scan-parity/2889"
+  },
+  {
+    "id": 2890,
+    "label": "Pidax DVD - DVD 2",
+    "detailPath": "/admin/disc-scan-parity/2890"
+  },
+  {
+    "id": 2891,
+    "label": "Pidax DVD - DVD 3",
+    "detailPath": "/admin/disc-scan-parity/2891"
+  },
+  {
+    "id": 2893,
+    "label": "2018 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2893"
+  },
+  {
+    "id": 2894,
+    "label": "The Complete Collection Blu-ray - Season 3, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2894"
+  },
+  {
+    "id": 2896,
+    "label": "The Complete Collection Blu-ray - Season 4, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2896"
+  },
+  {
+    "id": 2898,
+    "label": "Remember the Titans (Blu-ray) - Remember the Titans",
+    "detailPath": "/admin/disc-scan-parity/2898"
+  },
+  {
+    "id": 2899,
+    "label": "The Complete Collection Blu-ray - Season 5, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2899"
+  },
+  {
+    "id": 2900,
+    "label": "Arrow Video 4K Limited Edition - 4K",
+    "detailPath": "/admin/disc-scan-parity/2900"
+  },
+  {
+    "id": 2903,
+    "label": "2027 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2903"
+  },
+  {
+    "id": 2904,
+    "label": "4K Blu-ray - 4K",
+    "detailPath": "/admin/disc-scan-parity/2904"
+  },
+  {
+    "id": 2905,
+    "label": "The Complete Series (Blu-ray) - Season 6 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2905"
+  },
+  {
+    "id": 2906,
+    "label": "The Complete Collection Blu-ray - Season 5, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2906"
+  },
+  {
+    "id": 2907,
+    "label": "The Complete Series (Blu-ray) - Season 7 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2907"
+  },
+  {
+    "id": 2908,
+    "label": "The Complete Collection Blu-ray - Season 6, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2908"
+  },
+  {
+    "id": 2909,
+    "label": "The Complete Collection Blu-ray - Season 6, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2909"
+  },
+  {
+    "id": 2910,
+    "label": "The Complete Collection Blu-ray - Season 7, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2910"
+  },
+  {
+    "id": 2911,
+    "label": "2006 DVD - DVD",
+    "detailPath": "/admin/disc-scan-parity/2911"
+  },
+  {
+    "id": 2912,
+    "label": "The Complete Series (Blu-ray) - Season 7 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2912"
+  },
+  {
+    "id": 2914,
+    "label": "Scream Factory 4K Collector's Edition - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2914"
+  },
+  {
+    "id": 2915,
+    "label": "The Complete Series (Blu-ray) - Season 7 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2915"
+  },
+  {
+    "id": 2916,
+    "label": "The Complete Collection Blu-ray - Final Seasons, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2916"
+  },
+  {
+    "id": 2917,
+    "label": "Scream Factory 4K Collector's Edition - 4K",
+    "detailPath": "/admin/disc-scan-parity/2917"
+  },
+  {
+    "id": 2918,
+    "label": "Earth from Above: Stunning Water (Blu-ray) - Earth from Above: Stunning Water",
+    "detailPath": "/admin/disc-scan-parity/2918"
+  },
+  {
+    "id": 2919,
+    "label": "The Complete Collection Blu-ray - Final Seasons, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2919"
+  },
+  {
+    "id": 2920,
+    "label": "The Complete Series (Blu-ray) - Season 7 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2920"
+  },
+  {
+    "id": 2921,
+    "label": "Scream Factory 4K Limited Edition Steelbook - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2921"
+  },
+  {
+    "id": 2922,
+    "label": "Scream Factory 4K Limited Edition Steelbook - 4K",
+    "detailPath": "/admin/disc-scan-parity/2922"
+  },
+  {
+    "id": 2923,
+    "label": "The Complete Collection Blu-ray - Final Seasons, Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2923"
+  },
+  {
+    "id": 2924,
+    "label": "Mortal Kombat Kollection - Mortal Kombat",
+    "detailPath": "/admin/disc-scan-parity/2924"
+  },
+  {
+    "id": 2925,
+    "label": "The Complete Series (Blu-ray) - Season 8 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2925"
+  },
+  {
+    "id": 2926,
+    "label": "Mortal Kombat Kollection - Mortal Kombat: Annihilation",
+    "detailPath": "/admin/disc-scan-parity/2926"
+  },
+  {
+    "id": 2927,
+    "label": "The Complete Series (Blu-ray) - Season 8 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2927"
+  },
+  {
+    "id": 2928,
+    "label": "2018 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/2928"
+  },
+  {
+    "id": 2929,
+    "label": "The Complete Series (Blu-ray) - Season 8 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2929"
+  },
+  {
+    "id": 2930,
+    "label": "The Complete Series Blu-ray - Season 1, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2930"
+  },
+  {
+    "id": 2931,
+    "label": "The Complete Series (Blu-ray) - Season 8 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2931"
+  },
+  {
+    "id": 2932,
+    "label": "The Complete Series Blu-ray - Season 2, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2932"
+  },
+  {
+    "id": 2933,
+    "label": "BLU-RAY + DVD + DIGITAL HD - Bonus Disc",
+    "detailPath": "/admin/disc-scan-parity/2933"
+  },
+  {
+    "id": 2934,
+    "label": "BLU-RAY + DVD + DIGITAL HD - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2934"
+  },
+  {
+    "id": 2940,
+    "label": "The Complete Series (Blu-ray) - Season 9 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2940"
+  },
+  {
+    "id": 2941,
+    "label": "Criterion Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2941"
+  },
+  {
+    "id": 2942,
+    "label": "The Complete Series (Blu-ray) - Season 9 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2942"
+  },
+  {
+    "id": 2943,
+    "label": "The Complete First Season (DVD) - Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2943"
+  },
+  {
+    "id": 2944,
+    "label": "The Complete Series (Blu-ray) - Season 9 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2944"
+  },
+  {
+    "id": 2945,
+    "label": "The Complete First Season (DVD) - Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2945"
+  },
+  {
+    "id": 2946,
+    "label": "The Complete First Season (DVD) - Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2946"
+  },
+  {
+    "id": 2947,
+    "label": "BLU-RAY + DIGITAL - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2947"
+  },
+  {
+    "id": 2948,
+    "label": "The Complete First Season (DVD) - Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2948"
+  },
+  {
+    "id": 2950,
+    "label": "The Complete First Season (DVD) - Disc 5",
+    "detailPath": "/admin/disc-scan-parity/2950"
+  },
+  {
+    "id": 2951,
+    "label": "Gilmore Girls: The Series - Season 4 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2951"
+  },
+  {
+    "id": 2953,
+    "label": "The Complete Series (Blu-ray) - Season 9 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2953"
+  },
+  {
+    "id": 2957,
+    "label": "The Complete First Season (DVD) - Disc 6",
+    "detailPath": "/admin/disc-scan-parity/2957"
+  },
+  {
+    "id": 2960,
+    "label": "Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2960"
+  },
+  {
+    "id": 2963,
+    "label": "The Complete Series (Blu-ray) - Season 10 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2963"
+  },
+  {
+    "id": 2970,
+    "label": "The Complete Second Season (DVD) - Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2970"
+  },
+  {
+    "id": 2971,
+    "label": "The Complete Series (Blu-ray) - Season 10 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2971"
+  },
+  {
+    "id": 2972,
+    "label": "The Complete Series (Blu-ray) - Season 10 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2972"
+  },
+  {
+    "id": 2973,
+    "label": "The Complete Series (Blu-ray) - Season 10 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/2973"
+  },
+  {
+    "id": 2976,
+    "label": "The Complete Series (Blu-ray) - Bonus Disc",
+    "detailPath": "/admin/disc-scan-parity/2976"
+  },
+  {
+    "id": 2978,
+    "label": "Season 5 [Blu-ray] - Season 5, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2978"
+  },
+  {
+    "id": 2979,
+    "label": "Season 5 [Blu-ray] - Season 5, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2979"
+  },
+  {
+    "id": 2980,
+    "label": "Season 6 [Blu-ray] - Season 6, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2980"
+  },
+  {
+    "id": 2981,
+    "label": "Season 6 [Blu-ray] - Season 6, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2981"
+  },
+  {
+    "id": 2982,
+    "label": "The Complete Series Blu-ray - Season 3, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2982"
+  },
+  {
+    "id": 2983,
+    "label": "4K UHD [Ultimate Collector's Edition] - 4K UHD",
+    "detailPath": "/admin/disc-scan-parity/2983"
+  },
+  {
+    "id": 2984,
+    "label": "2026 Steelbook 4K - Ultra HD Blu-ray (4K Ultra HD)",
+    "detailPath": "/admin/disc-scan-parity/2984"
+  },
+  {
+    "id": 2985,
+    "label": "2022 4K Blu-ray - 4K Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2985"
+  },
+  {
+    "id": 2986,
+    "label": "2026 Steelbook 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2986"
+  },
+  {
+    "id": 2987,
+    "label": "The Complete Series Blu-ray - Season 3, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2987"
+  },
+  {
+    "id": 2989,
+    "label": "The Complete Series Blu-ray - Season 3, Disc 3",
+    "detailPath": "/admin/disc-scan-parity/2989"
+  },
+  {
+    "id": 2990,
+    "label": "2022 4K Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2990"
+  },
+  {
+    "id": 2991,
+    "label": "The Complete Series Blu-ray - Season 4, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/2991"
+  },
+  {
+    "id": 2992,
+    "label": "The Complete Series Blu-ray - Season 4, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/2992"
+  },
+  {
+    "id": 2994,
+    "label": "4K Extended Edition - Special Features",
+    "detailPath": "/admin/disc-scan-parity/2994"
+  },
+  {
+    "id": 2995,
+    "label": "4K Extended Edition - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/2995"
+  },
+  {
+    "id": 2996,
+    "label": "4K Extended Edition - 4K",
+    "detailPath": "/admin/disc-scan-parity/2996"
+  },
+  {
+    "id": 2999,
+    "label": "4K UHD [Ultimate Collector's Edition] - The Film + Extras",
+    "detailPath": "/admin/disc-scan-parity/2999"
+  },
+  {
+    "id": 3013,
+    "label": "Criterion Collection 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/3013"
+  },
+  {
+    "id": 3015,
+    "label": "4K Blu-ray - Special Features",
+    "detailPath": "/admin/disc-scan-parity/3015"
+  },
+  {
+    "id": 3016,
+    "label": "4K Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3016"
+  },
+  {
+    "id": 3018,
+    "label": "4K Blu-ray - 4K",
+    "detailPath": "/admin/disc-scan-parity/3018"
+  },
+  {
+    "id": 3019,
+    "label": "The Complete Series (Blu-ray) - Season 1 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3019"
+  },
+  {
+    "id": 3020,
+    "label": "The Complete Series (Blu-ray) - Season 1 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3020"
+  },
+  {
+    "id": 3021,
+    "label": "The Complete Series (Blu-ray) - Season 1 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3021"
+  },
+  {
+    "id": 3022,
+    "label": "The Complete Series (Blu-ray) - Season 1 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/3022"
+  },
+  {
+    "id": 3023,
+    "label": "Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3023"
+  },
+  {
+    "id": 3024,
+    "label": "Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3024"
+  },
+  {
+    "id": 3025,
+    "label": "Blu-Ray - Blu-Ray",
+    "detailPath": "/admin/disc-scan-parity/3025"
+  },
+  {
+    "id": 3026,
+    "label": "Kino Lorber 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3026"
+  },
+  {
+    "id": 3027,
+    "label": "Criterion Collection 4K - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3027"
+  },
+  {
+    "id": 3028,
+    "label": "Kino Lorber 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/3028"
+  },
+  {
+    "id": 3029,
+    "label": "The Complete Series Blu-ray - Season 5, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3029"
+  },
+  {
+    "id": 3031,
+    "label": "The Complete Series Blu-ray - Season 5, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3031"
+  },
+  {
+    "id": 3032,
+    "label": "The Complete Series Blu-ray - Season 6, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3032"
+  },
+  {
+    "id": 3033,
+    "label": "The Complete Series Blu-ray - Season 6, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3033"
+  },
+  {
+    "id": 3034,
+    "label": "The Complete Series Blu-ray - Season 7, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3034"
+  },
+  {
+    "id": 3036,
+    "label": "The Complete Series Blu-ray - Season 7, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3036"
+  },
+  {
+    "id": 3037,
+    "label": "The Complete Series Blu-ray - Season 8, Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3037"
+  },
+  {
+    "id": 3038,
+    "label": "The Complete Series Blu-ray - Season 8, Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3038"
+  },
+  {
+    "id": 3041,
+    "label": "The Complete Series (Blu-ray) - Season 2 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3041"
+  },
+  {
+    "id": 3042,
+    "label": "The Complete Series (Blu-ray) - Season 2 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3042"
+  },
+  {
+    "id": 3043,
+    "label": "The Complete Series (Blu-ray) - Season 2 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3043"
+  },
+  {
+    "id": 3044,
+    "label": "The Complete Series (Blu-ray) - Season 2 Disc 4",
+    "detailPath": "/admin/disc-scan-parity/3044"
+  },
+  {
+    "id": 3045,
+    "label": "The Complete Series Blu-ray - Regular Show: The Movie",
+    "detailPath": "/admin/disc-scan-parity/3045"
+  },
+  {
+    "id": 3046,
+    "label": "2026 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3046"
+  },
+  {
+    "id": 3047,
+    "label": "2025 4K - 4K",
+    "detailPath": "/admin/disc-scan-parity/3047"
+  },
+  {
+    "id": 3048,
+    "label": "Double Sided Fullscreen + Widescreen - Side 1 (Widescreen)",
+    "detailPath": "/admin/disc-scan-parity/3048"
+  },
+  {
+    "id": 3049,
+    "label": "Double Sided Fullscreen + Widescreen - Side 2 (Fullscreen)",
+    "detailPath": "/admin/disc-scan-parity/3049"
+  },
+  {
+    "id": 3051,
+    "label": "The Office The Complete Series - Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3051"
+  },
+  {
+    "id": 3052,
+    "label": "(Blu-ray + Digital Copy) - Disc 1 (Feature)",
+    "detailPath": "/admin/disc-scan-parity/3052"
+  },
+  {
+    "id": 3053,
+    "label": "The Complete Third Season DVD - Disc One",
+    "detailPath": "/admin/disc-scan-parity/3053"
+  },
+  {
+    "id": 3054,
+    "label": "[Blu-ray + DVD + Digital HD] - Bluray",
+    "detailPath": "/admin/disc-scan-parity/3054"
+  },
+  {
+    "id": 3056,
+    "label": "[Blu-ray + DVD + Digital HD] - Bluray",
+    "detailPath": "/admin/disc-scan-parity/3056"
+  },
+  {
+    "id": 3057,
+    "label": "[Blu-ray + DVD + Digital HD] - Bluray",
+    "detailPath": "/admin/disc-scan-parity/3057"
+  },
+  {
+    "id": 3058,
+    "label": "The Complete Third Season DVD - Disc Two",
+    "detailPath": "/admin/disc-scan-parity/3058"
+  },
+  {
+    "id": 3059,
+    "label": "The Complete Third Season DVD - Disc Three",
+    "detailPath": "/admin/disc-scan-parity/3059"
+  },
+  {
+    "id": 3060,
+    "label": "The Complete Third Season DVD - Disc Four",
+    "detailPath": "/admin/disc-scan-parity/3060"
+  },
+  {
+    "id": 3061,
+    "label": "2022 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3061"
+  },
+  {
+    "id": 3062,
+    "label": "Season Four DVD - Disc One",
+    "detailPath": "/admin/disc-scan-parity/3062"
+  },
+  {
+    "id": 3063,
+    "label": "Scream Factory 4K UHD Collector's Edition - 4K",
+    "detailPath": "/admin/disc-scan-parity/3063"
+  },
+  {
+    "id": 3064,
+    "label": "Season Four DVD - Disc Two",
+    "detailPath": "/admin/disc-scan-parity/3064"
+  },
+  {
+    "id": 3065,
+    "label": "Season Four DVD - Disc Three",
+    "detailPath": "/admin/disc-scan-parity/3065"
+  },
+  {
+    "id": 3066,
+    "label": "Season Four DVD - Disc Four",
+    "detailPath": "/admin/disc-scan-parity/3066"
+  },
+  {
+    "id": 3069,
+    "label": "The Complete Series (DVD) - Season 1 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3069"
+  },
+  {
+    "id": 3071,
+    "label": "The Complete Series (DVD) - Season 1 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3071"
+  },
+  {
+    "id": 3072,
+    "label": "The Complete Series (DVD) - Season 1 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3072"
+  },
+  {
+    "id": 3073,
+    "label": "2015 Blu-ray - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3073"
+  },
+  {
+    "id": 3075,
+    "label": "The Complete Series (DVD) - Season 2 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3075"
+  },
+  {
+    "id": 3077,
+    "label": "The Complete Series (DVD) - Season 2 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3077"
+  },
+  {
+    "id": 3078,
+    "label": "The Complete Series (DVD) - Season 2 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3078"
+  },
+  {
+    "id": 3079,
+    "label": "20th Anniversary Edition Blu-ray+ DVD - Bluray",
+    "detailPath": "/admin/disc-scan-parity/3079"
+  },
+  {
+    "id": 3080,
+    "label": "The Complete Series (DVD) - Season 3 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3080"
+  },
+  {
+    "id": 3081,
+    "label": "The Complete Series (DVD) - Season 3 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3081"
+  },
+  {
+    "id": 3082,
+    "label": "The Complete Kubrick - Killer's Kiss 4K",
+    "detailPath": "/admin/disc-scan-parity/3082"
+  },
+  {
+    "id": 3084,
+    "label": "The Complete Series (DVD) - Season 3 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3084"
+  },
+  {
+    "id": 3085,
+    "label": "The Complete Kubrick - Killer's Kiss Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3085"
+  },
+  {
+    "id": 3086,
+    "label": "The Complete Kubrick - The Killing Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3086"
+  },
+  {
+    "id": 3087,
+    "label": "The Complete Kubrick - The Killing 4K",
+    "detailPath": "/admin/disc-scan-parity/3087"
+  },
+  {
+    "id": 3088,
+    "label": "The Complete Kubrick - Paths of Glory Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3088"
+  },
+  {
+    "id": 3089,
+    "label": "The Complete Kubrick - Paths of Glory 4K",
+    "detailPath": "/admin/disc-scan-parity/3089"
+  },
+  {
+    "id": 3090,
+    "label": "2022 bluray - bluray-disc",
+    "detailPath": "/admin/disc-scan-parity/3090"
+  },
+  {
+    "id": 3091,
+    "label": "The Complete Kubrick - Spartacus Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3091"
+  },
+  {
+    "id": 3092,
+    "label": "The Complete Kubrick - Spartacus 4K",
+    "detailPath": "/admin/disc-scan-parity/3092"
+  },
+  {
+    "id": 3093,
+    "label": "The Complete Series (DVD) - Season 4 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3093"
+  },
+  {
+    "id": 3094,
+    "label": "The Complete Series (DVD) - Season 4 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3094"
+  },
+  {
+    "id": 3095,
+    "label": "2026 Toy Robot 4K UHD US - 4K UHD Theatrical Cut + Extras",
+    "detailPath": "/admin/disc-scan-parity/3095"
+  },
+  {
+    "id": 3096,
+    "label": "2026 Toy Robot 4K UHD US - 4K UHD Preview Cut + Extras",
+    "detailPath": "/admin/disc-scan-parity/3096"
+  },
+  {
+    "id": 3097,
+    "label": "2017 Warner 4K UHD US - 4K UHD",
+    "detailPath": "/admin/disc-scan-parity/3097"
+  },
+  {
+    "id": 3098,
+    "label": "2017 Warner 4K UHD US - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3098"
+  },
+  {
+    "id": 3099,
+    "label": "The Complete Series (DVD) - Season 4 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3099"
+  },
+  {
+    "id": 3100,
+    "label": "The Complete Series (DVD) - Season 5 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3100"
+  },
+  {
+    "id": 3101,
+    "label": "The Complete Kubrick - Lolita Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3101"
+  },
+  {
+    "id": 3102,
+    "label": "The Complete Kubrick - Lolita 4K",
+    "detailPath": "/admin/disc-scan-parity/3102"
+  },
+  {
+    "id": 3103,
+    "label": "The Complete Series (DVD) - Season 5 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3103"
+  },
+  {
+    "id": 3104,
+    "label": "The Complete Series (DVD) - Season 5 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3104"
+  },
+  {
+    "id": 3105,
+    "label": "The Complete Kubrick - Dr. Strangelove Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3105"
+  },
+  {
+    "id": 3106,
+    "label": "The Complete Kubrick - Dr. Strangelove 4K",
+    "detailPath": "/admin/disc-scan-parity/3106"
+  },
+  {
+    "id": 3107,
+    "label": "The Complete Kubrick - 2001: A Space Odyssey 4K",
+    "detailPath": "/admin/disc-scan-parity/3107"
+  },
+  {
+    "id": 3108,
+    "label": "The Complete Series (DVD) - Season 6 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3108"
+  },
+  {
+    "id": 3109,
+    "label": "The Complete Kubrick - 2001: A Space Odyssey Blu-ray 1",
+    "detailPath": "/admin/disc-scan-parity/3109"
+  },
+  {
+    "id": 3110,
+    "label": "20th Anniversary Edition Blu-ray+ DVD - DVD",
+    "detailPath": "/admin/disc-scan-parity/3110"
+  },
+  {
+    "id": 3111,
+    "label": "The Complete Kubrick - 2001: A Space Odyssey Blu-ray 2",
+    "detailPath": "/admin/disc-scan-parity/3111"
+  },
+  {
+    "id": 3112,
+    "label": "The Complete Series (DVD) - Season 6 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3112"
+  },
+  {
+    "id": 3113,
+    "label": "The Complete Kubrick - A Clockwork Orange 4K",
+    "detailPath": "/admin/disc-scan-parity/3113"
+  },
+  {
+    "id": 3114,
+    "label": "The Complete Series (DVD) - Season 6 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3114"
+  },
+  {
+    "id": 3115,
+    "label": "The Complete Kubrick - A Clockwork Orange Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3115"
+  },
+  {
+    "id": 3116,
+    "label": "The Complete Series (DVD) - Season 7 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3116"
+  },
+  {
+    "id": 3119,
+    "label": "The Complete Kubrick - Barry Lyndon Blu-ray 2",
+    "detailPath": "/admin/disc-scan-parity/3119"
+  },
+  {
+    "id": 3120,
+    "label": "The Complete Kubrick - The Shining 4K 1",
+    "detailPath": "/admin/disc-scan-parity/3120"
+  },
+  {
+    "id": 3122,
+    "label": "The Complete Series (DVD) - Season 7 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3122"
+  },
+  {
+    "id": 3123,
+    "label": "The Complete Kubrick - The Shining 4K 2",
+    "detailPath": "/admin/disc-scan-parity/3123"
+  },
+  {
+    "id": 3124,
+    "label": "The Complete Kubrick - The Shining Blu-ray 1",
+    "detailPath": "/admin/disc-scan-parity/3124"
+  },
+  {
+    "id": 3125,
+    "label": "The Complete Kubrick - The Shining Blu-ray 2",
+    "detailPath": "/admin/disc-scan-parity/3125"
+  },
+  {
+    "id": 3126,
+    "label": "The Complete Kubrick - Full Metal Jacket Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3126"
+  },
+  {
+    "id": 3127,
+    "label": "The Complete Kubrick - Full Metal Jacket 4K",
+    "detailPath": "/admin/disc-scan-parity/3127"
+  },
+  {
+    "id": 3128,
+    "label": "The Sing-Along Edition [Blu-ray + Digital] - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3128"
+  },
+  {
+    "id": 3130,
+    "label": "The Sing-Along Edition [Blu-ray + Digital] - DVD",
+    "detailPath": "/admin/disc-scan-parity/3130"
+  },
+  {
+    "id": 3132,
+    "label": "The Complete Kubrick - Eyes Wide Shut Blu-ray 2",
+    "detailPath": "/admin/disc-scan-parity/3132"
+  },
+  {
+    "id": 3133,
+    "label": "The Complete Kubrick - Additional Supplements",
+    "detailPath": "/admin/disc-scan-parity/3133"
+  },
+  {
+    "id": 3135,
+    "label": "A24 4K Blu-ray - 4K",
+    "detailPath": "/admin/disc-scan-parity/3135"
+  },
+  {
+    "id": 3136,
+    "label": "A24 4K Blu-ray - 4K",
+    "detailPath": "/admin/disc-scan-parity/3136"
+  },
+  {
+    "id": 3137,
+    "label": "The Complete Series (DVD) - Season 7 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3137"
+  },
+  {
+    "id": 3138,
+    "label": "Limited Edition 4K UHD Steelbook - Ultra HD Blu-ray (4K Ultra HD)",
+    "detailPath": "/admin/disc-scan-parity/3138"
+  },
+  {
+    "id": 3139,
+    "label": "The Complete Series (DVD) - Season 8 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3139"
+  },
+  {
+    "id": 3144,
+    "label": "The Complete Series (DVD) - Season 8 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3144"
+  },
+  {
+    "id": 3145,
+    "label": "The Complete Series (DVD) - Season 8 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3145"
+  },
+  {
+    "id": 3146,
+    "label": "The Complete Series (DVD) - Season 9 Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3146"
+  },
+  {
+    "id": 3147,
+    "label": "The Complete Series (DVD) - Season 9 Disc 2",
+    "detailPath": "/admin/disc-scan-parity/3147"
+  },
+  {
+    "id": 3148,
+    "label": "The Complete Series (DVD) - Season 9 Disc 3",
+    "detailPath": "/admin/disc-scan-parity/3148"
+  },
+  {
+    "id": 3150,
+    "label": "2019 Blu Ray Reissue - Feature",
+    "detailPath": "/admin/disc-scan-parity/3150"
+  },
+  {
+    "id": 3151,
+    "label": "10th Anniversary Edition [Shout Select - 4K & Blu-ray] - 4K",
+    "detailPath": "/admin/disc-scan-parity/3151"
+  },
+  {
+    "id": 3152,
+    "label": "10th Anniversary Edition [Shout Select - 4K & Blu-ray] - Blu-ray",
+    "detailPath": "/admin/disc-scan-parity/3152"
+  },
+  {
+    "id": 3153,
+    "label": "The Complete Series (DVD) - Bonus Disc",
+    "detailPath": "/admin/disc-scan-parity/3153"
+  },
+  {
+    "id": 3155,
+    "label": "The Complete First Season - Disc 1 (Episodes 1-10)",
+    "detailPath": "/admin/disc-scan-parity/3155"
+  },
+  {
+    "id": 3156,
+    "label": "2020 Blu-ray - Blu Ray",
+    "detailPath": "/admin/disc-scan-parity/3156"
+  },
+  {
+    "id": 3168,
+    "label": "Season 1 [Blu-ray] - Disc 1",
+    "detailPath": "/admin/disc-scan-parity/3168"
+  }
+]
