@@ -20,6 +20,13 @@ file-sync tool (ContributionBuddy) to write back into `/data` via a PR.
 
 🔵 **Proposed** — no implementation started.
 
+Source reviewed 2026-10-29: the domain/import models do not implement the proposed
+partial reason/note markers, published badges, resolution lifecycle, or partial-data
+hub. [`IntakeReleaseDisc.IsPlaceholder`](../code/TheDiscDb.Data/Models/IntakeReleaseDisc.cs)
+and `FailureReason` already support **staging-only** placeholders; they do not
+implement this feature. [Rapid Intake](FEATURE-RAPID-DISC-INTAKE.md) is shipped
+independently.
+
 | Phase | Scope |
 |-------|-------|
 | **Phase 1** | Declaration + persistence: `partial { reason, note }` on `disc*.json` and `release.json`/`boxset.json`; DB columns; import reads them; contributor declaration UI (incl. the "I don't intend to identify this disc" escape hatch); auto-flag zero-item discs; **badges on release + disc detail pages**; the DB-immediate / applied-but-unsynced **sync rail**. |
@@ -43,8 +50,8 @@ file-sync tool (ContributionBuddy) to write back into `/data` via a PR.
 - **Edit-suggestion sync rail** (`IEditSuggestionSyncService`): approved changes are applied to
   the DB (`Status = Applied`, `SyncedToFilesAt == null`); the batch tool reads unsynced changes,
   opens a `/data` PR, then calls `MarkSyncedAsync`. Edit suggestions already handle editing disc
-  items; their Phase 2 backlog lists **"whole-disc add/remove"** as pending — **this feature owns
-  that**.
+  items. This feature owns **adding a missing disc to an existing release**;
+  arbitrary whole-disc removal remains an edit-suggestion backlog item.
 
 ## 4. Taxonomy of partial data
 
@@ -101,8 +108,8 @@ build):
 ### 5.5 Resolution flows
 - **Missing disc → retargeted disc-contribution**: reuse the normal disc-contribution pipeline
   (submit disc logs/images → identify), but **attach to the existing release** instead of creating
-  a new one; it flows through the normal contribution **review/import**. (Supersedes the edit-
-  suggestion "whole-disc add/remove" backlog item.)
+  a new one; it flows through the normal contribution **review/import**. (Owns the
+  missing-disc addition part of the edit-suggestion backlog, not arbitrary disc removal.)
 - **Partial / empty disc → existing suggested-edit flow**: contributors already can add/edit disc
   items via edit suggestions; approving those fills in the identification.
 

@@ -3,6 +3,11 @@
 > Status: **Proposed / future work.** This is a reference design captured for later
 > execution. No code in this document has been implemented yet.
 
+Source reviewed 2026-10-29: blob serving predates this plan, while web and tools
+generators still write images into the data workspace and `data/main` still tracks
+images. The migration phases below remain unimplemented; no extraction/parity or
+history-rewrite completion is claimed.
+
 ## Problem
 
 The `TheDiscDb/data` git repo holds both JSON metadata **and** the master image
@@ -26,18 +31,20 @@ rewrite history so the repo shrinks.
 - **Runtime already serves images from blob**, not the repo: ImageSharp +
   `AzureBlobStorageImageProvider` reads from the container named by
   `BlobStorage:Container`, transcodes to WebP, caches in the `imagecache` container
-  (`code/TheDiscDb/Program.cs:220-274`).
+  (`code/TheDiscDb/Program.cs`).
 - **`ImageUrl` stored in DB/JSON is already the blob path** e.g. `movie/<slug>/cover.jpg`,
   `movie/<slug>/<release>.jpg`, `movie/<slug>/<release>-back.jpg`, `boxset/<slug>.jpg`
   (`code/TheDiscDb.Data.Import/Pipeline/CoverImageUploadMiddleware.cs`).
 - **Two code paths upload repo images to blob today** (idempotent, skip-if-exists):
   - `BlobSyncService` (DatabaseMigration) — walks the repo, uploads any missing image.
   - `CoverImageUploadMiddleware` — during seed; also rewrites `ImageUrl` in the JSON.
-- **The path that RE-INTRODUCES images into the repo**:
+- **Paths that RE-INTRODUCE images into the repo**:
   `ContributionGeneratorService` writes `cover.jpg`/`front.jpg`/`back.jpg` into the
   data-repo workspace when generating files for an approved contribution
-  (`code/TheDiscDb/Services/Admin/ContributionGeneratorService.cs:126,287-308`). This
-  must be redirected to blob.
+  (`code/TheDiscDb/Services/Admin/ContributionGeneratorService.cs`). In the sibling
+  tools repository, `tools/ContributionBuddy/GenerateReleaseTask.cs` and
+  `GenerateBoxsetTask.cs` also write poster/front/back images. **All** these
+  generation paths must be redirected; changing only the web service is insufficient.
 - Image blob layout is the canonical `IStaticAssetStore` path scheme; the master
   container = the existing serving container (`BlobStorage:Container`). No new container
   is strictly required, though a dedicated one is an option.
@@ -51,10 +58,12 @@ rewrite history so the repo shrinks.
 - **No history rewrite (stop-the-bleeding only)**: rejected — repo would stay large.
 - **Fresh repo cutover**: rejected in favor of in-place history rewrite.
 
-## Scope note: two repos
+## Scope note: three repos
 
-- **`web` repo (this repo):** code changes (redirect contribution image writes to blob,
+- **`web` repo (this repo):** code changes (redirect web contribution image writes to blob,
   master-store rename-on-replace, local-dev read-only blob config, docs/guards).
+- **`tools` repo (sibling):** redirect ContributionBuddy release/boxset image
+  generation to the master store and stop staging image files in generated commits.
 - **`data` repo (separate):** the actual image extraction + history rewrite + force-push.
   This document covers the procedure; execution happens against that repo.
 
@@ -69,11 +78,13 @@ rewrite history so the repo shrinks.
   in `BlobStorageStaticAssetStore` (or a small helper) and wire into the
   contribution-image upload path. Keep ImageSharp serving the live name.
 
-### Phase 2 — Stop new images entering the data repo (web repo)
+### Phase 2 — Stop new images entering the data repo (web + tools repos)
 - Redirect `ContributionGeneratorService` image handling: upload approved
   front/back/cover images straight to the master images container (canonical path)
   instead of writing `.jpg` files into the data-repo workspace. Remove those `.jpg`
   paths from `generatedFiles` so they're not committed to the data repo.
+- Apply the same rule to ContributionBuddy's `GenerateReleaseTask` and
+  `GenerateBoxsetTask`, including poster downloads and boxset covers.
 - Verify the seed/import pipeline tolerates a repo with **no** local image files:
   `CoverImageUploadMiddleware`/`BlobSyncService` already `Exists`-check on disk and
   no-op when absent; `ImageUrl` comes from `metadata.json`/`release.json`. Add tests

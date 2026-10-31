@@ -53,7 +53,7 @@ public static class NavigationExtensions
             return string.Empty;
         }
 
-         // Make sure the slug from the file is lowercased
+        // Make sure the slug from the file is lowercased
         return $"{release.ReleaseDetailUrl(parentItem)}/discs/{disc.SlugOrIndex().ToLower()}";
     }
 
@@ -179,11 +179,16 @@ public static class NavigationExtensions
         return string.Empty;
     }
 
+    public static bool IsTrackType(this Track track, string type) =>
+        string.Equals(track.Type, type, StringComparison.OrdinalIgnoreCase)
+        || (string.Equals(type, "Subtitles", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(track.Type, "Subtitle", StringComparison.OrdinalIgnoreCase));
+
     public static string GetDesciption(this Track track)
     {
         if (track?.Type != null)
         {
-            string type = track.Type.ToLower();
+            string type = track.Type.ToLowerInvariant();
             if (type == "video")
             {
                 return $"{track.Name} {track.AspectRatio} ({track.Resolution})";
@@ -192,7 +197,7 @@ public static class NavigationExtensions
             {
                 return $"{track.Name} {track.AudioType} ({track.Language})";
             }
-            else if (type == "subtitles")
+            else if (type is "subtitles" or "subtitle")
             {
                 return $"{track.Name} ({track.Language})";
             }

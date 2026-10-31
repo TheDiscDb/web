@@ -24,6 +24,12 @@ page); this spec does not fold it in, though a future Settings hub could co-loca
 
 🔵 **Proposed** — no implementation started.
 
+Source reviewed 2026-10-29: there is no `UserPreferences` model/service,
+email-preferences UI, or tokenized unsubscribe endpoint.
+[`Account/Manage`](../code/TheDiscDb/Components/Account/Index.razor) still shows
+the username and logout. Both notification services retain the static mailto
+unsubscribe header. Existing notification delivery is not completion of this plan.
+
 | Phase | Scope |
 |-------|-------|
 | **Phase 1** | `UserPreferences` table + migration; shared `IUserEmailPreferenceService` wired into **both** notification services (enforcement + real `List-Unsubscribe` header); tokenized one-click unsubscribe endpoint + landing page; email-preferences UI on `Account/Manage`. Categories: Contribution updates, Edit-suggestion updates, Direct messages, plus the master switch. |
@@ -40,8 +46,10 @@ preferences store.
   *imported*, and admin *messages*, and emails the admin on new submissions / user replies.
 - **`EditSuggestionNotificationService`** — gated by app-wide
   `EditSuggestionNotificationOptions { NotifyAdmins, NotifyUsers }` (config section
-  `EditSuggestions:Notifications`; both default `false`, so the feature ships dormant). Still
-  not per-user.
+  `EditSuggestions:Notifications`). Both option properties default to `false`,
+  but checked-in `appsettings.json` explicitly enables `NotifyAdmins` and leaves
+  `NotifyUsers` false; development disables both. These are source defaults, not a
+  verification of production settings. There is still no per-user gate.
 
 Both are Mailgun-backed (`MailgunClient` / `MailgunMessage`), render branded HTML from markdown,
 and are best-effort (failures are logged and swallowed).

@@ -44,8 +44,9 @@ builder.Services.AddSingleton<IFileSystem, PhysicalFileSystem>();
 builder.Services.Configure<DataImporterOptions>(builder.Configuration.GetSection("ContributionImport"));
 builder.Services.AddImportPipeline(includeSearchIndex: false);
 
-// DatabaseImportMiddleware and GroupImportMiddleware depend on Scoped IDbContextFactory
-// and UserManager. Override their lifetime to Scoped for this host.
+// These pipeline services depend on scoped IDbContextFactory or UserManager.
+// Override their lifetime to scoped for this host.
+builder.Services.Replace(ServiceDescriptor.Scoped<NewReleaseImportSelector, NewReleaseImportSelector>());
 builder.Services.Replace(ServiceDescriptor.Scoped<DatabaseImportMiddleware, DatabaseImportMiddleware>());
 builder.Services.Replace(ServiceDescriptor.Scoped<GroupImportMiddleware, GroupImportMiddleware>());
 

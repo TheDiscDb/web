@@ -382,15 +382,18 @@ public class DataImportItemFactory
 
     internal static Disc? MatchBoxsetDisc(IReadOnlyCollection<Disc> releaseDiscs, BoxSetDisc boxsetDisc)
     {
+        string? lookupSlug = string.IsNullOrEmpty(boxsetDisc.SourceDiscSlug)
+            ? boxsetDisc.Slug
+            : boxsetDisc.SourceDiscSlug;
         var slugMatch = releaseDiscs.FirstOrDefault(
             candidate => !string.IsNullOrEmpty(candidate.Slug) &&
-                candidate.Slug.Equals(boxsetDisc.Slug, StringComparison.OrdinalIgnoreCase));
+                candidate.Slug.Equals(lookupSlug, StringComparison.OrdinalIgnoreCase));
         if (slugMatch is not null)
         {
             return slugMatch;
         }
 
-        if (int.TryParse(boxsetDisc.Slug, out var refIndex))
+        if (int.TryParse(lookupSlug, out var refIndex))
         {
             var indexMatch = releaseDiscs.FirstOrDefault(candidate => candidate.Index == refIndex);
             if (indexMatch is not null)
@@ -401,7 +404,9 @@ public class DataImportItemFactory
 
         // A single-disc member release is unambiguous even when its release-local box-set slug
         // intentionally differs from the canonical disc slug loaded through a .ref file.
-        return releaseDiscs.Count == 1 ? releaseDiscs.Single() : null;
+        return string.IsNullOrEmpty(boxsetDisc.SourceDiscSlug) && releaseDiscs.Count == 1
+            ? releaseDiscs.Single()
+            : null;
     }
 
     private Series MapSeries(MetadataFile metadata)

@@ -1,6 +1,7 @@
 using KristofferStrube.Blazor.FileAPI;
 using KristofferStrube.Blazor.FileSystem;
 using KristofferStrube.Blazor.FileSystemAccess;
+using KristofferStrube.Blazor.WebIDL;
 using Microsoft.JSInterop;
 using TheDiscDb.Client.Pages.Contribute;
 
@@ -45,7 +46,7 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
             try
             {
                 var root = await this.fileSystemAccessService.ShowDirectoryPickerAsync(
-                    new DirectoryPickerOptionsStartInFileSystemHandle
+                    new DirectoryPickerOptions
                     {
                         Mode = FileSystemPermissionMode.Read,
                     });
@@ -133,11 +134,14 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
         FileSystemDirectoryHandleInProcess directory,
         string path)
     {
-        foreach (var handle in await directory.ValuesAsync())
+        // Keep file handles alive for deferred reads after enumeration.
+        await using var handles = await directory.ValuesAsync(disposePreviousValueWhenMovingToNextValue: false);
+        await foreach (var handle in handles)
         {
+            string name = await handle.GetNameAsync();
             string relativePath = string.IsNullOrEmpty(path)
-                ? handle.Name
-                : $"{path}/{handle.Name}";
+                ? name
+                : $"{path}/{name}";
 
             if (handle is FileSystemDirectoryHandleInProcess childDirectory)
             {

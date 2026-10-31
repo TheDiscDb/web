@@ -1,8 +1,9 @@
 # Disc Deduplication — Future Work
 
-> Status: **Proposed / backlog.** These items build on the shipped
+> Status: **Partial / backlog** (source reviewed 2026-10-29). These items build on the shipped
 > [Canonical Disc Deduplication (Phase 4)](PHASE-4-CANONICAL-DISC-DEDUPLICATION.md)
-> model. Nothing here is implemented or scheduled — pick items off as priorities allow.
+> model. Exact-match copy detection is implemented; the other candidates below
+> are not scheduled.
 
 ## Context
 
@@ -45,12 +46,17 @@ edit-suggestion / change-tracking infrastructure rather than a bespoke table.
 
 ### 2. Smart copy detection
 
-When a user uploads a disc during a contribution, compare its `ContentHash` against
-existing canonical discs before creating a new one:
-- **Exact match** → "This disc is already in the database. Link it?"
-- **Partial/near match** → "This looks similar to disc X. Are you sure you want a new one?"
+> **Status: Partial.** Exact-match detection and the copy confirmation already ship
+> in [`AddDisc.TryCopyFromExistingDisc`](../code/TheDiscDb.Client/Pages/Contribute/AddDisc.razor.cs).
+> Only partial/near-match suggestions remain proposed.
 
-Hook point: the contribution disc-hash flow (`DiscHash`, `UserContributionDisc`).
+The contribution flow hashes the inserted disc, offers to copy an existing matching
+disc, and only attempts intake matching when no published match exists. Import then
+resolves the canonical disc by format/content hash.
+
+Remaining: detect similar but nonidentical discs and ask "This looks similar to
+disc X. Are you sure you want a new one?" Do not treat this as missing exact-match
+deduplication or automatically merge discs based on similarity.
 
 ### 3. Moderator merge tooling
 

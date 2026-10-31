@@ -110,3 +110,22 @@ database, re-run the `gruv-match` task to repopulate Gruv affiliate rows, otherw
 query time via slug pair `(MediaItemSlug | BoxsetSlug, ReleaseSlug)` rather than by
 `Release.Id`, so slugs renamed in `data/` will leave orphaned rows that simply don't
 resolve at query time — harmless.
+
+## UI licensing
+
+Configure the Syncfusion license locally with user-secrets:
+
+```
+dotnet user-secrets set "Syncfusion:LicenseKey" "<key>" --project code\TheDiscDb
+```
+
+In production, set `Syncfusion__LicenseKey` in the web application's environment
+or Azure App Service settings. The server registers this license and
+`WasmConfigMiddleware` includes it in the browser's `/appsettings.json` response,
+where the client registers it too. This keeps the key out of source control,
+but does not hide it from browser users. Never send private credentials through
+this middleware.
+
+Release builds also require a Six Labors license. Set `SixLaborsLicenseFile` to
+the local license-file path; CI uses the `SIXLABORS_LICENSE` GitHub secret.
+Do not commit either license.

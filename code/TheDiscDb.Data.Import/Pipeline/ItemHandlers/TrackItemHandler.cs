@@ -31,5 +31,6 @@ public class TrackItemHandler : ItemHandler<Track>
         fromDatabase.AudioType = newValue.AudioType;
         fromDatabase.LanguageCode = newValue.LanguageCode;
         fromDatabase.Language = newValue.Language;
+        fromDatabase.Description = newValue.Description;
     }
 }

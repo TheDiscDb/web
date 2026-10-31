@@ -2,28 +2,45 @@
 
 ## 1. Summary
 
-Make audio- and subtitle-track labeling in `disc*-summary.txt` **reliable and unambiguous**,
-and extend labeling to **subtitle tracks** (which are not supported today). The raw track list
-originates from the MakeMKV logs (`disc*.txt`); labels should reference those tracks in a way
-that can be validated at import so a label can never silently land on the wrong track.
+Audio- and subtitle-track labeling in `disc*-summary.txt` is implemented end-to-end.
+The raw track list originates from the MakeMKV logs (`disc*.txt`); import resolves
+labels by their 1-based, per-type ordinal and rejects references outside that list.
+This catches structurally invalid references, not a human assigning the wrong name
+to a valid ordinal.
 
 Labels stay in the summary file (per the maintainer's preference), but the format is tightened
 so that:
 - Audio labeling keeps its current index semantics (backward compatible with all existing data).
 - Subtitle labeling is added as a parallel, symmetric mechanism.
 - The importer **validates** every reference against `disc*.txt` and hard-fails on mismatch.
-- A one-time **audit** first measures how much *legacy* hand-authored audio data is actually
-  mislabeled, so any correction effort is driven by real numbers.
+- A read-only **audit tool** flags broken and suspicious legacy audio labels so
+  any correction effort can be driven by evidence.
 
 ## 2. Status
 
-🔵 **Proposed** — no implementation started.
+🟢 **Core shipped** (source reviewed 2026-10-29). Subtitle labeling and strict import
+validation are merged, including the later audio/subtitle naming fixes and clipboard
+controls in [web #123](https://github.com/TheDiscDb/web/pull/123).
+The audit command is implemented; a completed corpus report or cleanup decision is
+not recorded in these repositories.
 
-| Phase | Scope |
-|-------|-------|
-| **Phase 0** | Audit & validation report: scan every `disc*-summary.txt` + `disc*.txt`, resolve each label, flag suspicious/structurally-broken ones, and quantify legacy correctness. Decide from the numbers whether/what to correct. |
-| **Phase 1** | Subtitle labeling end-to-end (data model, contribution UI, GraphQL mutation, serializer, parser, importer) + hard-fail import validation for audio **and** subtitles. Audio format unchanged. |
-| **Phase 2** *(optional)* | Decorative human-readable attributes in the summary output, hand-edit ergonomics, and any auto-correction of legacy data the audit proves is safely fixable. |
+| Phase | State / remaining work |
+|-------|------------------------|
+| **Phase 0** | Tool shipped: ContributionBuddy `audit-tracks <root> --output <report.csv>`. Record a corpus run and triage/correction decision separately; tool existence is not proof the audit was completed. |
+| **Phase 1** | Shipped: model/migration, contribution UI and mutations, summary serializer/parser, strict import validation, edit-sync round-trip, and naming-helper display/copy. Audio ordinal semantics are unchanged. |
+| **Phase 2** *(optional)* | Parser already strips decorative ` #` comments. Serializers still emit bare labels; automatic decorative output, further hand-edit ergonomics, and audit-driven corrections remain optional. |
+
+Implementation evidence:
+- [Contribution subtitle model](../code/TheDiscDb.Data/Models/UserContributionSubtitleTrack.cs)
+  and [mutation](../code/TheDiscDb/GraphQL/Contribute/Mutations/AddSubtitleTrackToItem.cs).
+- [Identify UI](../code/TheDiscDb.Client/Pages/Contribute/IdentifyDiscItems.razor.cs)
+  and [naming helper](../code/TheDiscDb.Client/Pages/Contribute/DiscNamingItemDetail.razor.cs).
+- [Parser](../code/TheDiscDb.Core/SummaryFileParser.cs),
+  [import mapping](../code/TheDiscDb.Import/ImportHelper.cs), and
+  [serializer](../code/TheDiscDb/Services/Admin/SummaryFileSerializer.cs).
+- Sibling tools:
+  [audit command](https://github.com/TheDiscDb/tools/blob/main/tools/ContributionBuddy/TrackLabelAuditTask.cs) and
+  [edit-sync writer](https://github.com/TheDiscDb/tools/blob/main/tools/ContributionBuddy/EditSuggestions/EditSuggestionFileApplier.cs).
 
 ## 3. Background: how it works today
 
@@ -31,9 +48,11 @@ so that:
 `disc*-summary.txt` carries lines like:
 ```
 AudioTrack[2]: Director's Commentary
+SubtitleTrack[1]: English (SDH)
 ```
-- **Writer:** `Services/Admin/SummaryFileSerializer.cs` (`AudioTrack[{Index}]: {Name}`). Audio only.
-- **Parser:** `TheDiscDb.Core/SummaryFileParser.cs` (regex `AudioTrack\[(\d+)\]`). Audio only.
+- **Writers:** web and ContributionBuddy `SummaryFileSerializer` emit both kinds.
+- **Parser:** `TheDiscDb.Core/SummaryFileParser.cs` reads both kinds and strips
+  optional trailing ` #` comments.
 
 ### 3.2 What `[n]` means at import
 `TheDiscDb.Import/ImportHelper.cs` (`DiscFileFinalizer.Map`) resolves `AudioTrack[n]` as the
@@ -59,22 +78,23 @@ foundTrack.Description = track.Name;   // label written to the track's Descripti
 ### 3.4 What contributions store
 - `UserContributionDiscItem.AudioTracks` → `UserContributionAudioTrack { Index (int), Title }`.
   `Index` = the audio-only 1-based ordinal; `Title` = the label.
-- **No subtitle table exists** — subtitles are never captured in a contribution.
+- `UserContributionDiscItem.SubtitleTracks` stores
+  `UserContributionSubtitleTrack { Index, Title }` with the same per-type ordinal rule.
 - **No type/language/codec is stored** on the contribution row; those come live from `disc*.txt`
   via `GetDiscLogs`, so the serializer already has the log at write time (it can emit decorative
   attributes *and* validate).
-- `SubtitleTrack[n]` currently appears **only** as an aspirational comment in
-  `TracksEdit.razor.cs`; nothing reads or writes it.
+- Published-track description edits round-trip through ContributionBuddy's
+  `EditSuggestionFileApplier`: it updates disc JSON and the corresponding summary
+  label, translating the full stream index to a 1-based per-type ordinal.
 
-### 3.5 Why this is a problem
-1. `[n]` is a re-derived **audio-only ordinal**, not the real MakeMKV stream index in `disc*.txt`.
-2. Resolution is **position-only** — there is no identity check, so a wrong index silently
-   mislabels a track.
-3. **Subtitles cannot be labeled at all.**
-4. It **diverges** from the DB / edit-suggestion model, which already keys a track by
-   `(title index, full per-title MakeMKV stream index)` = `InputModels.Track.Index`.
+### 3.5 Remaining limitations
+1. `[n]` is a **per-type ordinal**, not the full MakeMKV stream index.
+2. A valid ordinal can still carry a semantically wrong hand-authored label.
+   Structural validation cannot distinguish same-language main/commentary tracks.
+3. The DB/edit-suggestion model keys tracks by the full stream index, so the sync
+   writer must retain its per-type translation.
 
-## 4. Design
+## 4. Implemented design
 
 ### 4.1 Chosen approach — per-type ordinals ("Approach 2")
 Keep the audio index semantics exactly as they are today (the Nth audio stream, 1-based, in log
@@ -106,11 +126,15 @@ label. Grammar:
 - Any `type · language · codec` after `#` is a **decorative, regenerated** comment: the writer
   may emit it to aid humans; the **reader ignores it**. It is never the source of truth.
 
-Suggested regex:
+The original proposed combined regex was:
 ```
 ^(Audio|Subtitle)Track\[(\d+)\]:\s*([^#]*?)\s*(?:#.*)?$
 ```
 → group 1 = type, group 2 = index (int), group 3 = clean label.
+
+The implementation instead retains separate audio/subtitle patterns and strips
+comments in `CleanTrackName`, starting at the literal ` #` delimiter. A bare `#`
+inside a label is not a comment. Serializers currently emit no decorative suffix.
 
 **Validation is always done against `disc*.txt`, not the string.** `disc*.txt` is committed and
 immutable per release, so it is the source of truth; a stale hand-written comment is harmless.
@@ -126,35 +150,35 @@ Normalize the MakeMKV/DB type strings: the log and DB use **`Subtitles`** (plura
 edit-suggestion code paths use `Subtitle` (singular). The importer and matching logic must treat
 them equivalently.
 
-### 4.4 Contribution storage (new)
-- Add `UserContributionSubtitleTrack { Id, Index (int), Title (string), Item }`, mirroring
+### 4.4 Contribution storage
+- `UserContributionSubtitleTrack { Id, Index (int), Title (string), Item }` mirrors
   `UserContributionAudioTrack`.
-- Add `UserContributionDiscItem.SubtitleTracks` collection.
-- EF Core migration to create the table. **No change** to `UserContributionAudioTrack` or its
+- `UserContributionDiscItem.SubtitleTracks` is persisted by the
+  `AddSubtitleTracks` migration. **No change** to `UserContributionAudioTrack` or its
   existing rows.
 
 ### 4.5 GraphQL
-- Add `AddSubtitleTrackToItem(contributionId, discId, itemId, trackIndex, trackName)` mirroring
+- `AddSubtitleTrackToItem(contributionId, discId, itemId, trackIndex, trackName)` mirrors
   `AddAudioTrackToItem` (upsert by `Index`).
-- Regenerate the client schema/operation (`ContributionGraphQL`).
+- The client schema/operation (`ContributionGraphQL`) includes subtitle labels.
 
 ### 4.6 Contribution UI
-- In `IdentifyDiscItems.razor.cs`, build a subtitle list from
-  `title.Segments.Where(Type == "Subtitles")` (numbered `1..N`, same pattern as audio) and let the
-  user label them; persist via `AddSubtitleTrackToItem`.
-- Surface subtitle tracks in `DiscNamingItemDetail` (display + copy), symmetric to audio.
+- `IdentifyDiscItems.razor.cs` builds a subtitle list from
+  `title.Segments.Where(Type == "Subtitles")` (numbered `1..N`, same pattern as audio) and lets the
+  user label them; labels persist via `AddSubtitleTrackToItem`.
+- `DiscNamingItemDetail` displays and copies subtitle labels, symmetric to audio.
 
 ### 4.7 Serializer & parser
-- `SummaryFileSerializer`: after the `AudioTrack[n]` lines, emit `SubtitleTrack[n]: {label}` for
-  each labeled subtitle track. Optionally emit the decorative `# type · lang · codec` comment
-  (see open questions).
-- `SummaryFileParser`: parse `SubtitleTrack[n]` into a new `SubtitleTrackNames` collection on
-  `DiscFileItem`; strip trailing ` #` comments from both audio and subtitle labels; **keep the
-  existing `AudioTrack[n]` parsing unchanged** for back-compat.
+- `SummaryFileSerializer` emits `SubtitleTrack[n]: {label}` after audio lines for
+  each labeled subtitle track. Automatic decorative output remains optional.
+- `SummaryFileParser` parses `SubtitleTrack[n]` into `DiscFileItem.SubtitleTrackNames`
+  and strips trailing ` #` comments from both types. Existing audio ordinals remain
+  backward compatible.
 
 ### 4.8 Admin edit
-- `TracksEdit` already treats audio + subtitle as describable. Fix the aspirational comment and
-  ensure subtitle descriptions genuinely round-trip once the serializer/parser support exists.
+- `TracksEdit` treats audio + subtitle as describable. The sync writer persists
+  descriptions in JSON and `AudioTrack[n]` / `SubtitleTrack[n]` summary lines;
+  serializer/parser/import support is implemented.
 
 ### 4.9 Phase 0 — audit & validation report
 A tool (or admin report) that runs over the data repo:
@@ -185,32 +209,31 @@ auto-correct them.
 
 ## 6. Risks & considerations
 
-- **Legacy correctness is unknown until Phase 0 runs.** The audit exists precisely to quantify it
-  before any migration/correction is committed.
+- **Legacy correctness needs a recorded Phase 0 report.** The audit tool's presence
+  does not establish that a corpus run or correction pass has occurred.
 - **Same-language main-vs-commentary ambiguity** is inherent and cannot be resolved from logs;
   expect a residual set needing human ears.
 - **Hard-fail imports** could surface pre-existing latent errors in the data repo (labels that
   were always wrong). That is desirable but may require a cleanup pass; the audit front-runs it.
-- **DB→data-repo sync** for track `Description` edits (edit-suggestions) must be confirmed to
-  persist and round-trip subtitle labels correctly once the format supports them.
+- **DB→data-repo sync** for track `Description` edits is implemented for both types
+  and has focused `EditSuggestionFileApplierTests`; preserve that round-trip behavior.
 - **Type-string normalization** (`Subtitle` vs `Subtitles`) must be handled consistently across
   importer, matching, and edit-suggestion code to avoid new mismatches.
 
 ## 7. Open questions
 
-- Emit the decorative `# type · language · codec` comment in serializer output, or keep lines
-  bare (`SubtitleTrack[n]: label`)? *(default: emit it, for hand-editing ergonomics.)*
-- Exact heuristic set for "suspicious" audio labels in the audit (language-name detection,
-  commentary keyword list, channel-count hints).
+- Whether to add decorative `# type · language · codec` output; the shipped choice
+  is bare labels with tolerant comment parsing.
+- Whether to extend the audit's existing language/commentary heuristics.
 - Should the audit also verify **audio** labels created by the new contribution flow (expected
   100% clean) as a control group, to validate the heuristics?
-- Where does the edit-suggestion sync persist track `Description` today (summary vs `discXX.json`),
-  and does subtitle round-trip need work there?
+- Record the corpus audit findings and decide which cases need listening/manual
+  correction. No automatic legacy correction is established by this source review.
 
 ## 8. Rollout / phases
 
-- **Phase 0** — audit & validation report (read-only; no data changes).
-- **Phase 1** — subtitle labeling end-to-end + strict import validation.
+- **Phase 0** — audit tooling shipped; corpus report and cleanup sign-off unverified.
+- **Phase 1** — shipped: subtitle labeling end-to-end + strict import validation.
 - **Phase 2** *(optional)* — decorative attributes, hand-edit ergonomics, and audit-driven
   correction of legacy data proven safely fixable.
 

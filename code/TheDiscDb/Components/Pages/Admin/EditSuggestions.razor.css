@@ -1,0 +1,7 @@
+::deep .striped-grid tbody tr.selectable-suggestion {
+    cursor: pointer;
+}
+
+::deep .striped-grid tbody tr.selected-suggestion {
+    background-color: var(--bs-primary-bg-subtle, #cfe2ff);
+}

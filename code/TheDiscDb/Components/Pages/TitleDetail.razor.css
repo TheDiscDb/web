@@ -64,3 +64,11 @@
     gap: .5rem;
     flex-wrap: wrap;
 }
+
+.track-index {
+    width: 5rem;
+}
+
+.track-table {
+    width: auto;
+}

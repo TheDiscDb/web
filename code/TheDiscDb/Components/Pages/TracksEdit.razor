@@ -6,7 +6,7 @@
 @rendermode InteractiveServer
 @inherits TheDiscDb.Components.AuthenticatedComponentBase
 
-<PageTitle>Edit Tracks - TheDiscDb</PageTitle>
+<PageTitle>Edit Track Names - TheDiscDb</PageTitle>
 
 @if (Item == null || Release == null || Disc == null || Title == null)
 {
@@ -14,12 +14,12 @@
 }
 else if (string.IsNullOrEmpty(Disc.Slug))
 {
-    <TheDiscDb.Client.Controls.Breadcrumb Items="@GetBreadcrumbs()" PrimaryText="Edit Tracks" />
+    <TheDiscDb.Client.Controls.Breadcrumb Items="@GetBreadcrumbs()" PrimaryText="Edit Track Names" />
     <div class="alert alert-info">Track editing isn't available for this disc.</div>
 }
 else
 {
-    <TheDiscDb.Client.Controls.Breadcrumb Items="@GetBreadcrumbs()" PrimaryText="Edit Tracks" />
+    <TheDiscDb.Client.Controls.Breadcrumb Items="@GetBreadcrumbs()" PrimaryText="Edit Track Names" />
 
     @if (!string.IsNullOrEmpty(submitMessage))
     {
@@ -28,29 +28,29 @@ else
 
     @if (!isReviewing)
     {
-        <h1>Suggest Track Edits</h1>
+        <h1>Suggest Track Names</h1>
         <p class="text-muted">
-            Add or correct the description of an audio or subtitle track (for example
+            Add or correct the name of an audio or subtitle track (for example
             "Director's commentary" or "Forced subtitles"). Other track fields come from the
             disc file metadata and can't be changed here. Your changes will be reviewed before
-            being applied.
+            being applied. Leave a name blank to remove it.
         </p>
 
         <section class="info-grid single-column">
             @{ var trackGroups = new[] { "Audio", "Subtitles" }; }
             @foreach (var groupType in trackGroups)
             {
-                var groupRows = rows.Where(r => r.Track.Type == groupType).ToList();
+                var groupRows = rows.Where(r => r.Track.IsTrackType(groupType)).OrderBy(r => r.Track.Index).ToList();
                 if (groupRows.Count > 0)
                 {
                     <h3 class="mt-4 mb-2">@groupType Tracks</h3>
                     <div class="table-responsive">
-                        <table class="table striped-grid mb-0">
+                        <table class="table striped-grid track-table mb-0">
                             <thead>
                                 <tr>
-                                    <th scope="col" style="width: 5rem;">Index</th>
+                                    <th scope="col" class="track-index">Index</th>
                                     <th scope="col">Track</th>
-                                    <th scope="col">Description</th>
+                                    <th scope="col">Name</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -61,7 +61,8 @@ else
                                         <td class="text-muted">@GetTrackContext(row.Track)</td>
                                         <td>
                                             <input type="text" class="form-control form-control-sm"
-                                                   @bind="row.EditDescription" @bind:event="oninput" placeholder="Description (optional)" />
+                                                   aria-label="@($"{groupType} track {row.Track.Index} name")"
+                                                   @bind="row.EditDescription" @bind:event="oninput" placeholder="Name (optional)" />
                                         </td>
                                     </tr>
                                 }
@@ -81,7 +82,7 @@ else
     }
     else
     {
-        <h1>Review Your Track Changes</h1>
+        <h1>Review Your Track Names</h1>
         <p class="text-muted">These changes will be submitted for review by an admin.</p>
 
         <section class="info-grid single-column">
@@ -89,8 +90,8 @@ else
                 <thead>
                     <tr>
                         <th>Track</th>
-                        <th>Current Description</th>
-                        <th>Proposed Description</th>
+                        <th>Current Name</th>
+                        <th>Proposed Name</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -113,8 +114,8 @@ else
             @if (pendingDiffs.Count > 0)
             {
                 <div class="mb-3">
-                    <label>Summary <span class="text-muted">(optional — briefly describe your changes)</span></label>
-                    <input type="text" class="form-control" @bind="summary" />
+                    <label for="track-edit-summary">Summary <span class="text-muted">(optional — briefly describe your changes)</span></label>
+                    <input id="track-edit-summary" type="text" class="form-control" @bind="summary" />
                 </div>
             }
 

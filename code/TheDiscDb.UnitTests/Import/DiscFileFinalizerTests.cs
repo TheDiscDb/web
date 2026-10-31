@@ -71,6 +71,33 @@ public class DiscFileFinalizerTests
     }
 
     [Test]
+    public async Task Map_TrackNamesUsePerKindOrdinalsAcrossInterleavedStreams()
+    {
+        var discInfo = BuildDiscInfoWithTwoSubtitles();
+        discInfo.Titles.Single().Segments.Add(new Segment
+        {
+            Index = 4,
+            Type = "Audio",
+            Language = "English",
+            LanguageCode = "eng",
+            AudioType = "Stereo",
+        });
+        var item = BuildMainMovieItem(new SubtitleTrack(2, "French captions"));
+        item.AudioTrackNames.Add(new AudioTrack(2, "Director commentary"));
+        var discFile = new DiscFile { Index = 1 };
+        discFile.MainMovies.Add(item);
+        var disc = new TheDiscDb.InputModels.Disc();
+
+        DiscFileFinalizer.Map(disc, discFile, discInfo);
+
+        var tracks = disc.Titles.Single().Tracks;
+        await Assert.That(tracks.Single(t => t.Index == 4).Description).IsEqualTo("Director commentary");
+        await Assert.That(tracks.Single(t => t.Index == 3).Description).IsEqualTo("French captions");
+        await Assert.That(tracks.Single(t => t.Index == 1).Description).IsNull();
+        await Assert.That(tracks.Single(t => t.Index == 2).Description).IsNull();
+    }
+
+    [Test]
     public async Task Map_SubtitleTrackIndexOutOfRange_Throws()
     {
         var discInfo = BuildDiscInfoWithTwoSubtitles();

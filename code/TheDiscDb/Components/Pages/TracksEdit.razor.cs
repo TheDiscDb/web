@@ -58,8 +58,7 @@ public partial class TracksEdit : AuthenticatedComponentBase
     private ReleaseDisc? Disc { get; set; }
     private Title? Title { get; set; }
 
-    // One editable row per track on the title. Only the Name is user-editable;
-    // all other fields come from the disc file metadata and are shown read-only.
+    // User-entered names live in Description; Name is metadata from the disc.
     private readonly List<TrackEditRow> rows = [];
 
     private string? summary;
@@ -104,14 +103,14 @@ public partial class TracksEdit : AuthenticatedComponentBase
             // through the summary file as AudioTrack[n]/SubtitleTrack[n] lines.
             // Every other track field (and video descriptions) is regenerated from
             // the disc metadata on each import, so we don't expose them for editing.
-            if (!IsDescribableTrack(track.Type))
+            if (!IsDescribableTrack(track))
             {
                 continue;
             }
 
             var snapshot = TrackFieldsUpdate.SnapshotFrom(
                 track, mediaItemSlug, boxsetSlug, Release.Slug ?? string.Empty, Disc.Slug, Title.Index);
-            rows.Add(new TrackEditRow(track, snapshot) { EditDescription = track.Description });
+            rows.Add(new TrackEditRow(track, snapshot));
         }
     }
 
@@ -154,17 +153,14 @@ public partial class TracksEdit : AuthenticatedComponentBase
         if (Disc != null && !string.IsNullOrEmpty(File))
         {
             string sourceFile = NavigationExtensions.GetSourceFile(File, Extension);
-            Title = Disc.Titles.FirstOrDefault(t =>
-                !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
+            Title = await Cache.GetDiscTitleAsync(Disc.DiscId, sourceFile);
         }
     }
 
     private bool HasChanges() => rows.Any(r => r.HasChange);
 
-    private static bool IsDescribableTrack(string? type) =>
-        string.Equals(type, "Audio", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(type, "Subtitles", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(type, "Subtitle", StringComparison.OrdinalIgnoreCase);
+    private static bool IsDescribableTrack(EntityTrack track) =>
+        track.IsTrackType("Audio") || track.IsTrackType("Subtitles");
 
     private void ShowReview()
     {
@@ -253,7 +249,7 @@ public partial class TracksEdit : AuthenticatedComponentBase
         {
             "video" => Join(track.AspectRatio, Parenthesize(track.Resolution)),
             "audio" => Join(track.AudioType, Parenthesize(track.Language)),
-            "subtitles" => Parenthesize(track.Language),
+            "subtitles" or "subtitle" => Parenthesize(track.Language),
             _ => string.Empty,
         };
 
@@ -320,13 +316,13 @@ public partial class TracksEdit : AuthenticatedComponentBase
     private bool IsBoxset() =>
         Type?.Equals("boxset", StringComparison.OrdinalIgnoreCase) == true;
 
-    private sealed class TrackEditRow(EntityTrack track, TrackFieldsDetails original)
+    internal sealed class TrackEditRow(EntityTrack track, TrackFieldsDetails original)
     {
         public EntityTrack Track { get; } = track;
 
         public TrackFieldsDetails Original { get; } = original;
 
-        public string? EditDescription { get; set; }
+        public string? EditDescription { get; set; } = original.Description;
 
         // Empty string clears the description (removes the summary line). null and
         // empty are treated as equivalent so an untouched blank row isn't a change.

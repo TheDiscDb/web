@@ -19,10 +19,12 @@ public class WasmConfigMiddleware
 
         var publicApiKey = configuration.GetValue<string>("GraphQL:ApiKeyAuthentication:PublicApiKey");
         var apiKeyAuthEnabled = configuration.GetValue<bool>("GraphQL:ApiKeyAuthentication:Enabled");
+        var syncfusionLicenseKey = configuration["Syncfusion:LicenseKey"];
         var discScanMode = configuration.GetValue<string>($"{DiscScanOptions.SectionName}:DiscScanMode")
             ?? DiscScanMode.Optional.ToString();
         var showScanFileUpload = configuration.GetValue<bool>($"{DiscScanOptions.SectionName}:{nameof(DiscScanOptions.ShowScanFileUpload)}");
         if ((apiKeyAuthEnabled && !string.IsNullOrEmpty(publicApiKey))
+            || !string.IsNullOrWhiteSpace(syncfusionLicenseKey)
             || !string.IsNullOrEmpty(discScanMode))
         {
             var fileInfo = env.WebRootFileProvider.GetFileInfo("appsettings.json");
@@ -44,6 +46,13 @@ public class WasmConfigMiddleware
                 auth["PublicApiKey"] = publicApiKey;
                 graphql["ApiKeyAuthentication"] = auth;
                 json["GraphQL"] = graphql;
+            }
+
+            if (!string.IsNullOrWhiteSpace(syncfusionLicenseKey))
+            {
+                var syncfusion = json["Syncfusion"] as JsonObject ?? new JsonObject();
+                syncfusion["LicenseKey"] = syncfusionLicenseKey;
+                json["Syncfusion"] = syncfusion;
             }
 
             var contributions = json[DiscScanOptions.SectionName] as JsonObject ?? new JsonObject();

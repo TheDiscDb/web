@@ -1,0 +1,12 @@
+.track-index {
+    width: 5rem;
+}
+
+.track-table {
+    width: auto;
+}
+
+.track-table input {
+    width: 24rem;
+    max-width: 100%;
+}

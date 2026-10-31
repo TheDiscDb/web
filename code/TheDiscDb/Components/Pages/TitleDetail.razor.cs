@@ -87,8 +87,7 @@ public partial class TitleDetail : ComponentBase
         if (Disc != null && !string.IsNullOrEmpty(File))
         {
             string sourceFile = NavigationExtensions.GetSourceFile(this.File, this.Extension);
-            Title = Disc.Titles.FirstOrDefault(t =>
-                !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
+            Title = await Cache!.GetDiscTitleAsync(Disc.DiscId, sourceFile);
         }
     }
 
@@ -115,8 +114,7 @@ public partial class TitleDetail : ComponentBase
         if (Disc != null && !string.IsNullOrEmpty(File))
         {
             string sourceFile = NavigationExtensions.GetSourceFile(this.File, this.Extension);
-            Title = Disc.Titles.FirstOrDefault(t =>
-                !string.IsNullOrEmpty(t.SourceFile) && t.SourceFile.Equals(sourceFile, StringComparison.OrdinalIgnoreCase));
+            Title = await Cache!.GetDiscTitleAsync(Disc.DiscId, sourceFile);
         }
     }
 
@@ -142,11 +140,12 @@ public partial class TitleDetail : ComponentBase
 
     private string GetTracksEditUrl()
     {
+        var sourceFile = string.IsNullOrEmpty(Extension) ? File : $"{File}/{Extension}";
         if (ReleaseSlug != null)
         {
-            return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex}/{File}/{Extension}/tracks/edit";
+            return $"/{Type}/{Slug}/releases/{ReleaseSlug}/discs/{SlugOrIndex}/{sourceFile}/tracks/edit";
         }
 
-        return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{File}/{Extension}/tracks/edit";
+        return $"/{Type}/{Slug}/discs/{SlugOrIndex}/{sourceFile}/tracks/edit";
     }
 }

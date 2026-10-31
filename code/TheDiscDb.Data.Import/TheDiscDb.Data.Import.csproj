@@ -6,9 +6,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Azure.Storage.Blobs" Version="12.27.0" />
-        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.5" />
-        <PackageReference Include="Spectre.Console" Version="0.55.0" />
+        <PackageReference Include="Azure.Storage.Blobs" Version="12.30.1" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.14" />
+        <PackageReference Include="Spectre.Console" Version="0.57.2" />
         <PackageReference Include="Fantastic.FileSystem" Version="2.0.0" />
         <PackageReference Include="IMDbApiLib" Version="2.0.2" />
         <PackageReference Include="ScrapySharp" Version="3.0.0" />

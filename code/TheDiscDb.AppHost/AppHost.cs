@@ -17,6 +17,7 @@ var publicApiKey = ResolveApiKey(builder, "PublicApiKey", ".public-apikey");
 //   Prod: set environment variables Gruv__Pid and Gruv__AdvertiserId on the AppHost process.
 var gruvPid = builder.Configuration["Gruv:Pid"] ?? "";
 var gruvAdvertiserId = builder.Configuration["Gruv:AdvertiserId"] ?? "";
+var syncfusionLicenseKey = builder.Configuration["Syncfusion:LicenseKey"];
 
 var useExternalSql = string.Equals(builder.Configuration["UseExternalSql"], "true", StringComparison.OrdinalIgnoreCase);
 var useAzureFileShare = string.Equals(builder.Configuration["UseAzureFileShare"], "true", StringComparison.OrdinalIgnoreCase);
@@ -52,7 +53,8 @@ var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
     .WithEnvironment("GraphQL__ApiKeyAuthentication__ApiKey", adminApiKey)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__PublicApiKey", publicApiKey)
     .WithEnvironment("ContributionImport__DataRepositoryPath", dataDirectoryRoot)
-    .WithEnvironment("ContributionImport__WorkspacePath", workspacePath);
+    .WithEnvironment("ContributionImport__WorkspacePath", workspacePath)
+    .WithEnvironment("Syncfusion__LicenseKey", syncfusionLicenseKey);
 
 // Forward Gruv affiliate IDs only when both are set on the AppHost. Aspire's
 // .WithEnvironment overrides lower-precedence providers, so unconditionally forwarding empty
