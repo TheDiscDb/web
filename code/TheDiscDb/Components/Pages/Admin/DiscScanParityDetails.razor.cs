@@ -50,8 +50,14 @@ public partial class DiscScanParityDetails : ComponentBase
             var result = await ComparisonService.RecompareDiscAsync(DiscId);
             statusMessage = result == null
                 ? "This disc needs both a MakeMKV log and a manifest before it can be compared."
-                : "Disc re-compared.";
+                : result.Status == DiscLogManifestComparisonStatus.Error
+                    ? "An error comparison was persisted. Review the error details below."
+                    : "Comparison computed and persisted.";
             await LoadAsync();
+        }
+        catch (Exception)
+        {
+            statusMessage = "The comparison could not be persisted. No successful update is reported; retry or check the server logs.";
         }
         finally
         {

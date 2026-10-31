@@ -26,7 +26,8 @@ public static partial class DiscLogManifestComparer
         string logText,
         OpticalDiscManifestDocument manifest,
         DiscInfo manifestDiscInfo,
-        string? expectedContentHash = null)
+        string? expectedContentHash = null,
+        IReadOnlyList<UsefulContentReference>? usefulReferences = null)
     {
         ArgumentNullException.ThrowIfNull(logDiscInfo);
         ArgumentNullException.ThrowIfNull(logText);
@@ -46,6 +47,13 @@ public static partial class DiscLogManifestComparer
             };
             ReadScanDiagnostics(manifest, differences);
             CheckArtifactConsistency(logDiscInfo, manifest, differences);
+            differences.UsefulContent = UsefulContentComparer.Compare(
+                logDiscInfo, manifest, manifestDiscInfo, usefulReferences ?? [],
+                differentDisc: !string.IsNullOrEmpty(normalizedExpectedHash)
+                    && !string.IsNullOrEmpty(normalizedManifestHash)
+                    && !string.Equals(normalizedExpectedHash, normalizedManifestHash, StringComparison.OrdinalIgnoreCase),
+                acquisitionReview: differences.ArtifactWarnings.Count > 0,
+                scanErrors: differences.ScanDiagnostics.Any(diagnostic => diagnostic.Severity == "error"));
 
             if (!string.IsNullOrEmpty(normalizedExpectedHash)
                 && !string.IsNullOrEmpty(normalizedManifestHash)
@@ -594,6 +602,8 @@ public sealed record DiscLogManifestComparisonResult(
 
 public sealed class DiscLogManifestDifferences
 {
+    public UsefulContentComparison? UsefulContent { get; set; }
+
     public IdentifyExperienceComparison? IdentifyExperience { get; set; }
 
     public string? ExpectedContentHash { get; set; }

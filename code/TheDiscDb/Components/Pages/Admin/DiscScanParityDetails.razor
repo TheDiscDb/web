@@ -66,6 +66,12 @@ else
             <dd class="col-sm-9">@Latest.MatchedTitleCount matched / @Latest.LogTitleCount log / @Latest.ManifestTitleCount scan</dd>
             <dt class="col-sm-3">Versions</dt>
             <dd class="col-sm-9">Producer @Display(Latest.ProducerVersion), MakeMKV @Display(Latest.MakeMkvVersion)</dd>
+            <dt class="col-sm-3">Comparer</dt>
+            <dd class="col-sm-9">@Display(Latest.ComparerVersion)</dd>
+            <dt class="col-sm-3">Log SHA-256</dt>
+            <dd class="col-sm-9"><code>@Display(Latest.ReferenceSha256)</code></dd>
+            <dt class="col-sm-3">Manifest SHA-256</dt>
+            <dd class="col-sm-9"><code>@Display(Latest.ManifestSha256)</code></dd>
             <dt class="col-sm-3">Browser</dt>
             <dd class="col-sm-9">@DiscScanParityAggregator.BrowserName(Latest.UserAgent)</dd>
         </dl>
@@ -77,6 +83,52 @@ else
                 @(isRecompareRunning ? "Re-comparing..." : "Re-compare")
             </button>
         </div>
+    </section>
+
+    <section class="info-card mb-3">
+        <h2>Useful content (metadata v1)</h2>
+        <p class="text-muted">@UsefulContentComparison.Scope</p>
+        @if (Differences?.UsefulContent is not { Version: UsefulContentComparison.CurrentVersion } useful)
+        {
+            <p>Not measured. Re-compare to assess identified choices and unknown content separately.</p>
+        }
+        else
+        {
+            <p>@useful.Status: @useful.Available / @useful.KnownUseful identified useful choices supported;
+                @useful.RequiredUnresolved required choices unresolved. @useful.Reason</p>
+            <p>Unclassified reference rows: @useful.UnclassifiedReferenceRows;
+                unclassified scan choices: @useful.UnclassifiedScanChoices;
+                explicitly incidental references: @useful.IncidentalReferences.</p>
+            <table class="table table-sm">
+                <thead><tr><th>Choice</th><th>Source</th><th>Availability</th><th>Evidence</th><th>Semantic stream review</th></tr></thead>
+                <tbody>
+                    @foreach (var choice in useful.Choices)
+                    {
+                        <tr>
+                            <td>@choice.Name @(choice.Required ? "(required)" : "")</td>
+                            <td>@choice.Source</td><td>@choice.Availability</td>
+                            <td>@choice.Evidence Counterparts: @string.Join(", ", choice.CandidateSources)</td>
+                            <td>
+                                @if (choice.Streams is { } streams)
+                                {
+                                    <span>Audio/subtitle counts differ: @streams.AudioRowCountsDiffer / @streams.SubtitleRowCountsDiffer.
+                                        Named ordinal review: @streams.NamedOrdinalMappingNeedsReview;
+                                        outside scan: @streams.NamedOrdinalsOutsideScan.
+                                        Semantically unverified named labels: @streams.NamedLabelsNotSemanticallyVerified.
+                                        Declared/reference captions: @streams.DeclaredClosedCaptions / @streams.ReferenceClosedCaptions.
+                                        Language signals: @string.Join(", ", streams.AudioLanguageSignals.Concat(streams.SubtitleLanguageSignals)).
+                                        @streams.Scope</span>
+                                }
+                                else
+                                {
+                                    <span>Not established.</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
     </section>
 
     <section class="info-card mb-3">

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "requestedAt": "2026-10-30T03:49:30.043Z",
+  "statusCapturedAt": "2026-10-30T03:51:06.878Z",
+  "action": "Authorized Re-compare all after preserving original assets",
+  "inventoryDiscs": 491,
+  "uiMessage": "Re-compared 491 discs.",
+  "uiReportedComparedDiscs": 491,
+  "unchangedComparisonHistoryFiles": 491,
+  "unchangedAssetFiles": 1473,
+  "newHistoryRecordsObserved": 0,
+  "deployedComparerVersion": null,
+  "regeneratedScans": 0
+}

@@ -4,6 +4,7 @@
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Azure;
     using Azure.Storage.Blobs;
     using Azure.Storage.Blobs.Models;
     using Microsoft.Extensions.Options;
@@ -111,6 +112,45 @@
             var blobClient = GetClient(remotePath);
             var response = await blobClient.DownloadContentAsync(cancellationToken);
             return response.Value.Content;
+        }
+
+        public async Task<MutableAssetSnapshot?> ReadForUpdate(string remotePath, CancellationToken cancellationToken = default)
+        {
+            await EnsureContainerCreated(cancellationToken);
+            try
+            {
+                var response = await GetClient(remotePath).DownloadContentAsync(cancellationToken);
+                return new MutableAssetSnapshot(response.Value.Content, response.Value.Details.ETag.ToString());
+            }
+            catch (RequestFailedException exception) when (exception.Status == 404 && exception.ErrorCode == BlobErrorCode.BlobNotFound.ToString())
+            {
+                return null;
+            }
+        }
+
+        public async Task<bool> TryWrite(BinaryData content, string remotePath, string contentType, string? expectedETag, CancellationToken cancellationToken = default)
+        {
+            await EnsureContainerCreated(cancellationToken);
+            var uploadOptions = new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders { ContentType = contentType },
+                Conditions = expectedETag is null
+                    ? new BlobRequestConditions { IfNoneMatch = ETag.All }
+                    : new BlobRequestConditions { IfMatch = new ETag(expectedETag) }
+            };
+
+            try
+            {
+                using var stream = content.ToStream();
+                await GetClient(remotePath).UploadAsync(stream, uploadOptions, cancellationToken);
+                return true;
+            }
+            catch (RequestFailedException exception) when (
+                (exception.Status == 412 && exception.ErrorCode == BlobErrorCode.ConditionNotMet.ToString()) ||
+                (expectedETag is null && exception.Status == 409 && exception.ErrorCode == BlobErrorCode.BlobAlreadyExists.ToString()))
+            {
+                return false;
+            }
         }
 
         public async Task Delete(string remotePath, CancellationToken cancellationToken = default)

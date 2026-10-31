@@ -150,6 +150,11 @@ public sealed class OpticalDiscManifestStream
 
     public string? Type { get; set; }
     public string? Category { get; set; }
+    public int? Pid { get; set; }
+    public int? CodingTypeCode { get; set; }
+    public int? FormatCode { get; set; }
+    public int? RateCode { get; set; }
+    public IReadOnlyList<int>? Line21ClosedCaptionFields { get; set; }
     public string? Codec { get; set; }
     public string? Language { get; set; }
     public string? LanguageName { get; set; }

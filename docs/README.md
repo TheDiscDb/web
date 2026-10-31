@@ -39,6 +39,18 @@ smoke test, or public release has been completed.
 | [Disc Scan Rollout](FEATURE-DISC-SCAN-ROLLOUT.md) | 🟡 Built / rollout pending | Optional scanning, parity/similarity dashboards, CLI packaging, and local OdmScanner replay ship. Scan-by-default and CLI-file-upload options are off in checked-in defaults; rollout evidence and public CLI publication remain separate tasks. Log-free phase 3 and unresolved scanner cases remain future work. |
 | [Disc Mapping Auto-Suggestions](FEATURE-DISC-MAPPING-AUTO-SUGGESTIONS.md) | 🔵 Proposed | Unimplemented suggestion engine and identify UI for main movies, episode grouping/order, commentary, likely extras, relevance filters, and bulk acceptance. DVDCompare integration is a later candidate. |
 
+## Audits and rollout evidence
+
+- [Full scanner comparison audit: 2026-10-30 UTC](audits/2026-10-30-disc-scan-parity/README.md)
+  covers all 491 saved comparisons, with per-disc/item findings and input-hash
+  provenance. Recorded metadata supports 3,234 of 3,339 known useful choices;
+  unresolved content, stream-labeling risks and confirmed comparison/parser
+  defects remain. The recommendation is continued optional collection, not
+  broad default rollout or log retirement.
+- [Scanner audit P0/P1 implementation follow-up](audits/2026-10-30-disc-scan-parity/IMPLEMENTATION-STATUS.md)
+  records local fixes and the new 491-pair usefulness replay separately from
+  that frozen audit. Navigation remediation remains blocked on captures.
+
 ## Remaining work by delivery type
 
 - **Implementation:** image master-store migration; user preferences; achievements;

@@ -1,0 +1,4449 @@
+[
+  {
+    "discId": 2538,
+    "mediaTitle": "8 Mile",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "8 Mile",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00012.mpls",
+    "referenceDuration": "1:50:27",
+    "referenceSegmentMap": "27",
+    "logRow": 3,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\8 Mile (2002)\\2009-blu-ray-german\\disc01.json",
+      "data\\movie\\Taken 3 (2014)\\2015-blu-ray-extended-cut-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 35 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2538|00012.mpls|1:50:27|27|MainMovie|8 Mile"
+  },
+  {
+    "discId": 2538,
+    "mediaTitle": "8 Mile",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Das Making Of von 8 Mile",
+    "itemType": "Featurette",
+    "category": "SecondaryUseful",
+    "source": "00023.m2ts",
+    "referenceDuration": "0:10:02",
+    "referenceSegmentMap": "23",
+    "logRow": 36,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\8 Mile (2002)\\2009-blu-ray-german\\disc01.json",
+      "data\\movie\\Taken 3 (2014)\\2015-blu-ray-extended-cut-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 35 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2538|00023.m2ts|0:10:02|23|Featurette|Das Making Of von 8 Mile"
+  },
+  {
+    "discId": 2538,
+    "mediaTitle": "8 Mile",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Exklusive Rap-Battles - Unzensiert",
+    "itemType": "Featurette",
+    "category": "SecondaryUseful",
+    "source": "00024.m2ts",
+    "referenceDuration": "0:23:39",
+    "referenceSegmentMap": "24",
+    "logRow": 35,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\8 Mile (2002)\\2009-blu-ray-german\\disc01.json",
+      "data\\movie\\Taken 3 (2014)\\2015-blu-ray-extended-cut-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 35 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2538|00024.m2ts|0:23:39|24|Featurette|Exklusive Rap-Battles - Unzensiert"
+  },
+  {
+    "discId": 2538,
+    "mediaTitle": "8 Mile",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "\"Superman\" Musikvideo - Unzensiert",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00025.m2ts",
+    "referenceDuration": "0:05:01",
+    "referenceSegmentMap": "25",
+    "logRow": 34,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\8 Mile (2002)\\2009-blu-ray-german\\disc01.json",
+      "data\\movie\\Taken 3 (2014)\\2015-blu-ray-extended-cut-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 35 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2538|00025.m2ts|0:05:01|25|Other|\"Superman\" Musikvideo - Unzensiert"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "5 Zimmer Küche Sarg",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00000.mpls",
+    "referenceDuration": "1:25:33",
+    "referenceSegmentMap": "17",
+    "logRow": 3,
+    "status": "PossibleAlias",
+    "relation": "SameClipOrderDifferentTimingOrSize",
+    "scanSources": [
+      "00055.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00000.mpls|1:25:33|17|MainMovie|5 Zimmer Küche Sarg"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Original-Kurzfilm (2005)",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00000.m2ts",
+    "referenceDuration": "0:27:23",
+    "referenceSegmentMap": "0",
+    "logRow": 40,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00000.m2ts|0:27:23|0|Short|Original-Kurzfilm (2005)"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Behind the Shadows",
+    "itemType": "Featurette",
+    "category": "SecondaryUseful",
+    "source": "00001.m2ts",
+    "referenceDuration": "0:18:17",
+    "referenceSegmentMap": "1",
+    "logRow": 47,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00001.m2ts|0:18:17|1|Featurette|Behind the Shadows"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Deacons Erotiktanz",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00002.m2ts",
+    "referenceDuration": "0:03:32",
+    "referenceSegmentMap": "2",
+    "logRow": 39,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00002.m2ts|0:03:32|2|Short|Deacons Erotiktanz"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Stus Büro-Homestory",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00003.m2ts",
+    "referenceDuration": "0:03:43",
+    "referenceSegmentMap": "3",
+    "logRow": 38,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00003.m2ts|0:03:43|3|Short|Stus Büro-Homestory"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Jackie, die Vertraute",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00004.m2ts",
+    "referenceDuration": "0:05:13",
+    "referenceSegmentMap": "4",
+    "logRow": 37,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00004.m2ts"
+    ],
+    "scanDuration": "0:00:11",
+    "scanSegmentMap": "4",
+    "durationDelta": -302,
+    "sizeDelta": -757082112,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 0,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": false,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00004.m2ts|0:05:13|4|Short|Jackie, die Vertraute"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Viago singt",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00005.m2ts",
+    "referenceDuration": "0:02:41",
+    "referenceSegmentMap": "5",
+    "logRow": 36,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00005.m2ts|0:02:41|5|Short|Viago singt"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Vlad malt",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00006.m2ts",
+    "referenceDuration": "0:01:43",
+    "referenceSegmentMap": "6",
+    "logRow": 35,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00006.m2ts|0:01:43|6|Short|Vlad malt"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Vlad der Dichter",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00007.m2ts",
+    "referenceDuration": "0:01:11",
+    "referenceSegmentMap": "7",
+    "logRow": 46,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00007.m2ts|0:01:11|7|Short|Vlad der Dichter"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Nachtzahnarzt",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00008.m2ts",
+    "referenceDuration": "0:04:07",
+    "referenceSegmentMap": "8",
+    "logRow": 45,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00008.m2ts"
+    ],
+    "scanDuration": "0:00:06",
+    "scanSegmentMap": "8",
+    "durationDelta": -241,
+    "sizeDelta": -590948352,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 0,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [
+        "eng"
+      ],
+      "scanSubtitles": 0,
+      "closedCaptionsNotProjected": false,
+      "noAudio": true,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": false,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00008.m2ts|0:04:07|8|Short|Nachtzahnarzt"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Die mit den Werwölfen tanzen",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00009.m2ts",
+    "referenceDuration": "0:01:03",
+    "referenceSegmentMap": "9",
+    "logRow": 44,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00009.m2ts|0:01:03|9|Short|Die mit den Werwölfen tanzen"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "What We Do in Transylvania",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00010.m2ts",
+    "referenceDuration": "0:04:11",
+    "referenceSegmentMap": "10",
+    "logRow": 34,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00010.m2ts"
+    ],
+    "scanDuration": "0:00:10",
+    "scanSegmentMap": "10",
+    "durationDelta": -241,
+    "sizeDelta": -614191104,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 0,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": false,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00010.m2ts|0:04:11|10|Short|What We Do in Transylvania"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "What We Do in Berlin",
+    "itemType": "Short",
+    "category": "SecondaryUseful",
+    "source": "00016.m2ts",
+    "referenceDuration": "0:03:33",
+    "referenceSegmentMap": "16",
+    "logRow": 33,
+    "status": "PossibleAlias",
+    "relation": "SameClipOrderDifferentTimingOrSize",
+    "scanSources": [
+      "00054.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00016.m2ts|0:03:33|16|Short|What We Do in Berlin"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Lass uns rein!",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00011.m2ts",
+    "referenceDuration": "0:01:19",
+    "referenceSegmentMap": "11",
+    "logRow": 32,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00011.m2ts|0:01:19|11|DeletedScene|Lass uns rein!"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": " Telefonhypnose",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00018.m2ts",
+    "referenceDuration": "0:01:18",
+    "referenceSegmentMap": "18",
+    "logRow": 31,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00018.m2ts"
+    ],
+    "scanDuration": "0:00:01",
+    "scanSegmentMap": "18",
+    "durationDelta": -77,
+    "sizeDelta": -193112064,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 28,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00018.m2ts|0:01:18|18|DeletedScene| Telefonhypnose"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Viago & Deacom",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00012.m2ts",
+    "referenceDuration": "0:02:46",
+    "referenceSegmentMap": "12",
+    "logRow": 30,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00012.m2ts|0:02:46|12|DeletedScene|Viago & Deacom"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Mein Kumpel Stu",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00019.m2ts",
+    "referenceDuration": "0:06:15",
+    "referenceSegmentMap": "19",
+    "logRow": 29,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00019.m2ts|0:06:15|19|DeletedScene|Mein Kumpel Stu"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Antikes Blut",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00013.m2ts",
+    "referenceDuration": "0:01:22",
+    "referenceSegmentMap": "13",
+    "logRow": 28,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00013.m2ts|0:01:22|13|DeletedScene|Antikes Blut"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Nicks Opfer",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00020.m2ts",
+    "referenceDuration": "0:04:21",
+    "referenceSegmentMap": "20",
+    "logRow": 27,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00020.m2ts|0:04:21|20|DeletedScene|Nicks Opfer"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Stu & Vlad",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00024.m2ts",
+    "referenceDuration": "0:02:35",
+    "referenceSegmentMap": "24",
+    "logRow": 26,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00024.m2ts|0:02:35|24|DeletedScene|Stu & Vlad"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Stu & die Hexe",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00026.m2ts",
+    "referenceDuration": "0:02:47",
+    "referenceSegmentMap": "26",
+    "logRow": 25,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00026.m2ts|0:02:47|26|DeletedScene|Stu & die Hexe"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Petyrs Beerdigung",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00028.m2ts",
+    "referenceDuration": "0:04:22",
+    "referenceSegmentMap": "28",
+    "logRow": 24,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00028.m2ts|0:04:22|28|DeletedScene|Petyrs Beerdigung"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Stus Beerdigung",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00029.m2ts",
+    "referenceDuration": "0:02:36",
+    "referenceSegmentMap": "29",
+    "logRow": 23,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00029.m2ts|0:02:36|29|DeletedScene|Stus Beerdigung"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Vlads Nipplegate",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00030.m2ts",
+    "referenceDuration": "0:01:34",
+    "referenceSegmentMap": "30",
+    "logRow": 22,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00030.m2ts|0:01:34|30|DeletedScene|Vlads Nipplegate"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Stus Ankettung",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00031.m2ts",
+    "referenceDuration": "0:01:07",
+    "referenceSegmentMap": "31",
+    "logRow": 21,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00031.m2ts|0:01:07|31|DeletedScene|Stus Ankettung"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Deacon",
+    "itemType": "Interview",
+    "category": "SecondaryUseful",
+    "source": "00035.m2ts",
+    "referenceDuration": "0:02:50",
+    "referenceSegmentMap": "35",
+    "logRow": 20,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00035.m2ts|0:02:50|35|Interview|Deacon"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Viago",
+    "itemType": "Interview",
+    "category": "SecondaryUseful",
+    "source": "00036.m2ts",
+    "referenceDuration": "0:03:10",
+    "referenceSegmentMap": "36",
+    "logRow": 19,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00036.m2ts|0:03:10|36|Interview|Viago"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Vladislav",
+    "itemType": "Interview",
+    "category": "SecondaryUseful",
+    "source": "00037.m2ts",
+    "referenceDuration": "0:02:50",
+    "referenceSegmentMap": "37",
+    "logRow": 18,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00037.m2ts|0:02:50|37|Interview|Vladislav"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Polizisten",
+    "itemType": "Interview",
+    "category": "SecondaryUseful",
+    "source": "00038.m2ts",
+    "referenceDuration": "0:02:27",
+    "referenceSegmentMap": "38",
+    "logRow": 17,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00038.m2ts|0:02:27|38|Interview|Polizisten"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Werwölfe",
+    "itemType": "Interview",
+    "category": "SecondaryUseful",
+    "source": "00039.m2ts",
+    "referenceDuration": "0:03:42",
+    "referenceSegmentMap": "39",
+    "logRow": 16,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00039.m2ts|0:03:42|39|Interview|Werwölfe"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Zombie",
+    "itemType": "Interview",
+    "category": "SecondaryUseful",
+    "source": "00040.m2ts",
+    "referenceDuration": "0:04:14",
+    "referenceSegmentMap": "40",
+    "logRow": 15,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00040.m2ts|0:04:14|40|Interview|Zombie"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Promo - Hobbys",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00041.m2ts",
+    "referenceDuration": "0:01:08",
+    "referenceSegmentMap": "41",
+    "logRow": 14,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00041.m2ts|0:01:08|41|Other|Promo - Hobbys"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Promo - Hypnose",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00042.m2ts",
+    "referenceDuration": "0:01:10",
+    "referenceSegmentMap": "42",
+    "logRow": 13,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00042.m2ts|0:01:10|42|Other|Promo - Hypnose"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Promo - Gefühle",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00043.m2ts",
+    "referenceDuration": "0:01:26",
+    "referenceSegmentMap": "43",
+    "logRow": 12,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00043.m2ts|0:01:26|43|Other|Promo - Gefühle"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Promo - Werwölfe",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00044.m2ts",
+    "referenceDuration": "0:01:01",
+    "referenceSegmentMap": "44",
+    "logRow": 43,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00044.m2ts|0:01:01|44|Other|Promo - Werwölfe"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Promo - Spiegelbild",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00045.m2ts",
+    "referenceDuration": "0:01:01",
+    "referenceSegmentMap": "45",
+    "logRow": 11,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00045.m2ts|0:01:01|45|Other|Promo - Spiegelbild"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Promo - Ausgehen",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00046.m2ts",
+    "referenceDuration": "0:00:57",
+    "referenceSegmentMap": "46",
+    "logRow": 42,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00046.m2ts|0:00:57|46|Other|Promo - Ausgehen"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Trailer",
+    "itemType": "Trailer",
+    "category": "SecondaryUseful",
+    "source": "00047.m2ts",
+    "referenceDuration": "0:01:51",
+    "referenceSegmentMap": "47",
+    "logRow": 10,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00047.m2ts|0:01:51|47|Trailer|Trailer"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Promo - Frag einen deutschen Kiwi",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00048.m2ts",
+    "referenceDuration": "0:02:16",
+    "referenceSegmentMap": "48",
+    "logRow": 9,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00048.m2ts|0:02:16|48|Other|Promo - Frag einen deutschen Kiwi"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Promo - Fanplakate",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00041.mpls",
+    "referenceDuration": "0:00:02",
+    "referenceSegmentMap": "52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,137,138",
+    "logRow": 2,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00041.mpls|0:00:02|52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,137,138|Other|Promo - Fanplakate"
+  },
+  {
+    "discId": 2562,
+    "mediaTitle": "What We Do in the Shadows",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Promo - Vampir-Fotoalbum",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00042.mpls",
+    "referenceDuration": "0:00:01",
+    "referenceSegmentMap": "101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136",
+    "logRow": 1,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\What We Do in the Shadows (2014)\\2015-blu-ray-german\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AcquisitionInconsistent",
+    "auditEvidence": "Paired artifacts have 50 source/size consistency warnings",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2562|00042.mpls|0:00:01|101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136|Other|Promo - Vampir-Fotoalbum"
+  },
+  {
+    "discId": 2584,
+    "mediaTitle": "The Hunted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The Hunted",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00004.mpls(1)",
+    "referenceDuration": "1:34:24",
+    "referenceSegmentMap": "4",
+    "logRow": 1,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00004.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\The Hunted (2003)\\2024-kino-lorber-4k\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00004.mpls",
+    "extraTailSeconds": 12.011999999999999,
+    "referenceChoiceKey": "2584|00004.mpls(1)|1:34:24|4|MainMovie|The Hunted"
+  },
+  {
+    "discId": 2586,
+    "mediaTitle": "Heist",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Heist",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00006.mpls",
+    "referenceDuration": "1:48:47",
+    "referenceSegmentMap": "9",
+    "logRow": 1,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00006.mpls"
+    ],
+    "scanDuration": "1:48:59",
+    "scanSegmentMap": "9,7",
+    "durationDelta": 12,
+    "sizeDelta": 6789120,
+    "chapterDelta": 1,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Heist (2001)\\2019-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 3,
+      "scanAudio": 2,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 4,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 8,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00006.mpls",
+    "extraTailSeconds": 12.137111,
+    "referenceChoiceKey": "2586|00006.mpls|1:48:47|9|MainMovie|Heist"
+  },
+  {
+    "discId": 2626,
+    "mediaTitle": "Blade Runner 2049",
+    "discName": "4K",
+    "format": "uhd-blu-ray",
+    "itemName": "Blade Runner 2049",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00243.mpls",
+    "referenceDuration": "2:43:27",
+    "referenceSegmentMap": "1,336",
+    "logRow": 12,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00243.mpls"
+    ],
+    "scanDuration": "2:43:27",
+    "scanSegmentMap": "1,337,338,339,340,336",
+    "durationDelta": 0,
+    "sizeDelta": 1831157760,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Blade Runner 2049 (2017)\\2018-4k-uhd-german\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 9,
+      "scanAudio": 5,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 14,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2626|00243.mpls|2:43:27|1,336|MainMovie|Blade Runner 2049"
+  },
+  {
+    "discId": 2626,
+    "mediaTitle": "Blade Runner 2049",
+    "discName": "4K",
+    "format": "uhd-blu-ray",
+    "itemName": "Blade Runner 2049",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00243.mpls",
+    "referenceDuration": "2:43:27",
+    "referenceSegmentMap": "338,336",
+    "logRow": 14,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00243.mpls"
+    ],
+    "scanDuration": "2:43:27",
+    "scanSegmentMap": "1,337,338,339,340,336",
+    "durationDelta": 0,
+    "sizeDelta": 1828067328,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Blade Runner 2049 (2017)\\2018-4k-uhd-german\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 9,
+      "scanAudio": 5,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 14,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2626|00243.mpls|2:43:27|338,336|MainMovie|Blade Runner 2049"
+  },
+  {
+    "discId": 2626,
+    "mediaTitle": "Blade Runner 2049",
+    "discName": "4K",
+    "format": "uhd-blu-ray",
+    "itemName": "Blade Runner 2049",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00243.mpls",
+    "referenceDuration": "2:43:27",
+    "referenceSegmentMap": "339,336",
+    "logRow": 15,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00243.mpls"
+    ],
+    "scanDuration": "2:43:27",
+    "scanSegmentMap": "1,337,338,339,340,336",
+    "durationDelta": 0,
+    "sizeDelta": 1829388288,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Blade Runner 2049 (2017)\\2018-4k-uhd-german\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 9,
+      "scanAudio": 5,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 14,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2626|00243.mpls|2:43:27|339,336|MainMovie|Blade Runner 2049"
+  },
+  {
+    "discId": 2626,
+    "mediaTitle": "Blade Runner 2049",
+    "discName": "4K",
+    "format": "uhd-blu-ray",
+    "itemName": "Blade Runner 2049",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00243.mpls",
+    "referenceDuration": "2:43:27",
+    "referenceSegmentMap": "340,336",
+    "logRow": 16,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00243.mpls"
+    ],
+    "scanDuration": "2:43:27",
+    "scanSegmentMap": "1,337,338,339,340,336",
+    "durationDelta": 0,
+    "sizeDelta": 1828491264,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Blade Runner 2049 (2017)\\2018-4k-uhd-german\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 9,
+      "scanAudio": 5,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 14,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2626|00243.mpls|2:43:27|340,336|MainMovie|Blade Runner 2049"
+  },
+  {
+    "discId": 2626,
+    "mediaTitle": "Blade Runner 2049",
+    "discName": "4K",
+    "format": "uhd-blu-ray",
+    "itemName": "Blade Runner 2049",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00243.mpls",
+    "referenceDuration": "2:43:27",
+    "referenceSegmentMap": "337,336",
+    "logRow": 13,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00243.mpls"
+    ],
+    "scanDuration": "2:43:27",
+    "scanSegmentMap": "1,337,338,339,340,336",
+    "durationDelta": 0,
+    "sizeDelta": 1828091904,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Blade Runner 2049 (2017)\\2018-4k-uhd-german\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 9,
+      "scanAudio": 5,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 14,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2626|00243.mpls|2:43:27|337,336|MainMovie|Blade Runner 2049"
+  },
+  {
+    "discId": 2627,
+    "mediaTitle": "Blade Runner 2049",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Blade Runner 2049",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00348.mpls",
+    "referenceDuration": "2:43:27",
+    "referenceSegmentMap": "334,335",
+    "logRow": 17,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00348.mpls"
+    ],
+    "scanDuration": "2:43:27",
+    "scanSegmentMap": "334,336,347,335",
+    "durationDelta": 0,
+    "sizeDelta": 859004928,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Blade Runner 2049 (2017)\\2018-4k-uhd-german\\disc02.json"
+    ],
+    "streams": {
+      "logAudio": 6,
+      "scanAudio": 3,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 6,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2627|00348.mpls|2:43:27|334,335|MainMovie|Blade Runner 2049"
+  },
+  {
+    "discId": 2627,
+    "mediaTitle": "Blade Runner 2049",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Blade Runner 2049",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00348.mpls",
+    "referenceDuration": "2:43:27",
+    "referenceSegmentMap": "336,335",
+    "logRow": 18,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00348.mpls"
+    ],
+    "scanDuration": "2:43:27",
+    "scanSegmentMap": "334,336,347,335",
+    "durationDelta": 0,
+    "sizeDelta": 859514880,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Blade Runner 2049 (2017)\\2018-4k-uhd-german\\disc02.json"
+    ],
+    "streams": {
+      "logAudio": 6,
+      "scanAudio": 3,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 6,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2627|00348.mpls|2:43:27|336,335|MainMovie|Blade Runner 2049"
+  },
+  {
+    "discId": 2627,
+    "mediaTitle": "Blade Runner 2049",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Blade Runner 2049",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00348.mpls",
+    "referenceDuration": "2:43:27",
+    "referenceSegmentMap": "347,335",
+    "logRow": 19,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00348.mpls"
+    ],
+    "scanDuration": "2:43:27",
+    "scanSegmentMap": "334,336,347,335",
+    "durationDelta": 0,
+    "sizeDelta": 859404288,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Blade Runner 2049 (2017)\\2018-4k-uhd-german\\disc02.json"
+    ],
+    "streams": {
+      "logAudio": 6,
+      "scanAudio": 3,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 6,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2627|00348.mpls|2:43:27|347,335|MainMovie|Blade Runner 2049"
+  },
+  {
+    "discId": 2638,
+    "mediaTitle": "Tequila Sunrise",
+    "discName": "4K",
+    "format": "uhd-blu-ray",
+    "itemName": "Tequila Sunrise (1988)",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00002.mpls",
+    "referenceDuration": "1:55:24",
+    "referenceSegmentMap": "8",
+    "logRow": 8,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00002.mpls"
+    ],
+    "scanDuration": "1:55:25",
+    "scanSegmentMap": "8,10",
+    "durationDelta": 1,
+    "sizeDelta": 36864,
+    "chapterDelta": 1,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Tequila Sunrise (1988)\\2026-arrow-4k\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 3,
+      "scanAudio": 2,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00010.mpls",
+    "extraTailSeconds": 1.042689,
+    "referenceChoiceKey": "2638|00002.mpls|1:55:24|8|MainMovie|Tequila Sunrise (1988)"
+  },
+  {
+    "discId": 2642,
+    "mediaTitle": "DreamWorks Dragons",
+    "discName": "DVD",
+    "format": "dvd",
+    "itemName": "Play All",
+    "itemType": "Extra",
+    "category": "SecondaryUseful",
+    "source": "01",
+    "referenceDuration": "1:30:12",
+    "referenceSegmentMap": "1-5,6-10,11-15,16-20,21",
+    "logRow": 1,
+    "status": "IncompleteMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "1"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": "",
+    "durationDelta": null,
+    "sizeDelta": -4784513024,
+    "chapterDelta": -21,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\series\\DreamWorks Dragons (2012)\\2012-exclusive-dvd-premiere\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 0,
+      "closedCaptionsNotProjected": true,
+      "noAudio": false,
+      "missingSubtitleLanguages": [
+        "eng"
+      ],
+      "subtitleCountDiffers": true,
+      "noSubtitles": true,
+      "logSubtitles": 1,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "IncompleteMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2642|01|1:30:12|1-5,6-10,11-15,16-20,21|Extra|Play All"
+  },
+  {
+    "discId": 2642,
+    "mediaTitle": "DreamWorks Dragons",
+    "discName": "DVD",
+    "format": "dvd",
+    "itemName": "How to Start a Dragon Academy",
+    "itemType": "Episode",
+    "category": "RequiredUseful",
+    "source": "02",
+    "referenceDuration": "0:22:32",
+    "referenceSegmentMap": "1-5,6",
+    "logRow": 2,
+    "status": "IncompleteMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "2"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": "",
+    "durationDelta": null,
+    "sizeDelta": -1194741760,
+    "chapterDelta": -6,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\series\\DreamWorks Dragons (2012)\\2012-exclusive-dvd-premiere\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 0,
+      "closedCaptionsNotProjected": true,
+      "noAudio": false,
+      "missingSubtitleLanguages": [
+        "eng"
+      ],
+      "subtitleCountDiffers": true,
+      "noSubtitles": true,
+      "logSubtitles": 1,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "IncompleteMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2642|02|0:22:32|1-5,6|Episode|How to Start a Dragon Academy"
+  },
+  {
+    "discId": 2642,
+    "mediaTitle": "DreamWorks Dragons",
+    "discName": "DVD",
+    "format": "dvd",
+    "itemName": "Viking for Hire",
+    "itemType": "Episode",
+    "category": "RequiredUseful",
+    "source": "03",
+    "referenceDuration": "0:22:36",
+    "referenceSegmentMap": "1-5,6",
+    "logRow": 3,
+    "status": "IncompleteMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "3"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": "",
+    "durationDelta": null,
+    "sizeDelta": -1197809664,
+    "chapterDelta": -6,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\series\\DreamWorks Dragons (2012)\\2012-exclusive-dvd-premiere\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 0,
+      "closedCaptionsNotProjected": true,
+      "noAudio": false,
+      "missingSubtitleLanguages": [
+        "eng"
+      ],
+      "subtitleCountDiffers": true,
+      "noSubtitles": true,
+      "logSubtitles": 1,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "IncompleteMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2642|03|0:22:36|1-5,6|Episode|Viking for Hire"
+  },
+  {
+    "discId": 2642,
+    "mediaTitle": "DreamWorks Dragons",
+    "discName": "DVD",
+    "format": "dvd",
+    "itemName": "Animal House",
+    "itemType": "Episode",
+    "category": "RequiredUseful",
+    "source": "04",
+    "referenceDuration": "0:22:33",
+    "referenceSegmentMap": "1-5,6",
+    "logRow": 4,
+    "status": "IncompleteMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "4"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": "",
+    "durationDelta": null,
+    "sizeDelta": -1196488704,
+    "chapterDelta": -6,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\series\\DreamWorks Dragons (2012)\\2012-exclusive-dvd-premiere\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 0,
+      "closedCaptionsNotProjected": true,
+      "noAudio": false,
+      "missingSubtitleLanguages": [
+        "eng"
+      ],
+      "subtitleCountDiffers": true,
+      "noSubtitles": true,
+      "logSubtitles": 1,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "IncompleteMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2642|04|0:22:33|1-5,6|Episode|Animal House"
+  },
+  {
+    "discId": 2642,
+    "mediaTitle": "DreamWorks Dragons",
+    "discName": "DVD",
+    "format": "dvd",
+    "itemName": "The Terrible Twos",
+    "itemType": "Episode",
+    "category": "RequiredUseful",
+    "source": "05",
+    "referenceDuration": "0:22:34",
+    "referenceSegmentMap": "1-5,6",
+    "logRow": 5,
+    "status": "IncompleteMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "5"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": "",
+    "durationDelta": null,
+    "sizeDelta": -1195595776,
+    "chapterDelta": -6,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\series\\DreamWorks Dragons (2012)\\2012-exclusive-dvd-premiere\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 0,
+      "closedCaptionsNotProjected": true,
+      "noAudio": false,
+      "missingSubtitleLanguages": [
+        "eng"
+      ],
+      "subtitleCountDiffers": true,
+      "noSubtitles": true,
+      "logSubtitles": 1,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "IncompleteMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2642|05|0:22:34|1-5,6|Episode|The Terrible Twos"
+  },
+  {
+    "discId": 2648,
+    "mediaTitle": "There Will Be Blood",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "All Extras Part 1",
+    "itemType": "Extra",
+    "category": "SecondaryUseful",
+    "source": "00032.mpls",
+    "referenceDuration": "0:25:28",
+    "referenceSegmentMap": "16,17,18,19",
+    "logRow": 2,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00032.mpls"
+    ],
+    "scanDuration": "0:31:32",
+    "scanSegmentMap": "16,17,18,19,36,37",
+    "durationDelta": 364,
+    "sizeDelta": 871766016,
+    "chapterDelta": 2,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\There Will Be Blood (2007)\\2017-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 4,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 8,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00032.mpls",
+    "extraTailSeconds": 364.781066,
+    "referenceChoiceKey": "2648|00032.mpls|0:25:28|16,17,18,19|Extra|All Extras Part 1"
+  },
+  {
+    "discId": 2648,
+    "mediaTitle": "There Will Be Blood",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "All Extras Part 2",
+    "itemType": "Extra",
+    "category": "SecondaryUseful",
+    "source": "00032.mpls(1)",
+    "referenceDuration": "0:06:04",
+    "referenceSegmentMap": "36,37",
+    "logRow": 3,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00032.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\There Will Be Blood (2007)\\2017-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00032.mpls",
+    "extraTailSeconds": 1528.026445,
+    "referenceChoiceKey": "2648|00032.mpls(1)|0:06:04|36,37|Extra|All Extras Part 2"
+  },
+  {
+    "discId": 2648,
+    "mediaTitle": "There Will Be Blood",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The Story of Petroleum (ca. 1923)",
+    "itemType": "Featurette",
+    "category": "SecondaryUseful",
+    "source": "00034.mpls",
+    "referenceDuration": "0:25:44",
+    "referenceSegmentMap": "38",
+    "logRow": 4,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00034.mpls"
+    ],
+    "scanDuration": "0:25:36",
+    "scanSegmentMap": "38,45",
+    "durationDelta": -8,
+    "sizeDelta": 479232,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\There Will Be Blood (2007)\\2017-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 3,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 6,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "AlteredPlaybackMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2648|00034.mpls|0:25:44|38|Featurette|The Story of Petroleum (ca. 1923)"
+  },
+  {
+    "discId": 2653,
+    "mediaTitle": "Going in Style",
+    "discName": "DVD",
+    "format": "dvd",
+    "itemName": "Wonder Woman",
+    "itemType": "Trailer",
+    "category": "SecondaryUseful",
+    "source": "06",
+    "referenceDuration": "0:02:33",
+    "referenceSegmentMap": "2-3",
+    "logRow": 5,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "6"
+    ],
+    "scanDuration": "0:02:33",
+    "scanSegmentMap": "1,2-3",
+    "durationDelta": 0,
+    "sizeDelta": 106496,
+    "chapterDelta": 1,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Going in Style (2017)\\2-disc-multi-format-blu-ray\\disc02.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 2,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": false,
+      "noSubtitles": false,
+      "logSubtitles": 1,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "AlteredPlaybackMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2653|06|0:02:33|2-3|Trailer|Wonder Woman"
+  },
+  {
+    "discId": 2653,
+    "mediaTitle": "Going in Style",
+    "discName": "DVD",
+    "format": "dvd",
+    "itemName": "previews",
+    "itemType": "Trailer",
+    "category": "SecondaryUseful",
+    "source": "07",
+    "referenceDuration": "0:06:46",
+    "referenceSegmentMap": "2-3,4,5-6",
+    "logRow": 6,
+    "status": "NoCandidate",
+    "relation": "NoRecordedEquivalent",
+    "scanSources": [
+      null
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Going in Style (2017)\\2-disc-multi-format-blu-ray\\disc02.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "NoCandidate",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2653|07|0:06:46|2-3,4,5-6|Trailer|previews"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00429.m2ts",
+    "referenceDuration": "0:00:23",
+    "referenceSegmentMap": "429",
+    "logRow": 31,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00150.mpls",
+      "00300.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00429.m2ts|0:00:23|429|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00430.m2ts",
+    "referenceDuration": "0:00:23",
+    "referenceSegmentMap": "430",
+    "logRow": 32,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00150.mpls",
+      "00300.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00430.m2ts|0:00:23|430|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00431.m2ts",
+    "referenceDuration": "0:00:23",
+    "referenceSegmentMap": "431",
+    "logRow": 33,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00150.mpls",
+      "00300.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00431.m2ts|0:00:23|431|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "clip 2",
+    "itemType": "Scene",
+    "category": "SecondaryUseful",
+    "source": "00121.m2ts",
+    "referenceDuration": "0:05:07",
+    "referenceSegmentMap": "121",
+    "logRow": 90,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 6141.42669,
+    "referenceChoiceKey": "2655|00121.m2ts|0:05:07|121|Scene|clip 2"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "clip 3",
+    "itemType": "Scene",
+    "category": "SecondaryUseful",
+    "source": "00123.m2ts",
+    "referenceDuration": "0:00:35",
+    "referenceSegmentMap": "123",
+    "logRow": 91,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 6413.406712000001,
+    "referenceChoiceKey": "2655|00123.m2ts|0:00:35|123|Scene|clip 3"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "clip 4",
+    "itemType": "Scene",
+    "category": "SecondaryUseful",
+    "source": "00125.m2ts",
+    "referenceDuration": "0:01:18",
+    "referenceSegmentMap": "125",
+    "logRow": 92,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 6369.904934,
+    "referenceChoiceKey": "2655|00125.m2ts|0:01:18|125|Scene|clip 4"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "clip 5",
+    "itemType": "Scene",
+    "category": "SecondaryUseful",
+    "source": "00127.m2ts",
+    "referenceDuration": "0:02:10",
+    "referenceSegmentMap": "127",
+    "logRow": 93,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 6317.936356,
+    "referenceChoiceKey": "2655|00127.m2ts|0:02:10|127|Scene|clip 5"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "clip 6",
+    "itemType": "Scene",
+    "category": "SecondaryUseful",
+    "source": "00131.m2ts",
+    "referenceDuration": "0:00:35",
+    "referenceSegmentMap": "131",
+    "logRow": 94,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 6413.281601000001,
+    "referenceChoiceKey": "2655|00131.m2ts|0:00:35|131|Scene|clip 6"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "clip 7",
+    "itemType": "Scene",
+    "category": "SecondaryUseful",
+    "source": "00133.m2ts",
+    "referenceDuration": "0:01:56",
+    "referenceSegmentMap": "133",
+    "logRow": 95,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 6331.616690000001,
+    "referenceChoiceKey": "2655|00133.m2ts|0:01:56|133|Scene|clip 7"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "clip 8",
+    "itemType": "Scene",
+    "category": "SecondaryUseful",
+    "source": "00135.m2ts",
+    "referenceDuration": "0:02:15",
+    "referenceSegmentMap": "135",
+    "logRow": 96,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 6313.223312000001,
+    "referenceChoiceKey": "2655|00135.m2ts|0:02:15|135|Scene|clip 8"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "clip 9",
+    "itemType": "Scene",
+    "category": "SecondaryUseful",
+    "source": "00137.m2ts",
+    "referenceDuration": "0:00:27",
+    "referenceSegmentMap": "137",
+    "logRow": 97,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 6420.580556000001,
+    "referenceChoiceKey": "2655|00137.m2ts|0:00:27|137|Scene|clip 9"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "clip 10",
+    "itemType": "Scene",
+    "category": "SecondaryUseful",
+    "source": "00139.m2ts",
+    "referenceDuration": "0:01:57",
+    "referenceSegmentMap": "139",
+    "logRow": 98,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 6330.699090000001,
+    "referenceChoiceKey": "2655|00139.m2ts|0:01:57|139|Scene|clip 10"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "clip credits",
+    "itemType": "Scene",
+    "category": "SecondaryUseful",
+    "source": "00141.m2ts",
+    "referenceDuration": "0:00:21",
+    "referenceSegmentMap": "141",
+    "logRow": 99,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 6426.836801,
+    "referenceChoiceKey": "2655|00141.m2ts|0:00:21|141|Scene|clip credits"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00420.m2ts",
+    "referenceDuration": "0:02:35",
+    "referenceSegmentMap": "420",
+    "logRow": 105,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00150.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00420.m2ts|0:02:35|420|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00421.m2ts",
+    "referenceDuration": "0:02:53",
+    "referenceSegmentMap": "421",
+    "logRow": 106,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00150.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00421.m2ts|0:02:53|421|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00422.m2ts",
+    "referenceDuration": "0:01:12",
+    "referenceSegmentMap": "422",
+    "logRow": 107,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00150.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00422.m2ts|0:01:12|422|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00423.m2ts",
+    "referenceDuration": "0:02:23",
+    "referenceSegmentMap": "423",
+    "logRow": 108,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00150.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00423.m2ts|0:02:23|423|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00424.m2ts",
+    "referenceDuration": "0:03:22",
+    "referenceSegmentMap": "424",
+    "logRow": 109,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00150.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00424.m2ts|0:03:22|424|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00425.m2ts",
+    "referenceDuration": "0:00:56",
+    "referenceSegmentMap": "425",
+    "logRow": 110,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00150.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00425.m2ts|0:00:56|425|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00426.m2ts",
+    "referenceDuration": "0:02:31",
+    "referenceSegmentMap": "426",
+    "logRow": 111,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00150.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00426.m2ts|0:02:31|426|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00150.mpls",
+    "referenceDuration": "1:47:37",
+    "referenceSegmentMap": "120,418,122,419,124,420,126,421,128,130,422,132,423,134,424,136,425,138,426,140,429",
+    "logRow": 6,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00150.mpls"
+    ],
+    "scanDuration": "1:47:37",
+    "scanSegmentMap": "120,418,122,419,124,420,126,421,128,130,422,132,423,134,424,136,425,138,426,140,429,430,431",
+    "durationDelta": 0,
+    "sizeDelta": 147025920,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00150.mpls|1:47:37|120,418,122,419,124,420,126,421,128,130,422,132,423,134,424,136,425,138,426,140,429|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00150.mpls",
+    "referenceDuration": "1:47:37",
+    "referenceSegmentMap": "120,418,122,419,124,420,126,421,128,130,422,132,423,134,424,136,425,138,426,140,430",
+    "logRow": 7,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00150.mpls"
+    ],
+    "scanDuration": "1:47:37",
+    "scanSegmentMap": "120,418,122,419,124,420,126,421,128,130,422,132,423,134,424,136,425,138,426,140,429,430,431",
+    "durationDelta": 0,
+    "sizeDelta": 145803264,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00150.mpls|1:47:37|120,418,122,419,124,420,126,421,128,130,422,132,423,134,424,136,425,138,426,140,430|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2655,
+    "mediaTitle": "Enchanted",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "The D Files Interactive",
+    "itemType": "Other",
+    "category": "SecondaryUseful",
+    "source": "00150.mpls",
+    "referenceDuration": "1:47:37",
+    "referenceSegmentMap": "120,418,122,419,124,420,126,421,128,130,422,132,423,134,424,136,425,138,426,140,431",
+    "logRow": 8,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00150.mpls"
+    ],
+    "scanDuration": "1:47:37",
+    "scanSegmentMap": "120,418,122,419,124,420,126,421,128,130,422,132,423,134,424,136,425,138,426,140,429,430,431",
+    "durationDelta": 0,
+    "sizeDelta": 145152000,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Enchanted (2007)\\2008-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "AnglePerspectiveUnresolved",
+    "auditEvidence": "Manifest model combines alternate/dependent perspectives; do not infer one selected perspective",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2655|00150.mpls|1:47:37|120,418,122,419,124,420,126,421,128,130,422,132,423,134,424,136,425,138,426,140,431|Other|The D Files Interactive"
+  },
+  {
+    "discId": 2657,
+    "mediaTitle": "Curse of the Pink Panther",
+    "discName": "Main Feature",
+    "format": "blu-ray",
+    "itemName": "Curse of the Pink Panther",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00004.mpls(1)",
+    "referenceDuration": "1:50:26",
+    "referenceSegmentMap": "4",
+    "logRow": 2,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00004.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Curse of the Pink Panther (1983)\\2017-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00004.mpls",
+    "extraTailSeconds": 11.011,
+    "referenceChoiceKey": "2657|00004.mpls(1)|1:50:26|4|MainMovie|Curse of the Pink Panther"
+  },
+  {
+    "discId": 2664,
+    "mediaTitle": "Hellbound: Hellraiser II",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Leviathan: The Story of Hellhound: Hellraiser II",
+    "itemType": "Extra",
+    "category": "SecondaryUseful",
+    "source": "00004.mpls",
+    "referenceDuration": "2:00:44",
+    "referenceSegmentMap": "15",
+    "logRow": 2,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00004.mpls"
+    ],
+    "scanDuration": "2:00:46",
+    "scanSegmentMap": "15,6",
+    "durationDelta": 2,
+    "sizeDelta": 24576,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Hellbound Hellraiser II (1988)\\2023-arrow-video-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 0,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": false,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00004.mpls",
+    "extraTailSeconds": 2.002,
+    "referenceChoiceKey": "2664|00004.mpls|2:00:44|15|Extra|Leviathan: The Story of Hellhound: Hellraiser II"
+  },
+  {
+    "discId": 2664,
+    "mediaTitle": "Hellbound: Hellraiser II",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Surgeon Scene",
+    "itemType": "DeletedScene",
+    "category": "SecondaryUseful",
+    "source": "00018.m2ts",
+    "referenceDuration": "0:04:50",
+    "referenceSegmentMap": "18",
+    "logRow": 20,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00014.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Hellbound Hellraiser II (1988)\\2023-arrow-video-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "BundledCandidate",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2664|00018.m2ts|0:04:50|18|DeletedScene|Surgeon Scene"
+  },
+  {
+    "discId": 2664,
+    "mediaTitle": "Hellbound: Hellraiser II",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Under the Skin: Doug Bradley on Hellbound",
+    "itemType": "Extra",
+    "category": "SecondaryUseful",
+    "source": "00016.m2ts",
+    "referenceDuration": "0:10:52",
+    "referenceSegmentMap": "16",
+    "logRow": 19,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00012.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Hellbound Hellraiser II (1988)\\2023-arrow-video-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00012.mpls",
+    "extraTailSeconds": 1.6016,
+    "referenceChoiceKey": "2664|00016.m2ts|0:10:52|16|Extra|Under the Skin: Doug Bradley on Hellbound"
+  },
+  {
+    "discId": 2664,
+    "mediaTitle": "Hellbound: Hellraiser II",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Red Band Trailer",
+    "itemType": "Trailer",
+    "category": "SecondaryUseful",
+    "source": "00008.mpls",
+    "referenceDuration": "0:01:41",
+    "referenceSegmentMap": "11",
+    "logRow": 5,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00008.mpls"
+    ],
+    "scanDuration": "0:01:38",
+    "scanSegmentMap": "11",
+    "durationDelta": -3,
+    "sizeDelta": 0,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Hellbound Hellraiser II (1988)\\2023-arrow-video-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 0,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": false,
+      "noSubtitles": false,
+      "logSubtitles": 0,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "AlteredPlaybackMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2664|00008.mpls|0:01:41|11|Trailer|Red Band Trailer"
+  },
+  {
+    "discId": 2684,
+    "mediaTitle": "Red Dust",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Red Dust (1932)",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00002.mpls",
+    "referenceDuration": "1:22:49",
+    "referenceSegmentMap": "2",
+    "logRow": 1,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00002.mpls"
+    ],
+    "scanDuration": "1:23:12",
+    "scanSegmentMap": "2,3",
+    "durationDelta": 23,
+    "sizeDelta": 29712384,
+    "chapterDelta": 1,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Red Dust (1932)\\2026-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 2,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": true
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00002.mpls",
+    "extraTailSeconds": 23.231533,
+    "referenceChoiceKey": "2684|00002.mpls|1:22:49|2|MainMovie|Red Dust (1932)"
+  },
+  {
+    "discId": 2689,
+    "mediaTitle": "Dance, Fools, Dance",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Dance, Fools, Dance (1931)",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00001.mpls",
+    "referenceDuration": "1:20:26",
+    "referenceSegmentMap": "1",
+    "logRow": 2,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00001.mpls"
+    ],
+    "scanDuration": "1:20:50",
+    "scanSegmentMap": "1,2",
+    "durationDelta": 24,
+    "sizeDelta": 29712384,
+    "chapterDelta": 1,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Dance, Fools, Dance (1931)\\2023-warner-archive-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 2,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": true
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00001.mpls",
+    "extraTailSeconds": 23.231533,
+    "referenceChoiceKey": "2689|00001.mpls|1:20:26|1|MainMovie|Dance, Fools, Dance (1931)"
+  },
+  {
+    "discId": 2690,
+    "mediaTitle": "Marie: A True Story",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Marie: A True Story (1985)",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00002.mpls",
+    "referenceDuration": "1:51:37",
+    "referenceSegmentMap": "2",
+    "logRow": 1,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00002.mpls"
+    ],
+    "scanDuration": "1:52:00",
+    "scanSegmentMap": "2,3",
+    "durationDelta": 23,
+    "sizeDelta": 29712384,
+    "chapterDelta": 2,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Marie A True Story (1985)\\2024-warner-archive-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 2,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": true
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00002.mpls",
+    "extraTailSeconds": 23.231533,
+    "referenceChoiceKey": "2690|00002.mpls|1:51:37|2|MainMovie|Marie: A True Story (1985)"
+  },
+  {
+    "discId": 2711,
+    "mediaTitle": "Safe in Hell",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Safe in Hell (1931)",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00002.mpls",
+    "referenceDuration": "1:13:09",
+    "referenceSegmentMap": "2",
+    "logRow": 1,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00002.mpls"
+    ],
+    "scanDuration": "1:13:32",
+    "scanSegmentMap": "2,3",
+    "durationDelta": 23,
+    "sizeDelta": 29712384,
+    "chapterDelta": 1,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Safe in Hell (1931)\\2023-warner-archive-blu-ray\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 2,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": true
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00002.mpls",
+    "extraTailSeconds": 23.231533,
+    "referenceChoiceKey": "2711|00002.mpls|1:13:09|2|MainMovie|Safe in Hell (1931)"
+  },
+  {
+    "discId": 2741,
+    "mediaTitle": "Stargate",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Stargate (Theatrical)",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00004.mpls",
+    "referenceDuration": "2:00:57",
+    "referenceSegmentMap": "312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345",
+    "logRow": 3,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00004.mpls"
+    ],
+    "scanDuration": "2:00:47",
+    "scanSegmentMap": "312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345",
+    "durationDelta": -10,
+    "sizeDelta": 0,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Stargate (1994)\\2009-15th-anniversary-edition\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 3,
+      "scanAudio": 2,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 4,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 8,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "AlteredPlaybackMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2741|00004.mpls|2:00:57|312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345|MainMovie|Stargate (Theatrical)"
+  },
+  {
+    "discId": 2741,
+    "mediaTitle": "Stargate",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Stargate (Extended)",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00024.mpls",
+    "referenceDuration": "2:09:53",
+    "referenceSegmentMap": "347,313,349,315,351,317,353,319,355,321,357,323,359,325,361,327,363,329,348,331,350,333,352,335,354,337,356,339,358,341,360,343,362,345",
+    "logRow": 4,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00024.mpls"
+    ],
+    "scanDuration": "2:09:36",
+    "scanSegmentMap": "347,313,349,315,351,317,353,319,355,321,357,323,359,325,361,327,363,329,348,331,350,333,352,335,354,337,356,339,358,341,360,343,362,345",
+    "durationDelta": -17,
+    "sizeDelta": 0,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Stargate (1994)\\2009-15th-anniversary-edition\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 3,
+      "scanAudio": 2,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 3,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 6,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "AlteredPlaybackMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2741|00024.mpls|2:09:53|347,313,349,315,351,317,353,319,355,321,357,323,359,325,361,327,363,329,348,331,350,333,352,335,354,337,356,339,358,341,360,343,362,345|MainMovie|Stargate (Extended)"
+  },
+  {
+    "discId": 2900,
+    "mediaTitle": "Audition",
+    "discName": "4K",
+    "format": "uhd-blu-ray",
+    "itemName": "Audition",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00000.mpls",
+    "referenceDuration": "1:55:50",
+    "referenceSegmentMap": "4",
+    "logRow": 1,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00000.mpls"
+    ],
+    "scanDuration": "1:55:40",
+    "scanSegmentMap": "4",
+    "durationDelta": -10,
+    "sizeDelta": 0,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Audition (2000)\\2026-arrow-video-4k-limited-edition\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 6,
+      "scanAudio": 3,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": true,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "AlteredPlaybackMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2900|00000.mpls|1:55:50|4|MainMovie|Audition"
+  },
+  {
+    "discId": 2900,
+    "mediaTitle": "Audition",
+    "discName": "4K",
+    "format": "uhd-blu-ray",
+    "itemName": "Audition (Commentary by Tome Mes)",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00015.mpls",
+    "referenceDuration": "1:55:50",
+    "referenceSegmentMap": "4",
+    "logRow": 5,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00015.mpls"
+    ],
+    "scanDuration": "1:55:40",
+    "scanSegmentMap": "4",
+    "durationDelta": -10,
+    "sizeDelta": 0,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Audition (2000)\\2026-arrow-video-4k-limited-edition\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "AlteredPlaybackMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2900|00015.mpls|1:55:50|4|MainMovie|Audition (Commentary by Tome Mes)"
+  },
+  {
+    "discId": 2900,
+    "mediaTitle": "Audition",
+    "discName": "4K",
+    "format": "uhd-blu-ray",
+    "itemName": "Audition (Commentary by Takashi Miike and Daisuke Tengan)",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00014.mpls",
+    "referenceDuration": "1:55:50",
+    "referenceSegmentMap": "4",
+    "logRow": 6,
+    "status": "AlteredPlaybackMetadata",
+    "relation": "ExactSource",
+    "scanSources": [
+      "00014.mpls"
+    ],
+    "scanDuration": "1:55:40",
+    "scanSegmentMap": "4",
+    "durationDelta": -10,
+    "sizeDelta": 0,
+    "chapterDelta": 0,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Audition (2000)\\2026-arrow-video-4k-limited-edition\\disc01.json"
+    ],
+    "streams": {
+      "logAudio": 1,
+      "scanAudio": 1,
+      "unreachableAudioLabels": [
+        null
+      ],
+      "missingAudioLanguages": [],
+      "scanSubtitles": 1,
+      "closedCaptionsNotProjected": false,
+      "noAudio": false,
+      "missingSubtitleLanguages": [],
+      "subtitleCountDiffers": true,
+      "noSubtitles": false,
+      "logSubtitles": 2,
+      "unreachableSubtitleLabels": [
+        null
+      ],
+      "audioCountDiffers": false,
+      "measured": true,
+      "labeledOrdinalMappingNeedsReview": false
+    },
+    "auditAssessment": "NeedsFurtherEvidence",
+    "auditEvidence": "AlteredPlaybackMetadata",
+    "refinedScanSource": null,
+    "extraTailSeconds": null,
+    "referenceChoiceKey": "2900|00014.mpls|1:55:50|4|MainMovie|Audition (Commentary by Takashi Miike and Daisuke Tengan)"
+  },
+  {
+    "discId": 2921,
+    "mediaTitle": "Halloween",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Halloween",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00002.mpls(1)",
+    "referenceDuration": "1:31:12",
+    "referenceSegmentMap": "0",
+    "logRow": 2,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00002.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Halloween (1978)\\2025-scream-factory-4k-limited-edition-steelbook\\disc02.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00002.mpls",
+    "extraTailSeconds": 34.0,
+    "referenceChoiceKey": "2921|00002.mpls(1)|1:31:12|0|MainMovie|Halloween"
+  },
+  {
+    "discId": 3026,
+    "mediaTitle": "Narrow Margin",
+    "discName": "Blu-ray",
+    "format": "blu-ray",
+    "itemName": "Narrow Margin",
+    "itemType": "MainMovie",
+    "category": "RequiredUseful",
+    "source": "00004.mpls(1)",
+    "referenceDuration": "1:37:14",
+    "referenceSegmentMap": "4",
+    "logRow": 1,
+    "status": "BundledCandidate",
+    "relation": "ContainedClipSequenceNotIndependentChoice",
+    "scanSources": [
+      "00004.mpls"
+    ],
+    "scanDuration": null,
+    "scanSegmentMap": null,
+    "durationDelta": null,
+    "sizeDelta": null,
+    "chapterDelta": null,
+    "contributionStatus": "IMPORTED",
+    "publishedLabelConfirmed": true,
+    "publishedPaths": [
+      "data\\movie\\Narrow Margin (1990)\\kino-lorber-4k\\disc01.json"
+    ],
+    "streams": {
+      "measured": false
+    },
+    "auditAssessment": "ContentPresentWithAdditionalSegments",
+    "auditEvidence": "Complete reference clip sequence has matching bytes and displayed duration, but additional segments need boundary/identification review",
+    "refinedScanSource": "00004.mpls",
+    "extraTailSeconds": 12.011999999999999,
+    "referenceChoiceKey": "3026|00004.mpls(1)|1:37:14|4|MainMovie|Narrow Margin"
+  }
+]

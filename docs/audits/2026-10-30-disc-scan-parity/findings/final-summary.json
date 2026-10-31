@@ -1,0 +1,985 @@
+{
+  "rawUnresolved": 1075,
+  "unresolvedUseful": 105,
+  "usefulAvailabilityPercent": 96.85534591194968,
+  "scannerCandidateDiscs": 191,
+  "distinctManifestHashes": 489,
+  "unresolvedUsefulDiscs": 21,
+  "allKnownUsefulDiscs": 406,
+  "unchangedAssets": 1473,
+  "unclassifiedRows": 12559,
+  "distinctLabeledChoices": 3339,
+  "newestProducerDiscs": [
+    {
+      "discId": 3150,
+      "format": "blu-ray",
+      "mediaTitle": "Brave",
+      "browserFamily": "Safari",
+      "knownUseful": 1,
+      "refinedUsefulAvailable": 1,
+      "rawUnresolvedRows": 0
+    },
+    {
+      "discId": 3151,
+      "format": "uhd-blu-ray",
+      "mediaTitle": "Spotlight",
+      "browserFamily": "Chrome",
+      "knownUseful": 1,
+      "refinedUsefulAvailable": 1,
+      "rawUnresolvedRows": 0
+    },
+    {
+      "discId": 3152,
+      "format": "blu-ray",
+      "mediaTitle": "Spotlight",
+      "browserFamily": "Chrome",
+      "knownUseful": 4,
+      "refinedUsefulAvailable": 4,
+      "rawUnresolvedRows": 0
+    },
+    {
+      "discId": 3153,
+      "format": "dvd",
+      "mediaTitle": "How I Met Your Mother",
+      "browserFamily": "Edge",
+      "knownUseful": 0,
+      "refinedUsefulAvailable": 0,
+      "rawUnresolvedRows": 2
+    },
+    {
+      "discId": 3155,
+      "format": "dvd",
+      "mediaTitle": "Soap",
+      "browserFamily": "Opera",
+      "knownUseful": 10,
+      "refinedUsefulAvailable": 10,
+      "rawUnresolvedRows": 0
+    },
+    {
+      "discId": 3156,
+      "format": "blu-ray",
+      "mediaTitle": "Good Will Hunting",
+      "browserFamily": "Chrome",
+      "knownUseful": 7,
+      "refinedUsefulAvailable": 7,
+      "rawUnresolvedRows": 1
+    },
+    {
+      "discId": 3168,
+      "format": "blu-ray",
+      "mediaTitle": "All Creatures Great & Small",
+      "browserFamily": "Chrome",
+      "knownUseful": 0,
+      "refinedUsefulAvailable": 0,
+      "rawUnresolvedRows": 206
+    }
+  ],
+  "identified": 3437,
+  "dvdCodecPairs": 7,
+  "dvdCodecDiscs": 5,
+  "refreshedReceipts": 1473,
+  "producerCount": 14,
+  "rawClusters": [
+    {
+      "cluster": "AcquisitionInconsistent",
+      "discs": 2,
+      "count": 90
+    },
+    {
+      "cluster": "AnglePerspectiveUnresolved",
+      "discs": 4,
+      "count": 24
+    },
+    {
+      "cluster": "AvailableEquivalentCandidates",
+      "discs": 9,
+      "count": 12
+    },
+    {
+      "cluster": "AvailableRecordedEvidence",
+      "discs": 488,
+      "count": 14686
+    },
+    {
+      "cluster": "AvailableWithSmallBoundaryFragments",
+      "discs": 23,
+      "count": 120
+    },
+    {
+      "cluster": "AvailableWithTruncatedReferenceMap",
+      "discs": 4,
+      "count": 5
+    },
+    {
+      "cluster": "CoreSequencePresentBoundaryReview",
+      "discs": 55,
+      "count": 511
+    },
+    {
+      "cluster": "DifferentDisc",
+      "discs": 1,
+      "count": 19
+    },
+    {
+      "cluster": "DVDNavigationOrBoundaryDifference",
+      "discs": 6,
+      "count": 168
+    },
+    {
+      "cluster": "DVDUnrepresentedReferenceChoice",
+      "discs": 1,
+      "count": 1
+    },
+    {
+      "cluster": "DVDUnsupportedOrIncompleteMetadata",
+      "discs": 29,
+      "count": 235
+    },
+    {
+      "cluster": "GroupingOrIncompleteEvidence",
+      "discs": 1,
+      "count": 1
+    },
+    {
+      "cluster": "MaterialTimingDiscrepancy",
+      "discs": 14,
+      "count": 17
+    },
+    {
+      "cluster": "NamedIncidental",
+      "discs": 36,
+      "count": 98
+    },
+    {
+      "cluster": "UnrepresentedReferenceChoice",
+      "discs": 8,
+      "count": 9
+    }
+  ],
+  "scannerCandidateAssessments": [
+    {
+      "count": 115,
+      "assessment": "ContainerOrUnresolvedReferenceCounterpart"
+    },
+    {
+      "count": 74,
+      "assessment": "EquivalentRecordedCandidateNotSelected"
+    },
+    {
+      "count": 2082,
+      "assessment": "UnclassifiedScannerCandidate"
+    }
+  ],
+  "unclassifiedUnresolved": 970,
+  "knownUsefulDiscs": 427,
+  "usefulAssessments": [
+    {
+      "assessment": "AcquisitionInconsistent",
+      "discs": 2,
+      "count": 45
+    },
+    {
+      "assessment": "AnglePerspectiveUnresolved",
+      "discs": 3,
+      "count": 21
+    },
+    {
+      "assessment": "AvailableEquivalentCandidates",
+      "discs": 4,
+      "count": 4
+    },
+    {
+      "assessment": "AvailableRecordedEvidence",
+      "discs": 413,
+      "count": 3154
+    },
+    {
+      "assessment": "AvailableWithSmallBoundaryFragments",
+      "discs": 16,
+      "count": 74
+    },
+    {
+      "assessment": "AvailableWithTruncatedReferenceMap",
+      "discs": 2,
+      "count": 2
+    },
+    {
+      "assessment": "ContentPresentWithAdditionalSegments",
+      "discs": 13,
+      "count": 24
+    },
+    {
+      "assessment": "NeedsFurtherEvidence",
+      "discs": 6,
+      "count": 15
+    }
+  ],
+  "regeneratedScans": 0,
+  "availableUseful": 3234,
+  "scannerCandidateRows": 2271,
+  "noUsefulLabels": 64,
+  "perFormat": [
+    {
+      "available": 2515.0,
+      "savedTechnicalMatches": 71,
+      "labeledDiscs": 271,
+      "unresolved": 89.0,
+      "discs": 303,
+      "useful": 2604.0,
+      "technicalMatches": 63,
+      "format": "blu-ray",
+      "allKnownUseful": 255,
+      "unclassifiedRows": 7624.0,
+      "requiredIssueDiscs": 13
+    },
+    {
+      "available": 360.0,
+      "savedTechnicalMatches": 52,
+      "labeledDiscs": 71,
+      "unresolved": 7.0,
+      "discs": 101,
+      "useful": 367.0,
+      "technicalMatches": 52,
+      "format": "dvd",
+      "allKnownUseful": 69,
+      "unclassifiedRows": 1146.0,
+      "requiredIssueDiscs": 1
+    },
+    {
+      "available": 359.0,
+      "savedTechnicalMatches": 34,
+      "labeledDiscs": 85,
+      "unresolved": 9.0,
+      "discs": 86,
+      "useful": 368.0,
+      "technicalMatches": 25,
+      "format": "uhd-blu-ray",
+      "allKnownUseful": 82,
+      "unclassifiedRows": 3770.0,
+      "requiredIssueDiscs": 3
+    },
+    {
+      "available": 0.0,
+      "savedTechnicalMatches": 0,
+      "labeledDiscs": 0,
+      "unresolved": 0.0,
+      "discs": 1,
+      "useful": 0.0,
+      "technicalMatches": 0,
+      "format": "unknown",
+      "allKnownUseful": 0,
+      "unclassifiedRows": 19.0,
+      "requiredIssueDiscs": 0
+    }
+  ],
+  "distinctExpectedHashes": 489,
+  "comparisonBuild": "1.0.0+6a46d65e615cb831f9394dde446d109b05018ee6",
+  "streamLabelAssessments": [
+    {
+      "assessment": "OrdinalInRangeNotSemanticProof",
+      "discs": 29,
+      "labels": 199,
+      "items": 156
+    },
+    {
+      "assessment": "OrdinalRebindingNeedsReview",
+      "discs": 65,
+      "labels": 183,
+      "items": 101
+    },
+    {
+      "assessment": "UnmeasuredMapping",
+      "discs": 2,
+      "labels": 5,
+      "items": 2
+    },
+    {
+      "assessment": "ValidLogOrdinalOutOfRangeInScan",
+      "discs": 76,
+      "labels": 226,
+      "items": 125
+    }
+  ],
+  "validation": "Passed: receipt hashes/lengths, corpus closure, unique disc results, classification and format denominators",
+  "publishedUseful": 3141,
+  "inventory": 491,
+  "originalReceipts": 1473,
+  "languageSignals": [
+    {
+      "discId": 2562,
+      "assessment": "AcquisitionInconsistent",
+      "source": "00008.m2ts",
+      "audio": [
+        "eng"
+      ],
+      "itemName": "Nachtzahnarzt",
+      "subtitles": []
+    },
+    {
+      "discId": 2589,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00032.m2ts",
+      "audio": [],
+      "itemName": "Photo Gallery",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2614,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00074.m2ts",
+      "audio": [],
+      "itemName": "Introduction by Anne Rice, Neil Jordan, and Antonio Banderas",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2614,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00076.m2ts",
+      "audio": [],
+      "itemName": "In the Shadow of the Vampire",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2614,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00082.m2ts",
+      "audio": [],
+      "itemName": "Lestat, Louis and the Vampire Phenomenon",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2636,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "02",
+      "audio": [],
+      "itemName": "The Boone Identity",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2636,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "03",
+      "audio": [],
+      "itemName": "Hair of the Dog",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2636,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "04",
+      "audio": [],
+      "itemName": "Rules of Engagement",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2639,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "02",
+      "audio": [],
+      "itemName": "Soul Beneficiary",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2639,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "03",
+      "audio": [],
+      "itemName": "Walls",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2639,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "04",
+      "audio": [],
+      "itemName": "Storm Front",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2640,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "02",
+      "audio": [],
+      "itemName": "What About Bob?",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2640,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "03",
+      "audio": [],
+      "itemName": "Things That Go Bump",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2640,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "04",
+      "audio": [],
+      "itemName": "Second City",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2642,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "11",
+      "audio": [],
+      "itemName": "How to Train Your Dragon Live Spectacular: Sneak Peak",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2642,
+      "assessment": "NeedsFurtherEvidence",
+      "source": "01",
+      "audio": [],
+      "itemName": "Play All",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2642,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "12",
+      "audio": [],
+      "itemName": "Madly Madagascar Sneak Peak",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2642,
+      "assessment": "NeedsFurtherEvidence",
+      "source": "02",
+      "audio": [],
+      "itemName": "How to Start a Dragon Academy",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2642,
+      "assessment": "NeedsFurtherEvidence",
+      "source": "03",
+      "audio": [],
+      "itemName": "Viking for Hire",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2642,
+      "assessment": "NeedsFurtherEvidence",
+      "source": "04",
+      "audio": [],
+      "itemName": "Animal House",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2642,
+      "assessment": "NeedsFurtherEvidence",
+      "source": "05",
+      "audio": [],
+      "itemName": "The Terrible Twos",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2655,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00143.m2ts",
+      "audio": [
+        "spa"
+      ],
+      "itemName": "disney ad",
+      "subtitles": [
+        "spa"
+      ]
+    },
+    {
+      "discId": 2655,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00142.m2ts",
+      "audio": [
+        "fra",
+        "spa"
+      ],
+      "itemName": "clip credits continued",
+      "subtitles": [
+        "fra",
+        "spa"
+      ]
+    },
+    {
+      "discId": 2660,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "01",
+      "audio": [],
+      "itemName": "First Knight",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2662,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "01",
+      "audio": [],
+      "itemName": "First Knight",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2679,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "08",
+      "audio": [],
+      "itemName": "Ben-Hur: The Making of an Epic",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2679,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "01",
+      "audio": [],
+      "itemName": "Ben-Hur: The Epic That Changed Cinema",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2680,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "01",
+      "audio": [],
+      "itemName": "Ben-Hur: A Tale of the Christ",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 2754,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00145.m2ts",
+      "audio": [],
+      "itemName": "One Soldier's Story - The Journey of American Sniper",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2754,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00158.m2ts",
+      "audio": [],
+      "itemName": "The Making of American Sniper",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2904,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00062.m2ts",
+      "audio": [],
+      "itemName": "Lestat, Louis, and the Vampire Phenomenon",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2904,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00061.m2ts",
+      "audio": [],
+      "itemName": "Interview with the Vampire: Creating the World",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2904,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00060.m2ts",
+      "audio": [],
+      "itemName": "Eternal Night and Deadly Light",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2904,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00059.m2ts",
+      "audio": [],
+      "itemName": "Introduction by Anne RIce, Neil Jordan, and Antonio Banderas",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2904,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00058.m2ts",
+      "audio": [],
+      "itemName": "In the Shadow of the Vampire",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2904,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00057.m2ts",
+      "audio": [],
+      "itemName": "Deleted Scenes",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 2911,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "03",
+      "audio": [],
+      "itemName": "Jonestown: The Life and Death of Peoples Temple",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3024,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00078.m2ts",
+      "audio": [],
+      "itemName": "The Charlie Rose Show (2003-12-26) - Kevin Bacon",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 3024,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00075.m2ts",
+      "audio": [],
+      "itemName": "Bravo TV Special Mystic River: From Page to Screen",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 3024,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00026.m2ts",
+      "audio": [],
+      "itemName": "Mystic River: Beneath the Surface",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 3024,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00079.m2ts",
+      "audio": [],
+      "itemName": "Theatrical Teaser",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 3024,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00080.m2ts",
+      "audio": [],
+      "itemName": "Theatrical Trailer",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 3025,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "00101.m2ts",
+      "audio": [],
+      "itemName": "Theatrical Trailer",
+      "subtitles": [
+        "jpn"
+      ]
+    },
+    {
+      "discId": 3048,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "01",
+      "audio": [],
+      "itemName": "Spaceballs",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3049,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "01",
+      "audio": [],
+      "itemName": "Spaceballs",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3155,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "01",
+      "audio": [],
+      "itemName": "Episode 1",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3155,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "02",
+      "audio": [],
+      "itemName": "Episode 2",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3155,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "03",
+      "audio": [],
+      "itemName": "Episode 3",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3155,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "04",
+      "audio": [],
+      "itemName": "Episode 4",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3155,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "05",
+      "audio": [],
+      "itemName": "Episode 5",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3155,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "06",
+      "audio": [],
+      "itemName": "Episode 6",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3155,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "07",
+      "audio": [],
+      "itemName": "Episode 7",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3155,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "08",
+      "audio": [],
+      "itemName": "Episode 8",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3155,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "09",
+      "audio": [],
+      "itemName": "Episode 9",
+      "subtitles": [
+        "eng"
+      ]
+    },
+    {
+      "discId": 3155,
+      "assessment": "AvailableRecordedEvidence",
+      "source": "10",
+      "audio": [],
+      "itemName": "Episode 10",
+      "subtitles": [
+        "eng"
+      ]
+    }
+  ],
+  "evidenceStates": [
+    {
+      "Name": "AcquisitionInconsistent",
+      "Count": 2
+    },
+    {
+      "Name": "DifferentDisc",
+      "Count": 1
+    },
+    {
+      "Name": "KnownUsefulChoicesNeedReview",
+      "Count": 19
+    },
+    {
+      "Name": "KnownUsefulPlaybackMetadataAvailable",
+      "Count": 406
+    },
+    {
+      "Name": "NoUsefulReferenceLabels",
+      "Count": 63
+    }
+  ],
+  "useful": 3339,
+  "dvdCodecCombinations": [
+    {
+      "count": 4,
+      "pair": "DTS, Unknown",
+      "discs": 2
+    },
+    {
+      "count": 3,
+      "pair": "MPEG audio layer 2, MPEG-2",
+      "discs": 3
+    }
+  ],
+  "statuses": [
+    {
+      "Name": "DifferentDisc",
+      "Count": 1
+    },
+    {
+      "Name": "Match",
+      "Count": 140
+    },
+    {
+      "Name": "Mismatch",
+      "Count": 350
+    }
+  ],
+  "browsers": [
+    {
+      "Name": "Chrome",
+      "Count": 157
+    },
+    {
+      "Name": "Edge",
+      "Count": 150
+    },
+    {
+      "Name": "Firefox",
+      "Count": 87
+    },
+    {
+      "Name": "Opera",
+      "Count": 6
+    },
+    {
+      "Name": "Safari",
+      "Count": 91
+    }
+  ],
+  "makeMkvVersions": [
+    {
+      "Name": "1.18.3",
+      "Count": 207
+    },
+    {
+      "Name": "1.18.4",
+      "Count": 154
+    },
+    {
+      "Name": "2.0.0",
+      "Count": 130
+    }
+  ],
+  "rawRows": 15996,
+  "localResults": 491,
+  "originalBytes": 278712578.0,
+  "streams": [
+    {
+      "signal": "noAudio",
+      "items": 1,
+      "discs": 1
+    },
+    {
+      "signal": "noSubtitles",
+      "items": 32,
+      "discs": 10
+    },
+    {
+      "signal": "closedCaptionsNotProjected",
+      "items": 95,
+      "discs": 30
+    },
+    {
+      "signal": "audioCountDiffers",
+      "items": 946,
+      "discs": 277
+    },
+    {
+      "signal": "subtitleCountDiffers",
+      "items": 2265,
+      "discs": 376
+    },
+    {
+      "signal": "labeledOrdinalMappingNeedsReview",
+      "items": 174,
+      "discs": 105
+    }
+  ]
+}

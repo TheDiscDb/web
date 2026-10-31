@@ -22,5 +22,13 @@
         // Video Specific
         public string? Resolution { get; set; } //19
         public string? AspectRatio { get; set; } //20
+
+        public string? Category { get; set; }
+        public string? SourceCodec { get; set; }
+        public int? Pid { get; set; }
+        public int? CodingTypeCode { get; set; }
+        public int? FormatCode { get; set; }
+        public int? RateCode { get; set; }
+        public IReadOnlyList<int>? Line21ClosedCaptionFields { get; set; }
     }
 }

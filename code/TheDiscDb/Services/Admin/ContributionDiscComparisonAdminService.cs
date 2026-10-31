@@ -175,7 +175,11 @@ public sealed class ContributionDiscComparisonAdminService : IContributionDiscCo
                     run.Status,
                     JsonSerializer.Serialize(run.Differences, DifferencesJsonOptions))
                 {
-                    IdentifyExperience = run.Differences.IdentifyExperience
+                    IdentifyExperience = run.Differences.IdentifyExperience,
+                    UsefulContent = run.Differences.UsefulContent,
+                    ComparerVersion = run.ComparerVersion,
+                    ManifestSha256 = run.ManifestSha256,
+                    ReferenceSha256 = run.ReferenceSha256
                 });
             }
         }
@@ -204,6 +208,10 @@ public sealed record ContributionDiscComparisonListItem(
     string DifferencesJson)
 {
     public IdentifyExperienceComparison? IdentifyExperience { get; init; }
+    public UsefulContentComparison? UsefulContent { get; init; }
+    public string? ComparerVersion { get; init; }
+    public string? ManifestSha256 { get; init; }
+    public string? ReferenceSha256 { get; init; }
 
     public string IdentifyExperienceLabel => IdentifyExperience is { Version: IdentifyExperienceComparison.CurrentVersion } experience
         ? experience.Status.ToString() : "Not measured";
@@ -224,6 +232,7 @@ public sealed record ContributionDiscParityDashboard(
     IReadOnlyList<ContributionDiscComparisonListItem> NonMatches,
     IReadOnlyList<string> ProducerVersions)
 {
+    public UsefulContentAggregate UsefulContent { get; init; } = UsefulContentAggregate.Create([]);
     public IdentifySimilarityAggregate Similarity { get; init; } = IdentifySimilarityAggregate.Create([]);
     public IdentifyExperienceStats IdentifyExperience { get; init; } = new(0, 0, 0, 0);
 
@@ -232,6 +241,7 @@ public sealed record ContributionDiscParityDashboard(
 
 public sealed record ContributionDiscParityBreakdown(string Label, ContributionDiscParityStats Stats)
 {
+    public UsefulContentAggregate UsefulContent { get; init; } = UsefulContentAggregate.Create([]);
     public IdentifySimilarityAggregate Similarity { get; init; } = IdentifySimilarityAggregate.Create([]);
     public IdentifyExperienceStats IdentifyExperience { get; init; } = new(0, 0, 0, 0);
 }
@@ -267,6 +277,7 @@ public static class DiscScanParityAggregator
                 .Order(StringComparer.OrdinalIgnoreCase)
                 .ToList()!)
         {
+            UsefulContent = UsefulContentAggregate.Create(latest.Select(item => item.UsefulContent)),
             Similarity = IdentifySimilarityAggregate.Create(latest.Select(item => item.IdentifyExperience)),
             IdentifyExperience = CreateExperienceStats(latest),
             IdentifyExperienceNonMatches = latest.Where(item =>
@@ -313,6 +324,7 @@ public static class DiscScanParityAggregator
             .GroupBy(item => NormalizeLabel(keySelector(item)), StringComparer.OrdinalIgnoreCase)
             .Select(group => new ContributionDiscParityBreakdown(group.Key, CreateStats(group))
             {
+                UsefulContent = UsefulContentAggregate.Create(group.Select(item => item.UsefulContent)),
                 Similarity = IdentifySimilarityAggregate.Create(group.Select(item => item.IdentifyExperience)),
                 IdentifyExperience = CreateExperienceStats(group)
             })

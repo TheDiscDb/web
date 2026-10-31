@@ -1,0 +1,22 @@
+{
+  "discs": 491,
+  "legacyFieldsUnchangedByReferences": true,
+  "namedLabelsIncluded": true,
+  "suppliedLabels": 613,
+  "aggregate": {
+    "measuredDiscs": 425,
+    "completeKnownUsefulDiscs": 406,
+    "noUsefulReferences": 63,
+    "acquisitionReview": 2,
+    "notComparable": 1,
+    "notMeasured": 0,
+    "knownUseful": 3339,
+    "available": 3236,
+    "requiredUnresolved": 27,
+    "unclassifiedReferenceRows": 12559,
+    "unclassifiedScanChoices": 13628,
+    "namedMappingReviewChoices": 331,
+    "captionReviewChoices": 0,
+    "summary": "Known useful choices 3236/3339; required choices unresolved 27; all known useful available on 406/425 measured labeled discs. No useful references 63; acquisition review 2; not comparable 1; not measured 0. Unclassified reference/scan choices 12559/13628; named stream mapping review 331; caption review 0."
+  }
+}

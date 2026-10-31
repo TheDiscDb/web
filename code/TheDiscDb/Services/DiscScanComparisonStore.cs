@@ -22,6 +22,12 @@ public sealed class DiscScanComparisonRecord
 
     public string? MakeMkvVersion { get; set; }
 
+    public string? ComparerVersion { get; set; }
+
+    public string? ManifestSha256 { get; set; }
+
+    public string? ReferenceSha256 { get; set; }
+
     public string? UserAgent { get; set; }
 
     public int LogTitleCount { get; set; }
@@ -52,6 +58,8 @@ public sealed class DiscScanComparisonStore
     // Re-comparing after a scanner fix is the common reason to run again, so a short history is enough.
     public const int MaxHistory = 20;
 
+    private const int MaxAppendAttempts = 5;
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true,
@@ -80,19 +88,40 @@ public sealed class DiscScanComparisonStore
 
     public async Task AppendAsync(string encodedContributionId, string encodedDiscId, DiscScanComparisonRecord record, CancellationToken cancellationToken = default)
     {
-        var file = await this.ReadAsync(encodedContributionId, encodedDiscId, cancellationToken) ?? new DiscScanComparisonFile();
-        file.Comparisons.Insert(0, record);
-        if (file.Comparisons.Count > MaxHistory)
+        string path = ContributionDiscAssets.ComparisonPath(encodedContributionId, encodedDiscId);
+        for (int attempt = 0; attempt < MaxAppendAttempts; attempt++)
         {
-            file.Comparisons.RemoveRange(MaxHistory, file.Comparisons.Count - MaxHistory);
+            cancellationToken.ThrowIfCancellationRequested();
+            var snapshot = await this.assetStore.ReadForUpdate(path, cancellationToken);
+            var file = snapshot is null
+                ? new DiscScanComparisonFile()
+                : Deserialize(snapshot.Content.ToString())
+                    ?? throw new InvalidDataException($"Cannot append to invalid comparison history at '{path}'.");
+            if (file.Comparisons is null)
+            {
+                throw new InvalidDataException($"Cannot append to invalid comparison history at '{path}'.");
+            }
+            file.Comparisons.Insert(0, record);
+            if (file.Comparisons.Count > MaxHistory)
+            {
+                file.Comparisons.RemoveRange(MaxHistory, file.Comparisons.Count - MaxHistory);
+            }
+
+            if (await this.assetStore.TryWrite(
+                new BinaryData(JsonSerializer.SerializeToUtf8Bytes(file, JsonOptions)),
+                path,
+                ContentTypes.JsonContentType,
+                snapshot?.ETag,
+                cancellationToken))
+            {
+                return;
+            }
+
+            // A competing append won. Re-read its history and merge again, never overwrite it.
         }
 
-        using var stream = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(file, JsonOptions));
-        await this.assetStore.Save(
-            stream,
-            ContributionDiscAssets.ComparisonPath(encodedContributionId, encodedDiscId),
-            ContentTypes.JsonContentType,
-            cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        throw new IOException($"Could not append comparison history at '{path}' after {MaxAppendAttempts} conditional write conflicts.");
     }
 
     public static string Serialize(DiscScanComparisonFile file) => JsonSerializer.Serialize(file, JsonOptions);
