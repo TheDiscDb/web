@@ -1482,6 +1482,34 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
+    public void CollapseRepeatedPlayItems_CapsLoopsFollowedByPlaybackAtThreePlays()
+    {
+        // The Gentlemen/Nope 00149.mpls: clip 174, clip 175 250 times, then the 10 s still
+        // 448, listed by MakeMKV as "174,175,175,175,448"; a later loop running to the end
+        // is listed once. A trailing still shorter than ten seconds leaves the first loop at
+        // the end, so the playlist ends at that loop as before ("141,142").
+        static MplsPlaylist Create(uint stillTicks, int trailingLoop)
+        {
+            var playlist = CreateMultiItemPlaylist(
+                [("00174", 1, 0), .. Enumerable.Repeat(("00175", 5, 0), 6), ("00448", 1, 2), .. Enumerable.Repeat(("00602", 5, 0), trailingLoop)],
+                [(0, 0u), (2, 0u), (7, 0u)]);
+            return playlist with
+            {
+                PlayItems = playlist.PlayItems
+                    .Select(item => item.Index == 7 ? item with { OutTime = item.InTime + stillTicks } : item)
+                    .ToArray(),
+            };
+        }
+
+        var capped = BluRayPlaylistRules.CollapseRepeatedPlayItems(Create(450_450, 4));
+        var ended = BluRayPlaylistRules.CollapseRepeatedPlayItems(Create(136_800, 0));
+
+        Assert.Equal(["00174", "00175", "00175", "00175", "00448", "00602"], capped.PlayItems.Select(item => item.ClipId));
+        Assert.Equal([0, 2, 4], capped.Marks.Select(mark => mark.PlayItemReference));
+        Assert.Equal(["00174", "00175"], ended.PlayItems.Select(item => item.ClipId));
+    }
+
+    [Fact]
     public void CollapseRepeatedPlayItems_DropsInfiniteStillRepeatingAnEarlierStill()
     {
         // Monsters University (UHD) 00002.mpls: stills 150, 151, 151, 151, 150 are listed

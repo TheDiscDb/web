@@ -42,20 +42,61 @@ public class IdentifyExperienceTests
     }
 
     [Test]
-    public async Task Compare_DisplayTranslationDoesNotFabricateDuplicateSubtitleTracks()
+    public async Task ToDiscInfo_AddsMakeMkvDerivedTracksAfterNavigationCodedStreams()
     {
         var manifest = Manifest();
         manifest.Disc!.Titles[0].Streams =
         [
-            new OpticalDiscManifestStream { Type = "subtitle", Codec = "Presentation Graphics" }
+            new OpticalDiscManifestStream { Type = "audio", Category = "audio", Codec = "TrueHD", CodingTypeCode = 0x83, Language = "eng", AudioLayout = "stereo" },
+            new OpticalDiscManifestStream { Type = "audio", Category = "audio", Codec = "DTS-HD Master Audio", CodingTypeCode = 0x86, Language = "fra" },
+            new OpticalDiscManifestStream { Type = "audio", Category = "secondaryAudio", Codec = "AC-3 Plus", CodingTypeCode = 0x84 },
+            new OpticalDiscManifestStream { Type = "audio", Codec = "TrueHD Atmos" },
+            new OpticalDiscManifestStream { Type = "subtitle", Category = "presentationGraphics", Codec = "Presentation Graphics", CodingTypeCode = 0x90, Language = "spa" }
         ];
-        var log = OpticalDiscManifestMapper.ToDiscInfo(manifest);
-        log.Titles[0].Segments.Add(new Segment { Type = "Subtitles", Name = "HDMV PGS Subtitles" });
 
-        var experience = Compare(manifest, log).Differences.IdentifyExperience!;
-        await Assert.That(experience.Status).IsEqualTo(IdentifyExperienceStatus.Mismatch);
-        await Assert.That(experience.Differences.Single().Field).IsEqualTo("SubtitlesDialogNames");
-        await Assert.That(OpticalDiscManifestMapper.ToDiscInfo(manifest).Titles[0].Segments.Count).IsEqualTo(1);
+        var segments = OpticalDiscManifestMapper.ToDiscInfo(manifest).Titles[0].Segments;
+
+        await Assert.That(string.Join("|", segments.Select(s => $"{s.Index}:{s.Type}:{s.Name} {s.AudioType}:{s.LanguageCode}"))).IsEqualTo(string.Join("|", new[]
+        {
+            "0:Audio:TrueHD Stereo:eng",
+            "1:Audio:Dolby Digital Stereo:eng",
+            "2:Audio:DTS-HD Master Audio :fra",
+            "3:Audio:DTS :fra",
+            "4:Audio:Dolby Digital plus :",
+            "5:Audio:TrueHD Atmos :",
+            "6:Subtitles:HDMV PGS Subtitles :spa",
+            "7:Subtitles:HDMV PGS Subtitles :spa"
+        }));
+    }
+
+    [Test]
+    public async Task ToDiscInfo_InfersOnlyPredictableMultichannelLayouts()
+    {
+        var manifest = Manifest();
+        manifest.Disc!.Titles[0].Streams =
+        [
+            new OpticalDiscManifestStream { Type = "audio", Category = "audio", Codec = "AC-3 Plus", CodingTypeCode = 0x84, FormatCode = 6 },
+            new OpticalDiscManifestStream { Type = "audio", Category = "audio", Codec = "TrueHD", CodingTypeCode = 0x83, FormatCode = 12 },
+            new OpticalDiscManifestStream { Type = "audio", Category = "audio", Codec = "DTS", CodingTypeCode = 0x82, FormatCode = 6 },
+            new OpticalDiscManifestStream { Type = "audio", Category = "audio", Codec = "AC-3", CodingTypeCode = 0x81, FormatCode = 3, AudioLayout = "stereo" },
+            new OpticalDiscManifestStream { Type = "audio", Category = "secondaryAudio", Codec = "AC-3 Plus Secondary Audio", CodingTypeCode = 0xA1, FormatCode = 6 },
+            new OpticalDiscManifestStream { Type = "audio", Category = "audio", Codec = "DTS-HD Master Audio", CodingTypeCode = 0x86, FormatCode = 6, AudioLayout = "7.1" }
+        ];
+
+        var segments = OpticalDiscManifestMapper.ToDiscInfo(manifest).Titles[0].Segments;
+
+        await Assert.That(string.Join("|", segments.Select(s => $"{s.Name}:{s.AudioType}"))).IsEqualTo(string.Join("|", new[]
+        {
+            "Dolby Digital plus:Surround 7.1",
+            "Dolby Digital:Surround 5.1",
+            "TrueHD:",
+            "Dolby Digital:Surround 5.1",
+            "DTS:Surround 5.1",
+            "Dolby Digital:Stereo",
+            "AC-3 Plus Secondary Audio:Surround 5.1",
+            "DTS-HD Master Audio:Surround 7.1",
+            "DTS:Surround 7.1"
+        }));
     }
 
     [Test]
@@ -248,9 +289,70 @@ public class IdentifyExperienceTests
         var manifest = Manifest();
         var result = Compare(manifest, OpticalDiscManifestMapper.ToDiscInfo(manifest));
         var restored = JsonSerializer.Deserialize<DiscLogManifestDifferences>(result.DifferencesJson, options)!;
-        await Assert.That(restored.IdentifyExperience!.Version).IsEqualTo(1);
+        await Assert.That(restored.IdentifyExperience!.Version).IsEqualTo(IdentifyExperienceComparison.CurrentVersion);
         await Assert.That(restored.IdentifyExperience.Status).IsEqualTo(IdentifyExperienceStatus.Match);
     }
+
+    [Test]
+    public async Task JavaPath_ComparesLogAsIfJavaRuntimeNeverRan()
+    {
+        const string jvmLog = "MSG:1005,0,1,\"MakeMKV v1.17.7\",\"\"\nMSG:3344,0,0,\"Using Java runtime\",\"\"\n";
+        var log = JavaDisc(
+            ("00156.mpls", "174", 100, "menu"),   // duplicates the clip row below
+            ("00010.mpls", "20", 200, null),      // the scan keeps this playlist
+            ("00174.m2ts", "174", 100, null),
+            ("00200.mpls", "175", 300, null),     // Java-only playlist name for clip 175
+            ("00201.mpls", "175", 300, null),     // second Java-only row for the same clip
+            ("00300.mpls", "176", 999, null));    // not the whole clip: size differs from the scan
+        var scan = JavaDisc(
+            ("00010.mpls", "20", 200, null),
+            ("00174.m2ts", "174", 100, null),
+            ("00175.m2ts", "175", 300, null),
+            ("00176.m2ts", "176", 400, null));
+
+        var (normalized, evidence) = MakeMkvJavaPathNormalizer.Normalize(jvmLog, log, scan);
+
+        await Assert.That(evidence.Status).IsEqualTo(MakeMkvJavaPathStatus.Used);
+        await Assert.That(string.Join(",", normalized.Titles.Select(t => t.Playlist)))
+            .IsEqualTo("00010.mpls,00174.m2ts,00175.m2ts,00300.mpls");
+        await Assert.That(evidence.RenamedRows).IsEquivalentTo(new[] { "Row 4: 00200.mpls -> 00175.m2ts" });
+        await Assert.That(evidence.RemovedRows)
+            .IsEquivalentTo(new[] { "Row 1: 00156.mpls duplicates 00174.m2ts", "Row 5: 00201.mpls duplicates 00175.m2ts" });
+        await Assert.That(normalized.Titles.All(t => t.JavaComment is null)).IsTrue();
+        await Assert.That(normalized.Titles[2].ChapterCount).IsEqualTo(0);
+        await Assert.That(normalized.Titles[0].ChapterCount).IsEqualTo(1);
+        await Assert.That(log.Titles[0].Playlist).IsEqualTo("00156.mpls");
+        await Assert.That(log.Titles[0].JavaComment).IsEqualTo("menu");
+    }
+
+    [Test]
+    [Arguments("MSG:3344,0,0,\"Using Java runtime\",\"\"\nMSG:4041,0,0,\"Failed to launch Java\",\"\"\n", MakeMkvJavaPathStatus.Failed)]
+    [Arguments("MSG:1005,0,1,\"MakeMKV v1.17.7\",\"\"\n", MakeMkvJavaPathStatus.NotUsed)]
+    [Arguments("TINFO:0,16,0,\"00200.mpls\"\n", MakeMkvJavaPathStatus.Unknown)]
+    public async Task JavaPath_OtherLogsAreComparedUnchanged(string logText, MakeMkvJavaPathStatus status)
+    {
+        var log = JavaDisc(("00200.mpls", "175", 300, "comment"));
+        var (normalized, evidence) = MakeMkvJavaPathNormalizer.Normalize(
+            logText, log, JavaDisc(("00175.m2ts", "175", 300, null)));
+
+        await Assert.That(evidence.Status).IsEqualTo(status);
+        await Assert.That(evidence.Normalized).IsFalse();
+        await Assert.That(normalized).IsSameReferenceAs(log);
+    }
+
+    private static DiscInfo JavaDisc(params (string Source, string Clip, long Size, string? Comment)[] rows) => new()
+    {
+        Titles = rows.Select((row, index) => new Title
+        {
+            Index = index,
+            Playlist = row.Source,
+            SegmentMap = row.Clip,
+            Size = row.Size,
+            ChapterCount = 1,
+            Length = "0:00:10",
+            JavaComment = row.Comment
+        }).ToList()
+    };
 
     private static DiscLogManifestComparisonResult Compare(OpticalDiscManifestDocument manifest, DiscInfo log)
         => DiscLogManifestComparer.Compare(log, "", manifest, OpticalDiscManifestMapper.ToDiscInfo(manifest), "HASH");

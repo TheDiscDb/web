@@ -35,7 +35,7 @@ namespace TheDiscDb.Tools.MakeMkv
             var info = new ProcessStartInfo
             {
                 FileName = this.options.Value.Path,
-                Arguments = $"--robot --messages=\"{path}\" info disc:{driveIndex}"
+                Arguments = GetInfoArguments(driveIndex, path)
             };
 
             await RunProcessAsync(info);
@@ -53,6 +53,11 @@ namespace TheDiscDb.Tools.MakeMkv
                 }
             }
         }
+
+        // --minlength=0 keeps short titles (menus, stubs, extras) that MakeMKV's default minimum length would hide,
+        // matching the contributor upload command so logs are complete, comparable references.
+        public static string GetInfoArguments(int driveIndex, string path)
+            => $"--minlength=0 --robot --messages=\"{path}\" info disc:{driveIndex}";
 
         public async Task CleanLogs(int driveIndex, string path, CancellationToken cancellationToken = default)
         {

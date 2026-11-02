@@ -101,10 +101,58 @@ public static class OpticalDiscManifestMapper
         int streamIndex = 0;
         foreach (var stream in source.Streams)
         {
-            title.Segments.Add(MapStream(stream, streamIndex++));
+            Segment segment = MapStream(stream, streamIndex++);
+            title.Segments.Add(segment);
+
+            if (!isDvd && DerivedStream(stream, segment, streamIndex) is { } derived)
+            {
+                title.Segments.Add(derived);
+                streamIndex++;
+            }
         }
 
         return title;
+    }
+
+    // MakeMKV lists a derived track straight after certain Blu-ray streams: the Dolby Digital core
+    // of primary TrueHD and Dolby Digital Plus audio, the DTS core of primary DTS-HD audio, and a
+    // "forced only" copy of every presentation graphics stream. Across the data repository's
+    // Blu-ray logs this holds for every MakeMKV version, and never for secondary audio. Only
+    // navigation-coded streams qualify; manifests converted from logs already list these tracks.
+    private static Segment? DerivedStream(OpticalDiscManifestStream source, Segment segment, int index)
+    {
+        if (source.Category is not (null or "audio" or "presentationGraphics"))
+        {
+            return null;
+        }
+
+        (string Type, string Codec)? derived = (segment.Type, source.CodingTypeCode) switch
+        {
+            ("Audio", 0x83 or 0x84) => ("Audio", "AC-3"),
+            ("Audio", 0x85 or 0x86) => ("Audio", "DTS"),
+            ("Subtitles", 0x90) => ("Subtitles", source.Codec ?? "Presentation Graphics"),
+            _ => null
+        };
+
+        if (derived is not { } value)
+        {
+            return null;
+        }
+
+        return new Segment
+        {
+            Index = index,
+            Type = value.Type,
+            Name = MapStreamDisplayName(value.Codec, value.Type),
+            SourceCodec = value.Codec,
+            Pid = segment.Pid,
+            LanguageCode = segment.LanguageCode,
+            Language = segment.Language,
+            // A multichannel parent's core is reported as 5.1, whatever the parent's own layout.
+            AudioType = value.Type == "Audio" && source.AudioLayout is null && IsMultichannel(source)
+                ? MapAudioDisplayLayout("5.1")
+                : segment.AudioType
+        };
     }
 
     private static Segment MapStream(OpticalDiscManifestStream source, int index)
@@ -138,10 +186,33 @@ public static class OpticalDiscManifestMapper
 
         if (type == "Audio")
         {
-            segment.AudioType = MapAudioDisplayLayout(source.AudioLayout);
+            segment.AudioType = MapAudioDisplayLayout(source.AudioLayout ?? InferredMultichannelLayout(source));
         }
 
         return segment;
+    }
+
+    private static bool IsMultichannel(OpticalDiscManifestStream source) => source.FormatCode is 6 or 12;
+
+    // Blu-ray navigation only says "multichannel", but across the data repository's Blu-ray logs
+    // MakeMKV reports the same layout for at least 99.4% of these streams: 5.1 for LPCM, Dolby
+    // Digital and DTS, 7.1 for primary Dolby Digital Plus and 5.1 for secondary Dolby Digital Plus.
+    // TrueHD and DTS-HD vary too much to predict (roughly three quarters are 7.1), so they stay
+    // unknown. Only presentation uses this; the manifest keeps the explicit evidence alone.
+    private static string? InferredMultichannelLayout(OpticalDiscManifestStream source)
+    {
+        if (!IsMultichannel(source))
+        {
+            return null;
+        }
+
+        return (source.Category, source.CodingTypeCode) switch
+        {
+            (null or "audio", 0x80 or 0x81 or 0x82) => "5.1",
+            (null or "audio", 0x84) => "7.1",
+            ("secondaryAudio", 0x84) or (_, 0xA1) => "5.1",
+            _ => null
+        };
     }
 
     // Translate presentation vocabulary only; the manifest's codec and layout remain unchanged.

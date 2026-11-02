@@ -93,9 +93,16 @@ public static partial class DiscLogManifestComparer
                 logDiscInfo, manifest, manifestDiscInfo, usefulReferences ?? [],
                 acquisitionReview: differences.ArtifactWarnings.Count > 0,
                 scanErrors: differences.ScanDiagnostics.Any(diagnostic => diagnostic.Severity == "error"));
-            differences.IdentifyExperience = differences.ScanDiagnostics.Any(d => d.Severity == "error")
-                ? IdentifyExperienceComparison.NotComparable("The scan contains error diagnostics.")
-                : IdentifyExperienceComparer.Compare(logDiscInfo, manifestDiscInfo);
+            if (differences.ScanDiagnostics.Any(d => d.Severity == "error"))
+            {
+                differences.IdentifyExperience = IdentifyExperienceComparison.NotComparable("The scan contains error diagnostics.");
+            }
+            else
+            {
+                var (identifyLog, javaPath) = MakeMkvJavaPathNormalizer.Normalize(logText, logDiscInfo, manifestDiscInfo);
+                differences.JavaPath = javaPath;
+                differences.IdentifyExperience = IdentifyExperienceComparer.Compare(identifyLog, manifestDiscInfo);
+            }
 
             var logTitles = CollectTitles(logDiscInfo);
             var manifestTitles = CollectTitles(manifestDiscInfo);
@@ -625,6 +632,8 @@ public sealed record DiscLogManifestComparisonResult(
 public sealed class DiscLogManifestDifferences
 {
     public MakeMkvMinimumLengthEvidence? MinimumLength { get; set; }
+
+    public MakeMkvJavaPathEvidence? JavaPath { get; set; }
 
     public UsefulContentComparison? UsefulContent { get; set; }
 

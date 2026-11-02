@@ -69,9 +69,9 @@ public class DiscScanParityAggregatorTests
         var latest = new[]
         {
             CreateItem(1, DiscLogManifestComparisonStatus.Mismatch, "blu-ray", "1", "1", "CLI") with
-            { IdentifyExperience = new(1, IdentifyExperienceStatus.Match, 1, 1, 1, []) },
+            { IdentifyExperience = new(IdentifyExperienceComparison.CurrentVersion, IdentifyExperienceStatus.Match, 1, 1, 1, []) },
             CreateItem(2, DiscLogManifestComparisonStatus.Match, "blu-ray", "1", "1", "CLI") with
-            { IdentifyExperience = new(1, IdentifyExperienceStatus.Mismatch, 1, 1, 0, []) },
+            { IdentifyExperience = new(IdentifyExperienceComparison.CurrentVersion, IdentifyExperienceStatus.Mismatch, 1, 1, 0, []) },
             CreateItem(3, DiscLogManifestComparisonStatus.Error, "dvd", "1", "1", "CLI") with
             { IdentifyExperience = IdentifyExperienceComparison.NotComparable("error") },
             CreateItem(4, DiscLogManifestComparisonStatus.Match, "dvd", "1", "1", "CLI"),
