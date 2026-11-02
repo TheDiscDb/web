@@ -604,7 +604,9 @@ public partial class ReleaseDetailInput : CancellableComponentBase
 
             await this.DraftStorage.RemoveAsync(this.DiscHash!, this.CancellationToken);
             await this.GetEpisodeNamesAsync(contributionId);
-            this.NavigationManager.NavigateTo($"/contribution/{contributionId}/discs/{discId}/identify");
+            this.NavigationManager.NavigateTo(this.DiscScanDraft.IsExistingDiscReference
+                ? $"/contribution/{contributionId}/disc/{discId}/edit?returnUrl=/contribution/{contributionId}"
+                : $"/contribution/{contributionId}/discs/{discId}/identify");
             return;
         }
 
@@ -624,12 +626,35 @@ public partial class ReleaseDetailInput : CancellableComponentBase
             return null;
         }
 
-        var existingDisc = lookup.Data?.MediaItems?.Nodes?
-            .SelectMany(media => media.Releases)
-            .SelectMany(release => release.Discs)
-            .FirstOrDefault(disc => string.Equals(
-                disc.ContentHash, draft.DiscHash, StringComparison.OrdinalIgnoreCase)
-                && !string.IsNullOrWhiteSpace(disc.Name));
+        var existingMatches = lookup.Data?.MediaItems?.Nodes?
+            .SelectMany(media => media.Releases.SelectMany(release => release.Discs
+                .Where(disc => string.Equals(disc.ContentHash, draft.DiscHash, StringComparison.OrdinalIgnoreCase))
+                .Select(disc => (Media: media, Release: release, Disc: disc))))
+            .ToList() ?? [];
+        var existingDisc = existingMatches
+            .Select(match => match.Disc)
+            .FirstOrDefault(disc => !string.IsNullOrWhiteSpace(disc.Name));
+        string? existingDiscPath = null;
+        if (draft.IsExistingDiscReference)
+        {
+            var match = existingMatches.FirstOrDefault(item =>
+                !string.IsNullOrWhiteSpace(item.Media.Type)
+                && !string.IsNullOrWhiteSpace(item.Media.Externalids?.Tmdb)
+                && !string.IsNullOrWhiteSpace(item.Release.Slug));
+            if (match.Disc is null)
+            {
+                this.submitErrorMessage = "The existing disc could not be found. Return to the scan step and scan the disc again.";
+                return null;
+            }
+
+            existingDisc = match.Disc;
+            existingDiscPath = TheDiscDb.Web.Data.UserContributionDisc.GenerateDiscPath(
+                match.Media.Type!,
+                match.Media.Externalids!.Tmdb!,
+                match.Release.Slug!,
+                !string.IsNullOrWhiteSpace(match.Disc.Slug) ? match.Disc.Slug : match.Disc.Index.ToString());
+        }
+
         string discName = existingDisc?.Name ?? draft.Format switch
         {
             DiscFormatConstants.Dvd => "DVD",
@@ -646,6 +671,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
             Format = draft.Format,
             Name = discName,
             Slug = discSlug,
+            ExistingDiscPath = existingDiscPath,
             GlobalDiscId = draft.GlobalDiscId,
             Fingerprint = draft.Fingerprint,
         }, this.CancellationToken);
@@ -691,6 +717,15 @@ public partial class ReleaseDetailInput : CancellableComponentBase
                     ?? "The scanned disc hash could not be attached to the contribution. Submit again to retry.";
                 return null;
             }
+        }
+
+        if (draft.IsExistingDiscReference)
+        {
+            // Nothing to attach; the server copies the referenced disc's titles. Drop the draft.
+            using var deleteResponse = await this.HttpClient.DeleteAsync(
+                $"api/contribute/disc/{DiscScanDraft.EncodeHashForRoute(draft.DiscHash)}/scan",
+                this.CancellationToken);
+            return discId;
         }
 
         using var attachResponse = await this.HttpClient.PostAsync(

@@ -50,6 +50,23 @@ public class WasmConfigMiddlewareTests
     }
 
     [Test]
+    public async Task InvokeAsync_DiscFirstFlowConfigured_PassesFlagToClient()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Contributions:DiscFirstFlow"] = "true",
+        }).Build();
+        var middleware = new WasmConfigMiddleware(_ => Task.CompletedTask, configuration, new TestEnvironment());
+        var context = CreateContext("/appsettings.json");
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.Body.Position = 0;
+        using var json = await JsonDocument.ParseAsync(context.Response.Body);
+        await Assert.That(json.RootElement.GetProperty("Contributions").GetProperty("DiscFirstFlow").GetBoolean()).IsTrue();
+    }
+
+    [Test]
     public async Task InvokeAsync_OtherPath_PassesThrough()
     {
         var wasCalled = false;

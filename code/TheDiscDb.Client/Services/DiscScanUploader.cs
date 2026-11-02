@@ -9,7 +9,7 @@ using TheDiscDb.Client.Pages.Contribute;
 using TheDiscDb.InputModels;
 using TheDiscDb.OpticalDiscManifest.Models;
 
-public sealed record DiscScanUploadResult(bool Cancelled, bool Uploaded, string? Error, IReadOnlyList<string> Warnings, string? Format = null)
+public sealed record DiscScanUploadResult(bool Cancelled, bool Uploaded, string? Error, IReadOnlyList<string> Warnings, string? Format = null, bool ExistingDisc = false)
 {
     public static DiscScanUploadResult Cancel() => new(true, false, null, []);
 
@@ -102,7 +102,8 @@ public sealed class DiscScanUploader
         Action onScanning,
         Action<string> onProgress,
         CancellationToken cancellationToken,
-        string? manualHashOverride = null)
+        string? manualHashOverride = null,
+        Func<string, CancellationToken, Task<bool>>? isKnownDisc = null)
     {
         try
         {
@@ -114,7 +115,7 @@ public sealed class DiscScanUploader
 
             await Task.Yield();
             return await SaveDraftAsync(selection.Files, apiBaseUri, onProgress, cancellationToken,
-                manualHashOverride: manualHashOverride);
+                manualHashOverride: manualHashOverride, isKnownDisc: isKnownDisc);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -133,7 +134,8 @@ public sealed class DiscScanUploader
         Action<string> onProgress,
         CancellationToken cancellationToken,
         DiscScanResult? identifierScan = null,
-        string? manualHashOverride = null)
+        string? manualHashOverride = null,
+        Func<string, CancellationToken, Task<bool>>? isKnownDisc = null)
     {
         var identifiers = identifierScan ?? await DiscScanner.ScanAsync(files, cancellationToken);
         if (!string.IsNullOrEmpty(identifiers.Error))
@@ -159,6 +161,27 @@ public sealed class DiscScanUploader
             discHash = manualHashOverride.Trim().ToUpperInvariant();
         }
         string fingerprint = DiscFingerprint.Calculate(identifiers.FingerprintFiles);
+
+        if (isKnownDisc is not null)
+        {
+            onProgress("Checking the database for this disc");
+            if (await isKnownDisc(discHash, cancellationToken))
+            {
+                // The disc is already catalogued, so its existing titles can be reused without a manifest scan.
+                var reference = new DiscScanDraft
+                {
+                    DiscHash = discHash,
+                    HasManualHashOverride = !string.IsNullOrWhiteSpace(manualHashOverride),
+                    Format = identifiers.Format ?? DiscFormatConstants.BluRay,
+                    GlobalDiscId = identifiers.GlobalDiscId,
+                    Fingerprint = fingerprint,
+                    HashFiles = identifiers.HashFiles.ToList(),
+                    FingerprintFiles = identifiers.FingerprintFiles.ToList(),
+                    IsExistingDiscReference = true,
+                };
+                return await PostDraftAsync(reference, apiBaseUri, onProgress, [], cancellationToken);
+            }
+        }
 
         onProgress("Creating disc scan manifest");
         ManifestGenerationResult manifest = await this.scanner.ScanAsync(
@@ -193,10 +216,20 @@ public sealed class DiscScanUploader
             Warnings = warnings.ToList(),
         };
 
+        return await PostDraftAsync(draft, apiBaseUri, onProgress, warnings, cancellationToken);
+    }
+
+    private async Task<(DiscScanUploadResult Result, string? DiscHash)> PostDraftAsync(
+        DiscScanDraft draft,
+        string apiBaseUri,
+        Action<string> onProgress,
+        IReadOnlyList<string> warnings,
+        CancellationToken cancellationToken)
+    {
         onProgress("Saving disc scan");
         string draftUri = new Uri(
             new Uri(apiBaseUri),
-            $"api/contribute/disc/{DiscScanDraft.EncodeHashForRoute(discHash)}/scan").ToString();
+            $"api/contribute/disc/{DiscScanDraft.EncodeHashForRoute(draft.DiscHash)}/scan").ToString();
         var response = await this.httpClient.PostAsJsonAsync(draftUri, draft, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
@@ -204,7 +237,8 @@ public sealed class DiscScanUploader
             return (DiscScanUploadResult.Failure(ExtractErrorDetail(body, "disc scan"), warnings), null);
         }
 
-        return (new DiscScanUploadResult(false, true, null, warnings, draft.Format), discHash.ToLowerInvariant());
+        return (new DiscScanUploadResult(false, true, null, warnings, draft.Format, draft.IsExistingDiscReference),
+            draft.DiscHash.ToLowerInvariant());
     }
 
     public static string ExtractErrorDetail(string responseBody, string description)

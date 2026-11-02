@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Configuration;
+using StrawberryShake;
 using TheDiscDb.Client.Interop;
 using TheDiscDb.Client.Services;
 using TheDiscDb.Core.DiscHash;
@@ -20,11 +22,25 @@ public partial class ScanDisc
     [Inject]
     private IWebAssemblyHostEnvironment HostEnvironment { get; set; } = default!;
 
+    [Inject]
+    private IConfiguration Configuration { get; set; } = default!;
+
+    [Inject]
+    private GetDiscDetailByContentHashQuery ContentHashQuery { get; set; } = default!;
+
     private bool IsDevelopmentMode => HostEnvironment.Environment == "Development";
     private string manualHash = string.Empty;
     private bool isScanning;
     private string? scanProgress;
     private string? error;
+
+    protected override void OnInitialized()
+    {
+        if (!this.Configuration.GetValue<bool>("Contributions:DiscFirstFlow"))
+        {
+            this.NavigationManager.NavigateTo("/contribute", replace: true);
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -48,7 +64,8 @@ public partial class ScanDisc
                 MarkScanning,
                 ReportScanProgress,
                 this.CancellationToken,
-                hashOverride);
+                hashOverride,
+                IsKnownDiscAsync);
             this.error = result.Result.Error;
             if (result.Result.Uploaded && result.DiscHash is not null)
             {
@@ -60,6 +77,21 @@ public partial class ScanDisc
             this.isScanning = false;
             this.scanProgress = null;
         }
+    }
+
+    private async Task<bool> IsKnownDiscAsync(string discHash, CancellationToken cancellationToken)
+    {
+        var response = await this.ContentHashQuery.ExecuteAsync(discHash, templates: null, cancellationToken: cancellationToken);
+        if (!response.IsSuccessResult())
+        {
+            // Fall back to a full scan when the lookup is unavailable.
+            return false;
+        }
+
+        return response.Data?.MediaItems?.Nodes?
+            .SelectMany(media => media.Releases)
+            .SelectMany(release => release.Discs)
+            .Any(disc => string.Equals(disc.ContentHash, discHash, StringComparison.OrdinalIgnoreCase)) == true;
     }
 
     private void MarkScanning()

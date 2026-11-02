@@ -28,35 +28,70 @@
         <article class="info-card">
             <h2>What you’ll need</h2>
             <ul>
-                <li>                A computer with a compatible disc drive.</li>
+                <li>A computer with a compatible disc drive.</li>
+                @if (DiscFirstFlow)
+                {
                     <li>A current desktop browser. Chrome and Edge support direct disc-folder access; Firefox and Safari use a folder-selection fallback.</li>
-                    <li>A GitHub account for sign-in and attribution.</li>
-                    <li>Release details like UPC, ASIN, and release date.</li>
+                }
+                else
+                {
+                    <li><a href="https://www.makemkv.com/download/" target="_blank" rel="noopener noreferrer">MakeMKV</a> installed.</li>
+                    <li>Chrome or Edge for the upload helper flow.</li>
+                }
+                <li>A GitHub account for sign-in and attribution.</li>
+                <li>Release details like UPC, ASIN, and release date.</li>
             </ul>
         </article>
         <article class="info-card">
             <h2>How it works</h2>
             <ol>
-                <li>Scan the disc. The scan calculates its identifiers and creates an Optical Disc Manifest (ODM).</li>
-                <li>Check whether the disc already appears in releases. You can still add a new release for the same disc.</li>
-                <li>Find the title with TMDB search or ID, then add release details and cover images.</li>
-                <li>Identify the scanned disc’s contents, add any other discs, and submit the release for review.</li>
+                @if (DiscFirstFlow)
+                {
+                    <li>Scan the disc. The scan calculates its identifiers and checks whether the disc is already in the database.</li>
+                    <li>If the disc is already known, its existing titles are reused. Otherwise the scan creates an Optical Disc Manifest (ODM).</li>
+                    <li>Find the title with TMDB search or ID, then add release details and cover images.</li>
+                    <li>Identify the scanned disc’s contents, add any other discs, and submit the release for review.</li>
+                }
+                else
+                {
+                    <li>Identify the release with TMDB search or ID.</li>
+                    <li>Add release details and cover images.</li>
+                    <li>Upload MakeMKV scan logs for each disc, and optionally scan the disc in your browser.</li>
+                    <li>Label disc titles and submit for review.</li>
+                }
             </ol>
         </article>
     </section>
 
     <section class="info-card">
         <h2>Disc scans</h2>
-        <p>
-            Scanning is the first step for a new release contribution. The scan reads only the disc's
-            structure files (IFO, MPLS and CLPI) and creates an Optical Disc Manifest; your video is never
-            uploaded. We check the calculated content hash against existing releases before asking you
-            to enter release details.
-        </p>
-        <p class="mb-0">
-            The new-release flow uses the browser scan and does not require a MakeMKV log. Existing
-            contributions and boxset workflows may still expose their prior upload options.
-        </p>
+        @if (DiscFirstFlow)
+        {
+            <p>
+                Scanning is the first step for a new release contribution. The scan reads only the disc's
+                structure files (IFO, MPLS and CLPI) and creates an Optical Disc Manifest; your video is never
+                uploaded. We check the calculated content hash against existing releases first, and skip the
+                full scan when the disc is already in the database.
+            </p>
+            <p class="mb-0">
+                The new-release flow uses the browser scan and does not require a MakeMKV log. Existing
+                contributions and boxset workflows may still expose their prior upload options.
+            </p>
+        }
+        else
+        {
+            <p>
+                After you upload a MakeMKV log you can also scan the disc. The scan reads only the disc's
+                structure files (IFO, MPLS and CLPI) and creates an Optical Disc Manifest; your video is never
+                uploaded. We compare each scan with its MakeMKV log so that scans can eventually replace logs.
+            </p>
+            <p class="mb-0">
+                Browser scans need Chrome or Edge. On any other browser, or for discs your browser cannot read,
+                use the <a href="https://github.com/TheDiscDb/web/releases?q=scan-cli" target="_blank" rel="noopener noreferrer">thediscdb-scan</a>
+                command-line tool for Windows, macOS and Linux and upload its <code>.odm.json</code> file on the
+                Disc Manifest tab.
+            </p>
+        }
     </section>
 
     <section class="info-card">

@@ -38,6 +38,9 @@ public sealed record DiscScanDraft
     public List<FileHashInfo> HashFiles { get; init; } = [];
     public List<DiscFingerprintFile> FingerprintFiles { get; init; } = [];
     public string ManifestJson { get; init; } = string.Empty;
+
+    // Set when the disc hash already exists in the database, so no manifest scan was needed.
+    public bool IsExistingDiscReference { get; init; }
     public List<string> Warnings { get; init; } = [];
     public DateTimeOffset CreatedUtc { get; init; }
     public string? ContributionId { get; init; }

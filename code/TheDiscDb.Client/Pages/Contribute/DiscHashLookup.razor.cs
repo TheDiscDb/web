@@ -23,6 +23,8 @@ public partial class DiscHashLookup
     private bool isLoading = true;
     private string lookupHash = string.Empty;
 
+    private bool IsExistingDiscReference => this.draft?.IsExistingDiscReference == true;
+
     protected override async Task OnParametersSetAsync()
     {
         this.isLoading = true;
@@ -87,6 +89,11 @@ public partial class DiscHashLookup
                             disc.Format ?? string.Empty,
                             release.Upc))))
                 .ToList() ?? [];
+
+            if (this.IsExistingDiscReference && this.matches.Count == 0)
+            {
+                this.loadError = "This disc is no longer in the database. Scan the disc again to continue.";
+            }
         }
         catch (HttpRequestException)
         {

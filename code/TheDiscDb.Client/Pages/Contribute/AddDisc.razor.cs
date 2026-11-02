@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.Extensions.Configuration;
 using StrawberryShake;
 using Syncfusion.Blazor.Popups;
 using TheDiscDb.Client.Contributions;
@@ -61,9 +62,13 @@ public partial class AddDisc : CancellableComponentBase
     [Inject]
     public IWebAssemblyHostEnvironment HostEnvironment { get; set; } = default!;
 
+    [Inject]
+    public IConfiguration Configuration { get; set; } = default!;
+
     string hash = string.Empty;
     IContributionDiscs_MyContributions_Nodes? contribution = null;
-    private bool UseScanFirstFlow => this.contribution?.Boxset is null;
+    private bool UseScanFirstFlow => this.contribution?.Boxset is null
+        && this.Configuration.GetValue<bool>("Contributions:DiscFirstFlow");
     bool discSelected;
     bool isScanning;
     string? scanProgress;

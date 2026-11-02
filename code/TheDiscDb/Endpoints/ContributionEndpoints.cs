@@ -86,6 +86,7 @@ public class ContributionEndpoints
         HttpContext httpContext,
         IStaticAssetStore assetStore,
         IWebHostEnvironment environment,
+        IDbContextFactory<SqlServerDataContext> dbContextFactory,
         CancellationToken cancellationToken)
     {
         if (!DiscScanDraft.TryDecodeHashFromRoute(discHash, out discHash))
@@ -105,7 +106,8 @@ public class ContributionEndpoints
         }
 
         DiscScanDraft? draft = await request.ReadFromJsonAsync<DiscScanDraft>(cancellationToken);
-        if (draft is null || string.IsNullOrWhiteSpace(draft.ManifestJson)
+        if (draft is null
+            || draft.IsExistingDiscReference != string.IsNullOrWhiteSpace(draft.ManifestJson)
             || draft.HashFiles is null || draft.HashFiles.Count == 0
             || draft.FingerprintFiles is null || draft.FingerprintFiles.Count == 0)
         {
@@ -146,6 +148,38 @@ public class ContributionEndpoints
             return TypedResults.BadRequest("The disc scan contains an unsupported format or invalid disc identifier.");
         }
 
+        if (draft.IsExistingDiscReference)
+        {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            if (!await dbContext.Discs.AnyAsync(disc => disc.ContentHash == normalizedHash, cancellationToken))
+            {
+                return TypedResults.BadRequest("This disc is not in the database yet, so it needs a full scan.");
+            }
+        }
+        else
+        {
+            IResult? manifestError = ValidateDraftManifest(draft);
+            if (manifestError is not null)
+            {
+                return manifestError;
+            }
+        }
+
+        string path = GetPreContributionDraftPath(userId, normalizedHash);
+        await assetStore.Delete(path, cancellationToken);
+        var savedDraft = draft with
+        {
+            DiscHash = normalizedHash,
+            CreatedUtc = DateTimeOffset.UtcNow,
+            ContributionId = null,
+        };
+        await using var stream = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(savedDraft));
+        await assetStore.Save(stream, path, ContentTypes.JsonContentType, cancellationToken);
+        return TypedResults.Ok(new { discHash = normalizedHash.ToLowerInvariant() });
+    }
+
+    private static IResult? ValidateDraftManifest(DiscScanDraft draft)
+    {
         var parsed = new OpticalDiscManifestValidator().Parse(draft.ManifestJson);
         if (!parsed.IsValid)
         {
@@ -173,17 +207,7 @@ public class ContributionEndpoints
             return TypedResults.BadRequest("The manifest does not contain titles that can be identified.");
         }
 
-        string path = GetPreContributionDraftPath(userId, normalizedHash);
-        await assetStore.Delete(path, cancellationToken);
-        var savedDraft = draft with
-        {
-            DiscHash = normalizedHash,
-            CreatedUtc = DateTimeOffset.UtcNow,
-            ContributionId = null,
-        };
-        await using var stream = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(savedDraft));
-        await assetStore.Save(stream, path, ContentTypes.JsonContentType, cancellationToken);
-        return TypedResults.Ok(new { discHash = normalizedHash.ToLowerInvariant() });
+        return null;
     }
 
     public async Task<IResult> GetPreContributionDiscScanDraft(
@@ -384,6 +408,11 @@ public class ContributionEndpoints
         if (draft.HasManualHashOverride && !environment.IsDevelopment())
         {
             return TypedResults.BadRequest("Manual disc hash overrides are only allowed in Development.");
+        }
+
+        if (draft.IsExistingDiscReference)
+        {
+            return TypedResults.Conflict("This scan references an existing disc and has no manifest to attach.");
         }
 
         var saved = await SaveDiscManifestInternal(
