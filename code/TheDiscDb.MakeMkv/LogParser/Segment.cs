@@ -29,6 +29,5 @@
         public int? CodingTypeCode { get; set; }
         public int? FormatCode { get; set; }
         public int? RateCode { get; set; }
-        public IReadOnlyList<int>? Line21ClosedCaptionFields { get; set; }
     }
 }

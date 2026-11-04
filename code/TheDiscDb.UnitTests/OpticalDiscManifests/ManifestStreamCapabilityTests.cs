@@ -22,13 +22,14 @@ public class ManifestStreamCapabilityTests
     }
 
     [Test]
-    public async Task Mapper_PreservesNativeIdentityAndCaptionDeclarationsWithoutAddingTracks()
+    public async Task Mapper_PreservesNativeIdentityAndAddsDvdClosedCaptionTrackLast()
     {
         const string json = """
             {"disc":{"format":"dvd","titles":[{"streams":[
               {"type":"video","codec":"MPEG-2","line21ClosedCaptionFields":[1]},
               {"type":"audio","codec":"DTS","language":"de","category":"primary-audio",
-               "pid":4352,"codingTypeCode":130,"formatCode":6,"rateCode":1}
+               "pid":4352,"codingTypeCode":130,"formatCode":6,"rateCode":1},
+              {"type":"subtitle","codec":"VobSub","language":"fr"}
             ]}]}}
             """;
         var manifest = JsonSerializer.Deserialize<OpticalDiscManifestDocument>(
@@ -36,11 +37,14 @@ public class ManifestStreamCapabilityTests
         var info = OpticalDiscManifestMapper.ToDiscInfo(manifest);
         var title = info.Titles.Single();
         var audio = title.Segments.Single(stream => stream.Type == "Audio");
+        var captions = title.Segments[^1];
 
         await Assert.That(info.SourceKind).IsEqualTo("optical-disc-manifest");
-        await Assert.That(title.HasDeclaredClosedCaptions).IsTrue();
-        await Assert.That(title.Segments.Count).IsEqualTo(2);
-        await Assert.That(title.Segments.Any(stream => stream.Type == "Subtitles")).IsFalse();
+        await Assert.That(title.Segments.Count).IsEqualTo(4);
+        await Assert.That(captions.Index).IsEqualTo(3);
+        await Assert.That(captions.Type).IsEqualTo("Subtitles");
+        await Assert.That(captions.Name).IsEqualTo("Closed Captions");
+        await Assert.That(captions.LanguageCode).IsEqualTo("eng");
         await Assert.That(audio.Pid).IsEqualTo(4352);
         await Assert.That(audio.CodingTypeCode).IsEqualTo(130);
         await Assert.That(audio.FormatCode).IsEqualTo(6);
@@ -52,12 +56,13 @@ public class ManifestStreamCapabilityTests
     }
 
     [Test]
-    public async Task Mapper_AbsentCaptionDeclarationsDoNotClaimCaptionSupport()
+    public async Task Mapper_AbsentCaptionDeclarationsAddNoClosedCaptionTrack()
     {
         var document = new OpticalDiscManifestDocument
         {
             Disc = new OpticalDiscManifestDisc
             {
+                Format = "dvd",
                 Titles = { new OpticalDiscManifestTitle
                 {
                     Streams = { new OpticalDiscManifestStream { Type = "video", Codec = "MPEG-2" } }
@@ -65,6 +70,6 @@ public class ManifestStreamCapabilityTests
             }
         };
 
-        await Assert.That(OpticalDiscManifestMapper.ToDiscInfo(document).Titles[0].HasDeclaredClosedCaptions).IsFalse();
+        await Assert.That(OpticalDiscManifestMapper.ToDiscInfo(document).Titles[0].Segments.Count).IsEqualTo(1);
     }
 }

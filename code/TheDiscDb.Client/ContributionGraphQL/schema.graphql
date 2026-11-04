@@ -350,7 +350,6 @@ type DiscHash {
 }
 
 type DiscInfo {
-  sourceKind: String!
   name: String
   type: String
   languageCode: String
@@ -547,13 +546,6 @@ type PageInfo {
 }
 
 type Segment {
-  category: String
-  sourceCodec: String
-  pid: Int
-  codingTypeCode: Int
-  formatCode: Int
-  rateCode: Int
-  line21ClosedCaptionFields: [Int!]
   index: Int!
   type: String
   name: String
@@ -598,7 +590,6 @@ type SeriesEpisodeNames {
 }
 
 type Title {
-  hasDeclaredClosedCaptions: Boolean!
   index: Int!
   chapterCount: Int!
   length: String

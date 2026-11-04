@@ -243,10 +243,6 @@
                 </ChildContent>
             </TemplateColumn>
             <TemplateColumn Align="Align.Center">
-                @if (context.HasDeclaredClosedCaptions)
-                {
-                    <span class="badge text-bg-secondary" title="Declared by the DVD authoring metadata; caption payload and playback have not been verified.">Declared closed captions</span>
-                }
                 @if (IsIdentified(context))
                 {
                     <div class="action-buttons">
@@ -417,8 +413,7 @@
                             <div>@item.GetDisplayName()</div>
                             @if (item.Segment is { } stream)
                             {
-                                <small class="text-muted">Language: @(stream.Language ?? stream.LanguageCode ?? "Unknown")
-                                    @(stream.Pid is { } pid ? $"; source PID {pid}" : "")</small>
+                                <small class="text-muted">Language: @(stream.Language ?? stream.LanguageCode ?? "Unknown")</small>
                             }
                             <InputText @bind-Value="item.Title" class="form-control" />
                         </li>
@@ -450,8 +445,7 @@
                             <div>@item.GetDisplayName()</div>
                             @if (item.Segment is { } stream)
                             {
-                                <small class="text-muted">Language: @(stream.Language ?? stream.LanguageCode ?? "Unknown")
-                                    @(stream.Pid is { } pid ? $"; source PID {pid}" : "")</small>
+                                <small class="text-muted">Language: @(stream.Language ?? stream.LanguageCode ?? "Unknown")</small>
                             }
                             <InputText @bind-Value="item.Title" class="form-control" />
                         </li>

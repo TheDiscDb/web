@@ -111,8 +111,26 @@ public static class OpticalDiscManifestMapper
             }
         }
 
+        if (isDvd && source.Streams.Any(stream => stream.Line21ClosedCaptionFields is { Count: > 0 }))
+        {
+            title.Segments.Add(ClosedCaptionStream(streamIndex));
+        }
+
         return title;
     }
+
+    // MakeMKV extracts line-21 captions from the DVD video as one English "Closed Captions" track
+    // after every other stream: 4,706 of 4,706 caption titles in the data repository's DVD logs.
+    // The VTS line-21 flag matched MakeMKV on every title of 16 captured DVDs.
+    private static Segment ClosedCaptionStream(int index) => new()
+    {
+        Index = index,
+        Type = "Subtitles",
+        Name = "Closed Captions",
+        SourceCodec = "CC",
+        LanguageCode = "eng",
+        Language = "English"
+    };
 
     // MakeMKV lists a derived track straight after certain Blu-ray streams: the Dolby Digital core
     // of primary TrueHD and Dolby Digital Plus audio, the DTS core of primary DTS-HD audio, and a
@@ -171,8 +189,7 @@ public static class OpticalDiscManifestMapper
             Pid = source.Pid,
             CodingTypeCode = source.CodingTypeCode,
             FormatCode = source.FormatCode,
-            RateCode = source.RateCode,
-            Line21ClosedCaptionFields = source.Line21ClosedCaptionFields?.ToArray()
+            RateCode = source.RateCode
         };
 
         // MakeMKV only reports language on audio and subtitle tracks, and only reports the audio

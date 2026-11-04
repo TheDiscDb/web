@@ -190,6 +190,8 @@ builder.Services
     .AddTypeExtension<UserContributionChapterTypeExtension>()
     .AddTypeExtension<UserContributionDiscHashItemTypeExtension>()
     .AddTypeExtension<UserContributionBoxsetTypeExtension>()
+    .AddTypeExtension<MakeMkvDiscInfoTypeExtension>()
+    .AddTypeExtension<MakeMkvSegmentTypeExtension>()
     .AddType<EncodedIdType>()
     .AddQueryType<ContributionQuery>()
     .AddMutationConventions(applyToAllMutations: true)

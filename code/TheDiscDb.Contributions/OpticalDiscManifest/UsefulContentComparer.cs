@@ -252,8 +252,8 @@ public static class UsefulContentComparer
             AudioRowCountsDiffer = logAudio.Length != scanAudio.Length,
             SubtitleRowCountsDiffer = logSubtitles.Length != scanSubtitles.Length,
             NamedLabelsNotSemanticallyVerified = labels.Count(label => !string.IsNullOrWhiteSpace(label.Name)),
-            DeclaredClosedCaptions = actual.HasDeclaredClosedCaptions,
-            ReferenceClosedCaptions = logSubtitles.Any(stream => stream.Name?.Contains("Closed Captions", StringComparison.OrdinalIgnoreCase) == true),
+            DeclaredClosedCaptions = scanSubtitles.Any(IsClosedCaptions),
+            ReferenceClosedCaptions = logSubtitles.Any(IsClosedCaptions),
             AudioLanguageSignals = LanguageGaps(logAudio, scanAudio),
             SubtitleLanguageSignals = LanguageGaps(logSubtitles, scanSubtitles)
         };
@@ -282,6 +282,9 @@ public static class UsefulContentComparer
 
     private static Segment[] Streams(Title title, string type)
         => title.Segments.Where(stream => string.Equals(stream.Type, type, StringComparison.OrdinalIgnoreCase)).ToArray();
+
+    private static bool IsClosedCaptions(Segment stream)
+        => stream.Name?.Contains("Closed Captions", StringComparison.OrdinalIgnoreCase) == true;
 
     private static List<string> LanguageGaps(IEnumerable<Segment> expected, IEnumerable<Segment> actual)
         => expected.Select(stream => LanguageCodes.Canonicalize(stream.LanguageCode))
