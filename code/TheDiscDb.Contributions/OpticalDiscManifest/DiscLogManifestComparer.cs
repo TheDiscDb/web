@@ -108,6 +108,7 @@ public static partial class DiscLogManifestComparer
             var manifestTitles = CollectTitles(manifestDiscInfo);
             ReportPlaylistGroupingDifferences(logTitles, manifestTitles, differences);
             var anglePerspectiveKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var dvdAngleKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var duplicate in logTitles.DuplicateKeys)
             {
                 var matchingManifestModels = manifest.Disc?.Titles?
@@ -116,6 +117,15 @@ public static partial class DiscLogManifestComparer
                         duplicate,
                         StringComparison.OrdinalIgnoreCase))
                     .ToArray() ?? [];
+                if (IsDvdAngleTitleSet(manifest, matchingManifestModels)
+                    && logTitles.TitlesByKey.TryGetValue(duplicate, out var logAngleTitles)
+                    && logAngleTitles.Count == matchingManifestModels.Length)
+                {
+                    // MakeMKV lists a DVD title once per angle; pair the rows in angle order.
+                    dvdAngleKeys.Add(duplicate);
+                    continue;
+                }
+
                 if (manifestTitles.TitlesByKey.TryGetValue(duplicate, out var matchingManifestTitles)
                     && matchingManifestTitles.Count == 1
                     && matchingManifestModels.Length == 1
@@ -134,7 +144,10 @@ public static partial class DiscLogManifestComparer
                 differences.TitleDifferences.Add(new TitleDifference(duplicate, "DuplicateLogTitle", "duplicate", null));
             }
 
-            foreach (var duplicate in manifestTitles.DuplicateKeys)
+            foreach (var duplicate in manifestTitles.DuplicateKeys.Where(key => !dvdAngleKeys.Contains(key)
+                && !IsDvdAngleTitleSet(manifest, manifest.Disc?.Titles?
+                    .Where(title => string.Equals(ManifestSourceKey(title), key, StringComparison.OrdinalIgnoreCase))
+                    .ToArray() ?? [])))
             {
                 differences.TitleDifferences.Add(new TitleDifference(duplicate, "DuplicateManifestTitle", null, "duplicate"));
             }
@@ -161,6 +174,18 @@ public static partial class DiscLogManifestComparer
                 {
                     CompareAnglePerspectiveTitle(key, logTitle, manifestTitle, differences);
                 }
+                else if (dvdAngleKeys.Contains(key))
+                {
+                    var models = manifest.Disc!.Titles
+                        .Where(title => string.Equals(ManifestSourceKey(title), key, StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                    var logAngles = logTitles.TitlesByKey[key];
+                    var manifestAngles = manifestTitles.TitlesByKey[key];
+                    for (int angle = 0; angle < logAngles.Count; angle++)
+                    {
+                        CompareTitle(key, logAngles[angle], manifestAngles[angle], models[angle], differences);
+                    }
+                }
                 else
                 {
                     var model = manifest.Disc?.Titles.FirstOrDefault(
@@ -172,7 +197,9 @@ public static partial class DiscLogManifestComparer
             var logOrder = logTitles.OrderedKeys.Where(matchedKeys.Contains)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
-            var manifestOrder = manifestTitles.OrderedKeys.Where(matchedKeys.Contains).ToArray();
+            var manifestOrder = manifestTitles.OrderedKeys.Where(matchedKeys.Contains)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
             bool orderMatches = logOrder.SequenceEqual(manifestOrder, StringComparer.OrdinalIgnoreCase);
             if (!orderMatches)
             {
@@ -206,6 +233,15 @@ public static partial class DiscLogManifestComparer
                 differences);
         }
     }
+
+    private static bool IsDvdAngleTitleSet(
+        OpticalDiscManifestDocument manifest,
+        IReadOnlyList<OpticalDiscManifestTitle> models)
+        => string.Equals(manifest.Disc?.Format, "dvd", StringComparison.OrdinalIgnoreCase)
+            && models.Count > 1
+            && models.Select((model, index) => model.Segments.Any(segment => segment.Angle == index + 1)
+                && model.Segments.All(segment => segment.Angle is null || segment.Angle == index + 1))
+                .All(valid => valid);
 
     private static void CompareAnglePerspectiveTitle(
         string key,

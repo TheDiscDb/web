@@ -263,8 +263,9 @@ public static class OpticalDiscManifestMapper
 
         if (isDvd)
         {
+            // MakeMKV shows DVD title numbers with two digits ("01").
             int? titleNumber = source.Title ?? source.TitleSetTitle;
-            return titleNumber?.ToString(CultureInfo.InvariantCulture);
+            return titleNumber?.ToString("D2", CultureInfo.InvariantCulture);
         }
 
         string? path = source.Path;
@@ -318,11 +319,14 @@ public static class OpticalDiscManifestMapper
         // their PGC cell number and joins consecutive cells from the same VOB ID into a range, so
         // a title playing VOB 6 cells 1-21 then VOB 7 cells 1-19 reads "1-21,22-40", and United
         // 93's feature, whose first two cells are never played, reads "3,4,5-25". Older manifests
-        // without cell numbers count from 1 in play order.
+        // without cell numbers count from 1 in play order. One angle of a multi-angle title writes
+        // its cells from adjacent angle blocks as a parenthesized group, so Kiki's Delivery
+        // Service's angle 1 reads "(1,3,5,7,9),11,12,...".
         var ranges = new List<string>();
         int start = 0;
         int previous = 0;
         string? startVob = null;
+        bool open = false;
         for (int index = 0; index < segments.Count; index++)
         {
             string? vob = DvdVobId(segments[index].Clip);
@@ -332,21 +336,47 @@ public static class OpticalDiscManifestMapper
             }
 
             int number = segments[index].Cell ?? index + 1;
-            if (index == 0 || vob != startVob || number != previous + 1)
+            if (segments[index].Angle is not null)
             {
-                if (index > 0)
+                if (open)
+                {
+                    ranges.Add(FormatCellRange(start, previous));
+                    open = false;
+                }
+
+                var group = new List<int> { number };
+                while (index + 1 < segments.Count && segments[index + 1].Angle is not null)
+                {
+                    index++;
+                    if (DvdVobId(segments[index].Clip) is null)
+                    {
+                        return string.Empty;
+                    }
+
+                    group.Add(segments[index].Cell ?? index + 1);
+                }
+
+                string cells = string.Join(",", group.Select(cell => cell.ToString(CultureInfo.InvariantCulture)));
+                ranges.Add(group.Count > 1 ? $"({cells})" : cells);
+                continue;
+            }
+
+            if (!open || vob != startVob || number != previous + 1)
+            {
+                if (open)
                 {
                     ranges.Add(FormatCellRange(start, previous));
                 }
 
                 start = number;
                 startVob = vob;
+                open = true;
             }
 
             previous = number;
         }
 
-        if (segments.Count > 0)
+        if (open)
         {
             ranges.Add(FormatCellRange(start, previous));
         }

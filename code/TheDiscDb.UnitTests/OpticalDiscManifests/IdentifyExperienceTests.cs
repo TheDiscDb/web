@@ -182,7 +182,8 @@ public class IdentifyExperienceTests
         manifest.Disc!.Format = "dvd";
         manifest.Disc.Titles[0].Source = new OpticalDiscManifestTitleSource { Title = 1 };
         var log = OpticalDiscManifestMapper.ToDiscInfo(manifest);
-        log.Titles[0].Playlist = "01";
+        await Assert.That(log.Titles[0].Playlist).IsEqualTo("01");
+        log.Titles[0].Playlist = "1";
         var result = Compare(manifest, log);
         await Assert.That(result.Status).IsEqualTo(DiscLogManifestComparisonStatus.Match);
         await Assert.That(result.Differences.IdentifyExperience!.Status).IsEqualTo(IdentifyExperienceStatus.Mismatch);

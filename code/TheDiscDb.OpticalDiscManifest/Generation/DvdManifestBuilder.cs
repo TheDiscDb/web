@@ -70,24 +70,51 @@ internal static partial class DvdManifestBuilder
 
         var titles = new List<ManifestTitle>(vmgi.Titles.Count);
         int skippedTitles = 0;
+        int joinedTitles = 0;
         foreach (var title in vmgi.Titles.OrderBy(item => item.Number))
         {
             titleSets.TryGetValue(title.TitleSetNumber, out var vtsi);
-            var result = CreateTitle(title, vtsi, diagnostics);
-            if (result.Title is not null)
+
+            // MakeMKV lists a multi-angle title once per angle ("Angle #2 was added for title
+            // #3", MSG 3040), each playing the shared cells plus that angle's cell of every
+            // angle block.
+            int angleTitles = CountAngleTitles(title, vtsi);
+            bool joined = false;
+            bool skipped = false;
+            for (int angle = 1; angle <= angleTitles; angle++)
             {
-                titles.Add(result.Title);
+                var titleDiagnostics = angle == 1 ? diagnostics : new List<ManifestDiagnostic>();
+                var result = CreateTitle(title, vtsi, titleDiagnostics, angleTitles > 1 ? angle : null);
+                foreach (var diagnostic in titleDiagnostics.Where(item => !diagnostics.Contains(item)))
+                {
+                    diagnostics.Add(diagnostic);
+                }
+
+                if (result.Title is not null)
+                {
+                    titles.Add(result.Title);
+                    joined = true;
+                }
+                else if (result.Disposition == DvdTitleDisposition.Skipped)
+                {
+                    skipped = true;
+                }
             }
-            else if (result.Disposition == DvdTitleDisposition.Skipped)
+
+            if (joined)
+            {
+                joinedTitles++;
+            }
+            else if (skipped)
             {
                 skippedTitles++;
             }
         }
 
-        if (titles.Count + skippedTitles != vmgi.Titles.Count)
+        if (joinedTitles + skippedTitles != vmgi.Titles.Count)
         {
             diagnostics.Add(DvdPartial(
-                $"Only {titles.Count} of {vmgi.Titles.Count} VMGI logical titles were joined successfully."));
+                $"Only {joinedTitles} of {vmgi.Titles.Count} VMGI logical titles were joined successfully."));
         }
 
         return titles;
@@ -96,7 +123,8 @@ internal static partial class DvdManifestBuilder
     private static DvdTitleResult CreateTitle(
         VmgiTitle title,
         VtsiHeader? vtsi,
-        ICollection<ManifestDiagnostic> diagnostics)
+        ICollection<ManifestDiagnostic> diagnostics,
+        int? angle = null)
     {
         if (vtsi is null)
         {
@@ -121,9 +149,22 @@ internal static partial class DvdManifestBuilder
                 $"Logical title {title.Number} declares {title.NumberOfPartsOfTitle} parts but {titleMap.Parts.Count} were parsed."));
         }
 
-        bool timingSupported = title.NumberOfAngles == 1
-            && !title.PlaybackFlags.IsMultiOrRandomPgcTitle;
-        var chapters = new List<ManifestChapter>(titleMap.Parts.Count);
+        var titleParts = titleMap.Parts.OrderBy(item => item.Number).ToList();
+        bool timingSupported = title.NumberOfAngles == 1 || angle is not null;
+        if (timingSupported && title.PlaybackFlags.IsMultiOrRandomPgcTitle)
+        {
+            var selectedPgc = SelectMultiPgcTitleProgramChain(vtsi, titleParts);
+            if (selectedPgc is null)
+            {
+                timingSupported = false;
+            }
+            else
+            {
+                titleParts = titleParts.Where(part => part.ProgramChainNumber == selectedPgc.Value).ToList();
+            }
+        }
+
+        var chapters = new List<ManifestChapter>(titleParts.Count);
         var segments = new List<ManifestSegment>();
         double elapsedSeconds = 0;
         long sizeBytes = 0;
@@ -134,7 +175,7 @@ internal static partial class DvdManifestBuilder
         bool joinsComplete = completeParts;
         bool rangesComplete = true;
         double declaredWholeSeconds = 0;
-        foreach (var part in titleMap.Parts.OrderBy(item => item.Number))
+        foreach (var part in titleParts)
         {
             var pgc = vtsi.ProgramChains.SingleOrDefault(
                 item => item.Number == part.ProgramChainNumber);
@@ -168,9 +209,18 @@ internal static partial class DvdManifestBuilder
                 continue;
             }
 
+            int firstPlayedCellNumber = playedCells[0].Number;
+            var angleCells = angle is null ? null : GetAngleCells(pgc, title.NumberOfAngles);
+            if (angleCells is not null)
+            {
+                playedCells = playedCells
+                    .Where(cell => !angleCells.TryGetValue(cell.Number, out var angleCell) || angleCell.Angle == angle)
+                    .ToList();
+            }
+
             declaredWholeSeconds += playedCells.Sum(cell => Math.Floor(cell.PlaybackTime.ToTimeSpan().TotalSeconds));
 
-            if (sizeComplete && TryGetCellSizeBytes(playedCells, out long programBytes))
+            if (sizeComplete && TryGetCellSizeBytes(playedCells, angleCells, out long programBytes))
             {
                 sizeBytes += programBytes;
             }
@@ -185,7 +235,7 @@ internal static partial class DvdManifestBuilder
             }
 
             double duration = playedCells.Sum(cell => cell.PlaybackTime.ToTimeSpan().TotalSeconds);
-            anyChapterMark |= playedCells[0].Number == programCells[0].Number;
+            anyChapterMark |= firstPlayedCellNumber == programCells[0].Number;
             chapters.Add(new ManifestChapter
             {
                 StartSeconds = ManifestTiming.RoundSeconds(elapsedSeconds),
@@ -202,6 +252,7 @@ internal static partial class DvdManifestBuilder
                     Clip = FormatDvdCellClip(position),
                     StartSeconds = ManifestTiming.RoundSeconds(cellStart),
                     DurationSeconds = ManifestTiming.RoundSeconds(cellSeconds),
+                    Angle = angleCells?.ContainsKey(cell.Number) == true ? angle : null,
                     Cell = cell.Number,
                 });
                 cellStart += cellSeconds;
@@ -210,7 +261,8 @@ internal static partial class DvdManifestBuilder
             elapsedSeconds += duration;
         }
 
-        if (title.NumberOfAngles == 1 && joinsComplete && !anyCells)
+        bool singlePerspective = title.NumberOfAngles == 1 || angle is not null;
+        if (singlePerspective && joinsComplete && !anyCells)
         {
             // MakeMKV does not list a title none of whose programs resolve to cells, such as
             // United 93's PGC 2 titles whose program map reads [1, 0].
@@ -228,7 +280,7 @@ internal static partial class DvdManifestBuilder
         // fake title", MSG 3026, about 1,500 times across the TheDiscDb log corpus), so it is
         // not listed: Avatar's titles 2-4 and 6-9 are built from 0.52 s cells. Only old
         // MakeMKV builds falling back to CellTrim ever listed 0:00:00 DVD titles.
-        if (title.NumberOfAngles == 1 && joinsComplete && rangesComplete && anyCells && declaredWholeSeconds == 0)
+        if (singlePerspective && joinsComplete && rangesComplete && anyCells && declaredWholeSeconds == 0)
         {
             diagnostics.Add(new ManifestDiagnostic
             {
@@ -267,13 +319,28 @@ internal static partial class DvdManifestBuilder
                 Code = "ODM_DVD_TIMING_PARTIAL",
                 Message = $"Chapter timing for logical title {title.Number} is incomplete because one or more program/cell ranges could not be resolved.",
             });
-            chapters = titleMap.Parts
-                .OrderBy(item => item.Number)
+            chapters = titleParts
                 .Select(_ => new ManifestChapter { StartSeconds = 0 })
                 .ToList();
         }
 
-        var streams = CreateDvdStreams(vtsi);
+        var titleProgramChains = new List<ProgramChain>();
+        foreach (var part in titleParts)
+        {
+            var pgc = vtsi.ProgramChains.SingleOrDefault(item => item.Number == part.ProgramChainNumber);
+            if (pgc is null)
+            {
+                titleProgramChains.Clear();
+                break;
+            }
+
+            if (!titleProgramChains.Contains(pgc))
+            {
+                titleProgramChains.Add(pgc);
+            }
+        }
+
+        var streams = CreateDvdStreams(vtsi, titleProgramChains);
         return new DvdTitleResult(new ManifestTitle
         {
             Source = new ManifestTitleSource
@@ -283,7 +350,7 @@ internal static partial class DvdManifestBuilder
                 TitleSetTitle = title.TitleSetTitleNumber,
             },
             DurationSeconds = timingComplete ? ManifestTiming.RoundSeconds(elapsedSeconds) : null,
-            SizeBytes = sizeComplete && completeParts && titleMap.Parts.Count > 0 ? sizeBytes : null,
+            SizeBytes = sizeComplete && completeParts && titleParts.Count > 0 ? sizeBytes : null,
             Chapters = chapters.Count > 0 && timingComplete ? chapters : null,
             Segments = segments.Count > 0 && timingComplete ? segments : null,
             Streams = streams.Count > 0 ? streams : null,
@@ -300,6 +367,40 @@ internal static partial class DvdManifestBuilder
     private sealed record DvdTitleResult(ManifestTitle? Title, DvdTitleDisposition Disposition);
 
     private const long DvdSectorSizeBytes = 2048;
+
+    /// <summary>
+    /// MakeMKV lists the PGCs a multi-PGC title actually plays, following its pre/post/cell link
+    /// commands from the entry PGC, as titles "#N", "#N/1", ... and drops those declaring 0 s.
+    /// Without emulating those commands, the first PGC in part order whose played cells declare
+    /// at least one whole second reproduces every case where it lists one: Man on Fire (2004)
+    /// disc 1 title 3 (PGC 1, 2:30, whose post command links to a PGC that jumps out unplayed),
+    /// seven titles on two other local captures that skip 0 s language-select PGCs 1-2 and match
+    /// PGC 3 in bytes, cells and chapters, and the Fox logo titles on Die Hard (1988) and
+    /// Bedazzled (2000). Titles whose path plays several PGCs (Bedazzled's #8 ... #8/7) are not
+    /// split. A title whose PGCs all declare 0 s returns null, to be omitted as a fake title.
+    /// </summary>
+    private static int? SelectMultiPgcTitleProgramChain(VtsiHeader vtsi, IEnumerable<VtsPartOfTitle> parts)
+    {
+        foreach (int number in parts.Select(part => part.ProgramChainNumber).Distinct())
+        {
+            var pgc = vtsi.ProgramChains.SingleOrDefault(item => item.Number == number);
+            if (pgc is null || pgc.CellPlayback.Count == 0)
+            {
+                return null;
+            }
+
+            var (first, last) = GetPlayedCellRange(pgc);
+            double wholeSeconds = pgc.CellPlayback
+                .Where(cell => cell.Number >= first && cell.Number <= last)
+                .Sum(cell => Math.Floor(cell.PlaybackTime.ToTimeSpan().TotalSeconds));
+            if (wholeSeconds > 0)
+            {
+                return number;
+            }
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Finds the cells of a PGC that sequential playback actually reaches, following the cell
@@ -393,11 +494,20 @@ internal static partial class DvdManifestBuilder
     /// (Reservoir Dogs 2002 SE disc 1: 17/17 titles; Fight Club 1999 DVD main feature; United 93,
     /// counting only the cells playback reaches).
     /// </summary>
-    private static bool TryGetCellSizeBytes(IEnumerable<CellPlaybackInfo> cells, out long sizeBytes)
+    private static bool TryGetCellSizeBytes(
+        IEnumerable<CellPlaybackInfo> cells,
+        IReadOnlyDictionary<int, DvdAngleCell>? angleCells,
+        out long sizeBytes)
     {
         sizeBytes = 0;
         foreach (var cell in cells)
         {
+            if (angleCells is not null && angleCells.TryGetValue(cell.Number, out var angleCell))
+            {
+                sizeBytes += angleCell.ShareBytes;
+                continue;
+            }
+
             if (cell.LastSector < cell.FirstSector)
             {
                 sizeBytes = 0;
@@ -408,6 +518,97 @@ internal static partial class DvdManifestBuilder
         }
 
         return true;
+    }
+
+    private sealed record DvdAngleCell(int Angle, long ShareBytes);
+
+    /// <summary>
+    /// Returns how many titles MakeMKV lists for a logical title: one per angle when every PGC
+    /// the title references lays its angle blocks out as one cell per declared angle, otherwise
+    /// one. Multi-PGC titles qualify too (Die Hard (1988)'s "Angle #2 was added for title #12/1").
+    /// </summary>
+    private static int CountAngleTitles(VmgiTitle title, VtsiHeader? vtsi)
+    {
+        if (title.NumberOfAngles < 2 || vtsi is null)
+        {
+            return 1;
+        }
+
+        var titleMap = vtsi.TitlePartMaps.SingleOrDefault(
+            item => item.TitleSetTitleNumber == title.TitleSetTitleNumber);
+        if (titleMap is null || titleMap.Parts.Count == 0)
+        {
+            return 1;
+        }
+
+        bool anyAngleBlock = false;
+        foreach (int pgcNumber in titleMap.Parts.Select(part => part.ProgramChainNumber).Distinct())
+        {
+            var pgc = vtsi.ProgramChains.SingleOrDefault(item => item.Number == pgcNumber);
+            var angleCells = pgc is null ? null : GetAngleCells(pgc, title.NumberOfAngles);
+            if (angleCells is null)
+            {
+                return 1;
+            }
+
+            anyAngleBlock |= angleCells.Count > 0;
+        }
+
+        return anyAngleBlock ? title.NumberOfAngles : 1;
+    }
+
+    /// <summary>
+    /// Maps each angle-block cell of a PGC to its angle and its share of the block's bytes, or
+    /// returns null when a block does not hold exactly one cell per angle. Angle cells are
+    /// interleaved, so their sector ranges overlap; MakeMKV's size for each angle of Kiki's
+    /// Delivery Service (2 angles, 5,502,390,272 bytes) is the shared cells plus an even share of
+    /// every angle block's sector span.
+    /// </summary>
+    private static Dictionary<int, DvdAngleCell>? GetAngleCells(ProgramChain pgc, int angles)
+    {
+        var result = new Dictionary<int, DvdAngleCell>();
+        var block = new List<CellPlaybackInfo>();
+        foreach (var cell in pgc.CellPlayback)
+        {
+            if (cell.BlockType != DvdCellBlockType.AngleBlock)
+            {
+                if (block.Count > 0)
+                {
+                    return null;
+                }
+
+                continue;
+            }
+
+            if ((cell.BlockMode == DvdCellBlockMode.FirstCell) != (block.Count == 0)
+                || cell.BlockMode == DvdCellBlockMode.NotInBlock
+                || cell.LastSector < cell.FirstSector)
+            {
+                return null;
+            }
+
+            block.Add(cell);
+            if (cell.BlockMode != DvdCellBlockMode.LastCell)
+            {
+                continue;
+            }
+
+            if (block.Count != angles)
+            {
+                return null;
+            }
+
+            long spanSectors = (long)block.Max(item => item.LastSector) - block.Min(item => item.FirstSector) + 1;
+            long shareBytes = spanSectors * DvdSectorSizeBytes / angles;
+            for (int index = 0; index < block.Count; index++)
+            {
+                result[block[index].Number] = new DvdAngleCell(index + 1, shareBytes);
+            }
+
+            block.Clear();
+        }
+
+        return block.Count == 0 ? result : null;
     }
 
     private static bool TryGetProgramCells(
@@ -460,8 +661,43 @@ internal static partial class DvdManifestBuilder
             Message = message,
         };
 
-    private static IReadOnlyList<ManifestStream> CreateDvdStreams(VtsiHeader vtsi)
+    private static IReadOnlyList<ManifestStream> CreateDvdStreams(
+        VtsiHeader vtsi,
+        IReadOnlyList<ProgramChain> programChains)
     {
+        // A title plays only the audio and subpicture streams its PGCs mark available, and
+        // MakeMKV lists one stream per distinct physical stream mapping: Rebel Without a
+        // Cause's extras map all three logical subpicture streams to physical stream 0 and its
+        // trailer enables only audio stream 3; Contagion's disc 2 title 2 maps three logical
+        // audio streams to physical stream 0. Without resolved PGCs, keep every VTS stream.
+        bool usePgcControls = programChains.Count > 0;
+        var availableAudio = new HashSet<int>();
+        var audioMappings = new HashSet<(string? Codec, int Number)>();
+        foreach (var control in programChains
+            .SelectMany(pgc => pgc.AudioControls)
+            .Where(control => control.IsAvailable)
+            .OrderBy(control => control.StreamIndex))
+        {
+            // Physical audio numbers are per coding type (AC-3 0x80+n, DTS 0x88+n, LPCM 0xA0+n).
+            string? codec = vtsi.AudioStreams.FirstOrDefault(item => item.Index == control.StreamIndex)?.Codec;
+            if (audioMappings.Add((codec, control.PlayerStreamNumber ?? control.StreamIndex)))
+            {
+                availableAudio.Add(control.StreamIndex);
+            }
+        }
+        var availableSubpictures = new HashSet<int>();
+        var subpictureMappings = new HashSet<uint>();
+        foreach (var control in programChains
+            .SelectMany(pgc => pgc.SubpictureControls)
+            .Where(control => control.IsAvailable)
+            .OrderBy(control => control.StreamIndex))
+        {
+            if (subpictureMappings.Add(control.RawValue & 0x1F1F1F1F))
+            {
+                availableSubpictures.Add(control.StreamIndex);
+            }
+        }
+
         var streams = new List<ManifestStream>();
         streams.AddRange(vtsi.VideoStreams.OrderBy(item => item.Index).Select(item => new ManifestStream
         {
@@ -473,7 +709,9 @@ internal static partial class DvdManifestBuilder
             FrameRate = item.FrameRate,
             Line21ClosedCaptionFields = GetLine21ClosedCaptionFields(item),
         }));
-        foreach (var stream in vtsi.AudioStreams.OrderBy(item => item.Index))
+        foreach (var stream in vtsi.AudioStreams
+            .Where(item => !usePgcControls || availableAudio.Contains(item.Index))
+            .OrderBy(item => item.Index))
         {
             streams.Add(new ManifestStream
             {
@@ -485,7 +723,9 @@ internal static partial class DvdManifestBuilder
             });
         }
 
-        foreach (var stream in vtsi.SubtitleStreams.OrderBy(item => item.Index))
+        foreach (var stream in vtsi.SubtitleStreams
+            .Where(item => !usePgcControls || availableSubpictures.Contains(item.Index))
+            .OrderBy(item => item.Index))
         {
             streams.Add(new ManifestStream
             {

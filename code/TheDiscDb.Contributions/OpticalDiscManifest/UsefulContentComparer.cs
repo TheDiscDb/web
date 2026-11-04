@@ -169,7 +169,7 @@ public static class UsefulContentComparer
         string map = Map(expected.SegmentMap);
         string actualMap = Map(actual.SegmentMap);
         var model = index < (manifest.Disc?.Titles.Count ?? 0) ? manifest.Disc!.Titles[index] : null;
-        bool angles = model?.Segments.Any(segment => segment.Angle is > 1) == true;
+        bool angles = !dvd && model?.Segments.Any(segment => segment.Angle is > 1) == true;
         bool sameMap = map.Length > 0 && map == actualMap;
         bool sameBytes = expected.Size > 0 && expected.Size == actual.Size;
         bool sameDuration = SameDuration(expected.Length, actual.Length);

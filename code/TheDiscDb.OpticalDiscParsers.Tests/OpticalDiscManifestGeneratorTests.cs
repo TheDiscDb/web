@@ -2155,7 +2155,7 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
-    public async Task GenerateAsync_Dvd_SizesSequentialMainFeatureAndOmitsMultiPgcSizes()
+    public async Task GenerateAsync_Dvd_SizesSequentialMainFeatureAndMultiPgcFirstPlayedChain()
     {
         var files = CreateDvdIfoFiles("DVD-D");
 
@@ -2184,13 +2184,18 @@ public sealed class OpticalDiscManifestGeneratorTests
         Assert.All(main.Streams!.Where(stream => stream.Type == "subtitle"), stream => Assert.Equal("RLE", stream.Codec));
         Assert.Contains("\"line21ClosedCaptionFields\":[1]", System.Text.RegularExpressions.Regex.Replace(System.Text.Encoding.UTF8.GetString(result.Json), @"\s", string.Empty));
 
-        // Titles 5 and 6 declare no whole seconds. The remaining true multi/random
-        // titles stay partial; title-search flags no longer masquerade as playback flags.
-        Assert.All(titles.Skip(1), title =>
-        {
-            Assert.Null(title.DurationSeconds);
-            Assert.Null(title.SizeBytes);
-        });
+        // Titles 5 and VTS 3's second title declare no whole seconds and are omitted. The other
+        // multi-PGC titles are their first chain declaring whole seconds; VTS 4 and VTS 5 are the
+        // Fox logo chains MakeMKV lists on Die Hard (1988) and Bedazzled (2000) as 0:00:07 /
+        // 7,921,664 bytes and 0:00:17 / 7,118,848 bytes, one chapter each.
+        Assert.All(titles.Skip(1), title => Assert.NotNull(title.DurationSeconds));
+        var logo = titles.Single(title => title.Source.TitleSet == 4);
+        Assert.Equal(7_921_664L, logo.SizeBytes);
+        Assert.Single(logo.Chapters!);
+        var trailer = titles.Single(title => title.Source.TitleSet == 5);
+        Assert.Equal(7_118_848L, trailer.SizeBytes);
+        Assert.Equal(17, Math.Floor(trailer.DurationSeconds!.Value));
+        Assert.Single(trailer.Chapters!);
         Assert.All(files.Where(file => file.Path.EndsWith(".VOB", StringComparison.OrdinalIgnoreCase)), file => Assert.Equal(0, file.ReadCount));
     }
 
