@@ -1275,6 +1275,45 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Theory]
+    [InlineData("repeat", true)]
+    [InlineData("before-end", false)]
+    [InlineData("other-clip", false)]
+    [InlineData("long-tail", false)]
+    [InlineData("three-items", false)]
+    public async Task RepeatsFinalFrameOfSingleClip_MatchesOnlyAFullClipFollowedByItsLastFrame(string shape, bool expected)
+    {
+        const uint clipEnd = 315_450;
+        uint tailStart = shape == "long-tail" ? clipEnd - 4_001 : clipEnd - 1_876;
+        uint tailEnd = shape == "before-end" ? clipEnd - 1 : clipEnd;
+        var items = shape switch
+        {
+            "other-clip" => new[] { ("00031", 1, 0), ("00032", 1, 0) },
+            "three-items" => [("00031", 1, 0), ("00031", 1, 0), ("00031", 1, 0)],
+            _ => [("00031", 1, 0), ("00031", 1, 0)],
+        };
+        var playlist = CreateMultiItemPlaylist(items, []);
+        playlist = playlist with
+        {
+            PlayItems = playlist.PlayItems.Select((item, index) => index == 0
+                ? item with { InTime = 0, OutTime = clipEnd }
+                : item with { InTime = tailStart, OutTime = tailEnd }).ToArray(),
+        };
+        var clpi = (await new ClpiParser(new MemoryOpticalDiscReader(
+            await File.ReadAllBytesAsync(Path.Combine(fixturesPath, "CLPI", "UHD-A", "00589.clpi"),
+                TestContext.Current.CancellationToken))).ParseAsync()).Value!;
+        clpi = clpi with
+        {
+            PresentationSummary = new ClpiPresentationSummary
+            {
+                StartTime = 0, EndTime = clipEnd, DurationTicks45k = clipEnd, StcSequenceCount = 1,
+            },
+        };
+        var clips = new Dictionary<string, ClpiFile> { ["00031"] = clpi, ["00032"] = clpi };
+
+        Assert.Equal(expected, BluRayPlaylistRules.RepeatsFinalFrameOfSingleClip(playlist, clips));
+    }
+
+    [Theory]
     [InlineData("random")]
     [InlineData("angle")]
     [InlineData("still")]
@@ -1612,6 +1651,49 @@ public sealed class OpticalDiscManifestGeneratorTests
             diagnostics.Where(d => d.Code == "ODM_BD_STILL_GALLERY_STREAMS_SKIPPED").Select(d => d.Path));
         Assert.DoesNotContain(diagnostics, d => d.Code == "ODM_BD_STREAM_TITLE_PROMOTED");
         Assert.All(files, file => Assert.Equal(0, ((RecordingFile)file.File).ReadCount));
+    }
+
+    [Fact]
+    public void RemoveDominatedPlaylists_RemovesPartialPlaylistsOfTheSameClipsOnly()
+    {
+        ManifestStream Stream(string type, int pid, string? language = null)
+            => new() { Type = type, Codec = type, Pid = pid, Language = language };
+        ManifestStream[] full = [Stream("video", 4113), Stream("audio", 4352, "eng"), Stream("subtitle", 4608, "eng"), Stream("subtitle", 4609, "fra")];
+        ManifestStream[] other = [Stream("video", 4113), Stream("audio", 4352, "eng"), Stream("subtitle", 4608, "eng"), Stream("subtitle", 4610, "jpn")];
+        ManifestTitle Title(string playlist, double duration, int chapters, ManifestStream[] streams, string clip = "00105")
+            => new()
+            {
+                Source = new ManifestTitleSource { Path = $"BDMV/PLAYLIST/{playlist}.mpls" },
+                DurationSeconds = duration,
+                Segments = [new ManifestSegment { Clip = clip, StartSeconds = 0, DurationSeconds = duration }],
+                Chapters = Enumerable.Range(0, chapters)
+                    .Select(index => new ManifestChapter { StartSeconds = duration * index / chapters })
+                    .ToArray(),
+                Streams = streams,
+            };
+
+        var retained = new List<ManifestTitle>
+        {
+            Title("00010", 120, 1, full[..3]),
+            Title("00201", 5_400, 24, full),
+            Title("00301", 5_400, 24, other),
+            Title("00011", 300, 2, full, "00107"),
+            Title("00012", 300, 2, full, "00107"),
+            Title("00013", 100, 1, full, "00106"),
+        };
+        var diagnostics = new List<ManifestDiagnostic>();
+
+        BluRayTitleReconciler.RemoveDominatedPlaylists(retained, diagnostics);
+
+        // Scene playlists are equal to the full-clip playlists; the two full-clip playlists
+        // select different subtitles, the exact tie 00011/00012 is left alone and 00013
+        // plays another clip.
+        Assert.Equal(
+            ["00201", "00301", "00011", "00012", "00013"],
+            retained.Select(title => Path.GetFileNameWithoutExtension(title.Source!.Path)));
+        var duplicate = Assert.Single(diagnostics);
+        Assert.Equal("ODM_BD_TITLE_DUPLICATE", duplicate.Code);
+        Assert.Equal("BDMV/PLAYLIST/00010.mpls", duplicate.Path);
     }
 
     private static MplsPlaylist CreateMultiItemPlaylist(

@@ -302,6 +302,36 @@ internal static class BluRayPlaylistRules
     }
 
     /// <summary>
+    /// True when an authored playlist plays one clip and then repeats that clip's final
+    /// frame (or few frames): exactly two play items on the same clip, the second at most
+    /// 4,000 ticks long and ending at the clip's CLPI presentation end. Without Java,
+    /// MakeMKV lists neither such a playlist nor its clip's stream file: on Wicked
+    /// (Blu-ray) <c>00039.mpls</c>-<c>00086.mpls</c> each play a 7 s clip and then its last
+    /// frame, and none appears in the log. Across 30 captured discs with a non-Java
+    /// reference, 1,117 such playlists occur and MakeMKV lists none of them.
+    /// </summary>
+    internal static bool RepeatsFinalFrameOfSingleClip(
+        MplsPlaylist playlist,
+        IReadOnlyDictionary<string, ClpiFile> clpiByClip)
+    {
+        const uint MaximumTailTicks = 4000;
+        var items = playlist.PlayItems.OrderBy(item => item.Index).ToArray();
+        if (items.Length != 2
+            || items.Any(item => item.IsMultiAngle || item.Clips.Count > 1)
+            || !string.Equals(items[0].ClipId, items[1].ClipId, StringComparison.OrdinalIgnoreCase)
+            || !clpiByClip.TryGetValue(items[1].ClipId, out var clip)
+            || clip.PresentationSummary is not { } summary)
+        {
+            return false;
+        }
+
+        var tail = items[1];
+        return tail.OutTime > tail.InTime
+            && tail.OutTime - tail.InTime <= MaximumTailTicks
+            && tail.OutTime == summary.EndTime;
+    }
+
+    /// <summary>
     /// Drops trailing play items, each no longer than one second (1.001 at NTSC rates), whose stream table is
     /// narrower than the first play item's: no category holds more streams and at least
     /// one holds fewer. MakeMKV does not carry such a tail into the title. On Super Mario

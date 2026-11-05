@@ -80,7 +80,7 @@ internal static class BluRayManifestBuilder
         bool isUhd = false;
         var titles = new List<ManifestTitle>();
         var dolbyVisionClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var subPathClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var nonCandidateClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var stillPlaylistClips = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         int playlistCandidates = 0;
         int parsedPlaylists = 0;
@@ -104,6 +104,20 @@ internal static class BluRayManifestBuilder
             parsedPlaylists++;
             isUhd |= result.Value.Version == "0300";
             BluRayPlaylistDiagnostics.AddAuthoredEvidence(result.Path, result.Value, clpiByClip, diagnostics);
+            if (BluRayPlaylistRules.RepeatsFinalFrameOfSingleClip(result.Value, clpiByClip))
+            {
+                // Neither the playlist nor its clip's stream file is a playback candidate.
+                nonCandidateClips.Add(result.Value.PlayItems[0].ClipId);
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_BD_PLAYLIST_REPEATED_FINAL_FRAME",
+                    Message = $"Playlist plays clip {result.Value.PlayItems[0].ClipId} and then repeats its final frame; neither the playlist nor the clip is emitted as a title.",
+                    Path = result.Path,
+                });
+                continue;
+            }
+
             var collapsed = BluRayPlaylistRules.CollapseRepeatedPlayItems(result.Value);
             if (collapsed.PlayItems.Count < result.Value.PlayItems.Count)
             {
@@ -152,7 +166,7 @@ internal static class BluRayManifestBuilder
             {
                 foreach (var subPlayItem in subPath.SubPlayItems)
                 {
-                    subPathClips.Add(subPlayItem.ClipId);
+                    nonCandidateClips.Add(subPlayItem.ClipId);
                 }
             }
 
@@ -178,7 +192,7 @@ internal static class BluRayManifestBuilder
 
         return new PlaylistCandidates(
             titles, isUhd, playlistCandidates, parsedPlaylists,
-            dolbyVisionClips, subPathClips, stillPlaylistClips);
+            dolbyVisionClips, nonCandidateClips, stillPlaylistClips);
     }
 
     internal static async Task<BluRayParseResult> ParseBluRayAsync(
@@ -195,7 +209,7 @@ internal static class BluRayManifestBuilder
         var titles = playlists.Titles.OrderBy(title => files.EnumerationIndexOf(title.Source?.Path)).ToList();
         titles = BluRayTitleReconciler.ReconcileBluRayTitles(
             titles, files, clips.ByClip, playlists.DolbyVisionClips,
-            playlists.SubPathClips, playlists.StillPlaylistClips, diagnostics);
+            playlists.NonCandidateClips, playlists.StillPlaylistClips, diagnostics);
         titles = BluRayTitleReconciler.OrderBluRayTitles(titles, files.EnumerationIndexOf);
 
         string? discName = await ReadBluRayDiscNameAsync(files, diagnostics, metrics, cancellationToken);
@@ -370,7 +384,7 @@ internal static class BluRayManifestBuilder
         int CandidateCount,
         int ParsedCount,
         IReadOnlySet<string> DolbyVisionClips,
-        IReadOnlySet<string> SubPathClips,
+        IReadOnlySet<string> NonCandidateClips,
         IReadOnlySet<string> StillPlaylistClips);
 
     internal sealed record BluRayParseResult(
