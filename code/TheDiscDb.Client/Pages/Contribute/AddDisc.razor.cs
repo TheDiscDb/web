@@ -291,6 +291,8 @@ public partial class AddDisc : CancellableComponentBase
         if (response.IsSuccessResult())
         {
             var createdDiscId = response.Data!.CreateDisc.UserContributionDisc!.EncodedId;
+            // Attaching clears the draft hash, so capture whether a scan was attached first.
+            bool hasScan = !string.IsNullOrEmpty(this.scanDraftHash);
             if (!await AttachScannedManifestAsync(createdDiscId))
             {
                 return;
@@ -303,9 +305,9 @@ public partial class AddDisc : CancellableComponentBase
             }
 
             this.Navigation!.NavigateTo(
-                string.IsNullOrEmpty(this.scanDraftHash)
-                    ? $"/contribution/{this.ContributionId}/discs/{createdDiscId}"
-                    : $"/contribution/{this.ContributionId}/discs/{createdDiscId}/identify");
+                hasScan
+                    ? $"/contribution/{this.ContributionId}/discs/{createdDiscId}/identify"
+                    : $"/contribution/{this.ContributionId}/discs/{createdDiscId}");
         }
     }
 
