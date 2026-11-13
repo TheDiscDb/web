@@ -7,9 +7,9 @@
 
 <div class="contribute-layout identify-title-page">
     <section class="contribute-hero compact">
-        <p class="eyebrow">Step 1 · Identify the release</p>
+        <p class="eyebrow">Step 3 · Find the title</p>
         <h1>Which @MediaType are you adding?</h1>
-        <p>Search The Movie Database or paste the TMDB ID so we can pull baseline metadata before you capture discs.</p>
+        <p>Search The Movie Database or paste the TMDB ID for the release that contains your scanned disc.</p>
         <SfButton OnClick="SwitchMediaType">@SwitchButtonText</SfButton>
     </section>
 
@@ -43,7 +43,7 @@
     </section>
 
     <div class="cta-row split">
-        <a class="btn btn-secondary" href="/contribute">Back</a>
+        <a class="btn btn-secondary" href="@GetBackUrl()">Back</a>
         <button class="btn btn-primary" @onclick="NextClicked" disabled="@IsNextButtonDisabled">Next</button>
     </div>
 </div>

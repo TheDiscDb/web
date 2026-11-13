@@ -6,10 +6,11 @@
         <thead>
             <tr>
                 <th>Group</th>
+                <th>Useful content (metadata v1)</th>
                 <th>Identify matches / measured</th>
                 <th>Identify rate</th>
                 <th>Graded similarity (mean per disc) / components / coverage</th>
-                <th>Not comparable / not measured</th>
+                <th>Excluded / not comparable / not measured</th>
                 <th>Technical matches</th>
                 <th>Technical rate</th>
             </tr>
@@ -19,10 +20,11 @@
             {
                 <tr @key="row.Label">
                     <td>@row.Label</td>
+                    <td>@row.UsefulContent.Summary</td>
                     <td>@row.IdentifyExperience.Matches / @row.IdentifyExperience.Measured</td>
                     <td>@row.IdentifyExperience.Rate</td>
                     <td>@row.Similarity.Summary</td>
-                    <td>@row.IdentifyExperience.NotComparable / @row.IdentifyExperience.NotMeasured</td>
+                    <td>@row.Stats.Excluded / @row.IdentifyExperience.NotComparable / @row.IdentifyExperience.NotMeasured</td>
                     <td>@row.Stats.Matches / @row.Stats.Total</td>
                     <td>@FormatRate(row.Stats)</td>
                 </tr>

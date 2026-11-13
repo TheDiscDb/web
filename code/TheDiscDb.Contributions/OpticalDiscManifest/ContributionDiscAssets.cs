@@ -9,6 +9,9 @@ namespace TheDiscDb.Contributions.OpticalDiscManifest;
 /// </remarks>
 public static class ContributionDiscAssets
 {
+    public static string PreContributionDraftPath(string ownerKey, string discHash)
+        => $"Contributions/DiscScanDrafts/{ownerKey}/{discHash}.json";
+
     public static string LogsPath(string contributionId, string discId)
         => $"{contributionId}/{discId}-logs.txt";
 

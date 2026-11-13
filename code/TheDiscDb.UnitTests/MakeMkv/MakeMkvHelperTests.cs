@@ -8,6 +8,14 @@ using TheDiscDb.Tools.MakeMkv;
 public class MakeMkvHelperTests
 {
     [Test]
+    public async Task GetInfoArguments_DisablesMinimumLengthFilter()
+    {
+        string arguments = MakeMkvHelper.GetInfoArguments(3, @"C:\temp\disc logs.txt");
+
+        await Assert.That(arguments).IsEqualTo("--minlength=0 --robot --messages=\"C:\\temp\\disc logs.txt\" info disc:3");
+    }
+
+    [Test]
     public async Task CleanLogs_InvalidUtf8_ReplacesInvalidBytes()
     {
         string path = System.IO.Path.Combine(

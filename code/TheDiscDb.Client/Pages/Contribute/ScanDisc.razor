@@ -1,0 +1,47 @@
+@inherits CancellableComponentBase
+@page "/contribute/scan"
+
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Scan Disc" Items='[("Contribute", "/contribute")]' />
+
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <p class="eyebrow">Step 1 · Scan the disc</p>
+        <h1>Start with the disc</h1>
+        <p>We’ll scan its structure and identifiers, then check whether it is already in the database before you enter release details.</p>
+    </section>
+
+    <section class="info-card">
+        <p>
+            Insert the disc and select its root folder. The scan creates an Optical Disc Manifest
+            in your browser; video content is not uploaded. Chrome and Edge use direct file-system
+            access, while Firefox and Safari use a folder selection fallback.
+        </p>
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-danger" role="alert">@error</div>
+        }
+        @if (IsDevelopmentMode)
+        {
+            <div class="mb-3">
+                <label for="manual-disc-hash">Disc hash override (development only)</label>
+                <input id="manual-disc-hash" type="text" class="form-control"
+                       @bind="manualHash" @bind:event="oninput" disabled="@isScanning"
+                       placeholder="Optional test hash" />
+                <p class="form-text">The disc will still be scanned, but this hash will be used for duplicate checking and the contribution. Leave empty to use the actual disc hash. Do not submit test contributions for review.</p>
+            </div>
+        }
+        <button class="btn btn-primary" @onclick="ScanDiscAsync" disabled="@isScanning">
+            @(isScanning ? "Scanning disc…" : "Select Disc Root Folder")
+        </button>
+        @if (isScanning)
+        {
+            <div class="scan-status">
+                <LoadingIndicator Message="@(scanProgress ?? "Reading disc…")" />
+            </div>
+        }
+    </section>
+</div>

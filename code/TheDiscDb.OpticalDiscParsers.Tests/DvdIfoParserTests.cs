@@ -326,37 +326,62 @@ public class DvdIfoParserTests
     }
 
     /// <summary>
-    /// Tests that audio stream parsing extracts codec information correctly.
+    /// Decodes raw VTS audio_format bits using independently documented DVD values.
+    /// Sources: libdvdread src/ifo_print.c (0/2/3/4/6) and libdvdnav's DVDAudioFormat_t
+    /// in https://raw.githubusercontent.com/xbmc/libdvdnav/master/src/dvdnav/dvd_types.h
+    /// (including SDDS = 7 and unknown/reserved = 1/5).
     /// </summary>
-    [Fact]
-    public async Task ParseVtsiAsync_AudioParsing_ExtractsCodecTypes()
+    [Theory]
+    [InlineData(0, "AC-3")]
+    [InlineData(1, "Unknown")]
+    [InlineData(2, "MPEG-1 Layer 2")]
+    [InlineData(3, "MPEG-2")]
+    [InlineData(4, "LPCM")]
+    [InlineData(5, "Unknown")]
+    [InlineData(6, "DTS")]
+    [InlineData(7, "SDDS")]
+    public async Task ParseVtsiAsync_AudioParsing_DecodesRawFormatWithoutChangingAdjacentAttributes(
+        byte format, string expectedCodec)
     {
-        // Arrange
-        var vts01Path = Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO");
-        var bytes = File.ReadAllBytes(vts01Path);
+        var bytes = File.ReadAllBytes(Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO"));
+        bytes[0x0203] = 3;
+        // Three eight-byte audio attributes; only the middle entry's format bits vary.
+        // Nonzero low bits in byte 0 must not leak into the format code.
+        byte[] attributes =
+        [
+            0x04, 0xC1, (byte)'e', (byte)'n', 0x00, 0x01, 0x00, 0x00,
+            (byte)((format << 5) | 0x16), 0xC5, (byte)'f', (byte)'r', 0x00, 0x03, 0x00, 0x08,
+            0x04, 0xC0, (byte)'d', (byte)'e', 0x00, 0x00, 0x00, 0x00,
+        ];
+        attributes.CopyTo(bytes, 0x0204);
         var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
 
-        // Act
         var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
-        var vtsi = result.Value!;
+        var audios = result.Value!.AudioStreams;
 
-        // Assert
-        // DVD supports up to 8 audio streams
-        Assert.NotNull(vtsi.AudioStreams);
-        Assert.True(vtsi.AudioStreams!.Count <= 8, 
-            $"Expected <= 8 audio streams, got {vtsi.AudioStreams.Count}");
+        Assert.DoesNotContain(result.Diagnostics, d => d.Severity == DiagnosticSeverity.Error);
+        Assert.Equal(3, audios.Count);
+        Assert.Equal([0, 1, 2], audios.Select(audio => audio.Index));
+        Assert.Equal(["AC-3", expectedCodec, "AC-3"], audios.Select(audio => audio.Codec));
+        Assert.Equal(["stereo", "5.1", "mono"], audios.Select(audio => audio.Channels));
+        Assert.Equal(["en", "fr", "de"], audios.Select(audio => audio.LanguageCode));
+        Assert.Equal([true, true, false], audios.Select(audio => audio.HasContentType));
+        Assert.Equal(["0x01", "0x03", null], audios.Select(audio => audio.ContentType));
+        Assert.All(audios, audio => Assert.Equal(48000, audio.SamplingFrequency));
+    }
 
-        // Check that all audio streams have valid codecs
-        var validCodecs = new[] { "AC-3", "MPEG-1 Layer 2", "MPEG-2", "LPCM", "DTS", "SDDS" };
-        foreach (var audio in vtsi.AudioStreams)
-        {
-            Assert.Contains(audio!.Codec, validCodecs);
-            Assert.True(audio.Index >= 0 && audio.Index < 8, 
-                $"Invalid audio stream index: {audio.Index}");
-            Assert.False(string.IsNullOrEmpty(audio.LanguageCode));
-            Assert.True(audio.SamplingFrequency > 0, 
-                $"Invalid sampling frequency: {audio.SamplingFrequency}");
-        }
+    [Fact]
+    public async Task ParseVtsiAsync_AudioParsing_NoDeclaredStreamsDoesNotFabricateStreams()
+    {
+        var bytes = File.ReadAllBytes(Path.Combine(fixturesPath, "DVD-A", "VTS_01_0.IFO"));
+        // Leave the fixture's audio attributes present, but declare no audio streams.
+        bytes[0x0203] = 0;
+        var parser = new DvdIfoParser(new MemoryOpticalDiscReader(bytes));
+
+        var result = await parser.ParseVtsiAsync(titleSetNumber: 1);
+
+        Assert.NotNull(result.Value);
+        Assert.Empty(result.Value.AudioStreams);
     }
 
     /// <summary>

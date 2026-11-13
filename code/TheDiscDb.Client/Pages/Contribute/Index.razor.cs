@@ -2,6 +2,7 @@
 using StrawberryShake;
 using TheDiscDb.Client.Contributions;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.Extensions.Configuration;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
@@ -12,6 +13,11 @@ public partial class Index : ComponentBase
 
     [Inject]
     AuthenticationStateProvider? AuthProvider { get; set; }
+
+    [Inject]
+    IConfiguration Configuration { get; set; } = default!;
+
+    private bool DiscFirstFlow => this.Configuration.GetValue<bool>("Contributions:DiscFirstFlow");
 
     public IQueryable<IMyPendingContributions_MyContributions_Nodes>? PendingContributions { get; set; }
 

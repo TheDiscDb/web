@@ -411,6 +411,10 @@
                     {
                         <li>
                             <div>@item.GetDisplayName()</div>
+                            @if (item.Segment is { } stream)
+                            {
+                                <small class="text-muted">Language: @(stream.Language ?? stream.LanguageCode ?? "Unknown")</small>
+                            }
                             <InputText @bind-Value="item.Title" class="form-control" />
                         </li>
                     }
@@ -439,6 +443,10 @@
                     {
                         <li>
                             <div>@item.GetDisplayName()</div>
+                            @if (item.Segment is { } stream)
+                            {
+                                <small class="text-muted">Language: @(stream.Language ?? stream.LanguageCode ?? "Unknown")</small>
+                            }
                             <InputText @bind-Value="item.Title" class="form-control" />
                         </li>
                     }

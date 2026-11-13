@@ -192,7 +192,10 @@ internal static class BluRayTitleMapper
     /// <summary>
     /// Sums observed stream-file sizes (from file-size metadata only, never by reading
     /// payload bytes) for every clip referenced by the title's segments plus, for a
-    /// stereoscopic 3D title, the MVC dependent-view clip. Accounts for both the base
+    /// stereoscopic 3D title, the MVC dependent-view clip. A clip played more than once
+    /// counts once per segment, as MakeMKV counts it: Super 8 (4K) <c>00400.mpls</c>
+    /// repeats clips through 266 segments and MakeMKV reports 4,036,239,360 bytes, the
+    /// per-occurrence sum. Dependent clips count once each. Accounts for both the base
     /// clip and the dependent clip without requiring both to be present in the file
     /// inventory: returns a best-effort partial sum, or <see langword="null"/> when no
     /// backing stream file is found for any referenced clip.
@@ -202,10 +205,19 @@ internal static class BluRayTitleMapper
         ManifestStereoscopicView? stereoscopic3D,
         DiscFileCatalog files)
     {
+        long? total = null;
+        foreach (var segment in segments)
+        {
+            var file = DiscFileCatalog.Find(files, $"BDMV/STREAM/{segment.Clip}.m2ts");
+            if (file is not null)
+            {
+                total = (total ?? 0) + file.File.Size;
+            }
+        }
+
         var clipIds = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var segment in segments)
         {
-            clipIds.Add(segment.Clip);
             if (segment.DependentClip is not null)
             {
                 clipIds.Add(segment.DependentClip);
@@ -217,7 +229,7 @@ internal static class BluRayTitleMapper
             clipIds.Add(stereoscopic3D.DependentClipId);
         }
 
-        long? total = null;
+        clipIds.ExceptWith(segments.Select(segment => segment.Clip));
         foreach (var clipId in clipIds)
         {
             var file = DiscFileCatalog.Find(files, $"BDMV/STREAM/{clipId}.m2ts");

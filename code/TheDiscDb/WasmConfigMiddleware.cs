@@ -23,6 +23,7 @@ public class WasmConfigMiddleware
         var discScanMode = configuration.GetValue<string>($"{DiscScanOptions.SectionName}:DiscScanMode")
             ?? DiscScanMode.Optional.ToString();
         var showScanFileUpload = configuration.GetValue<bool>($"{DiscScanOptions.SectionName}:{nameof(DiscScanOptions.ShowScanFileUpload)}");
+        var discFirstFlow = configuration.GetValue<bool>($"{DiscScanOptions.SectionName}:{nameof(DiscScanOptions.DiscFirstFlow)}");
         if ((apiKeyAuthEnabled && !string.IsNullOrEmpty(publicApiKey))
             || !string.IsNullOrWhiteSpace(syncfusionLicenseKey)
             || !string.IsNullOrEmpty(discScanMode))
@@ -58,6 +59,7 @@ public class WasmConfigMiddleware
             var contributions = json[DiscScanOptions.SectionName] as JsonObject ?? new JsonObject();
             contributions[nameof(DiscScanOptions.DiscScanMode)] = discScanMode;
             contributions[nameof(DiscScanOptions.ShowScanFileUpload)] = showScanFileUpload;
+            contributions[nameof(DiscScanOptions.DiscFirstFlow)] = discFirstFlow;
             json[DiscScanOptions.SectionName] = contributions;
 
             augmentedJson = JsonSerializer.SerializeToUtf8Bytes(json, new JsonSerializerOptions { WriteIndented = true });

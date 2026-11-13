@@ -1,0 +1,65 @@
+[
+  {
+    "discId": 2533,
+    "logCodec": "DTS",
+    "source": "01",
+    "ordinal": 2,
+    "referenceClass": "RequiredUseful",
+    "scanCodec": "Unknown",
+    "mediaTitle": "The Sting"
+  },
+  {
+    "discId": 2533,
+    "logCodec": "DTS",
+    "source": "02",
+    "ordinal": 2,
+    "referenceClass": "Unclassified",
+    "scanCodec": "Unknown",
+    "mediaTitle": "The Sting"
+  },
+  {
+    "discId": 2533,
+    "logCodec": "DTS",
+    "source": "03",
+    "ordinal": 2,
+    "referenceClass": "Unclassified",
+    "scanCodec": "Unknown",
+    "mediaTitle": "The Sting"
+  },
+  {
+    "discId": 2750,
+    "logCodec": "DTS",
+    "source": "01",
+    "ordinal": 1,
+    "referenceClass": "RequiredUseful",
+    "scanCodec": "Unknown",
+    "mediaTitle": "Atlantis: Milo's Return"
+  },
+  {
+    "discId": 2889,
+    "logCodec": "MPEG audio layer 2",
+    "source": "02",
+    "ordinal": 1,
+    "referenceClass": "Unclassified",
+    "scanCodec": "MPEG-2",
+    "mediaTitle": "Ekkehard"
+  },
+  {
+    "discId": 2890,
+    "logCodec": "MPEG audio layer 2",
+    "source": "02",
+    "ordinal": 1,
+    "referenceClass": "Unclassified",
+    "scanCodec": "MPEG-2",
+    "mediaTitle": "Ekkehard"
+  },
+  {
+    "discId": 2891,
+    "logCodec": "MPEG audio layer 2",
+    "source": "02",
+    "ordinal": 1,
+    "referenceClass": "Unclassified",
+    "scanCodec": "MPEG-2",
+    "mediaTitle": "Ekkehard"
+  }
+]

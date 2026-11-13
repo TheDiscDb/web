@@ -197,12 +197,21 @@ internal static class BluRayPlaylistRules
     /// is shown once too, so an infinite still repeating an earlier infinite still is
     /// dropped wherever it occurs: Monsters University (UHD) <c>00002.mpls</c> plays stills
     /// 150, 151, 151, 151, 150 and MakeMKV reports <c>150,151</c>. Other non-adjacent
-    /// repeats are kept, as MakeMKV keeps Stranger Things' <c>12,0,14,12,1,14</c>. Marks on
-    /// dropped play items are dropped too. Stereoscopic playlists are left alone, because
+    /// repeats are kept, as MakeMKV keeps Stranger Things' <c>12,0,14,12,1,14</c>.
+    /// When the first loop neither starts the playlist nor runs to its end (ignoring
+    /// trailing infinite stills shorter than ten seconds), MakeMKV instead keeps every
+    /// loop to at most three plays and carries on, keeps repeated stills, and plays a loop
+    /// running to the end once: The Gentlemen and Nope's <c>00149.mpls</c> play clip 174,
+    /// clip 175 250 times, then the 10 s still clip 448, and MakeMKV reports
+    /// <c>174,175,175,175,448</c>, while a <c>00020.mpls</c> playing clip 141, clip 142 203
+    /// times, then a 3 s still clip 143 is reported as <c>141,142</c>. MakeMKV 1.16.4 through 1.18.3 agree on
+    /// every captured case. Marks on dropped play items are dropped too. Stereoscopic playlists are left alone, because
     /// their pairing is declared per play item.
     /// </summary>
     internal static MplsPlaylist CollapseRepeatedPlayItems(MplsPlaylist playlist)
     {
+        const int MaximumKeptLoopRepetitions = 3;
+        const long MaximumIgnoredTrailingStillTicks = 450_000;
         var items = playlist.PlayItems.OrderBy(item => item.Index).ToArray();
         if (items.Length < 2 || playlist.StereoVideoRelationships.Count > 0)
         {
@@ -216,16 +225,52 @@ internal static class BluRayPlaylistRules
                 && item.InTime == other.InTime
                 && item.OutTime == other.OutTime;
 
+        int end = items.Length;
+        while (end > 0 && items[end - 1].StillMode == InfiniteStillMode
+            && items[end - 1].OutTime - items[end - 1].InTime < MaximumIgnoredTrailingStillTicks)
+        {
+            end--;
+        }
+
+        int RunEnd(int start)
+        {
+            int next = start + 1;
+            while (next < items.Length && SamePlayback(items[next], items[start]))
+            {
+                next++;
+            }
+
+            return next;
+        }
+
+        int firstRepeat = Enumerable.Range(1, items.Length - 1)
+            .FirstOrDefault(index => SamePlayback(items[index], items[index - 1]));
+        bool capRuns = firstRepeat > 1 && RunEnd(firstRepeat - 1) < end;
+
         var kept = new List<MplsPlayItem>(items.Length) { items[0] };
+        int runLength = 1;
         for (int index = 1; index < items.Length; index++)
         {
             var item = items[index];
             if (SamePlayback(item, kept[^1]))
             {
-                break;
+                if (!capRuns)
+                {
+                    break;
+                }
+
+                runLength++;
+                if (runLength <= MaximumKeptLoopRepetitions && RunEnd(index) < end)
+                {
+                    kept.Add(item);
+                }
+
+                continue;
             }
 
-            bool repeatsStill = item.StillMode == InfiniteStillMode
+            runLength = 1;
+            bool repeatsStill = !capRuns
+                && item.StillMode == InfiniteStillMode
                 && kept.Any(earlier => earlier.StillMode == InfiniteStillMode && SamePlayback(item, earlier));
             if (!repeatsStill)
             {
@@ -254,6 +299,36 @@ internal static class BluRayPlaylistRules
                 })
                 .ToArray(),
         };
+    }
+
+    /// <summary>
+    /// True when an authored playlist plays one clip and then repeats that clip's final
+    /// frame (or few frames): exactly two play items on the same clip, the second at most
+    /// 4,000 ticks long and ending at the clip's CLPI presentation end. Without Java,
+    /// MakeMKV lists neither such a playlist nor its clip's stream file: on Wicked
+    /// (Blu-ray) <c>00039.mpls</c>-<c>00086.mpls</c> each play a 7 s clip and then its last
+    /// frame, and none appears in the log. Across 30 captured discs with a non-Java
+    /// reference, 1,117 such playlists occur and MakeMKV lists none of them.
+    /// </summary>
+    internal static bool RepeatsFinalFrameOfSingleClip(
+        MplsPlaylist playlist,
+        IReadOnlyDictionary<string, ClpiFile> clpiByClip)
+    {
+        const uint MaximumTailTicks = 4000;
+        var items = playlist.PlayItems.OrderBy(item => item.Index).ToArray();
+        if (items.Length != 2
+            || items.Any(item => item.IsMultiAngle || item.Clips.Count > 1)
+            || !string.Equals(items[0].ClipId, items[1].ClipId, StringComparison.OrdinalIgnoreCase)
+            || !clpiByClip.TryGetValue(items[1].ClipId, out var clip)
+            || clip.PresentationSummary is not { } summary)
+        {
+            return false;
+        }
+
+        var tail = items[1];
+        return tail.OutTime > tail.InTime
+            && tail.OutTime - tail.InTime <= MaximumTailTicks
+            && tail.OutTime == summary.EndTime;
     }
 
     /// <summary>

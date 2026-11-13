@@ -652,12 +652,12 @@ internal sealed class DvdIfoParseSession
                 Codec = audioMode switch
                 {
                     0 => "AC-3",
-                    1 => "MPEG-1 Layer 2",
-                    2 => "MPEG-2",
-                    3 => "LPCM",
-                    4 => "DTS",
-                    5 => "SDDS",
-                    _ => "Unknown"
+                    2 => "MPEG-1 Layer 2",
+                    3 => "MPEG-2", // MPEG-2 extension
+                    4 => "LPCM",
+                    6 => "DTS",
+                    7 => "SDDS", // libdvdnav DVDAudioFormat_t: DVD_AUDIO_FORMAT_SDDS = 7
+                    _ => "Unknown" // 1 and 5 are reserved
                 },
                 Channels = GetAudioChannelDescription((byte)(audioData.Span[1] & 0x07)),
                 SamplingFrequency = 48000,

@@ -16,7 +16,8 @@ internal static class BluRayTitleReconciler
     /// streams); stream files no retained playlist references, or that a Dolby Vision
     /// playlist or a playlist holding a still plays,
     /// are promoted to titles of their own, except clips a non-Dolby-Vision subpath (such
-    /// as a popup menu) plays, which are never playback candidates; and a title whose only content is a single unchaptered clip,
+    /// as a popup menu) plays, or a playlist that only repeats the clip's final frame plays,
+    /// which are never playback candidates; and a title whose only content is a single unchaptered clip,
     /// played in full, is attributed to that clip's stream file, because the playlist adds
     /// nothing the stream does not already state. A chaptered single-clip playlist can
     /// also cover a standalone stream with identical duration, size and stream selection.
@@ -29,18 +30,95 @@ internal static class BluRayTitleReconciler
         IReadOnlyList<NormalizedFile> files,
         IReadOnlyDictionary<string, ClpiFile> clpiByClip,
         IReadOnlySet<string> dolbyVisionClips,
-        IReadOnlySet<string> subPathClips,
+        IReadOnlySet<string> nonCandidateClips,
         IReadOnlySet<string> stillPlaylistClips,
         ICollection<ManifestDiagnostic> diagnostics)
     {
         var retained = RemoveEquivalentPlaylists(titles, diagnostics);
         RemoveUnchapteredPresentations(retained, diagnostics);
-        var referenced = CollectReferencedClips(retained, subPathClips);
+        var referenced = CollectReferencedClips(retained, nonCandidateClips);
         PromoteStreamTitles(retained, files, clpiByClip, referenced, dolbyVisionClips, stillPlaylistClips, diagnostics);
         AttributeFullClipTitles(retained, files, clpiByClip, diagnostics);
         RemoveDuplicateStreamSources(retained, diagnostics);
         RemoveStreamsCoveredByChapteredPlaylists(retained, dolbyVisionClips, stillPlaylistClips, diagnostics);
+        RemoveDominatedPlaylists(retained, diagnostics);
         return retained;
+    }
+
+    /// <summary>
+    /// Removes a playlist when another playlist plays the same clips in the same order
+    /// (in/out points may differ), selects every stream it selects, and has at least as
+    /// many chapters and at least as long a duration, being strictly larger in one of
+    /// these. MakeMKV reports such a playlist as "equal to" the larger one (MSG:3309):
+    /// on A Nightmare on Elm Street (UHD) dozens of scene-selection playlists that each
+    /// play part of clip 00105 are equal to the full-clip 00301.mpls and 00201.mpls,
+    /// while those two are both kept because neither selects all of the other's
+    /// subtitles. Across 189 captured discs this removes 128 MakeMKV-skipped playlists
+    /// and no listed one. Exact ties are kept: which of two identical playlists MakeMKV
+    /// keeps follows its own processing order, which the disc does not reveal.
+    /// </summary>
+    internal static void RemoveDominatedPlaylists(
+        List<ManifestTitle> retained,
+        ICollection<ManifestDiagnostic> diagnostics)
+    {
+        const double durationToleranceSeconds = 0.05;
+        static bool IsPlaylist(ManifestTitle title)
+            => title.Source?.Path?.StartsWith("BDMV/PLAYLIST/", StringComparison.OrdinalIgnoreCase) == true
+                && title.Segments is { Count: > 0 }
+                && title.DurationSeconds is > 0;
+
+        static string ClipSequenceKey(ManifestTitle title)
+            => string.Join(';', title.Segments!.Select(segment =>
+                $"{segment.Clip}#{segment.Angle?.ToString(CultureInfo.InvariantCulture) ?? "-"}/{segment.DependentClip ?? "-"}"))
+                + "|" + (title.Stereoscopic3D?.DependentClipId ?? "-");
+
+        static int EffectiveChapterCount(ManifestTitle title)
+            => (title.Chapters ?? []).Count(chapter => chapter.StartSeconds < title.DurationSeconds!.Value - 0.5);
+
+        var groups = retained
+            .Where(IsPlaylist)
+            .GroupBy(ClipSequenceKey, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .ToArray();
+        var removed = new HashSet<ManifestTitle>(ReferenceEqualityComparer.Instance);
+        foreach (var group in groups)
+        {
+            foreach (var title in group)
+            {
+                int chapters = EffectiveChapterCount(title);
+                double duration = title.DurationSeconds!.Value;
+                var larger = group.FirstOrDefault(other =>
+                {
+                    if (ReferenceEquals(other, title) || !SelectsNoStreamBeyond(title, other))
+                    {
+                        return false;
+                    }
+
+                    int otherChapters = EffectiveChapterCount(other);
+                    double otherDuration = other.DurationSeconds!.Value;
+                    return otherChapters >= chapters
+                        && otherDuration >= duration - durationToleranceSeconds
+                        && (otherChapters > chapters
+                            || otherDuration > duration + durationToleranceSeconds
+                            || !SelectsNoStreamBeyond(other, title));
+                });
+                if (larger is null)
+                {
+                    continue;
+                }
+
+                removed.Add(title);
+                diagnostics.Add(new ManifestDiagnostic
+                {
+                    Severity = "info",
+                    Code = "ODM_BD_TITLE_DUPLICATE",
+                    Message = $"Playlist plays the same clips as {larger.Source!.Path}, which selects every stream it selects and has at least as many chapters and as long a duration; it is not emitted separately.",
+                    Path = title.Source!.Path,
+                });
+            }
+        }
+
+        retained.RemoveAll(removed.Contains);
     }
 
     private static List<ManifestTitle> RemoveEquivalentPlaylists(
@@ -134,9 +212,9 @@ internal static class BluRayTitleReconciler
 
     private static HashSet<string> CollectReferencedClips(
         IReadOnlyList<ManifestTitle> retained,
-        IReadOnlySet<string> subPathClips)
+        IReadOnlySet<string> nonCandidateClips)
     {
-        var referenced = new HashSet<string>(subPathClips, StringComparer.OrdinalIgnoreCase);
+        var referenced = new HashSet<string>(nonCandidateClips, StringComparer.OrdinalIgnoreCase);
         foreach (var title in retained)
         {
             foreach (var segment in title.Segments ?? [])

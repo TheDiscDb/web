@@ -11,7 +11,8 @@ public enum DiscLogManifestComparisonStatus
     Match,
     Mismatch,
     DifferentDisc,
-    Error
+    Error,
+    Excluded
 }
 
 public static partial class DiscLogManifestComparer
@@ -26,7 +27,8 @@ public static partial class DiscLogManifestComparer
         string logText,
         OpticalDiscManifestDocument manifest,
         DiscInfo manifestDiscInfo,
-        string? expectedContentHash = null)
+        string? expectedContentHash = null,
+        IReadOnlyList<UsefulContentReference>? usefulReferences = null)
     {
         ArgumentNullException.ThrowIfNull(logDiscInfo);
         ArgumentNullException.ThrowIfNull(logText);
@@ -38,11 +40,13 @@ public static partial class DiscLogManifestComparer
             string? manifestContentHash = OpticalDiscManifestMapper.GetContentHash(manifest);
             string? normalizedExpectedHash = NormalizeHash(expectedContentHash);
             string? normalizedManifestHash = NormalizeHash(manifestContentHash);
+            var minimumLength = MakeMkvMinimumLengthAnalyzer.Analyze(logText);
             var differences = new DiscLogManifestDifferences
             {
                 ExpectedContentHash = normalizedExpectedHash,
                 ManifestContentHash = normalizedManifestHash,
-                MakeMkvVersion = ExtractMakeMkvVersion(logText)
+                MakeMkvVersion = ExtractMakeMkvVersion(logText),
+                MinimumLength = minimumLength
             };
             ReadScanDiagnostics(manifest, differences);
             CheckArtifactConsistency(logDiscInfo, manifest, differences);
@@ -52,6 +56,8 @@ public static partial class DiscLogManifestComparer
                 && !string.Equals(normalizedExpectedHash, normalizedManifestHash, StringComparison.OrdinalIgnoreCase))
             {
                 differences.DifferentDisc = true;
+                differences.UsefulContent = UsefulContentComparer.Compare(
+                    logDiscInfo, manifest, manifestDiscInfo, usefulReferences ?? [], differentDisc: true);
                 differences.IdentifyExperience = IdentifyExperienceComparison.NotComparable("The acquisitions identify different discs.");
                 return CreateResult(
                     DiscLogManifestComparisonStatus.DifferentDisc,
@@ -63,14 +69,46 @@ public static partial class DiscLogManifestComparer
                     differences);
             }
 
-            differences.IdentifyExperience = differences.ScanDiagnostics.Any(d => d.Severity == "error")
-                ? IdentifyExperienceComparison.NotComparable("The scan contains error diagnostics.")
-                : IdentifyExperienceComparer.Compare(logDiscInfo, manifestDiscInfo);
+            if (minimumLength.ExcludesReference)
+            {
+                string reason = minimumLength.Reason
+                    ?? "The reference was acquired with a nonzero minimum length.";
+                differences.UsefulContent = new UsefulContentComparison
+                {
+                    Status = UsefulContentStatus.Excluded,
+                    Reason = reason
+                };
+                differences.IdentifyExperience = IdentifyExperienceComparison.Excluded(reason);
+                return CreateResult(
+                    DiscLogManifestComparisonStatus.Excluded,
+                    logDiscInfo,
+                    manifest,
+                    manifestDiscInfo,
+                    matchedTitleCount: 0,
+                    orderMatches: false,
+                    differences);
+            }
+
+            differences.UsefulContent = UsefulContentComparer.Compare(
+                logDiscInfo, manifest, manifestDiscInfo, usefulReferences ?? [],
+                acquisitionReview: differences.ArtifactWarnings.Count > 0,
+                scanErrors: differences.ScanDiagnostics.Any(diagnostic => diagnostic.Severity == "error"));
+            if (differences.ScanDiagnostics.Any(d => d.Severity == "error"))
+            {
+                differences.IdentifyExperience = IdentifyExperienceComparison.NotComparable("The scan contains error diagnostics.");
+            }
+            else
+            {
+                var (identifyLog, javaPath) = MakeMkvJavaPathNormalizer.Normalize(logText, logDiscInfo, manifestDiscInfo);
+                differences.JavaPath = javaPath;
+                differences.IdentifyExperience = IdentifyExperienceComparer.Compare(identifyLog, manifestDiscInfo);
+            }
 
             var logTitles = CollectTitles(logDiscInfo);
             var manifestTitles = CollectTitles(manifestDiscInfo);
             ReportPlaylistGroupingDifferences(logTitles, manifestTitles, differences);
             var anglePerspectiveKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var dvdAngleKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var duplicate in logTitles.DuplicateKeys)
             {
                 var matchingManifestModels = manifest.Disc?.Titles?
@@ -79,6 +117,15 @@ public static partial class DiscLogManifestComparer
                         duplicate,
                         StringComparison.OrdinalIgnoreCase))
                     .ToArray() ?? [];
+                if (IsDvdAngleTitleSet(manifest, matchingManifestModels)
+                    && logTitles.TitlesByKey.TryGetValue(duplicate, out var logAngleTitles)
+                    && logAngleTitles.Count == matchingManifestModels.Length)
+                {
+                    // MakeMKV lists a DVD title once per angle; pair the rows in angle order.
+                    dvdAngleKeys.Add(duplicate);
+                    continue;
+                }
+
                 if (manifestTitles.TitlesByKey.TryGetValue(duplicate, out var matchingManifestTitles)
                     && matchingManifestTitles.Count == 1
                     && matchingManifestModels.Length == 1
@@ -97,7 +144,10 @@ public static partial class DiscLogManifestComparer
                 differences.TitleDifferences.Add(new TitleDifference(duplicate, "DuplicateLogTitle", "duplicate", null));
             }
 
-            foreach (var duplicate in manifestTitles.DuplicateKeys)
+            foreach (var duplicate in manifestTitles.DuplicateKeys.Where(key => !dvdAngleKeys.Contains(key)
+                && !IsDvdAngleTitleSet(manifest, manifest.Disc?.Titles?
+                    .Where(title => string.Equals(ManifestSourceKey(title), key, StringComparison.OrdinalIgnoreCase))
+                    .ToArray() ?? [])))
             {
                 differences.TitleDifferences.Add(new TitleDifference(duplicate, "DuplicateManifestTitle", null, "duplicate"));
             }
@@ -124,6 +174,18 @@ public static partial class DiscLogManifestComparer
                 {
                     CompareAnglePerspectiveTitle(key, logTitle, manifestTitle, differences);
                 }
+                else if (dvdAngleKeys.Contains(key))
+                {
+                    var models = manifest.Disc!.Titles
+                        .Where(title => string.Equals(ManifestSourceKey(title), key, StringComparison.OrdinalIgnoreCase))
+                        .ToArray();
+                    var logAngles = logTitles.TitlesByKey[key];
+                    var manifestAngles = manifestTitles.TitlesByKey[key];
+                    for (int angle = 0; angle < logAngles.Count; angle++)
+                    {
+                        CompareTitle(key, logAngles[angle], manifestAngles[angle], models[angle], differences);
+                    }
+                }
                 else
                 {
                     var model = manifest.Disc?.Titles.FirstOrDefault(
@@ -135,7 +197,9 @@ public static partial class DiscLogManifestComparer
             var logOrder = logTitles.OrderedKeys.Where(matchedKeys.Contains)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
-            var manifestOrder = manifestTitles.OrderedKeys.Where(matchedKeys.Contains).ToArray();
+            var manifestOrder = manifestTitles.OrderedKeys.Where(matchedKeys.Contains)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
             bool orderMatches = logOrder.SequenceEqual(manifestOrder, StringComparer.OrdinalIgnoreCase);
             if (!orderMatches)
             {
@@ -169,6 +233,15 @@ public static partial class DiscLogManifestComparer
                 differences);
         }
     }
+
+    private static bool IsDvdAngleTitleSet(
+        OpticalDiscManifestDocument manifest,
+        IReadOnlyList<OpticalDiscManifestTitle> models)
+        => string.Equals(manifest.Disc?.Format, "dvd", StringComparison.OrdinalIgnoreCase)
+            && models.Count > 1
+            && models.Select((model, index) => model.Segments.Any(segment => segment.Angle == index + 1)
+                && model.Segments.All(segment => segment.Angle is null || segment.Angle == index + 1))
+                .All(valid => valid);
 
     private static void CompareAnglePerspectiveTitle(
         string key,
@@ -594,6 +667,12 @@ public sealed record DiscLogManifestComparisonResult(
 
 public sealed class DiscLogManifestDifferences
 {
+    public MakeMkvMinimumLengthEvidence? MinimumLength { get; set; }
+
+    public MakeMkvJavaPathEvidence? JavaPath { get; set; }
+
+    public UsefulContentComparison? UsefulContent { get; set; }
+
     public IdentifyExperienceComparison? IdentifyExperience { get; set; }
 
     public string? ExpectedContentHash { get; set; }

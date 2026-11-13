@@ -157,11 +157,6 @@ public class ContributionDiscItemTypeExtension : EncodedIdTypeExtension<UserCont
 
     private static string? ResolveDescription(UserContributionDiscItem item, UserContributionDisc disc)
     {
-        if (!string.IsNullOrWhiteSpace(item.Description))
-        {
-            return item.Description;
-        }
-
         return !string.IsNullOrWhiteSpace(item.Name) ? item.Name : disc.Name;
     }
 

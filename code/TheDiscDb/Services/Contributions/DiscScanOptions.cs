@@ -14,4 +14,7 @@ public sealed class DiscScanOptions
 
     // Offers a .odm.json file upload (from the thediscdb-scan CLI) on the optional scan page.
     public bool ShowScanFileUpload { get; set; }
+
+    // Starts new contributions by scanning a disc instead of choosing a movie or series first.
+    public bool DiscFirstFlow { get; set; }
 }

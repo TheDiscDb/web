@@ -10,7 +10,8 @@ public enum IdentifyExperienceStatus
 {
     NotComparable,
     Match,
-    Mismatch
+    Mismatch,
+    Excluded
 }
 
 public sealed record IdentifyExperienceDifference(int? Row, string Field, string? LogValue, string? ManifestValue);
@@ -26,7 +27,8 @@ public sealed record IdentifyExperienceComparison(
 {
     public IdentifySimilarityScore? Similarity { get; init; }
 
-    public const int CurrentVersion = 1;
+    // Version 2 compares references as if MakeMKV's Java runtime had not run (MakeMkvJavaPathNormalizer).
+    public const int CurrentVersion = 2;
     public const string ScopeText = "Default ordered identify table, full segment-map tooltip, comment column, "
         + "labeling availability after identification, and ordered audio/subtitle dialog names. "
         + "Excludes saved identifications/labels, user sorting/filtering, external chapter suggestions, clipboard state, and visual layout.";
@@ -35,6 +37,9 @@ public sealed record IdentifyExperienceComparison(
 
     public static IdentifyExperienceComparison NotComparable(string reason)
         => new(CurrentVersion, IdentifyExperienceStatus.NotComparable, 0, 0, 0, [], reason);
+
+    public static IdentifyExperienceComparison Excluded(string reason)
+        => new(CurrentVersion, IdentifyExperienceStatus.Excluded, 0, 0, 0, [], reason);
 }
 
 public static class IdentifyExperienceComparer

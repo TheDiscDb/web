@@ -28,7 +28,8 @@ public static class OpticalDiscManifestMapper
         var info = new DiscInfo
         {
             Name = disc.Name,
-            Type = MapFormat(disc.Format)
+            Type = MapFormat(disc.Format),
+            SourceKind = "optical-disc-manifest"
         };
 
         foreach (var file in disc.Files)
@@ -100,10 +101,76 @@ public static class OpticalDiscManifestMapper
         int streamIndex = 0;
         foreach (var stream in source.Streams)
         {
-            title.Segments.Add(MapStream(stream, streamIndex++));
+            Segment segment = MapStream(stream, streamIndex++);
+            title.Segments.Add(segment);
+
+            if (!isDvd && DerivedStream(stream, segment, streamIndex) is { } derived)
+            {
+                title.Segments.Add(derived);
+                streamIndex++;
+            }
+        }
+
+        if (isDvd && source.Streams.Any(stream => stream.Line21ClosedCaptionFields is { Count: > 0 }))
+        {
+            title.Segments.Add(ClosedCaptionStream(streamIndex));
         }
 
         return title;
+    }
+
+    // MakeMKV extracts line-21 captions from the DVD video as one English "Closed Captions" track
+    // after every other stream: 4,706 of 4,706 caption titles in the data repository's DVD logs.
+    // The VTS line-21 flag matched MakeMKV on every title of 16 captured DVDs.
+    private static Segment ClosedCaptionStream(int index) => new()
+    {
+        Index = index,
+        Type = "Subtitles",
+        Name = "Closed Captions",
+        SourceCodec = "CC",
+        LanguageCode = "eng",
+        Language = "English"
+    };
+
+    // MakeMKV lists a derived track straight after certain Blu-ray streams: the Dolby Digital core
+    // of primary TrueHD and Dolby Digital Plus audio, the DTS core of primary DTS-HD audio, and a
+    // "forced only" copy of every presentation graphics stream. Across the data repository's
+    // Blu-ray logs this holds for every MakeMKV version, and never for secondary audio. Only
+    // navigation-coded streams qualify; manifests converted from logs already list these tracks.
+    private static Segment? DerivedStream(OpticalDiscManifestStream source, Segment segment, int index)
+    {
+        if (source.Category is not (null or "audio" or "presentationGraphics"))
+        {
+            return null;
+        }
+
+        (string Type, string Codec)? derived = (segment.Type, source.CodingTypeCode) switch
+        {
+            ("Audio", 0x83 or 0x84) => ("Audio", "AC-3"),
+            ("Audio", 0x85 or 0x86) => ("Audio", "DTS"),
+            ("Subtitles", 0x90) => ("Subtitles", source.Codec ?? "Presentation Graphics"),
+            _ => null
+        };
+
+        if (derived is not { } value)
+        {
+            return null;
+        }
+
+        return new Segment
+        {
+            Index = index,
+            Type = value.Type,
+            Name = MapStreamDisplayName(value.Codec, value.Type),
+            SourceCodec = value.Codec,
+            Pid = segment.Pid,
+            LanguageCode = segment.LanguageCode,
+            Language = segment.Language,
+            // A multichannel parent's core is reported as 5.1, whatever the parent's own layout.
+            AudioType = value.Type == "Audio" && source.AudioLayout is null && IsMultichannel(source)
+                ? MapAudioDisplayLayout("5.1")
+                : segment.AudioType
+        };
     }
 
     private static Segment MapStream(OpticalDiscManifestStream source, int index)
@@ -116,7 +183,13 @@ public static class OpticalDiscManifestMapper
             Type = type,
             Name = MapStreamDisplayName(source.Codec, type),
             Resolution = source.Resolution,
-            AspectRatio = source.AspectRatio
+            AspectRatio = source.AspectRatio,
+            Category = source.Category,
+            SourceCodec = source.Codec,
+            Pid = source.Pid,
+            CodingTypeCode = source.CodingTypeCode,
+            FormatCode = source.FormatCode,
+            RateCode = source.RateCode
         };
 
         // MakeMKV only reports language on audio and subtitle tracks, and only reports the audio
@@ -124,16 +197,39 @@ public static class OpticalDiscManifestMapper
         // logs never carried.
         if (type is "Audio" or "Subtitles")
         {
-            segment.LanguageCode = source.Language;
+            segment.LanguageCode = LanguageCodes.Canonicalize(source.Language);
             segment.Language = source.LanguageName;
         }
 
         if (type == "Audio")
         {
-            segment.AudioType = MapAudioDisplayLayout(source.AudioLayout);
+            segment.AudioType = MapAudioDisplayLayout(source.AudioLayout ?? InferredMultichannelLayout(source));
         }
 
         return segment;
+    }
+
+    private static bool IsMultichannel(OpticalDiscManifestStream source) => source.FormatCode is 6 or 12;
+
+    // Blu-ray navigation only says "multichannel", but across the data repository's Blu-ray logs
+    // MakeMKV reports the same layout for at least 99.4% of these streams: 5.1 for LPCM, Dolby
+    // Digital and DTS, 7.1 for primary Dolby Digital Plus and 5.1 for secondary Dolby Digital Plus.
+    // TrueHD and DTS-HD vary too much to predict (roughly three quarters are 7.1), so they stay
+    // unknown. Only presentation uses this; the manifest keeps the explicit evidence alone.
+    private static string? InferredMultichannelLayout(OpticalDiscManifestStream source)
+    {
+        if (!IsMultichannel(source))
+        {
+            return null;
+        }
+
+        return (source.Category, source.CodingTypeCode) switch
+        {
+            (null or "audio", 0x80 or 0x81 or 0x82) => "5.1",
+            (null or "audio", 0x84) => "7.1",
+            ("secondaryAudio", 0x84) or (_, 0xA1) => "5.1",
+            _ => null
+        };
     }
 
     // Translate presentation vocabulary only; the manifest's codec and layout remain unchanged.
@@ -184,8 +280,9 @@ public static class OpticalDiscManifestMapper
 
         if (isDvd)
         {
+            // MakeMKV shows DVD title numbers with two digits ("01").
             int? titleNumber = source.Title ?? source.TitleSetTitle;
-            return titleNumber?.ToString(CultureInfo.InvariantCulture);
+            return titleNumber?.ToString("D2", CultureInfo.InvariantCulture);
         }
 
         string? path = source.Path;
@@ -239,11 +336,14 @@ public static class OpticalDiscManifestMapper
         // their PGC cell number and joins consecutive cells from the same VOB ID into a range, so
         // a title playing VOB 6 cells 1-21 then VOB 7 cells 1-19 reads "1-21,22-40", and United
         // 93's feature, whose first two cells are never played, reads "3,4,5-25". Older manifests
-        // without cell numbers count from 1 in play order.
+        // without cell numbers count from 1 in play order. One angle of a multi-angle title writes
+        // its cells from adjacent angle blocks as a parenthesized group, so Kiki's Delivery
+        // Service's angle 1 reads "(1,3,5,7,9),11,12,...".
         var ranges = new List<string>();
         int start = 0;
         int previous = 0;
         string? startVob = null;
+        bool open = false;
         for (int index = 0; index < segments.Count; index++)
         {
             string? vob = DvdVobId(segments[index].Clip);
@@ -253,21 +353,47 @@ public static class OpticalDiscManifestMapper
             }
 
             int number = segments[index].Cell ?? index + 1;
-            if (index == 0 || vob != startVob || number != previous + 1)
+            if (segments[index].Angle is not null)
             {
-                if (index > 0)
+                if (open)
+                {
+                    ranges.Add(FormatCellRange(start, previous));
+                    open = false;
+                }
+
+                var group = new List<int> { number };
+                while (index + 1 < segments.Count && segments[index + 1].Angle is not null)
+                {
+                    index++;
+                    if (DvdVobId(segments[index].Clip) is null)
+                    {
+                        return string.Empty;
+                    }
+
+                    group.Add(segments[index].Cell ?? index + 1);
+                }
+
+                string cells = string.Join(",", group.Select(cell => cell.ToString(CultureInfo.InvariantCulture)));
+                ranges.Add(group.Count > 1 ? $"({cells})" : cells);
+                continue;
+            }
+
+            if (!open || vob != startVob || number != previous + 1)
+            {
+                if (open)
                 {
                     ranges.Add(FormatCellRange(start, previous));
                 }
 
                 start = number;
                 startVob = vob;
+                open = true;
             }
 
             previous = number;
         }
 
-        if (segments.Count > 0)
+        if (open)
         {
             ranges.Add(FormatCellRange(start, previous));
         }

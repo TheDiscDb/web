@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using TheDiscDb.OpticalDiscParsers.Bdmv;
 using TheDiscDb.OpticalDiscParsers.Bdmv.Models;
 using TheDiscDb.OpticalDiscParsers.Diagnostics;
@@ -289,6 +290,95 @@ public class MplsParserTests
     }
 
     [Fact]
+    public async Task ParseAsync_PictureInPictureGraphics_PrecedeInteractiveAndSecondaryStreams()
+    {
+        var table = new List<byte>(new byte[16]);
+        table[4] = 1;
+        table[5] = 1;
+        table[6] = 1;
+        table[7] = 1;
+        table[8] = 1;
+        table[9] = 1;
+        table[10] = 1;
+        table[11] = 1;
+        AddStream(0x1011, [0x1B, 0x61]);
+        AddStream(0x1100, [0x81, 0x61, (byte)'e', (byte)'n', (byte)'g']);
+        AddStream(0x1200, [0x90, (byte)'e', (byte)'n', (byte)'g']);
+        AddStream(0x1201, [0x90, (byte)'f', (byte)'r', (byte)'a']);
+        AddStream(0x1400, [0x91, (byte)'e', (byte)'n', (byte)'g']);
+        AddStream(0x1A00, [0xA1, 0x31, (byte)'e', (byte)'n', (byte)'g']);
+        table.AddRange([1, 0, 0, 0]);
+        AddStream(0x1B00, [0x1B, 0x31]);
+        table.AddRange([1, 0, 0, 0, 1, 0, 1, 0]);
+        AddStream(0x1015, [0x24, 0x61]);
+        var bytes = table.ToArray();
+        BinaryPrimitives.WriteUInt16BigEndian(bytes, (ushort)(bytes.Length - 2));
+
+        var result = await CreateParser(CreatePlaylist(bytes)).ParseAsync();
+
+        Assert.NotNull(result.Value);
+        var streams = Assert.Single(result.Value.PlayItems).StreamTable;
+        Assert.Equal((ushort)0x1011, Assert.Single(streams.VideoStreams).Pid);
+        Assert.Equal((ushort)0x1100, Assert.Single(streams.AudioStreams).Pid);
+        Assert.Equal((ushort)0x1200, Assert.Single(streams.PresentationGraphicsStreams).Pid);
+        var pip = Assert.Single(streams.PictureInPicturePresentationGraphicsStreams);
+        Assert.Equal((ushort)0x1201, pip.Pid);
+        Assert.Equal("fra", pip.LanguageCode);
+        Assert.Equal("PictureInPicturePresentationGraphics", pip.Category);
+        Assert.Equal((ushort)0x1400, Assert.Single(streams.InteractiveGraphicsStreams).Pid);
+        Assert.Equal((ushort)0x1A00, Assert.Single(streams.SecondaryAudioStreams).Pid);
+        Assert.Equal((ushort)0x1B00, Assert.Single(streams.SecondaryVideoStreams).Pid);
+        Assert.Equal((ushort)0x1015, Assert.Single(streams.DolbyVisionVideoStreams).Pid);
+        Assert.Empty(result.Diagnostics);
+
+        void AddStream(ushort pid, byte[] attributes)
+        {
+            table.AddRange([3, 1, (byte)(pid >> 8), (byte)pid, (byte)attributes.Length]);
+            table.AddRange(attributes);
+        }
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0 }, "MP009")]
+    [InlineData(new byte[] { 3, 1 }, "MP009")]
+    [InlineData(new byte[] { 3, 1, 0x10, 0x11, 0 }, "MP010")]
+    [InlineData(new byte[] { 3, 1, 0x10, 0x11, 2, 0x1B }, "MP010")]
+    public async Task ParseAsync_EmptyOrTruncatedStream_ReportsDiagnostic(byte[] entry, string code)
+    {
+        var table = new byte[16 + entry.Length];
+        BinaryPrimitives.WriteUInt16BigEndian(table, (ushort)(table.Length - 2));
+        table[4] = 1;
+        entry.CopyTo(table, 16);
+
+        var result = await CreateParser(CreatePlaylist(table)).ParseAsync();
+
+        Assert.NotNull(result.Value);
+        Assert.Empty(Assert.Single(result.Value.PlayItems).StreamTable.VideoStreams);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == code);
+    }
+
+    [Fact]
+    public async Task ParseAsync_StreamTableLength_DoesNotReadTrailingPlayItemBytesAsStreams()
+    {
+        var table = new byte[24];
+        BinaryPrimitives.WriteUInt16BigEndian(table, 15);
+        table[4] = 1;
+        table[16] = 3;
+        table[17] = 1;
+        table[18] = 0x10;
+        table[19] = 0x11;
+        table[20] = 2;
+        table[21] = 0x1B;
+        table[22] = 0x61;
+
+        var result = await CreateParser(CreatePlaylist(table)).ParseAsync();
+
+        Assert.NotNull(result.Value);
+        Assert.Empty(Assert.Single(result.Value.PlayItems).StreamTable.VideoStreams);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "MP009");
+    }
+
+    [Fact]
     public async Task ParseAsync_AllFixtures_ParseWithoutCriticalErrors()
     {
         var files = Directory.GetFiles(fixturesPath, "*.mpls", SearchOption.AllDirectories);
@@ -308,6 +398,28 @@ public class MplsParserTests
     {
         var bytes = File.ReadAllBytes(path);
         return CreateParser(bytes);
+    }
+
+    private static byte[] CreatePlaylist(byte[] streamTable)
+    {
+        const int playlistStart = 64;
+        const int itemStart = playlistStart + 10;
+        int itemLength = 32 + streamTable.Length;
+        int markStart = itemStart + 2 + itemLength;
+        var bytes = new byte[markStart + 6];
+        "MPLS0200"u8.CopyTo(bytes);
+        BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(8), playlistStart);
+        BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(12), (uint)markStart);
+        BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(40), 14);
+        bytes[45] = 1;
+        BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(playlistStart), (uint)(markStart - playlistStart - 4));
+        BinaryPrimitives.WriteUInt16BigEndian(bytes.AsSpan(playlistStart + 6), 1);
+        BinaryPrimitives.WriteUInt16BigEndian(bytes.AsSpan(itemStart), (ushort)itemLength);
+        "00001M2TS"u8.CopyTo(bytes.AsSpan(itemStart + 2));
+        BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(itemStart + 18), 45000);
+        streamTable.CopyTo(bytes, itemStart + 2 + 32);
+        BinaryPrimitives.WriteUInt32BigEndian(bytes.AsSpan(markStart), 2);
+        return bytes;
     }
 
     private static MplsParser CreateParser(byte[] bytes)

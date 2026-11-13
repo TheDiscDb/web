@@ -12,10 +12,15 @@
 
 <div class="contribute-layout identify-title-page">
     <section class="contribute-hero compact">
-        <p class="eyebrow">Step 2 · Add Release Details</p>
+        <p class="eyebrow">Step 4 · Add release details</p>
         <h1>Release Details</h1>
         <p>We recommend getting most of these details from the Amazon product page for this release if you can.</p>
     </section>
+
+    @if (!string.IsNullOrWhiteSpace(DiscScanError))
+    {
+        <div class="alert alert-danger" role="alert">@DiscScanError</div>
+    }
 
     @if (!string.IsNullOrEmpty(BoxsetId))
     {
@@ -26,7 +31,7 @@
         </div>
     }
 
-<EditForm Model="@form" OnValidSubmit="HandleValidSubmit">
+<EditForm EditContext="@editContext" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
@@ -123,8 +128,12 @@
     {
         <div class="alert alert-danger" role="alert">@submitErrorMessage</div>
     }
+    @if (!string.IsNullOrEmpty(draftSaveError))
+    {
+        <div class="alert alert-warning" role="alert">@draftSaveError</div>
+    }
     <div class="cta-row split">
-        <a class="btn btn-secondary" href="/contribute/@this.MediaType">Back</a>
+        <a class="btn btn-secondary" href="@GetBackUrl()">Back</a>
         <button type="submit" class="btn btn-primary">Save Release Details</button>
     </div>
 </EditForm>

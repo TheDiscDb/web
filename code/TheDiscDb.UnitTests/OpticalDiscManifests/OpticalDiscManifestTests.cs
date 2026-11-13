@@ -431,7 +431,7 @@ public class OpticalDiscManifestMapperTests
         DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(document);
 
         await Assert.That(info.Type).IsEqualTo("DVD disc");
-        await Assert.That(info.Titles[0].Playlist).IsEqualTo("7");
+        await Assert.That(info.Titles[0].Playlist).IsEqualTo("07");
     }
 
     [Test]
@@ -483,6 +483,30 @@ public class OpticalDiscManifestMapperTests
 
         await Assert.That(info.Titles[0].SegmentMap).IsEqualTo("3,4,5");
         await Assert.That(info.Titles[0].ChapterCount).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task ToDiscInfo_DvdAngleCellsFromAdjacentBlocksAreGrouped()
+    {
+        // Kiki's Delivery Service title 3, angle 2: angle cells 2 and 4 (VOB 2) come from two
+        // adjacent angle blocks, then cells 11-12 are shared, then a lone block's cell 14.
+        // MakeMKV reads "(2,4),11,12,14": a single-block angle cell is not parenthesized.
+        var title = new OpticalDiscManifestTitle { Source = new OpticalDiscManifestTitleSource { Title = 3 } };
+        foreach (var (clip, cell, angle) in new (string, int, int?)[]
+            { ("2.1", 2, 2), ("2.2", 4, 2), ("3.1", 11, null), ("4.1", 12, null), ("6.1", 14, 2) })
+        {
+            title.Segments.Add(new OpticalDiscManifestSegment { Clip = clip, Cell = cell, Angle = angle, DurationSeconds = 1 });
+        }
+
+        var document = new OpticalDiscManifestDocument
+        {
+            SchemaVersion = 1,
+            Disc = new OpticalDiscManifestDisc { Format = "dvd", Titles = { title } }
+        };
+
+        DiscInfo info = OpticalDiscManifestMapper.ToDiscInfo(document);
+
+        await Assert.That(info.Titles[0].SegmentMap).IsEqualTo("(2,4),11,12,14");
     }
 
     [Test]

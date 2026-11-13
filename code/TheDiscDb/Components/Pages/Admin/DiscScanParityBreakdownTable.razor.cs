@@ -12,5 +12,5 @@ public partial class DiscScanParityBreakdownTable
     public IReadOnlyList<ContributionDiscParityBreakdown> Rows { get; set; } = [];
 
     private static string FormatRate(ContributionDiscParityStats stats)
-        => stats.Total == 0 ? "0.0%" : stats.MatchRate.ToString("P1");
+        => stats.MatchRate is { } rate ? rate.ToString("P1") : "Not measured";
 }

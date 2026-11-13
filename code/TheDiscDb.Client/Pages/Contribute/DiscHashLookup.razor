@@ -1,0 +1,70 @@
+@inherits CancellableComponentBase
+@page "/contribute/disc/{DiscHash}"
+
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<TheDiscDb.Client.Controls.Breadcrumb PrimaryText="Disc Check" Items='[("Contribute", "/contribute"), ("Scan Disc", "/contribute/scan")]' />
+
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <p class="eyebrow">Step 2 · Check the database</p>
+        <h1>@(IsExistingDiscReference ? "Disc found" : "Disc scan complete")</h1>
+        @if (draft is not null)
+        {
+            <p>@draft.Format · Disc hash @draft.DiscHash</p>
+            @if (!string.IsNullOrWhiteSpace(draft.GlobalDiscId))
+            {
+                <p>Disc identifier: @draft.GlobalDiscId</p>
+            }
+        }
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(loadError))
+    {
+        <div class="alert alert-danger" role="alert">@loadError</div>
+    }
+    else if (isLoading)
+    {
+        <LoadingIndicator Message="Checking for releases…" />
+    }
+    else if (matches.Count > 0)
+    {
+        <section class="info-card">
+            <h2>This disc is already in the database</h2>
+            @if (IsExistingDiscReference)
+            {
+                <p>These releases contain this disc, so a full scan was not needed. A new release will reuse the existing disc's titles if the packaging or edition is different.</p>
+            }
+            else
+            {
+                <p>These releases contain the scanned disc. You can still add a new release for the same disc if the packaging or edition is different.</p>
+            }
+            @foreach (var match in matches)
+            {
+                <article class="disc-hash-match">
+                    <h3>@match.MediaTitle (@match.MediaYear)</h3>
+                    <p class="mb-1"><strong>@match.ReleaseTitle</strong> (@match.ReleaseYear)</p>
+                    <p class="mb-1">Disc: @match.DiscName · @match.Format</p>
+                    @if (!string.IsNullOrWhiteSpace(match.Upc))
+                    {
+                        <p class="mb-0">UPC/EAN: @match.Upc</p>
+                    }
+                </article>
+            }
+        </section>
+    }
+
+    @if (!isLoading && draft is not null && string.IsNullOrWhiteSpace(loadError))
+    {
+        <section class="info-card">
+            <h2>What type of title are you contributing?</h2>
+            <div class="cta-row align-items-center">
+                <a class="btn btn-primary btn-lg" href="@GetTmdbUrl("Movie")">Movie</a>
+                <span>or</span>
+                <a class="btn btn-primary btn-lg" href="@GetTmdbUrl("Series")">Series / TV Show</a>
+            </div>
+        </section>
+    }
+</div>

@@ -38,7 +38,14 @@
             <h2>What you’ll need</h2>
             <ul>
                 <li>A computer with a compatible disc drive.</li>
-                <li><a href="https://www.makemkv.com/download/" target="_blank" rel="noopener noreferrer">MakeMKV</a> installed.</li>
+                @if (DiscFirstFlow)
+                {
+                    <li>A current desktop browser. MakeMKV remains relevant to existing contribution and boxset workflows, but is not required to start a new release contribution.</li>
+                }
+                else
+                {
+                    <li><a href="https://www.makemkv.com/download/" target="_blank" rel="noopener noreferrer">MakeMKV</a> installed.</li>
+                }
                 <li>A current desktop version of Chrome, Edge, Firefox, or Safari.</li>
                 <li>A github account (used for logging in so you can access your contributions in the future) - more authentication providers coming soon</li>
             </ul>
@@ -57,8 +64,15 @@
         <h2>Ready to Start?</h2>
         <p class="mb-3">Need an overview first? <a href="/help/contributing">Read the contributing help guide</a>.</p>
         <div class="cta-row">
-            <a class="btn btn-primary" href="/contribute/Movie">Contribute a Movie</a>
-            <a class="btn btn-primary" href="/contribute/Series">Contribute a Series / TV Show</a>
+            @if (DiscFirstFlow)
+            {
+                <a class="btn btn-primary" href="/contribute/scan">Scan a Disc to Start</a>
+            }
+            else
+            {
+                <a class="btn btn-primary" href="/contribute/Movie">Contribute a Movie</a>
+                <a class="btn btn-primary" href="/contribute/Series">Contribute a Series / TV Show</a>
+            }
             <a class="btn btn-primary" href="/contribute/boxset/create">Create a Boxset</a>
         </div>
     </section>

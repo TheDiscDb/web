@@ -48,9 +48,14 @@ public partial class DiscScanParity : ComponentBase
         statusMessage = null;
         try
         {
-            int count = await ComparisonService.RecompareAllDiscsAsync();
-            statusMessage = $"Re-compared {count} discs.";
+            var result = await ComparisonService.RecompareAllDiscsAsync();
+            statusMessage = $"Attempted {result.Attempted}; computed {result.Computed}; persisted {result.Persisted}; "
+                + $"skipped {result.Skipped}; failed {result.Failures.Count}. Computed error records: {result.ErrorRecords}.";
             dashboard = await ComparisonAdminService.GetDashboardAsync(ProducerVersion);
+        }
+        catch (Exception)
+        {
+            statusMessage = "Re-compare failed. Some earlier results may have persisted; reload the dashboard before retrying.";
         }
         finally
         {
@@ -59,7 +64,7 @@ public partial class DiscScanParity : ComponentBase
     }
 
     private static string FormatRate(ContributionDiscParityStats stats)
-        => stats.Total == 0 ? "0.0%" : stats.MatchRate.ToString("P1");
+        => stats.MatchRate is { } rate ? rate.ToString("P1") : "Not measured";
 
     private static (string Text, string Url) GetRootAdminLink() => ("Admin", "/admin");
 }

@@ -44,6 +44,11 @@
 else
 {
     <section class="info-card mb-3">
+        <h2>Useful content (metadata v1)</h2>
+        <p>@dashboard.UsefulContent.Summary</p>
+        <p class="text-muted">@TheDiscDb.Contributions.OpticalDiscManifest.UsefulContentComparison.Scope</p>
+        <p>Saved identifications are counted conservatively unless explicitly classified incidental.
+            No useful-reference labels is not a pass. These measurements do not replace the rollout gate.</p>
         <h2>Identify similarity (graded v1)</h2>
         <p>@dashboard.Similarity.Summary</p>
         <p>@TheDiscDb.Contributions.OpticalDiscManifest.IdentifySimilarityScore.Formula.
@@ -52,12 +57,14 @@ else
         <h2>Same identify experience</h2>
         <p class="parity-rate">@dashboard.IdentifyExperience.Rate</p>
         <p>@dashboard.IdentifyExperience.Matches of @dashboard.IdentifyExperience.Measured measured comparisons match;
+            @dashboard.IdentifyExperience.Excluded excluded for nonzero minimum length;
             @dashboard.IdentifyExperience.NotComparable not comparable; @dashboard.IdentifyExperience.NotMeasured not measured.</p>
         <p class="text-muted">@TheDiscDb.Contributions.OpticalDiscManifest.IdentifyExperienceComparison.ScopeText</p>
         <p>Older comparisons need a new comparison to measure this metric. Technical parity remains separate below.</p>
         <h3>Technical parity</h3>
         <p class="parity-rate">@FormatRate(dashboard.Overall) match rate</p>
-        <p>@dashboard.Overall.Matches of @dashboard.Overall.Total latest comparisons match.</p>
+        <p>@dashboard.Overall.Matches of @dashboard.Overall.Total eligible latest comparisons match;
+            @dashboard.Overall.Excluded excluded for nonzero minimum length.</p>
     </section>
 
     <div class="parity-breakdowns">
