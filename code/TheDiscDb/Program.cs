@@ -315,7 +315,6 @@ builder.Services.AddKeyedSingleton<IStaticAssetStore>(KeyedServiceNames.ImagesAs
 builder.Services.AddScoped<IIntakeAdminService, IntakeAdminService>();
 builder.Services.AddSingleton<DiscScanComparisonStore>();
 builder.Services.AddScoped<IDiscScanComparisonService, DiscScanComparisonService>();
-builder.Services.AddScoped<IContributionDiscComparisonAdminService, ContributionDiscComparisonAdminService>();
 
 var searchApiKey = builder.Configuration["Search:ApiKey"];
 bool searchEnabled = !string.IsNullOrEmpty(searchApiKey);
