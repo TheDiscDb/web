@@ -93,27 +93,48 @@ internal sealed class DiscFileCatalog : IReadOnlyList<NormalizedFile>
         return (dvd, bluRay) switch
         {
             (true, false) => "dvd",
+            (true, true) when !files.Any(item => IsControlFile(item.Path, "BDMV/STREAM", ".m2ts")) => "dvd",
             (false, true) => "blu-ray",
             _ => "unknown",
         };
     }
 
-    internal static IReadOnlyList<ManifestIdentifier> CreateIdentifiers(
-        IReadOnlyList<NormalizedFile> files,
+    /// <summary>
+    /// The content hash and Matrix256 fingerprint are always derived from the inventory.
+    /// A supplied AACS/DVD Disc ID is kept (it may come from a source whose key files are
+    /// not replayable); otherwise the Disc ID is read from the disc.
+    /// </summary>
+    internal static async Task<IReadOnlyList<ManifestIdentifier>> CreateIdentifiersAsync(
+        DiscFileCatalog files,
         string format,
-        IReadOnlyList<ManifestIdentifier>? suppliedIdentifiers)
+        IReadOnlyList<ManifestIdentifier>? suppliedIdentifiers,
+        ICollection<ManifestDiagnostic> diagnostics,
+        ReadMetrics metrics,
+        CancellationToken cancellationToken)
     {
         var identifiers = (suppliedIdentifiers ?? [])
-            .Where(item => !string.Equals(item.Kind, "thediscdb-content-hash", StringComparison.Ordinal))
-            .Append(new ManifestIdentifier
-            {
-                Kind = "thediscdb-content-hash",
-                Value = ComputeContentHash(files, format),
-            })
+            .Where(item => item.Kind is not (ManifestIdentifierKinds.ContentHash or ManifestIdentifierKinds.Matrix256))
+            .ToList();
+        identifiers.Add(new ManifestIdentifier
+        {
+            Kind = ManifestIdentifierKinds.ContentHash,
+            Value = ComputeContentHash(files, format),
+        });
+
+        if (DiscIdentifierCalculator.ComputeFingerprint(files, diagnostics) is { } fingerprint)
+        {
+            identifiers.Add(fingerprint);
+        }
+
+        if (!identifiers.Any(item => item.Kind is ManifestIdentifierKinds.AacsDiscId or ManifestIdentifierKinds.DvdDiscId)
+            && await DiscIdentifierCalculator.ComputeDiscIdAsync(files, format, diagnostics, metrics, cancellationToken) is { } discId)
+        {
+            identifiers.Add(discId);
+        }
+
+        return identifiers
             .OrderBy(item => item.Kind, StringComparer.Ordinal)
             .ToArray();
-
-        return identifiers;
     }
 
     private static string ComputeContentHash(IReadOnlyList<NormalizedFile> files, string format)

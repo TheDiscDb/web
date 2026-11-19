@@ -1,131 +1,130 @@
-﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using TheDiscDb.Client.Services;
 using TheDiscDb.Services;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
-[Authorize]
-public partial class IdentifyTitle : ComponentBase
+public partial class IdentifyTitle : CancellableComponentBase
 {
-    [Inject]
-    public ExternalSearchDataAdaptor? DataAdaptor { get; set; }
+    [Inject] private DiscScanContextLoader Loader { get; set; } = default!;
+    [Inject] private ContributionContinuationService Continuation { get; set; } = default!;
+    [Inject] public NavigationManager NavigationManager { get; set; } = default!;
+    [Parameter] public string? MediaType { get; set; }
+    [SupplyParameterFromQuery(Name = "boxsetId")] public string? BoxsetId { get; set; }
+    [SupplyParameterFromQuery(Name = "discHash")] public string? DiscHash { get; set; }
+    [SupplyParameterFromQuery(Name = "q")] public string? Query { get; set; }
 
-    [Inject]
-    public NavigationManager NavigationManager { get; set; } = default!;
+    private string mediaType = "movie";
+    private string? searchText;
+    private ExternalSearchResult? selectedItem;
+    private string? manualTmdbId;
+    private string? error;
+    private bool needsLoad;
+    private bool isLoading;
+    private bool isContinuing;
+    private string? loadedHash;
+    private string? loadedBoxset;
+    private bool IsNextButtonDisabled => this.isLoading || this.isContinuing || this.error is not null
+        || (this.selectedItem is null && (!ulong.TryParse(this.manualTmdbId, out ulong id) || id == 0));
+    private string BreadcrumbText => $"Find {(this.mediaType == "series" ? "series" : "movie")}";
+    private string SignInUrl => ContributionContinuation.LoginUrl(new Uri(this.NavigationManager.Uri).PathAndQuery);
 
-    [Parameter]
-    public string? MediaType { get; set; }
-
-    [SupplyParameterFromQuery(Name = "boxsetId")]
-    public string? BoxsetId { get; set; }
-
-    [SupplyParameterFromQuery(Name = "discHash")]
-    public string? DiscHash { get; set; }
-
-    string BreadcrumbText => $"Find {MediaType}";
-
-    public string? SearchText { get; set; }
-
-    public bool IsNextButtonDisabled => SelectedItem == null && (string.IsNullOrEmpty(ManualTmdbId) || !ulong.TryParse(ManualTmdbId, out _));
-
-    private ExternalSearchResult? SelectedItem { get; set; }
-
-    private string? ManualTmdbId { get; set; }
-
-    private string PluralMediaType
+    protected override void OnParametersSet()
     {
-        get
+        string nextType = string.Equals(this.MediaType, "series", StringComparison.OrdinalIgnoreCase) ? "series" : "movie";
+        if (nextType != this.mediaType || this.loadedHash != this.DiscHash)
         {
-            if (!string.IsNullOrEmpty(this.MediaType))
+            this.selectedItem = null;
+            this.manualTmdbId = null;
+        }
+        this.mediaType = nextType;
+        this.searchText = this.Query;
+        if (this.loadedHash != this.DiscHash || this.loadedBoxset != this.BoxsetId)
+        {
+            this.loadedHash = this.DiscHash;
+            this.loadedBoxset = this.BoxsetId;
+            this.needsLoad = true;
+            this.isLoading = !string.IsNullOrWhiteSpace(this.DiscHash);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (this.needsLoad)
+        {
+            this.needsLoad = false;
+            await LoadScanAsync();
+        }
+    }
+
+    private async Task LoadScanAsync()
+    {
+        string? hash = this.DiscHash;
+        var cancellationToken = this.CancellationToken;
+        this.error = null;
+        this.isLoading = !string.IsNullOrWhiteSpace(hash);
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(hash))
             {
-                if (this.MediaType.Equals("movie", StringComparison.OrdinalIgnoreCase))
+                var context = await this.Loader.LoadAsync(hash, cancellationToken);
+                if (hash == this.DiscHash && context.Titles.Count > 0)
                 {
-                    return "Movies";
-                }
-                else if (this.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
-                {
-                    return "Shows";
+                    this.NavigationManager.NavigateTo(ContributionContinuation.MatchesUrl(hash, this.BoxsetId), replace: true);
                 }
             }
-
-            return this.MediaType ?? "Media";
         }
-    }
-
-    private string SwitchButtonText
-    {
-        get
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            if (string.IsNullOrEmpty(this.MediaType) || this.MediaType.Equals("movie", StringComparison.OrdinalIgnoreCase))
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or Microsoft.JSInterop.JSException or System.Text.Json.JsonException)
+        {
+            if (hash == this.DiscHash)
             {
-                return "Switch to Series search";
+                this.error = ex is InvalidOperationException ? ex.Message : "Could not load the saved scan. Retry or scan the disc again.";
             }
-
-            return "Switch to Movie search";
         }
-    }
-
-
-
-    override protected void OnInitialized()
-    {
-        if (DataAdaptor != null)
+        finally
         {
-            DataAdaptor.MediaType = MediaType;
-        }
-
-        base.OnInitialized();
-    }
-
-    string GetItemDisplayText(ExternalSearchResult item)
-    {
-        return $"{item.Title} ({item.Year})";
-    }
-
-    private void NextClicked(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
-    {
-        string? selectedId = this.ManualTmdbId;
-        if (this.SelectedItem != null)
-        {
-            selectedId = this.SelectedItem.Id.ToString();
-        }
-
-        if (!string.IsNullOrEmpty(selectedId))
-        {
-            var url = $"/contribute/{MediaType}/{selectedId}";
-            if (!string.IsNullOrEmpty(BoxsetId))
+            if (hash == this.DiscHash)
             {
-                url += $"?boxsetId={Uri.EscapeDataString(BoxsetId)}";
+                this.isLoading = false;
             }
-            if (!string.IsNullOrWhiteSpace(DiscHash))
-            {
-                url += $"{(url.Contains('?') ? "&" : "?")}discHash={Uri.EscapeDataString(DiscHash)}";
-            }
-            NavigationManager.NavigateTo(url);
         }
+        StateHasChanged();
     }
-    private void SwitchMediaType(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+
+    private void SwitchMediaType(string type)
     {
-        string otherMediaType = "Series";
-        if (string.IsNullOrEmpty(this.MediaType) || this.MediaType.Equals("series", StringComparison.OrdinalIgnoreCase))
+        var url = ContributionContinuation.SearchUrl(type, this.DiscHash, this.BoxsetId);
+        if (!string.IsNullOrEmpty(this.searchText))
         {
-            otherMediaType = "Movie";
+            url = Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(url, "q", this.searchText);
         }
-
-        var url = $"/contribute/{otherMediaType}";
-        if (!string.IsNullOrEmpty(BoxsetId))
-        {
-            url += $"?boxsetId={Uri.EscapeDataString(BoxsetId)}";
-        }
-        if (!string.IsNullOrWhiteSpace(DiscHash))
-        {
-            url += $"{(url.Contains('?') ? "&" : "?")}discHash={Uri.EscapeDataString(DiscHash)}";
-        }
-        NavigationManager.NavigateTo(url);
+        this.NavigationManager.NavigateTo(url);
     }
 
-    private string GetBackUrl()
-        => string.IsNullOrWhiteSpace(this.DiscHash)
-            ? "/contribute"
-            : $"/contribute/disc/{Uri.EscapeDataString(this.DiscHash)}";
+    private async Task NextClicked()
+    {
+        if (this.IsNextButtonDisabled)
+        {
+            return;
+        }
+        this.isContinuing = true;
+        try
+        {
+            await this.Continuation.ContinueAsync(new ContributionContinuation(
+                this.mediaType, this.selectedItem?.Id.ToString() ?? this.manualTmdbId!, this.DiscHash, this.BoxsetId), this.CancellationToken);
+        }
+        catch (Exception ex) when (ex is Microsoft.JSInterop.JSException or System.Text.Json.JsonException or InvalidOperationException)
+        {
+            this.error = "Your selection could not be saved in this browser. Retry before continuing to login.";
+        }
+        finally
+        {
+            this.isContinuing = false;
+        }
+    }
+
+    private string GetBackUrl() => string.IsNullOrWhiteSpace(this.DiscHash) ? "/contribute" : "/contribute/scan";
 }

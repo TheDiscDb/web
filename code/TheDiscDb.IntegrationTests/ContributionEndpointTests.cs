@@ -2,8 +2,7 @@ namespace TheDiscDb.IntegrationTests;
 
 /// <summary>
 /// Tests for the /api/contribute/* REST endpoints.
-/// These endpoints require authentication, so we test that unauthenticated
-/// requests are properly rejected.
+/// Public title search is available before login; contribution writes remain protected.
 /// </summary>
 [ClassDataSource<AspireAppFixture>(Shared = SharedType.PerTestSession)]
 public class ContributionEndpointTests(AspireAppFixture fixture)
@@ -11,16 +10,25 @@ public class ContributionEndpointTests(AspireAppFixture fixture)
     private HttpClient Client => fixture.HttpClient;
 
     [Test]
-    public async Task ExternalSearch_Movie_WithoutAuth_ReturnsUnauthorizedOrRedirect()
+    public async Task ExternalSearch_InvalidType_WithoutAuth_ReturnsBadRequest()
     {
         var handler = new HttpClientHandler { AllowAutoRedirect = false };
         using var client = new HttpClient(handler) { BaseAddress = Client.BaseAddress };
 
-        var response = await client.GetAsync("/api/contribute/externalsearch/movie?query=test");
+        var response = await client.GetAsync("/api/contribute/externalsearch/invalid?query=test");
 
-        // RequireAuthorization on the group — should be 401 or 302 redirect to login
         var status = (int)response.StatusCode;
-        await Assert.That(status is 401 or 302).IsTrue();
+        await Assert.That(status).IsEqualTo(400);
+    }
+
+    [Test]
+    public async Task SaveScan_WithoutAuth_ReturnsUnauthorizedOrRedirect()
+    {
+        using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+        using var client = new HttpClient(handler) { BaseAddress = Client.BaseAddress };
+        using var content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json");
+        using var response = await client.PostAsync("/api/contribute/disc/ddab82e5eacc9bd6eaf1dd401d355229/scan", content);
+        await Assert.That((int)response.StatusCode is 401 or 302).IsTrue();
     }
 
     [Test]

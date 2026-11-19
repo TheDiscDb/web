@@ -1,0 +1,26 @@
+@using TheDiscDb.Client.Services
+
+<section class="info-card">
+    <h2>@Title.Title (@Title.Year)</h2>
+    @foreach (var release in Title.Releases)
+    {
+        <article @key="release.Url" class="mb-3">
+            <h3><a href="@release.Url">@release.Title (@release.Year)</a></h3>
+            @foreach (var disc in release.Discs)
+            {
+                <p class="mb-1">@disc</p>
+            }
+            @if (!string.IsNullOrWhiteSpace(release.Upc))
+            {
+                <p>UPC/EAN: @release.Upc</p>
+            }
+        </article>
+    }
+    <button class="btn btn-primary" disabled="@(Disabled || !Title.CanContribute)" @onclick="() => OnAddRelease.InvokeAsync(Title)">
+        Add a new release
+    </button>
+    @if (!Title.CanContribute)
+    {
+        <p class="helper-text">This title is missing the TMDB information needed to add a release.</p>
+    }
+</section>

@@ -1,0 +1,34 @@
+@inherits CancellableComponentBase
+
+<div class="disc-scan-start">
+    @if (!string.IsNullOrWhiteSpace(this.error))
+    {
+        <div class="alert alert-danger" role="alert">@this.error</div>
+    }
+    @if (this.IsDevelopmentMode)
+    {
+        <div class="mb-3">
+            <label for="manual-disc-hash">Disc hash override (development only)</label>
+            <input id="manual-disc-hash" type="text" class="form-control"
+                   @bind="this.manualHash" @bind:event="oninput" disabled="@this.isScanning"
+                   placeholder="Optional test hash" />
+            <p class="form-text">The disc will still be scanned, but this hash will be used for duplicate checking and the contribution. Leave empty to use the actual disc hash. Do not submit test contributions for review.</p>
+        </div>
+    }
+    <button class="btn btn-primary @this.ButtonCssClass" @onclick="this.ScanDiscAsync" disabled="@this.isScanning">
+        @if (this.isScanning)
+        {
+            <text>Scanning disc…</text>
+        }
+        else
+        {
+            @this.ButtonContent
+        }
+    </button>
+    @if (this.isScanning)
+    {
+        <div class="scan-status">
+            <LoadingIndicator Message="@(this.scanProgress ?? "Reading disc…")" />
+        </div>
+    }
+</div>

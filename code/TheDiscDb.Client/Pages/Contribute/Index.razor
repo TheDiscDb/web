@@ -1,4 +1,5 @@
 ﻿@page "/contribute"
+@using Microsoft.AspNetCore.Components.Authorization
 
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
@@ -10,12 +11,46 @@
         <div class="page-header__sub">Thank you for contributing — we'll step you through the process</div>
     </div>
 
-    <section class="leaderboard-banner">
-        <span class="leaderboard-banner-badge">New</span>
-        <span>
-            Check out the <a href="/leaderboard">Contributor Leaderboard</a> and
-            <a href="/contributions/stats">contribution stats</a> to see how the community is growing TheDiscDb.
-        </span>
+    @if (DiscFirstFlow)
+    {
+        <section class="callout scanning-announcement">
+            <span class="scanning-announcement-badge">New</span>
+            <div>
+                <h2>Introducing disc-first contributions</h2>
+                <p>
+                    Contributions now start with your disc. Scan it directly in your browser &mdash; no MakeMKV logs required.
+                    Scans use the new <a href="https://github.com/TheDiscDb/optical-disc-manifest" target="_blank" rel="noopener noreferrer">Optical Disc Manifest</a> format.
+                </p>
+                <p>
+                    Tried the new flow? <a href="https://github.com/orgs/TheDiscDb/discussions/1476" target="_blank" rel="noopener noreferrer">Share your feedback</a> and help us improve it.
+                </p>
+            </div>
+        </section>
+    }
+
+    <section class="step-section contribute-start">
+        <h2>Ready to Start?</h2>
+        @if (DiscFirstFlow)
+        {
+            <DiscScanStart ButtonCssClass="contribute-start-button">
+                <ButtonContent>
+                    Select a disc to get started <i class="e-icons e-arrow-right contribute-start-arrow" aria-hidden="true"></i>
+                </ButtonContent>
+            </DiscScanStart>
+        }
+        else
+        {
+            <div class="cta-row">
+                <a class="btn btn-primary" href="/contribute/Movie">Contribute a Movie</a>
+                <a class="btn btn-primary" href="/contribute/Series">Contribute a Series / TV Show</a>
+                <a class="btn btn-secondary" href="/contribute/boxset/create">Create a Boxset</a>
+            </div>
+        }
+        <p class="contribute-start-help">
+            You’ll need a disc drive, @(DiscFirstFlow ? "a current desktop browser" : "MakeMKV"), and the release’s UPC, ASIN, release date, and cover images.
+            <a href="/help/contributing#what-youll-need">See what you’ll need</a> or
+            <a href="/help/contributing">read the contributing guide</a>.
+        </p>
     </section>
 
     @if (this.PendingContributions != null && this.PendingContributions.Any())
@@ -33,54 +68,21 @@
         </section>
     }
 
-    <section class="info-grid">
-        <article class="info-card">
-            <h2>What you’ll need</h2>
-            <ul>
-                <li>A computer with a compatible disc drive.</li>
-                @if (DiscFirstFlow)
-                {
-                    <li>A current desktop browser. MakeMKV remains relevant to existing contribution and boxset workflows, but is not required to start a new release contribution.</li>
-                }
-                else
-                {
-                    <li><a href="https://www.makemkv.com/download/" target="_blank" rel="noopener noreferrer">MakeMKV</a> installed.</li>
-                }
-                <li>A current desktop version of Chrome, Edge, Firefox, or Safari.</li>
-                <li>A github account (used for logging in so you can access your contributions in the future) - more authentication providers coming soon</li>
-            </ul>
-        </article>
-        <article class="info-card">
-            <h2>Information Needed</h2>
-            <ul>
-                <li>The UPC found on the disc packaging</li>
-                <li>The ASIN and Release Date (Normally found on Amazon)</li>
-                <li>Cover images for the box art (Also from Amazon)</li>
-            </ul>
-        </article>
-    </section>
-
-    <section class="step-section">
-        <h2>Ready to Start?</h2>
-        <p class="mb-3">Need an overview first? <a href="/help/contributing">Read the contributing help guide</a>.</p>
-        <div class="cta-row">
-            @if (DiscFirstFlow)
-            {
-                <a class="btn btn-primary" href="/contribute/scan">Scan a Disc to Start</a>
-            }
-            else
-            {
-                <a class="btn btn-primary" href="/contribute/Movie">Contribute a Movie</a>
-                <a class="btn btn-primary" href="/contribute/Series">Contribute a Series / TV Show</a>
-            }
-            <a class="btn btn-primary" href="/contribute/boxset/create">Create a Boxset</a>
-        </div>
-    </section>
-
     <section class="callout">
         <h3>Need a hand?</h3>
         <p>
             Email us at <a href="mailto:web@thediscdb.com">web@thediscdb.com</a> or create a discussion on <a href="https://github.com/orgs/TheDiscDb/discussions" target="_blank" rel="noopener noreferrer">Github</a>.
         </p>
     </section>
+
+    <nav class="contribution-community-links" aria-label="Contribution community">
+        <a class="btn btn-outline-secondary" href="/contributions/stats">
+            <i class="e-icons e-chart" aria-hidden="true"></i>
+            Contribution stats
+        </a>
+        <a class="btn btn-outline-secondary" href="/leaderboard">
+            <i class="e-icons e-people" aria-hidden="true"></i>
+            Contributor leaderboard
+        </a>
+    </nav>
 </div>

@@ -1,4 +1,5 @@
 ﻿@page "/contribute/{mediaType}"
+@inherits CancellableComponentBase
 @using TheDiscDb.Services
 
 @rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
@@ -7,40 +8,44 @@
 
 <div class="contribute-layout identify-title-page">
     <section class="contribute-hero compact">
-        <p class="eyebrow">Step 3 · Find the title</p>
-        <h1>Which @MediaType are you adding?</h1>
+        <p class="eyebrow">@(string.IsNullOrWhiteSpace(DiscHash) ? "Find the title" : "Step 2 · Find the title")</p>
+        <h1>Which title are you adding?</h1>
         <p>Search The Movie Database or paste the TMDB ID for the release that contains your scanned disc.</p>
-        <SfButton OnClick="SwitchMediaType">@SwitchButtonText</SfButton>
+        <div class="cta-row" aria-label="Title type">
+            <button type="button" class="btn @(mediaType == "movie" ? "btn-primary" : "btn-secondary")"
+                    aria-pressed="@(mediaType == "movie")" @onclick='() => SwitchMediaType("movie")'>Movies</button>
+            <button type="button" class="btn @(mediaType == "series" ? "btn-primary" : "btn-secondary")"
+                    aria-pressed="@(mediaType == "series")" @onclick='() => SwitchMediaType("series")'>Series</button>
+        </div>
     </section>
 
+    @if (error is not null)
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+        <div class="cta-row">
+            <button class="btn btn-secondary" @onclick="LoadScanAsync">Retry</button>
+            <a class="btn btn-secondary" href="@SignInUrl" target="_self">Sign in to load an account-saved scan</a>
+        </div>
+    }
+    else if (isLoading)
+    {
+        <LoadingIndicator Message="Checking the saved scan..." />
+    }
+    else
+    {
     <section class="info-grid">
         <article class="info-card">
-            <h2>Search @PluralMediaType</h2>
-            <SfAutoComplete TValue="ExternalSearchResult" TItem="ExternalSearchResult" @bind-value="SelectedItem" PopupWidth="500px">
-                <SfDataManager AdaptorInstance="@typeof(ExternalSearchDataAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
-                <AutoCompleteFieldSettings Value="Title"></AutoCompleteFieldSettings>
-                <AutoCompleteTemplates TItem="ExternalSearchResult">
-                    <ItemTemplate>
-                        <span class="thumb"><img src="@((context as ExternalSearchResult).ImageUrl)" width="92" class="thumb" /></span>
-                        <span class="media-item-title">@GetItemDisplayText(context as ExternalSearchResult)</span>
-                    </ItemTemplate>
-                </AutoCompleteTemplates>
-            </SfAutoComplete>
-            @if (this.SelectedItem != null)
-            {
-            <div id="SelectedItemPreview">
-                <div><em>@this.SelectedItem.Title (@this.SelectedItem.Year)</em></div>
-                <div><img src="@this.SelectedItem.ImageUrl" /></div>
-            </div>
-            }
+            <h2>Search @(mediaType == "series" ? "Series" : "Movies")</h2>
+            <TitleSearchInput MediaType="@mediaType" @bind-SearchText="searchText" @bind-SelectedItem="selectedItem" />
         </article>
 
         <article class="info-card">
             <h2>Have the TMDB ID?</h2>
             <p class="helper-text">Paste the numeric ID (e.g., <code>603</code> for The Matrix) if you have already confirmed the match.</p>
-            <SfTextBox @bind-Value="ManualTmdbId" Placeholder="Enter TMDB ID"></SfTextBox>
+            <input class="form-control" aria-label="TMDB ID" @bind="manualTmdbId" @bind:event="oninput" placeholder="Enter TMDB ID" inputmode="numeric" />
         </article>
     </section>
+    }
 
     <div class="cta-row split">
         <a class="btn btn-secondary" href="@GetBackUrl()">Back</a>

@@ -1,0 +1,24 @@
+.title-search-results {
+    list-style: none;
+    padding: 0;
+    max-height: 24rem;
+    overflow-y: auto;
+}
+
+.title-search-result {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    border-bottom: 1px solid #ddd;
+    background: transparent;
+    color: inherit;
+    padding: .75rem;
+}
+
+.title-search-result:hover,
+.title-search-result:focus-visible {
+    background: rgba(128, 128, 128, .15);
+}
