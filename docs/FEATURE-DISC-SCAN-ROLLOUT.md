@@ -146,21 +146,16 @@ phases so that MakeMKV logs can eventually be retired.
     PlayItems. The evidence-backed tolerance and the separate short-title start guard
     remain unchanged.
   - New manifests retain ordered scanner diagnostics in the schema-supported extension
-    `thediscdb.optical-disc-manifest/scan-diagnostics`. The comparison detail page exposes them,
-    including authored chapter marks, final chapter-mark ticks, sentinel exclusions, parse failures, duplicate playlist
+    `thediscdb.optical-disc-manifest/scan-diagnostics`, including authored chapter marks,
+    final chapter-mark ticks, sentinel exclusions, parse failures, duplicate playlist
     exclusions and per-stream promotion reasons. `ODM_BD_STREAM_TITLE_ATTRIBUTED` records
     playlist-to-stream attribution separately from `ODM_BD_STREAM_TITLE_PROMOTED`, including
     the original playlist/part, clip, duration evidence and removed chapter-mark count.
     These describe reconciliation decisions; later duplicate exclusions may remove a candidate.
     Older manifests remain supported.
-- **Admin dashboard.** `/admin/disc-scan-parity` leads with graded similarity and also shows
-  strict same-identify-experience match rates among measured comparisons, with separate
-  not-comparable/not-measured coverage for both versions.
-  Technical parity remains visible independently. It uses the latest comparison for
-  each disc, broken down by format, producer version, MakeMKV version and browser.
-  `/admin/disc-scan-parity/{discId}` shows the title-by-title differences, links to download the
-  log, the manifest and the comparison file, and a Re-compare action. Re-compare all is on the
-  dashboard. The admin pages read the comparison files for discs that have both uploads.
+- **Admin UI retired (2026-11-19).** Following the scanner launch, the disc scan parity
+  dashboard, per-disc comparison page and contribution-disc Parity column have been
+  removed. Scanner uploads and stored comparison files remain unchanged.
 - **Publishing.** Approved contributions write `discNN.txt` and, when present, `discNN.odm.json`.
   The importer, the data-repo CI and the tools ignore `*.odm.json` when enumerating `disc*.json`.
 - **CLI.** `thediscdb-scan` (`code/TheDiscDb.DiscScan.Cli`) produces the same manifest from a
