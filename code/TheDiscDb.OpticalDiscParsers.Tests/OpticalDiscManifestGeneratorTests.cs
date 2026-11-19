@@ -2179,6 +2179,120 @@ public sealed class OpticalDiscManifestGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateAsync_ComputesFingerprintAndAacsDiscIdWhenNotSupplied()
+    {
+        byte[] unitKey = Encoding.ASCII.GetBytes("unit key ro");
+        var files = new[]
+        {
+            RecordingFile.Payload("BDMV/STREAM/00000.m2ts", 1_000),
+            RecordingFile.FromBytes("AACS/Unit_Key_RO.inf", unitKey),
+        };
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            new ManifestGenerationRequest { Files = files, ProducerName = "test", ProducerVersion = "1" },
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        Assert.Equal(
+            ["aacs-disc-id", "matrix256", "thediscdb-content-hash"],
+            result.Manifest.Disc.Identifiers.Select(item => item.Kind));
+        Assert.Equal(Convert.ToHexString(SHA1.HashData(unitKey)), result.Manifest.Disc.Identifiers[0].Value);
+        Assert.Equal(
+            TheDiscDb.Core.DiscHash.DiscFingerprint.Calculate(
+                files.Select(file => new TheDiscDb.Core.DiscHash.DiscFingerprintFile(file.Path, file.Size))),
+            result.Manifest.Disc.Identifiers[1].Value);
+        Assert.Equal(0, files[0].ReadCount);
+    }
+
+    [Fact]
+    public async Task GenerateAsync_KeepsSuppliedDiscIdAndReportsUnreadableKeyFileAsInfo()
+    {
+        var supplied = await new OpticalDiscManifestGenerator().GenerateAsync(
+            CreateRequest(
+                [RecordingFile.Payload("BDMV/STREAM/00000.m2ts", 1), RecordingFile.Payload("AACS/Unit_Key_RO.inf", 4)],
+                "aacs-disc-id",
+                new string('A', 40)),
+            TestContext.Current.CancellationToken);
+        var unreadable = await new OpticalDiscManifestGenerator().GenerateAsync(
+            new ManifestGenerationRequest
+            {
+                Files = [RecordingFile.Payload("BDMV/STREAM/00000.m2ts", 1), RecordingFile.Payload("AACS/Unit_Key_RO.inf", 4)],
+                ProducerName = "test",
+                ProducerVersion = "1",
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal(new string('A', 40), Assert.Single(supplied.Manifest.Disc.Identifiers, item => item.Kind == "aacs-disc-id").Value);
+        Assert.DoesNotContain(supplied.Diagnostics, item => item.Code == "ODM_DISC_IDENTIFIER_UNAVAILABLE");
+        Assert.True(unreadable.Validation.IsValid, string.Join(Environment.NewLine, unreadable.Validation.Errors));
+        Assert.DoesNotContain(unreadable.Manifest.Disc.Identifiers, item => item.Kind == "aacs-disc-id");
+        Assert.Contains(
+            unreadable.Diagnostics,
+            item => item.Code == "ODM_DISC_IDENTIFIER_UNAVAILABLE" && item.Severity == "info");
+    }
+
+    [Fact]
+    public async Task GenerateAsync_Dvd_ComputesDvdDiscIdFromIfos()
+    {
+        var root = Path.Combine(fixturesPath, "DVD-A");
+        var ifos = Directory.GetFiles(root, "*.IFO").OrderBy(path => path, StringComparer.Ordinal).ToArray();
+        var files = ifos.Select(path => RecordingFile.FromDisk($"VIDEO_TS/{Path.GetFileName(path)}", path)).ToArray();
+
+        var result = await new OpticalDiscManifestGenerator().GenerateAsync(
+            new ManifestGenerationRequest { Files = files, ProducerName = "test", ProducerVersion = "1" },
+            TestContext.Current.CancellationToken);
+
+        var vtsIfos = ifos
+            .Where(path => !Path.GetFileName(path).Equals("VIDEO_TS.IFO", StringComparison.OrdinalIgnoreCase))
+            .Select(File.ReadAllBytes)
+            .ToArray<byte[]?>();
+        string expected = TheDiscDb.Core.DiscHash.DvdDiscId.Compute(
+            File.ReadAllBytes(Path.Combine(root, "VIDEO_TS.IFO")),
+            vtsIfos);
+        Assert.Equal(expected, Assert.Single(result.Manifest.Disc.Identifiers, item => item.Kind == "dvd-disc-id").Value);
+    }
+
+    [Theory]
+    [InlineData("AACS/Unit_Key_RO.inf")]
+    [InlineData("BDMV/index.bdmv")]
+    [InlineData("BDMV/STREAM/placeholder.txt")]
+    [InlineData(@"bdmv\stream\nested\00001.m2ts")]
+    public async Task GenerateAsync_DvdWithBluRayFolders_FallsBackToVideoTs(string extraPath)
+    {
+        var root = Path.Combine(fixturesPath, "DVD-A");
+        var dvdFiles = Directory.GetFiles(root, "*.IFO")
+            .Select(path => RecordingFile.FromDisk($"VIDEO_TS/{Path.GetFileName(path)}", path))
+            .ToArray();
+        var extraFile = RecordingFile.Payload(extraPath, 100);
+        var generator = new OpticalDiscManifestGenerator();
+        var baseline = await generator.GenerateAsync(
+            new ManifestGenerationRequest { Files = dvdFiles, ProducerName = "test", ProducerVersion = "1" },
+            TestContext.Current.CancellationToken);
+
+        var result = await generator.GenerateAsync(
+            new ManifestGenerationRequest
+            {
+                Files = dvdFiles.Append(extraFile).ToArray(),
+                ProducerName = "test",
+                ProducerVersion = "1",
+            },
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.Validation.IsValid, string.Join(Environment.NewLine, result.Validation.Errors));
+        Assert.Equal("dvd", result.Manifest.Disc.Format);
+        Assert.Equal(baseline.Manifest.Disc.Titles!.Count, result.Manifest.Disc.Titles!.Count);
+        foreach (string kind in new[] { "dvd-disc-id", "thediscdb-content-hash" })
+        {
+            Assert.Equal(
+                Assert.Single(baseline.Manifest.Disc.Identifiers, item => item.Kind == kind).Value,
+                Assert.Single(result.Manifest.Disc.Identifiers, item => item.Kind == kind).Value);
+        }
+        Assert.Contains(result.Manifest.Disc.Files, file => file.Path == extraPath.Replace('\\', '/'));
+        Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Code == "ODM_FORMAT_UNKNOWN");
+        Assert.Equal(0, extraFile.ReadCount);
+    }
+
+    [Fact]
     public async Task GenerateAsync_Dvd_JoinsLogicalTitlesAndChapterTiming()
     {
         var root = Path.Combine(fixturesPath, "DVD-A");

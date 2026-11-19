@@ -2,9 +2,11 @@
 
 public interface ISearchIndexService
 {
+    const int DefaultBatchSize = 1000;
+
     Task<BuildIndexSummary> BuildIndex();
-    Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = 10);
-    Task<BuildIndexSummary> MergeItems(IEnumerable<SearchDocumentUpdate> updates, int batchSize = 10);
+    Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = DefaultBatchSize);
+    Task<BuildIndexSummary> MergeItems(IEnumerable<SearchDocumentUpdate> updates, int batchSize = DefaultBatchSize);
     Task DeleteItems(IEnumerable<string> keys);
 }
 
@@ -22,7 +24,7 @@ public class NullSearchIndexService : ISearchIndexService
        return Task.FromResult(summary);
     }
 
-    public Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = 10)
+    public Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = ISearchIndexService.DefaultBatchSize)
     {
         var summary = new BuildIndexSummary
         {
@@ -39,7 +41,7 @@ public class NullSearchIndexService : ISearchIndexService
         return Task.CompletedTask;
     }
 
-    public Task<BuildIndexSummary> MergeItems(IEnumerable<SearchDocumentUpdate> updates, int batchSize = 10)
+    public Task<BuildIndexSummary> MergeItems(IEnumerable<SearchDocumentUpdate> updates, int batchSize = ISearchIndexService.DefaultBatchSize)
         => Task.FromResult(new BuildIndexSummary { Success = true, ItemCount = updates.Count() });
 }
 

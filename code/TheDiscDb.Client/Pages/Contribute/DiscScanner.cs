@@ -46,17 +46,6 @@ public static partial class DiscScanner
                 null);
         }
 
-        if (normalized.Any(item => item.Path.StartsWith("BDMV/", StringComparison.OrdinalIgnoreCase)
-            || item.Path.StartsWith("AACS/", StringComparison.OrdinalIgnoreCase)))
-        {
-            return new DiscScanResult(
-                null,
-                null,
-                Array.Empty<FileHashInfo>(),
-                Array.Empty<DiscFingerprintFile>(),
-                "No BDMV/STREAM files were found.");
-        }
-
         var dvdFiles = normalized
             .Where(item => IsDirectChild(item.Path, "VIDEO_TS"))
             .Select(item => item.File)
@@ -71,6 +60,17 @@ public static partial class DiscScanner
                 CreateHashFiles(dvdFiles),
                 fingerprintFiles,
                 null);
+        }
+
+        if (normalized.Any(item => item.Path.StartsWith("BDMV/", StringComparison.OrdinalIgnoreCase)
+            || item.Path.StartsWith("AACS/", StringComparison.OrdinalIgnoreCase)))
+        {
+            return new DiscScanResult(
+                null,
+                null,
+                Array.Empty<FileHashInfo>(),
+                Array.Empty<DiscFingerprintFile>(),
+                "No BDMV/STREAM files were found.");
         }
 
         return new DiscScanResult(

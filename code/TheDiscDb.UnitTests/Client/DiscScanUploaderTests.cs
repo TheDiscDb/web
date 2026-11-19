@@ -10,6 +10,28 @@ namespace TheDiscDb.UnitTests.Client;
 public class DiscScanUploaderTests
 {
     [Test]
+    public async Task SaveDraftAsync_LocalKnownDisc_DoesNotUploadBeforeLogin()
+    {
+        var handler = new CapturingHandler();
+        await using var storage = new BrowserScanStorage(new BrowserScanFlowTests.MemoryJsRuntime());
+        var uploader = new DiscScanUploader(null!, null!, new HttpClient(handler), storage);
+        var identifiers = new DiscScanResult(
+            DiscFormatConstants.BluRay, null,
+            [new FileHashInfo { Name = "00000.m2ts", Size = 1024 }],
+            [new DiscFingerprintFile("BDMV/index.bdmv", 120)], null);
+
+        var (result, hash) = await uploader.SaveDraftAsync(
+            [], "https://localhost/", _ => { }, CancellationToken.None, identifiers,
+            isKnownDisc: (_, _) => Task.FromResult(true), saveLocally: true);
+
+        await Assert.That(result.Uploaded).IsTrue();
+        await Assert.That(handler.Body).IsNull();
+        var saved = await storage.GetScanAsync(hash!);
+        await Assert.That(saved!.Draft.IsExistingDiscReference).IsTrue();
+        await Assert.That(saved.Draft.ManifestJson).IsEmpty();
+    }
+
+    [Test]
     public async Task SaveDraftAsync_KnownDisc_SavesReferenceWithoutManifestScan()
     {
         var handler = new CapturingHandler();

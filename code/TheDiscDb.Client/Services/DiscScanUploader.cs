@@ -25,12 +25,14 @@ public sealed class DiscScanUploader
     private readonly DiscDirectoryPicker picker;
     private readonly BrowserOpticalDiscManifestScanner scanner;
     private readonly HttpClient httpClient;
+    private readonly BrowserScanStorage? draftStorage;
 
-    public DiscScanUploader(DiscDirectoryPicker picker, BrowserOpticalDiscManifestScanner scanner, HttpClient httpClient)
+    public DiscScanUploader(DiscDirectoryPicker picker, BrowserOpticalDiscManifestScanner scanner, HttpClient httpClient, BrowserScanStorage? draftStorage = null)
     {
         this.picker = picker;
         this.scanner = scanner;
         this.httpClient = httpClient;
+        this.draftStorage = draftStorage;
     }
 
     // Warm the interop module up front. An awaited import inside the click handler yields the event
@@ -103,7 +105,8 @@ public sealed class DiscScanUploader
         Action<string> onProgress,
         CancellationToken cancellationToken,
         string? manualHashOverride = null,
-        Func<string, CancellationToken, Task<bool>>? isKnownDisc = null)
+        Func<string, CancellationToken, Task<bool>>? isKnownDisc = null,
+        bool saveLocally = false)
     {
         try
         {
@@ -115,7 +118,7 @@ public sealed class DiscScanUploader
 
             await Task.Yield();
             return await SaveDraftAsync(selection.Files, apiBaseUri, onProgress, cancellationToken,
-                manualHashOverride: manualHashOverride, isKnownDisc: isKnownDisc);
+                manualHashOverride: manualHashOverride, isKnownDisc: isKnownDisc, saveLocally: saveLocally);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -135,7 +138,8 @@ public sealed class DiscScanUploader
         CancellationToken cancellationToken,
         DiscScanResult? identifierScan = null,
         string? manualHashOverride = null,
-        Func<string, CancellationToken, Task<bool>>? isKnownDisc = null)
+        Func<string, CancellationToken, Task<bool>>? isKnownDisc = null,
+        bool saveLocally = false)
     {
         var identifiers = identifierScan ?? await DiscScanner.ScanAsync(files, cancellationToken);
         if (!string.IsNullOrEmpty(identifiers.Error))
@@ -179,7 +183,7 @@ public sealed class DiscScanUploader
                     FingerprintFiles = identifiers.FingerprintFiles.ToList(),
                     IsExistingDiscReference = true,
                 };
-                return await PostDraftAsync(reference, apiBaseUri, onProgress, [], cancellationToken);
+                return await SaveDraftAsync(reference, apiBaseUri, onProgress, [], cancellationToken, saveLocally);
             }
         }
 
@@ -216,17 +220,32 @@ public sealed class DiscScanUploader
             Warnings = warnings.ToList(),
         };
 
-        return await PostDraftAsync(draft, apiBaseUri, onProgress, warnings, cancellationToken);
+        return await SaveDraftAsync(draft, apiBaseUri, onProgress, warnings, cancellationToken, saveLocally);
     }
 
-    private async Task<(DiscScanUploadResult Result, string? DiscHash)> PostDraftAsync(
+    private async Task<(DiscScanUploadResult Result, string? DiscHash)> SaveDraftAsync(
         DiscScanDraft draft,
         string apiBaseUri,
         Action<string> onProgress,
         IReadOnlyList<string> warnings,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool saveLocally)
     {
         onProgress("Saving disc scan");
+        if (saveLocally)
+        {
+            try
+            {
+                await this.draftStorage!.SaveScanAsync(draft, cancellationToken);
+                return (new DiscScanUploadResult(false, true, null, warnings, draft.Format, draft.IsExistingDiscReference),
+                    draft.DiscHash);
+            }
+            catch (Exception ex) when (ex is Microsoft.JSInterop.JSException or JsonException)
+            {
+                return (DiscScanUploadResult.Failure("The scan could not be saved in this browser. Check available browser storage and try again.", warnings), null);
+            }
+        }
+
         string draftUri = new Uri(
             new Uri(apiBaseUri),
             $"api/contribute/disc/{DiscScanDraft.EncodeHashForRoute(draft.DiscHash)}/scan").ToString();

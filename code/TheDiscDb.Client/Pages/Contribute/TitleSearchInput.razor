@@ -1,0 +1,41 @@
+@using TheDiscDb.Services
+@implements IAsyncDisposable
+
+<label for="title-search">Search @((MediaType == "series") ? "series" : "movies")</label>
+<input id="title-search" type="search" class="form-control" value="@text" @oninput="TextChangedAsync"
+       placeholder="Enter a title" autocomplete="off" />
+@if (isSearching)
+{
+    <p role="status">Searching...</p>
+}
+else if (error is not null)
+{
+    <p role="status">@error</p>
+}
+else if (SelectedItem is null && results.Count > 0)
+{
+    <ul class="title-search-results">
+        @foreach (var result in results)
+        {
+            <li @key="result.Id">
+                <button type="button" class="title-search-result" @onclick="() => SelectedItemChanged.InvokeAsync(result)">
+                    @if (!string.IsNullOrEmpty(result.ImageUrl))
+                    {
+                        <img src="@result.ImageUrl" alt="" width="46" loading="lazy" />
+                    }
+                    <span>@result.Title (@result.Year)</span>
+                </button>
+            </li>
+        }
+    </ul>
+}
+@if (SelectedItem is not null)
+{
+    <div id="SelectedItemPreview" class="mt-3" role="status">
+        <strong>Selected: @SelectedItem.Title (@SelectedItem.Year)</strong>
+        @if (!string.IsNullOrEmpty(SelectedItem.ImageUrl))
+        {
+            <div><img src="@SelectedItem.ImageUrl" alt="" width="92" /></div>
+        }
+    </div>
+}

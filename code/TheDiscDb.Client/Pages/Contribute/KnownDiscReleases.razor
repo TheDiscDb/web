@@ -1,0 +1,32 @@
+@page "/contribute/disc/{DiscHash}/releases"
+@inherits CancellableComponentBase
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<Breadcrumb PrimaryText="Matching releases" Items="[GetRootContributionLink()]" />
+<div class="contribute-layout">
+    <section class="contribute-hero compact">
+        <p class="eyebrow">Step 2 · Check existing releases</p>
+        <h1>This disc is already in the database</h1>
+        <p>View the releases containing this disc, or add a new release if your packaging or edition is different. The existing disc titles will be reused.</p>
+    </section>
+    @if (error is not null)
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+        <div class="cta-row">
+            <button class="btn btn-secondary" @onclick="LoadAsync">Retry</button>
+            <a class="btn btn-secondary" href="@SignInUrl" target="_self">Sign in to load an account-saved scan</a>
+        </div>
+    }
+    else if (context is null)
+    {
+        <LoadingIndicator Message="Checking matching releases..." />
+    }
+    else
+    {
+        @foreach (var title in context.Titles)
+        {
+            <KnownDiscReleaseGroup @key="title.Slug" Title="title" Disabled="isContinuing" OnAddRelease="AddReleaseAsync" />
+        }
+    }
+    <a class="btn btn-secondary" href="/contribute/scan">Back to scanning</a>
+</div>

@@ -64,6 +64,7 @@ public class DiscScannerTests
                 "AACS/DUPLICATE/Unit_Key_RO.inf",
                 aacsBytes,
                 maxAllowedSize => discIdReadLimit = maxAllowedSize),
+            CreateMetadataFile("VIDEO_TS/VIDEO_TS.IFO", 100, () => mediaReadCount++),
         };
 
         var result = await DiscScanner.ScanAsync(files);
@@ -107,6 +108,49 @@ public class DiscScannerTests
         await Assert.That(result.FingerprintFiles.Single(file => file.Path.EndsWith("ignored.vob")).Size)
             .IsEqualTo(99_000);
         await Assert.That(mediaReadCount).IsEqualTo(0);
+    }
+
+    [Test]
+    [Arguments("AACS/Unit_Key_RO.inf")]
+    [Arguments("BDMV/index.bdmv")]
+    [Arguments("BDMV/STREAM/placeholder.txt")]
+    [Arguments(@"bdmv\stream\nested\00001.m2ts")]
+    public async Task ScanAsync_DvdWithBluRayFolders_FallsBackToVideoTs(string extraPath)
+    {
+        var videoTs = MakeVideoTsIfo(1);
+        var vts01 = new byte[] { 1, 2, 3 };
+        int mediaReadCount = 0;
+        var files = new[]
+        {
+            CreateReadableFile("VIDEO_TS/VIDEO_TS.IFO", videoTs),
+            CreateReadableFile("VIDEO_TS/VTS_01_0.IFO", vts01),
+            CreateMetadataFile("VIDEO_TS/VTS_01_1.VOB", 50_000, () => mediaReadCount++),
+            CreateMetadataFile(extraPath, 100, () => mediaReadCount++),
+        };
+
+        var result = await DiscScanner.ScanAsync(files);
+
+        await Assert.That(result.Error).IsNull();
+        await Assert.That(result.Format).IsEqualTo(DiscFormatConstants.Dvd);
+        await Assert.That(result.GlobalDiscId)
+            .IsEqualTo(DvdDiscId.Compute(videoTs, new byte[]?[] { vts01 }));
+        await Assert.That(result.HashFiles.Select(file => file.Name ?? string.Empty))
+            .IsEquivalentTo(["VIDEO_TS.IFO", "VTS_01_0.IFO", "VTS_01_1.VOB"]);
+        await Assert.That(result.FingerprintFiles.Select(file => file.Path))
+            .IsEquivalentTo(files.Select(file => file.Path.Replace('\\', '/')));
+        await Assert.That(mediaReadCount).IsEqualTo(0);
+    }
+
+    [Test]
+    [Arguments("AACS/Unit_Key_RO.inf")]
+    [Arguments("BDMV/index.bdmv")]
+    public async Task ScanAsync_IncompleteBluRayWithoutVideoTs_ReturnsMissingStreamError(string path)
+    {
+        var result = await DiscScanner.ScanAsync([CreateMetadataFile(path, 100)]);
+
+        await Assert.That(result.Format).IsNull();
+        await Assert.That(result.HashFiles).IsEmpty();
+        await Assert.That(result.Error).IsEqualTo("No BDMV/STREAM files were found.");
     }
 
     [Test]

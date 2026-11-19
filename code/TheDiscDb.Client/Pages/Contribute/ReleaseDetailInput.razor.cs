@@ -32,6 +32,9 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     [SupplyParameterFromQuery(Name = "discHash")]
     public string? DiscHash { get; set; }
 
+    [SupplyParameterFromQuery(Name = "fromMatches")]
+    public bool FromMatches { get; set; }
+
     [Inject]
     public IContributionClient ContributionClient { get; set; } = default!;
 
@@ -278,9 +281,9 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         => $"api/contribute/disc/{DiscScanDraft.EncodeHashForRoute(this.DiscHash ?? string.Empty)}/scan";
 
     private string GetBackUrl()
-        => string.IsNullOrWhiteSpace(this.DiscHash)
-            ? $"/contribute/{this.MediaType}"
-            : $"/contribute/{this.MediaType}?discHash={Uri.EscapeDataString(this.DiscHash)}";
+        => this.FromMatches && !string.IsNullOrWhiteSpace(this.DiscHash)
+            ? ContributionContinuation.MatchesUrl(this.DiscHash, this.BoxsetId)
+            : ContributionContinuation.SearchUrl(this.MediaType?.ToLowerInvariant() ?? "movie", this.DiscHash, this.BoxsetId);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -627,6 +630,8 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         }
 
         var existingMatches = lookup.Data?.MediaItems?.Nodes?
+            .Where(media => ContributionContinuation.MatchesTitle(
+                media.Type, media.Externalids?.Tmdb, this.request.MediaType, this.request.ExternalId))
             .SelectMany(media => media.Releases.SelectMany(release => release.Discs
                 .Where(disc => string.Equals(disc.ContentHash, draft.DiscHash, StringComparison.OrdinalIgnoreCase))
                 .Select(disc => (Media: media, Release: release, Disc: disc))))

@@ -59,6 +59,10 @@ builder.Services.AddScoped<OpticalDiscManifestGenerator>();
 builder.Services.AddScoped<BrowserOpticalDiscManifestScanner>();
 builder.Services.AddScoped<DiscScanUploader>();
 builder.Services.AddScoped<ContributionDraftStorage>();
+builder.Services.AddScoped<BrowserScanStorage>();
+builder.Services.AddScoped<DiscScanContextLoader>();
+builder.Services.AddScoped<ContributionContinuationService>();
+builder.Services.AddScoped<DiscScanHandoff>();
 
 builder.Services.AddScoped<IExternalSearchService, ExternalSearchService>();
 

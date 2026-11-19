@@ -39,6 +39,24 @@ public class SearchIndexUpdateMiddleware : IMiddleware
 
     public async Task Process(ImportItem item, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            await this.UpdateIndex(item, cancellationToken);
+        }
+        catch (Exception e) when (e is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            RecordWarning(item, e.Message);
+            this.logger.LogWarning(e,
+                "Search index update failed for '{Slug}'. Import will continue; search results may be stale.",
+                item.MediaItem?.Slug ?? item.Boxset?.Slug);
+        }
+
+        await this.Next(item, cancellationToken);
+    }
+
+    private async Task UpdateIndex(ImportItem item, CancellationToken cancellationToken)
+    {
         if (item.ReleaseScope != null)
         {
             await this.IndexNewRelease(item, item.ReleaseScope, cancellationToken);
@@ -57,8 +75,6 @@ public class SearchIndexUpdateMiddleware : IMiddleware
             RecordSummary(item, summary);
             this.LogSummary(summary, "Boxset", item.Boxset.Slug, item.Boxset.Title);
         }
-
-        await this.Next(item, cancellationToken);
     }
 
     private async Task IndexNewRelease(ImportItem item, ReleaseImportScope scope, CancellationToken cancellationToken)
@@ -180,16 +196,12 @@ public class SearchIndexUpdateMiddleware : IMiddleware
 
     private static void RecordSummary(ImportItem item, BuildIndexSummary summary, bool siblingRefresh = false)
     {
-        var failure = summary.Success ? null : new InvalidOperationException(
-            $"Search indexing failed: {summary.ErrorMessage ?? "The search service returned no error details."}");
+        if (!summary.Success)
+        {
+            RecordWarning(item, summary.ErrorMessage ?? "The search service returned no error details.");
+        }
         if (item.Diagnostics != null)
         {
-            item.Diagnostics.Failed |= !summary.Success;
-            if (!summary.Success)
-            {
-                item.Diagnostics.FailedStages.Add(nameof(SearchIndexUpdateMiddleware));
-                item.Diagnostics.FailureException ??= failure;
-            }
             if (siblingRefresh)
             {
                 item.Diagnostics.RefreshedSiblingDocuments += summary.ItemCount;
@@ -199,11 +211,11 @@ public class SearchIndexUpdateMiddleware : IMiddleware
                 item.Diagnostics.IndexedDocuments += summary.ItemCount;
             }
         }
-        if (failure != null && item.ReleaseScope != null)
-        {
-            throw failure;
-        }
     }
+
+    private static void RecordWarning(ImportItem item, string error) =>
+        item.Diagnostics?.Warnings.Add(new ImportWarning(nameof(SearchIndexUpdateMiddleware),
+            $"Search index update failed; import will continue, but search results may be stale: {error}"));
 
     private void LogSummary(BuildIndexSummary summary, string itemType, string slug, string title)
     {
@@ -214,8 +226,8 @@ public class SearchIndexUpdateMiddleware : IMiddleware
 
         if (!summary.Success)
         {
-            this.logger.LogError(
-                "Search index update failed for {ItemType} '{Title}' (slug={Slug}): indexed {ItemCount} document(s) in {Duration}; first error: {Error}",
+            this.logger.LogWarning(
+                "Search index update failed for {ItemType} '{Title}' (slug={Slug}): indexed {ItemCount} document(s) in {Duration}; first error: {Error}. Import will continue; search results may be stale.",
                 itemType,
                 title,
                 slug,

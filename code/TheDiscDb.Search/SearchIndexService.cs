@@ -30,10 +30,10 @@ public class SearchIndexService : ISearchIndexService
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = 10)
+    public Task<BuildIndexSummary> IndexItems(IEnumerable<SearchEntry> entries, int batchSize = ISearchIndexService.DefaultBatchSize)
         => this.IndexActions(entries.Select(entry => IndexDocumentsAction.MergeOrUpload(entry)), batchSize);
 
-    public Task<BuildIndexSummary> MergeItems(IEnumerable<SearchDocumentUpdate> updates, int batchSize = 10)
+    public Task<BuildIndexSummary> MergeItems(IEnumerable<SearchDocumentUpdate> updates, int batchSize = ISearchIndexService.DefaultBatchSize)
         => this.IndexActions(updates.Select(update =>
         {
             var document = new SearchDocument(update.Fields) { ["id"] = update.Key };
@@ -89,6 +89,7 @@ public class SearchIndexService : ISearchIndexService
                 result.Success = false;
                 result.ErrorMessage ??= e.Message;
                 this.logger.LogError(e, "Failed to push a batch of {BatchSize} documents to the search index '{IndexName}'.", batchSize, IndexName);
+                break;
             }
         }
 
@@ -110,7 +111,7 @@ public class SearchIndexService : ISearchIndexService
         using (var dbContext = this.dbFactory.CreateDbContext())
         {
             var actions = this.BuildMediaItemIndex(dbContext);
-            var mediaItemresult = await this.IndexItems(actions, RebuildBatchSize);
+            var mediaItemresult = await this.IndexItems(actions);
             summary.ItemCount += mediaItemresult.ItemCount;
             if (!mediaItemresult.Success)
             {
@@ -123,7 +124,7 @@ public class SearchIndexService : ISearchIndexService
             }
 
             var boxsetActions = this.BuildBoxsetIndex(dbContext);
-            var boxsetResult = await this.IndexItems(boxsetActions, RebuildBatchSize);
+            var boxsetResult = await this.IndexItems(boxsetActions);
             summary.ItemCount += boxsetResult.ItemCount;
             if (!boxsetResult.Success)
             {
@@ -223,7 +224,6 @@ public class SearchIndexService : ISearchIndexService
         return field;
     }
 
-    private const int RebuildBatchSize = 1000;
     private const int RebuildPageSize = 100;
 
     private IEnumerable<SearchEntry> BuildBoxsetIndex(SqlServerDataContext dbContext)

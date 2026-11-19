@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.6.4">
+<Project Sdk="Aspire.AppHost.Sdk/13.6.5">
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -10,10 +10,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Aspire.Hosting.Azure.AppService" Version="13.6.4" />
-        <PackageReference Include="Aspire.Hosting.Azure.Sql" Version="13.6.4" />
-        <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.6.4" />
-        <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.6.4" />
+        <PackageReference Include="Aspire.Hosting.Azure.AppService" Version="13.6.5" />
+        <PackageReference Include="Aspire.Hosting.Azure.Sql" Version="13.6.5" />
+        <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.6.5" />
+        <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.6.5" />
         <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
     </ItemGroup>
 

@@ -59,6 +59,14 @@ public sealed record ManifestIdentifier
     public required string Value { get; init; }
 }
 
+public static class ManifestIdentifierKinds
+{
+    public const string ContentHash = "thediscdb-content-hash";
+    public const string AacsDiscId = "aacs-disc-id";
+    public const string DvdDiscId = "dvd-disc-id";
+    public const string Matrix256 = "matrix256";
+}
+
 public sealed record ManifestFile
 {
     public required string Path { get; init; }

@@ -62,6 +62,15 @@ public sealed class OpticalDiscManifestGenerator
             });
         }
 
+        request.ReportProgress?.Invoke("Calculating disc identifiers");
+        var identifiers = await DiscFileCatalog.CreateIdentifiersAsync(
+            files,
+            format,
+            request.Identifiers,
+            diagnostics,
+            readMetrics,
+            cancellationToken);
+
         request.ReportProgress?.Invoke("Building deterministic manifest");
         var orderedDiagnostics = diagnostics
             .OrderBy(item => item.Path, StringComparer.Ordinal)
@@ -84,7 +93,7 @@ public sealed class OpticalDiscManifestGenerator
             {
                 Format = format,
                 Name = discName,
-                Identifiers = DiscFileCatalog.CreateIdentifiers(files, format, request.Identifiers),
+                Identifiers = identifiers,
                 Files = files.Select(item => new ManifestFile
                 {
                     Path = item.Path,

@@ -1,0 +1,79 @@
+.scanning-announcement {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.scanning-announcement h2 {
+    margin: 0 0 .5rem;
+    font-size: 1.15rem;
+}
+
+.scanning-announcement p {
+    margin: 0;
+}
+
+.scanning-announcement p + p {
+    margin-top: .5rem;
+}
+
+.scanning-announcement-badge {
+    flex-shrink: 0;
+    padding: .2rem .55rem;
+    border-radius: 4px;
+    background: #00213f;
+    color: #fff;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.contribution-community-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+
+.contribution-community-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.contribute-start .cta-row {
+    margin-top: 0;
+}
+
+.contribute-start ::deep .contribute-start-button {
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .65rem 1.75rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0, 33, 63, 0.22);
+}
+
+.contribute-start ::deep .contribute-start-arrow {
+    font-size: 1em;
+    transition: transform .15s ease-in-out;
+}
+
+.contribute-start ::deep .contribute-start-button:hover .contribute-start-arrow,
+.contribute-start ::deep .contribute-start-button:focus-visible .contribute-start-arrow {
+    transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .contribute-start ::deep .contribute-start-arrow {
+        transition: none;
+    }
+}
+
+.contribute-start-help {
+    margin: 1rem 0 0;
+    max-width: 70ch;
+    font-size: .9rem;
+    color: #5a6577;
+}

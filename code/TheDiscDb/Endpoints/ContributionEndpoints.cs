@@ -43,7 +43,7 @@ public class ContributionEndpoints
         contribute.MapDelete("disc/{discHash}/scan", DeletePreContributionDiscScanDraft);
         contribute.MapPost("disc/{discHash}/scan/contribution/{contributionId}", LinkPreContributionDiscScanDraft);
         contribute.MapPost("{contributionId}/discs/{discId}/scan/{discHash}/attach", AttachPreContributionDiscScanDraft);
-        contribute.MapGet("externalsearch/{type}", ExternalSearch);
+        contribute.MapGet("externalsearch/{type}", ExternalSearch).AllowAnonymous();
 
         contribute.MapPost("images/front/upload/{id:guid}", UploadFrontImage)
             .WithMetadata(new DisableRequestSizeLimitAttribute())
@@ -166,6 +166,14 @@ public class ContributionEndpoints
         }
 
         string path = GetPreContributionDraftPath(userId, normalizedHash);
+        if (await assetStore.Exists(path, cancellationToken))
+        {
+            var existing = (await assetStore.Download(path, cancellationToken)).ToObjectFromJson<DiscScanDraft>();
+            if (!string.IsNullOrWhiteSpace(existing?.ContributionId))
+            {
+                return TypedResults.Conflict("This scan is already linked to a contribution. Continue that contribution instead.");
+            }
+        }
         await assetStore.Delete(path, cancellationToken);
         var savedDraft = draft with
         {
