@@ -55,7 +55,7 @@ public class AspireAppFixture : IAsyncInitializer, IAsyncDisposable
         // Also try reading from the AppHost's bin output as a fallback
         if (string.IsNullOrEmpty(this.PublicApiKey))
         {
-            var altKeyFile = Path.Combine(appHostDir, "bin", "Debug", "net9.0", ".public-apikey");
+            var altKeyFile = Path.Combine(appHostDir, "bin", "Debug", "net10.0", ".public-apikey");
             if (File.Exists(altKeyFile))
             {
                 this.PublicApiKey = (await File.ReadAllTextAsync(altKeyFile)).Trim();

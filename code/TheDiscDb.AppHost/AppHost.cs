@@ -35,7 +35,7 @@ var dataDirectoryRoot = ResolveRequiredPath(builder, "DataDirectoryRoot");
 
 var workspacePath = Path.Combine(dataDirectoryRoot, "import-workspace");
 
-var migrations = builder.AddProject<Projects.TheDiscDb_DatabaseMigration>("migrations")
+var migrations = builder.AddDotnetProject("migrations", Path.Combine("..", "TheDiscDb.DatabaseMigration", "TheDiscDb.DatabaseMigration.csproj"))
     .WithReference(blobs)
     .WaitFor(blobs)
     .WithEnvironment("DatabaseMigration__DataDirectoryRoot", dataDirectoryRoot)
@@ -43,7 +43,7 @@ var migrations = builder.AddProject<Projects.TheDiscDb_DatabaseMigration>("migra
     .WithEnvironment("GraphQL__ApiKeyAuthentication__AdminApiKey", adminApiKey)
     .WithEnvironment("GraphQL__ApiKeyAuthentication__PublicApiKey", publicApiKey);
 
-var backend = builder.AddProject<Projects.TheDiscDb>("thediscdb-web")
+var backend = builder.AddDotnetProject("thediscdb-web", Path.Combine("..", "TheDiscDb", "TheDiscDb.csproj"))
     .WithEndpoint("https", e => { e.Port = 7443; e.IsProxied = false; })
     .WithExternalHttpEndpoints()
     .WithReference(blobs)

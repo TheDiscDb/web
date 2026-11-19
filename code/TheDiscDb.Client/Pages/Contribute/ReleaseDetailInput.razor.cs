@@ -390,6 +390,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     }
 
     private string? submitErrorMessage;
+    private bool isSubmitting;
 
     private async Task TryApplyIntakeReleaseMatchAsync()
     {
@@ -513,10 +514,30 @@ public partial class ReleaseDetailInput : CancellableComponentBase
 
     async Task HandleValidSubmit()
     {
+        if (this.isSubmitting)
+        {
+            return;
+        }
+
+        this.isSubmitting = true;
+        try
+        {
+            await this.SubmitReleaseDetailsAsync();
+        }
+        finally
+        {
+            this.isSubmitting = false;
+        }
+    }
+
+    private async Task SubmitReleaseDetailsAsync()
+    {
+        var discScanDraft = this.DiscScanDraft;
+        var discHash = this.DiscHash;
         this.submitErrorMessage = null;
         await this.PersistReleaseDraftSafelyAsync();
 
-        if (!string.IsNullOrWhiteSpace(this.DiscHash) && this.DiscScanDraft is null)
+        if (!string.IsNullOrWhiteSpace(discHash) && discScanDraft is null)
         {
             this.submitErrorMessage = this.DiscScanError
                 ?? "The first disc scan is unavailable. Return to the scan step and try again.";
@@ -541,7 +562,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
             this.request.ReleaseDate = date;
         }
 
-        string contributionId = this.DiscScanDraft?.ContributionId
+        string contributionId = discScanDraft?.ContributionId
             ?? this.savedDraftState?.ContributionId
             ?? string.Empty;
         if (string.IsNullOrWhiteSpace(contributionId))
@@ -580,17 +601,18 @@ public partial class ReleaseDetailInput : CancellableComponentBase
                 return;
             }
 
-            if (this.DiscScanDraft is not null)
+            if (discScanDraft is not null)
             {
-                this.DiscScanDraft = this.DiscScanDraft with { ContributionId = contributionId };
+                discScanDraft = discScanDraft with { ContributionId = contributionId };
+                this.DiscScanDraft = discScanDraft;
                 await this.PersistReleaseDraftSafelyAsync();
             }
         }
 
-        if (this.DiscScanDraft is not null)
+        if (discScanDraft is not null)
         {
             using var linkResponse = await this.HttpClient.PostAsync(
-                $"api/contribute/disc/{DiscScanDraft.EncodeHashForRoute(this.DiscHash!)}/scan/contribution/{Uri.EscapeDataString(contributionId)}",
+                $"api/contribute/disc/{DiscScanDraft.EncodeHashForRoute(discScanDraft.DiscHash)}/scan/contribution/{Uri.EscapeDataString(contributionId)}",
                 content: null,
                 this.CancellationToken);
             if (!linkResponse.IsSuccessStatusCode)
@@ -599,15 +621,15 @@ public partial class ReleaseDetailInput : CancellableComponentBase
                 return;
             }
 
-            string? discId = await this.CreateAndAttachFirstDiscAsync(contributionId);
+            string? discId = await this.CreateAndAttachFirstDiscAsync(contributionId, discScanDraft);
             if (string.IsNullOrWhiteSpace(discId))
             {
                 return;
             }
 
-            await this.DraftStorage.RemoveAsync(this.DiscHash!, this.CancellationToken);
+            await this.DraftStorage.RemoveAsync(discScanDraft.DiscHash, this.CancellationToken);
             await this.GetEpisodeNamesAsync(contributionId);
-            this.NavigationManager.NavigateTo(this.DiscScanDraft.IsExistingDiscReference
+            this.NavigationManager.NavigateTo(discScanDraft.IsExistingDiscReference
                 ? $"/contribution/{contributionId}/disc/{discId}/edit?returnUrl=/contribution/{contributionId}"
                 : $"/contribution/{contributionId}/discs/{discId}/identify");
             return;
@@ -617,9 +639,8 @@ public partial class ReleaseDetailInput : CancellableComponentBase
         this.NavigationManager.NavigateTo($"/contribution/{contributionId}");
     }
 
-    private async Task<string?> CreateAndAttachFirstDiscAsync(string contributionId)
+    private async Task<string?> CreateAndAttachFirstDiscAsync(string contributionId, DiscScanDraft draft)
     {
-        var draft = this.DiscScanDraft!;
         var lookup = await this.ContentHashQuery.ExecuteAsync(
             draft.DiscHash, templates: null, cancellationToken: this.CancellationToken);
         if (!lookup.IsSuccessResult())

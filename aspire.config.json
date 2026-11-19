@@ -1,5 +1,8 @@
 {
   "appHost": {
     "path": "code/TheDiscDb.AppHost/TheDiscDb.AppHost.csproj"
+  },
+  "sdk": {
+    "version": "17.0.0"
   }
 }
