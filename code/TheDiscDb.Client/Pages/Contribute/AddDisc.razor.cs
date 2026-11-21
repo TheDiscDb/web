@@ -166,6 +166,8 @@ public partial class AddDisc : CancellableComponentBase
     async Task TryCalculateHash(IReadOnlyList<DiscScanFile> files)
     {
         this.copyFlowError = null;
+        this.discSelected = false;
+        this.scanDraftHash = null;
         this.request.GlobalDiscId = null;
         this.request.Fingerprint = null;
         this.request.ExistingDiscPath = null;
@@ -215,7 +217,6 @@ public partial class AddDisc : CancellableComponentBase
         hash = response.Data.HashDisc.DiscHash.Hash;
         this.request.Fingerprint = response.Data.HashDisc.DiscHash.Fingerprint;
         this.request.ContentHash = hash;
-        this.discSelected = true;
 
         if (this.UseScanFirstFlow)
         {
@@ -246,10 +247,17 @@ public partial class AddDisc : CancellableComponentBase
         {
             await TryApplyIntakeDiscMatchAsync(hash);
         }
+
+        this.discSelected = true;
     }
 
     async Task HandleValidSubmit()
     {
+        if (this.isScanning)
+        {
+            return;
+        }
+
         this.copyFlowError = null;
         if (this.UseScanFirstFlow && !this.manualHashMode && string.IsNullOrWhiteSpace(this.scanDraftHash))
         {
