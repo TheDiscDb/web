@@ -68,21 +68,4 @@ public class AacsDiscIdTests
         await Assert.That(() => AacsDiscId.Compute((Stream)null!))
             .Throws<ArgumentNullException>();
     }
-
-    // Real-disc validation test.
-    // Requires the "Big Miracle" (2012) Blu-ray disc to be mounted at D:\.
-    // Reference ID was captured via PowerShell SHA1 directly on D:\AACS\Unit_Key_RO.inf.
-    // Skip attribute removed once the disc is in the drive to validate Phase 0.
-    [Test]
-    [Skip("Requires 'Big Miracle' Blu-ray in drive D:\\")]
-    public async Task Compute_BigMiracle_ReturnsKnownDiscId()
-    {
-        const string path = @"D:\AACS\Unit_Key_RO.inf";
-        const string expected = "F89B83B6986D79571C222CE533D4126FB1ECFA9A";
-
-        var bytes = File.ReadAllBytes(path);
-        var id = AacsDiscId.Compute(bytes);
-
-        await Assert.That(id).IsEqualTo(expected);
-    }
 }
