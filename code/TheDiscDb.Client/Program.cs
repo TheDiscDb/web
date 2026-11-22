@@ -21,6 +21,7 @@ if (!string.IsNullOrWhiteSpace(syncfusionLicenseKey))
 }
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddScoped<SfDialogService>();
+builder.Services.AddScoped<IUnreadMessagesService, BrowserUnreadMessagesService>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });

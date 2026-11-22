@@ -29,6 +29,10 @@
 
     <section class="info-card">
         <h3>History</h3>
+        @if (readError != null)
+        {
+            <div class="alert alert-warning">@readError <button class="btn btn-sm btn-outline-secondary" @onclick="RetryAcknowledgement">Retry</button></div>
+        }
         @if (TimelineItems != null && TimelineItems.Any())
         {
             <QuickGrid Items="TimelineItems.AsQueryable()" Class="striped-grid">

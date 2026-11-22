@@ -32,6 +32,10 @@ public partial class ContributionHistory : ComponentBase, IAsyncDisposable
     private Dictionary<string, string> userNameCache = new();
     private string newMessage = string.Empty;
     private string? sendError;
+    private string? readError;
+    private int[] displayedMessageIds = [];
+    private bool readPending;
+    private readonly CancellationTokenSource lifetime = new();
 
     public record TimelineEntry(string TypeLabel, string BadgeClass, DateTimeOffset Timestamp, string UserId, string Description);
 
@@ -98,7 +102,34 @@ public partial class ContributionHistory : ComponentBase, IAsyncDisposable
                 userNameCache[userId] = user?.UserName ?? userId;
             }
         }
+
+        this.displayedMessageIds = messages.Select(m => m.Id).ToArray();
+        this.readPending = this.displayedMessageIds.Length > 0;
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!this.readPending || this.Contribution == null)
+            return;
+
+        this.readPending = false;
+        var token = this.lifetime.Token;
+        try
+        {
+            var user = this.PrincipalProvider.Principal ?? throw new InvalidOperationException("No administrator principal.");
+            await this.MessageService.MarkContributionMessagesAsReadAsync(this.Contribution.Id, user, this.displayedMessageIds, token);
+            this.readError = null;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception)
+        {
+            this.readError = "Messages could not be marked read. The history is still available.";
+        }
+        if (!token.IsCancellationRequested)
+            await this.InvokeAsync(this.StateHasChanged);
+    }
+
+    private void RetryAcknowledgement() => this.readPending = true;
 
     private string GetUserName(string userId) =>
         userNameCache.TryGetValue(userId, out var name) ? name : userId;
@@ -140,5 +171,11 @@ public partial class ContributionHistory : ComponentBase, IAsyncDisposable
         }
     }
 
-    public async ValueTask DisposeAsync() => await database.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await this.lifetime.CancelAsync();
+        this.lifetime.Dispose();
+        if (this.database != null)
+            await this.database.DisposeAsync();
+    }
 }

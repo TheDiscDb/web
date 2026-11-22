@@ -1,77 +1,52 @@
 using HotChocolate.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using TheDiscDb.GraphQL.Contribute.Exceptions;
 using TheDiscDb.Services;
-using TheDiscDb.Web.Data;
 
 namespace TheDiscDb.GraphQL.Contribute.Mutations;
 
 public partial class ContributionMutations
 {
     [Error(typeof(AuthenticationException))]
+    [Error(typeof(ContributionNotFoundException))]
+    [Error(typeof(InvalidIdException))]
+    [Error(typeof(InvalidOwnershipException))]
     [Authorize]
     public async Task<bool> MarkMessagesAsRead(
         string contributionId,
-        SqlServerDataContext database,
-        UserManager<TheDiscDbUser> userManager,
+        IReadOnlyList<int>? messageIds,
+        IMessageService messageService,
         CancellationToken cancellationToken)
     {
-        var user = principal.Principal ?? throw new AuthenticationException("No user principal available.");
-        var userId = userManager.GetUserId(user);
-
-        if (string.IsNullOrEmpty(userId))
-        {
-            throw new AuthenticationException("UserId not found");
-        }
-
-        var decodedContributionId = this.idEncoder.Decode(contributionId);
-
-        var unreadMessages = await database.UserMessages
-            .Where(m => m.ContributionId == decodedContributionId &&
-                        m.ToUserId == userId &&
-                        !m.IsRead)
-            .ToListAsync(cancellationToken);
-
-        foreach (var message in unreadMessages)
-        {
-            message.IsRead = true;
-        }
-
-        await database.SaveChangesAsync(cancellationToken);
+        var user = this.principal.Principal ?? throw new AuthenticationException("No user principal available.");
+        await messageService.MarkContributionMessagesAsReadAsync(this.DecodeMessageThreadId(contributionId, "Contribution"), user, messageIds, cancellationToken);
         return true;
     }
 
     [Error(typeof(AuthenticationException))]
+    [Error(typeof(BoxsetNotFoundException))]
+    [Error(typeof(InvalidIdException))]
+    [Error(typeof(InvalidOwnershipException))]
     [Authorize]
     public async Task<bool> MarkBoxsetMessagesAsRead(
         string boxsetId,
-        SqlServerDataContext database,
-        UserManager<TheDiscDbUser> userManager,
+        IReadOnlyList<int>? messageIds,
+        IMessageService messageService,
         CancellationToken cancellationToken)
     {
-        var user = principal.Principal ?? throw new AuthenticationException("No user principal available.");
-        var userId = userManager.GetUserId(user);
-
-        if (string.IsNullOrEmpty(userId))
-        {
-            throw new AuthenticationException("UserId not found");
-        }
-
-        var decodedBoxsetId = this.idEncoder.Decode(boxsetId);
-
-        var unreadMessages = await database.UserMessages
-            .Where(m => m.BoxsetId == decodedBoxsetId &&
-                        m.ToUserId == userId &&
-                        !m.IsRead)
-            .ToListAsync(cancellationToken);
-
-        foreach (var message in unreadMessages)
-        {
-            message.IsRead = true;
-        }
-
-        await database.SaveChangesAsync(cancellationToken);
+        var user = this.principal.Principal ?? throw new AuthenticationException("No user principal available.");
+        await messageService.MarkBoxsetMessagesAsReadAsync(this.DecodeMessageThreadId(boxsetId, "Boxset"), user, messageIds, cancellationToken);
         return true;
+    }
+
+    private int DecodeMessageThreadId(string id, string type)
+    {
+        try
+        {
+            return this.idEncoder.Decode(id);
+        }
+        catch (InvalidOperationException)
+        {
+            throw new InvalidIdException(id, type);
+        }
     }
 }

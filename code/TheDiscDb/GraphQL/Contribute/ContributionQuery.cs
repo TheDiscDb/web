@@ -30,6 +30,10 @@ public class ContributionQuery(IdEncoder idEncoder)
     const int MaxPageSize = 100;
     const int DefaultPageSize = 50;
 
+    [Authorize]
+    public string? GetCurrentUserId(ClaimsPrincipal user) =>
+        user.Identity?.IsAuthenticated == true ? user.FindFirstValue(ClaimTypes.NameIdentifier) : null;
+
     [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize, IncludeTotalCount = true)]
     [UseProjection]
     [UseFiltering]
@@ -69,24 +73,15 @@ public class ContributionQuery(IdEncoder idEncoder)
         var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
-            return Enumerable.Empty<UserMessage>().AsQueryable();
+            return context.UserMessages.Where(m => false);
         }
 
         var decodedId = idEncoder.Decode(contributionId);
 
-        // Admins can view any contribution's messages; regular users must own the contribution.
-        if (!user.IsInRole(DefaultRoles.Administrator))
-        {
-            var ownsContribution = context.UserContributions.Any(c => c.Id == decodedId && c.UserId == userId);
-            if (!ownsContribution)
-            {
-                return Enumerable.Empty<UserMessage>().AsQueryable();
-            }
-        }
-
-        return context.UserMessages
+        return MessageAccess.VisibleTo(context.UserMessages, user)
             .Where(m => m.ContributionId == decodedId)
-            .OrderByDescending(m => m.CreatedAt);
+            .OrderByDescending(m => m.CreatedAt)
+            .ThenByDescending(m => m.Id);
     }
 
     [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize, IncludeTotalCount = true)]
@@ -97,24 +92,15 @@ public class ContributionQuery(IdEncoder idEncoder)
         var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
-            return Enumerable.Empty<UserMessage>().AsQueryable();
+            return context.UserMessages.Where(m => false);
         }
 
         var decodedId = idEncoder.Decode(boxsetId);
 
-        // Admins can view any boxset's messages; regular users must own the boxset.
-        if (!user.IsInRole(DefaultRoles.Administrator))
-        {
-            var ownsBoxset = context.UserContributionBoxsets.Any(b => b.Id == decodedId && b.UserId == userId);
-            if (!ownsBoxset)
-            {
-                return Enumerable.Empty<UserMessage>().AsQueryable();
-            }
-        }
-
-        return context.UserMessages
+        return MessageAccess.VisibleTo(context.UserMessages, user)
             .Where(m => m.BoxsetId == decodedId)
-            .OrderByDescending(m => m.CreatedAt);
+            .OrderByDescending(m => m.CreatedAt)
+            .ThenByDescending(m => m.Id);
     }
 
     [Authorize]
@@ -124,8 +110,8 @@ public class ContributionQuery(IdEncoder idEncoder)
         if (string.IsNullOrEmpty(userId))
             return false;
 
-        return await context.UserMessages
-            .AnyAsync(m => m.ToUserId == userId && !m.IsRead);
+        return await MessageAccess.Inbox(context.UserMessages, user)
+            .AnyAsync(e => e.IsUnread);
     }
 
     [UsePaging(MaxPageSize = MaxPageSize, DefaultPageSize = DefaultPageSize, IncludeTotalCount = true)]
@@ -136,12 +122,12 @@ public class ContributionQuery(IdEncoder idEncoder)
         var userId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
         {
-            return Enumerable.Empty<UserMessage>().AsQueryable();
+            return context.UserMessages.Where(m => false);
         }
 
-        return context.UserMessages
-            .Where(m => m.ToUserId == userId || m.FromUserId == userId)
-            .OrderByDescending(m => m.CreatedAt);
+        return MessageAccess.VisibleTo(context.UserMessages, user)
+            .OrderByDescending(m => m.CreatedAt)
+            .ThenByDescending(m => m.Id);
     }
 
     [Authorize]
@@ -152,48 +138,47 @@ public class ContributionQuery(IdEncoder idEncoder)
             return [];
 
         // Aggregate contribution-scoped threads in SQL.
-        var contributionThreads = await context.UserMessages
-            .Where(m => (m.ToUserId == userId || m.FromUserId == userId) && m.ContributionId != null)
-            .Select(m => new
+        var inbox = MessageAccess.Inbox(context.UserMessages, user);
+        var contributionThreads = await inbox
+            .Where(e => e.Message.ContributionId != null)
+            .Select(e => new
             {
-                ContributionId = m.ContributionId!.Value,
-                m.ToUserId,
-                m.FromUserId,
-                m.IsRead,
-                m.CreatedAt,
-                m.Message
+                ContributionId = e.Message.ContributionId!.Value,
+                e.Message.Id,
+                e.IsUnread,
+                e.Message.CreatedAt,
+                e.Message.Message
             })
             .GroupBy(m => m.ContributionId)
             .Select(g => new
             {
                 ContributionId = g.Key,
                 LastMessageAt = g.Max(m => m.CreatedAt),
-                UnreadCount = g.Count(m => m.ToUserId == userId && !m.IsRead),
+                UnreadCount = g.Count(m => m.IsUnread),
                 TotalCount = g.Count(),
-                LastMessageText = g.OrderByDescending(m => m.CreatedAt).Select(m => m.Message).First()
+                LastMessageText = g.OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id).Select(m => m.Message).First()
             })
             .ToListAsync();
 
         // Aggregate boxset-scoped threads in SQL.
-        var boxsetThreads = await context.UserMessages
-            .Where(m => (m.ToUserId == userId || m.FromUserId == userId) && m.BoxsetId != null)
-            .Select(m => new
+        var boxsetThreads = await inbox
+            .Where(e => e.Message.BoxsetId != null)
+            .Select(e => new
             {
-                BoxsetId = m.BoxsetId!.Value,
-                m.ToUserId,
-                m.FromUserId,
-                m.IsRead,
-                m.CreatedAt,
-                m.Message
+                BoxsetId = e.Message.BoxsetId!.Value,
+                e.Message.Id,
+                e.IsUnread,
+                e.Message.CreatedAt,
+                e.Message.Message
             })
             .GroupBy(m => m.BoxsetId)
             .Select(g => new
             {
                 BoxsetId = g.Key,
                 LastMessageAt = g.Max(m => m.CreatedAt),
-                UnreadCount = g.Count(m => m.ToUserId == userId && !m.IsRead),
+                UnreadCount = g.Count(m => m.IsUnread),
                 TotalCount = g.Count(),
-                LastMessageText = g.OrderByDescending(m => m.CreatedAt).Select(m => m.Message).First()
+                LastMessageText = g.OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id).Select(m => m.Message).First()
             })
             .ToListAsync();
 
