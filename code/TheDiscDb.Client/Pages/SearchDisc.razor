@@ -1,0 +1,73 @@
+@page "/search/disc"
+@using TheDiscDb.Client.Pages.Contribute
+@implements IAsyncDisposable
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+<PageTitle>Search by disc - TheDiscDb</PageTitle>
+<Breadcrumb PrimaryText="Search by disc" />
+
+<div class="contribute-layout disc-search">
+    @if (session?.Result is null)
+    {
+        <section class="contribute-hero compact">
+            <h1>Search by Disc</h1>
+            <p>Use the disc in your drive to search the database for releases containing your DVD, Blu-ray, or UHD disc.</p>
+        </section>
+        <section class="info-card">
+            <p>Insert your disc, then select its root folder: the folder containing <strong>BDMV</strong> or <strong>VIDEO_TS</strong>.
+                Your browser needs your permission to read the disc; it cannot detect your drive automatically.</p>
+            <p>We check the disc hash first. Video content is not uploaded.</p>
+            <button class="btn btn-primary" disabled="@(!ready || busy || hasPendingHash)" @onclick="() => SearchAsync(false)">
+                Select disc folder
+            </button>
+            @if (showCompatibilityPicker)
+            {
+                <DiscFolderPickerFallback Disabled="@(!ready || busy || hasPendingHash)" OnPickFolder="() => SearchAsync(true)" />
+            }
+        </section>
+    }
+    @if (busy)
+    {
+        <div class="scan-status" role="status">
+            <LoadingIndicator Message="@progress" />
+        </div>
+    }
+    @if (error is not null && !hasPendingHash)
+    {
+        <div class="alert alert-danger" role="alert">@error</div>
+        @if (session?.CanRetry == true)
+        {
+            <button class="btn btn-secondary" disabled="@busy" @onclick="RetryAsync">Retry database search</button>
+        }
+        else if (!ready)
+        {
+            <button class="btn btn-secondary" disabled="@busy" @onclick="InitializePickerAsync">Retry disc access</button>
+        }
+    }
+    @if (prepared?.Warnings.Count > 0)
+    {
+        <section class="info-card">
+            <h2>Disc scan saved in this browser</h2>
+            <div class="alert alert-warning" role="status">
+                <p>Some disc structure could not be read. You can continue with the saved scan or select the disc folder again.</p>
+                <ul>
+                    @foreach (var warning in prepared.Warnings)
+                    {
+                        <li>@warning</li>
+                    }
+                </ul>
+            </div>
+            <button class="btn btn-primary" disabled="@busy" @onclick="ContinueAsync">Continue to title selection</button>
+        </section>
+    }
+    else if (!hasPendingHash && session?.Result is { } result)
+    {
+        <DiscSearchResults Result="result" Disabled="@(busy || error is not null || !session.CanPrepareContribution)"
+                           OnAddRelease="PrepareAsync" OnSubmit="() => PrepareAsync(null)" />
+        <div>
+            <button class="btn btn-link p-0" disabled="@busy" @onclick="StartNewSearchAsync">
+                @(session.CanPrepareContribution ? "Search another disc" : "Scan your disc to contribute")
+            </button>
+        </div>
+    }
+</div>

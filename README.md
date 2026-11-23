@@ -73,6 +73,33 @@ avoid concurrent rebuilds and check the returned success/error summary.
 
 ---
 
+## Search by disc
+
+The desktop navigation's disc icon to the right of the search box opens
+`/search/disc`, with a **Search by disc** tooltip.
+Link directly to `/search/disc?dischash=<disc-content-hash>` to search a known
+hash without selecting a folder. Omitting `dischash` keeps the folder-scanning
+workflow. Hash-only searches show the same results; select the disc folder
+before submitting the disc or adding a release.
+Results hide the scanning instructions and folder picker. Use the results'
+scan/search link to return to the folder-scanning workflow.
+Insert a DVD, Blu-ray, or UHD disc and select its root folder (containing
+`VIDEO_TS` or `BDMV`). The browser needs explicit folder permission; it cannot
+automatically inspect the drive. Chrome and Edge support direct folder access,
+with an alternative folder picker for restricted folders and other browsers.
+
+The search calculates the existing disc content hash and links to matching movie,
+series, and boxset releases, with front-cover thumbnails when available.
+Searching is public and does not upload video,
+generate a full manifest, or create a submission. **Submit this disc** prepares a
+full browser-local scan only after a no-match result. **Add a new release** reuses
+a matching movie/series disc; boxset-only matches use a full scan and movie/series
+title selection. Login is required only when continuing into a contribution.
+Keep the disc inserted and the page open until scan preparation finishes.
+The navigation button is hidden below the desktop breakpoint.
+
+---
+
 ## Tech Stack
 
 | Layer             | Technology             |

@@ -8,6 +8,38 @@
     width: 20em;
 }
 
+.site-search-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.disc-search-link {
+    --bs-btn-color: var(--bs-navbar-color);
+    --bs-btn-hover-color: var(--bs-navbar-hover-color);
+    --bs-btn-hover-bg: transparent;
+    --bs-btn-active-color: var(--bs-navbar-hover-color);
+    --bs-btn-active-bg: transparent;
+    --bs-btn-border-width: 0;
+    --bs-btn-focus-shadow-rgb: 255, 255, 255;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 50%;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+.disc-search-link .bi {
+    font-size: 32px;
+    line-height: 1;
+}
+
+.disc-search-link .bi::before {
+    display: block;
+}
+
 /* Style the native clear button on type="search" */
 .main-search-box::-webkit-search-cancel-button {
     -webkit-appearance: none;
@@ -29,6 +61,14 @@
    Also override offcanvas-end's fixed width (400px) so the container
    fills the available navbar space. */
 @media (min-width: 992px) {
+    .nav-item {
+        margin-left: 0.5rem;
+    }
+
+    .main-search-box {
+        width: clamp(10rem, 16vw, 20rem);
+    }
+
     ::deep .offcanvas-body {
         flex-grow: 1 !important;
     }
@@ -36,10 +76,29 @@
     ::deep #navbarOffcanvas {
         width: auto !important;
         flex-grow: 1;
+        min-width: 0;
+    }
+}
+
+@media (min-width: 1400px) {
+    .nav-item {
+        margin-left: 2rem;
+    }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .nav-item {
+        font-size: 1rem;
+        margin-left: 0;
     }
 }
 
 @media (max-width: 991.98px) {
+    .site-search-controls,
+    .autocomplete {
+        width: 100%;
+    }
+
     /* Dark background for the offcanvas panel on mobile */
     ::deep #navbarOffcanvas {
         background-color: #00213F !important;

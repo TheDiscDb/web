@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using StrawberryShake;
 using TheDiscDb.Core.DiscHash;
 
-public sealed record DiscReleaseMatch(string Title, int Year, string Url, string? Upc, IReadOnlyList<string> Discs);
+public sealed record DiscReleaseMatch(string Title, int Year, string Url, string? Upc, IReadOnlyList<string> Discs, string? ImageUrl = null);
 public sealed record DiscTitleMatch(string Title, int Year, string? MediaType, string? ExternalId, string Slug, IReadOnlyList<DiscReleaseMatch> Releases)
 {
     public bool CanContribute => new ContributionContinuation(this.MediaType ?? "", this.ExternalId ?? "").IsValid;
@@ -62,7 +62,7 @@ public sealed class DiscScanContextLoader(
                     $"/{Uri.EscapeDataString(media.Type?.ToLowerInvariant() ?? "")}/{Uri.EscapeDataString(media.Slug ?? "")}/releases/{Uri.EscapeDataString(release.Slug ?? "")}",
                     release.Upc, release.Discs
                         .Where(disc => string.Equals(disc.ContentHash, hash, StringComparison.OrdinalIgnoreCase))
-                        .Select(disc => $"{disc.Name ?? $"Disc {disc.Index}"} - {disc.Format}").ToArray()))
+                        .Select(disc => $"{disc.Name ?? $"Disc {disc.Index}"} - {disc.Format}").ToArray(), release.ImageUrl))
                 .ToArray()))
             .Where(title => title.Releases.Count > 0).ToArray() ?? [];
         if (draft.IsExistingDiscReference && titles.Length == 0)

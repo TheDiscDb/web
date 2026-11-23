@@ -1,0 +1,66 @@
+query SearchDiscReleases(
+  $hash: String!
+  $mediaAfter: String
+  $boxsetAfter: String
+  $includeMedia: Boolean!
+  $includeBoxsets: Boolean!
+) {
+  mediaItems(
+    first: 100
+    after: $mediaAfter
+    where: { releases: { some: { discs: { some: { contentHash: { eq: $hash } } } } } }
+    order: { id: ASC }
+  ) @include(if: $includeMedia) {
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    nodes {
+      title
+      year
+      slug
+      type
+      externalids {
+        tmdb
+      }
+      releases(where: { discs: { some: { contentHash: { eq: $hash } } } }) {
+        title
+        year
+        slug
+        upc
+        imageUrl
+        discs(where: { contentHash: { eq: $hash } }, order: { index: ASC }) {
+          index
+          name
+          format
+        }
+      }
+    }
+  }
+  boxsets(
+    first: 100
+    after: $boxsetAfter
+    where: { release: { discs: { some: { contentHash: { eq: $hash } } } } }
+    order: { id: ASC }
+  ) @include(if: $includeBoxsets) {
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    nodes {
+      title
+      slug
+      imageUrl
+      release {
+        title
+        year
+        upc
+        discs(where: { contentHash: { eq: $hash } }, order: { index: ASC }) {
+          index
+          name
+          format
+        }
+      }
+    }
+  }
+}

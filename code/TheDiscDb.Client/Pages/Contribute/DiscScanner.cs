@@ -9,7 +9,11 @@ public sealed record DiscScanResult(
     string? GlobalDiscId,
     IReadOnlyList<FileHashInfo> HashFiles,
     IReadOnlyList<DiscFingerprintFile> FingerprintFiles,
-    string? Error);
+    string? Error)
+{
+    public string CalculateContentHash()
+        => this.HashFiles.OrderBy(file => file.Name, StringComparer.Ordinal).CalculateHash();
+}
 
 public static partial class DiscScanner
 {

@@ -31,12 +31,18 @@
                         <NavLink class="nav-link" href="/about" Match="NavLinkMatch.All">About</NavLink>
                     </li>
                 </ul>
-                <div class="autocomplete">
-                    <form action="/search" method="get" class="search-form">
-                        <label for="site-search" class="visually-hidden">Search</label>
-                        <input id="site-search" type="search" name="q" placeholder="Search..." autocomplete="off"
-                               class="form-control main-search-box" />
-                    </form>
+                <div class="site-search-controls">
+                    <div class="autocomplete">
+                        <form action="/search" method="get" class="search-form">
+                            <label for="site-search" class="visually-hidden">Search</label>
+                            <input id="site-search" type="search" name="q" placeholder="Search..." autocomplete="off"
+                                   class="form-control main-search-box" />
+                        </form>
+                    </div>
+                    <a class="btn disc-search-link d-none d-lg-inline-flex" href="/search/disc"
+                       title="Search by disc" aria-label="Search by disc">
+                        <i class="bi bi-disc" aria-hidden="true"></i>
+                    </a>
                 </div>
                 <div class="user-menu-container d-none d-lg-block">
                     @if (isAuthenticated)
