@@ -1,0 +1,52 @@
+@using TheDiscDb.Client.Pages.Contribute
+
+<section aria-live="polite">
+    @if (Result.Found)
+    {
+        <h2>This disc is in the database</h2>
+        <p>View the releases containing this disc, or add a new release if your packaging or edition is different.</p>
+        @foreach (var title in Result.Titles)
+        {
+            <KnownDiscReleaseGroup @key="(title.MediaType, title.Slug)" Title="title" Disabled="Disabled" OnAddRelease="OnAddRelease" />
+        }
+        @if (Result.Boxsets.Count > 0)
+        {
+            <section class="info-card">
+                <h3>Boxsets containing this disc</h3>
+                @foreach (var release in Result.Boxsets)
+                {
+                    <article @key="release.Url" class="d-flex align-items-start gap-3 mb-3">
+                        @if (!string.IsNullOrWhiteSpace(release.ImageUrl))
+                        {
+                            <a href="@release.Url" class="flex-shrink-0">
+                                <MediaImage Url="@release.ImageUrl" Width="104" Height="148" Title="@($"{release.Title} front cover")" CssClass="rounded" />
+                            </a>
+                        }
+                        <div>
+                            <h4><a href="@release.Url">@release.Title (@release.Year)</a></h4>
+                            @foreach (var disc in release.Discs)
+                            {
+                                <p class="mb-1">@disc</p>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(release.Upc))
+                            {
+                                <p>UPC/EAN: @release.Upc</p>
+                            }
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+        @if (!Result.Titles.Any(title => title.CanContribute))
+        {
+            <p>To add a movie or series release, we'll scan the disc structure next and ask you to select the title.</p>
+            <button class="btn btn-primary" disabled="@Disabled" @onclick="OnSubmit">Add a new release</button>
+        }
+    }
+    else
+    {
+        <h2>This disc isn't in the database yet</h2>
+        <p>Help others identify it by submitting this disc. We'll scan its structure next, then ask for the movie or series and release details.</p>
+        <button class="btn btn-primary" disabled="@Disabled" @onclick="OnSubmit">Submit this disc</button>
+    }
+</section>

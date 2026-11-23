@@ -1,19 +1,28 @@
 @using TheDiscDb.Client.Services
+@using TheDiscDb.Client.Controls
 
 <section class="info-card">
     <h2>@Title.Title (@Title.Year)</h2>
     @foreach (var release in Title.Releases)
     {
-        <article @key="release.Url" class="mb-3">
-            <h3><a href="@release.Url">@release.Title (@release.Year)</a></h3>
-            @foreach (var disc in release.Discs)
+        <article @key="release.Url" class="d-flex align-items-start gap-3 mb-3">
+            @if (!string.IsNullOrWhiteSpace(release.ImageUrl))
             {
-                <p class="mb-1">@disc</p>
+                <a href="@release.Url" class="flex-shrink-0">
+                    <MediaImage Url="@release.ImageUrl" Width="104" Height="148" Title="@($"{release.Title} front cover")" CssClass="rounded" />
+                </a>
             }
-            @if (!string.IsNullOrWhiteSpace(release.Upc))
-            {
-                <p>UPC/EAN: @release.Upc</p>
-            }
+            <div>
+                <h3><a href="@release.Url">@release.Title (@release.Year)</a></h3>
+                @foreach (var disc in release.Discs)
+                {
+                    <p class="mb-1">@disc</p>
+                }
+                @if (!string.IsNullOrWhiteSpace(release.Upc))
+                {
+                    <p>UPC/EAN: @release.Upc</p>
+                }
+            </div>
         </article>
     }
     <button class="btn btn-primary" disabled="@(Disabled || !Title.CanContribute)" @onclick="() => OnAddRelease.InvokeAsync(Title)">

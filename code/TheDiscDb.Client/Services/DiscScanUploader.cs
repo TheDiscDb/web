@@ -165,9 +165,7 @@ public sealed class DiscScanUploader
             return (DiscScanUploadResult.Failure("No fingerprintable files were found on this disc."), null);
         }
 
-        string discHash = identifiers.HashFiles
-            .OrderBy(file => file.Name, StringComparer.Ordinal)
-            .CalculateHash();
+        string discHash = identifiers.CalculateContentHash();
         if (!string.IsNullOrWhiteSpace(manualHashOverride))
         {
             discHash = manualHashOverride.Trim().ToUpperInvariant();

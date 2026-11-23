@@ -68,7 +68,8 @@ public partial class IdentifyTitle : CancellableComponentBase
             if (!string.IsNullOrWhiteSpace(hash))
             {
                 var context = await this.Loader.LoadAsync(hash, cancellationToken);
-                if (hash == this.DiscHash && context.Titles.Count > 0)
+                if (hash == this.DiscHash && context.Titles.Count > 0
+                    && (context.Draft.IsExistingDiscReference || context.Titles.Any(title => title.CanContribute)))
                 {
                     this.NavigationManager.NavigateTo(ContributionContinuation.MatchesUrl(hash, this.BoxsetId), replace: true);
                 }
