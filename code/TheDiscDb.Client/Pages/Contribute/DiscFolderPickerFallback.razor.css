@@ -1,0 +1,43 @@
+.folder-picker-fallback {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid #cad7e5;
+    border-left: 4px solid #0b3d6c;
+    border-radius: 0.5rem;
+    background: #f4f7fb;
+    color: #00213f;
+}
+
+.fallback-message {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.fallback-message strong {
+    font-weight: 700;
+}
+
+.fallback-button {
+    align-self: flex-start;
+    border: 1px solid #00213f;
+    background: #fff;
+    color: #00213f;
+}
+
+.fallback-button:hover,
+.fallback-button:focus {
+    background: #00213f;
+    color: #fff;
+}
+
+.fallback-button:focus-visible {
+    outline: 3px solid #2671b8;
+    outline-offset: 3px;
+}

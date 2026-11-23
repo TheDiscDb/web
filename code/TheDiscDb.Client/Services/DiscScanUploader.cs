@@ -44,12 +44,16 @@ public sealed class DiscScanUploader
         string manifestUri,
         Action onScanning,
         Action<string> onProgress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool useCompatibilityPicker = false,
+        Action? onNativePickerAborted = null)
     {
         IReadOnlyList<string> warnings = [];
         try
         {
-            await using var selection = await this.picker.PickAsync(cancellationToken, onSelectionCommitted: onScanning);
+            await using var selection = await this.picker.PickAsync(
+                cancellationToken, onSelectionCommitted: onScanning, useCompatibilityPicker: useCompatibilityPicker,
+                onNativePickerAborted: onNativePickerAborted);
             if (selection is null)
             {
                 return DiscScanUploadResult.Cancel();
@@ -106,11 +110,15 @@ public sealed class DiscScanUploader
         CancellationToken cancellationToken,
         string? manualHashOverride = null,
         Func<string, CancellationToken, Task<bool>>? isKnownDisc = null,
-        bool saveLocally = false)
+        bool saveLocally = false,
+        bool useCompatibilityPicker = false,
+        Action? onNativePickerAborted = null)
     {
         try
         {
-            await using var selection = await this.picker.PickAsync(cancellationToken, onSelectionCommitted: onScanning);
+            await using var selection = await this.picker.PickAsync(
+                cancellationToken, onSelectionCommitted: onScanning, useCompatibilityPicker: useCompatibilityPicker,
+                onNativePickerAborted: onNativePickerAborted);
             if (selection is null)
             {
                 return (DiscScanUploadResult.Cancel(), null);

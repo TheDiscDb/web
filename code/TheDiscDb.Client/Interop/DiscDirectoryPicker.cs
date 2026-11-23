@@ -34,33 +34,38 @@ public sealed class DiscDirectoryPicker : IAsyncDisposable
 
     public async ValueTask<DiscFileSelection?> PickAsync(
         CancellationToken cancellationToken = default,
-        Action? onSelectionCommitted = null)
+        Action? onSelectionCommitted = null,
+        bool useCompatibilityPicker = false,
+        Action? onNativePickerAborted = null)
     {
         // Reuse the preloaded module/capability when available so the first awaited call inside the
         // user gesture is the picker itself, preserving transient user activation.
         var module = this.module ?? await GetModuleAsync(cancellationToken);
-        var supported = this.supportsFileSystemAccess
-            ??= await module.InvokeAsync<bool>("supportsFileSystemAccess", cancellationToken);
+        var supported = !useCompatibilityPicker && (this.supportsFileSystemAccess
+            ??= await module.InvokeAsync<bool>("supportsFileSystemAccess", cancellationToken));
         if (supported)
         {
+            FileSystemDirectoryHandleInProcess root;
             try
             {
-                var root = await this.fileSystemAccessService.ShowDirectoryPickerAsync(
+                root = await this.fileSystemAccessService.ShowDirectoryPickerAsync(
                     new DirectoryPickerOptions
                     {
                         Mode = FileSystemPermissionMode.Read,
                     });
-
-                // The folder is chosen; enumerating its files can be slow on a real disc,
-                // so signal "busy" before the enumeration starts.
-                onSelectionCommitted?.Invoke();
-
-                return new DiscFileSelection(await GetHandleFilesAsync(root));
             }
             catch (JSException ex) when (IsCancellation(ex))
             {
+                // Chrome reports restricted folders and user cancellation as AbortError.
+                onNativePickerAborted?.Invoke();
                 return null;
             }
+
+            // The folder is chosen; enumerating its files can be slow on a real disc,
+            // so signal "busy" before the enumeration starts.
+            onSelectionCommitted?.Invoke();
+
+            return new DiscFileSelection(await GetHandleFilesAsync(root));
         }
 
         var result = await module.InvokeAsync<DirectorySelectionResult?>("pickDirectory", cancellationToken, MaxFileCount);

@@ -71,6 +71,7 @@ public partial class AddDisc : CancellableComponentBase
         && this.Configuration.GetValue<bool>("Contributions:DiscFirstFlow");
     bool discSelected;
     bool isScanning;
+    private bool showCompatibilityPicker;
     string? scanProgress;
     bool manualHashMode;
     string manualHash = string.Empty;
@@ -85,7 +86,7 @@ public partial class AddDisc : CancellableComponentBase
             this.request.Slug,
             title => title.Slugify());
 
-    bool IsDevelopmentMode=> HostEnvironment.Environment == "Development";
+    bool IsDevelopmentMode => HostEnvironment.Environment == "Development";
 
     private readonly SaveDiscRequest request = new SaveDiscRequest
     {
@@ -125,7 +126,11 @@ public partial class AddDisc : CancellableComponentBase
         }
     }
 
-    async Task OpenFolderAsync()
+    private Task OpenFolderAsync() => OpenFolderAsync(false);
+
+    private Task OpenFolderWithCompatibilityPickerAsync() => OpenFolderAsync(true);
+
+    private async Task OpenFolderAsync(bool useCompatibilityPicker)
     {
         this.copyFlowError = null;
         this.scanProgress = null;
@@ -133,7 +138,9 @@ public partial class AddDisc : CancellableComponentBase
         {
             await using var selection = await this.DiscDirectoryPicker.PickAsync(
                 this.CancellationToken,
-                onSelectionCommitted: MarkScanning);
+                onSelectionCommitted: MarkScanning,
+                useCompatibilityPicker: useCompatibilityPicker,
+                onNativePickerAborted: () => this.showCompatibilityPicker = true);
             if (selection is null)
             {
                 return;

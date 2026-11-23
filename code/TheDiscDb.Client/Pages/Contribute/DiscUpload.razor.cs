@@ -80,6 +80,7 @@ public partial class DiscUpload : CancellableComponentBase
     private string? uploadError;
 
     private bool isScanning;
+    private bool showCompatibilityPicker;
     private string? scanProgress;
     private IReadOnlyList<string> scanWarnings = [];
     private bool scanUploadSucceeded;
@@ -97,7 +98,7 @@ public partial class DiscUpload : CancellableComponentBase
         }
 
         this.startSpinnerTimer = new Timer(SpinnerTimerTick!, null, 4000, Timeout.Infinite);
-        
+
         var response = await this.ContributionClient.DiscUploadPageData.ExecuteAsync(this.ContributionId ?? string.Empty, this.CancellationToken);
         if (response != null && response.IsSuccessResult())
         {
@@ -209,7 +210,11 @@ public partial class DiscUpload : CancellableComponentBase
         }
     }
 
-    private async Task ScanDiscAsync()
+    private Task ScanDiscAsync() => ScanDiscAsync(false);
+
+    private Task ScanDiscWithCompatibilityPickerAsync() => ScanDiscAsync(true);
+
+    private async Task ScanDiscAsync(bool useCompatibilityPicker)
     {
         this.uploadError = null;
         this.scanWarnings = [];
@@ -222,7 +227,9 @@ public partial class DiscUpload : CancellableComponentBase
                 GetManifestUri(),
                 MarkScanning,
                 ReportScanProgress,
-                this.CancellationToken);
+                this.CancellationToken,
+                useCompatibilityPicker: useCompatibilityPicker,
+                onNativePickerAborted: () => this.showCompatibilityPicker = true);
 
             this.scanWarnings = result.Warnings;
             if (result.Uploaded)

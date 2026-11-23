@@ -19,6 +19,10 @@
             Firefox and Safari will use their folder selection fallback.
         </p>
         <button class="btn" @onclick="OpenFolderAsync" disabled="@isBusy">Choose disc folder</button>
+        @if (showCompatibilityPicker)
+        {
+            <DiscFolderPickerFallback Disabled="isBusy" OnPickFolder="OpenFolderWithCompatibilityPickerAsync" />
+        }
     </section>
 
     @if (isBusy)

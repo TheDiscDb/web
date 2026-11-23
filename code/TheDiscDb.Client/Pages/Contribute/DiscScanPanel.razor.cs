@@ -24,4 +24,10 @@ public partial class DiscScanPanel
 
     [Parameter]
     public EventCallback OnScanDisc { get; set; }
+
+    [Parameter]
+    public EventCallback OnScanDiscWithCompatibilityPicker { get; set; }
+
+    [Parameter]
+    public bool ShowCompatibilityPicker { get; set; }
 }

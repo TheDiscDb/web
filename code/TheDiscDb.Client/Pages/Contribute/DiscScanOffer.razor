@@ -46,6 +46,10 @@ else
                 </button>
                 <span class="scan-hint">Put the disc in your drive, then select its root folder when prompted.</span>
             </div>
+            @if (showCompatibilityPicker)
+            {
+                <DiscFolderPickerFallback Disabled="isBusy" OnPickFolder="ScanDiscWithCompatibilityPickerAsync" />
+            }
         </section>
 
         @if (isScanning)
