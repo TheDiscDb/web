@@ -8,6 +8,10 @@
     <button class="btn btn-primary" @onclick="OnScanDisc" disabled="@IsScanning">
         @(IsScanning ? "Scanning Disc..." : ButtonText)
     </button>
+    @if (ShowCompatibilityPicker)
+    {
+        <DiscFolderPickerFallback Disabled="IsScanning" OnPickFolder="OnScanDiscWithCompatibilityPicker" />
+    }
     @if (IsScanning)
     {
         <div class="scan-status">

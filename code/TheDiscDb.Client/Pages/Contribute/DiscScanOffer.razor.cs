@@ -46,6 +46,7 @@ public partial class DiscScanOffer : CancellableComponentBase
     private IDiscUploadPageData_MyContributions_Nodes_Discs? disc;
     private bool isLoading = true;
     private bool isScanning;
+    private bool showCompatibilityPicker;
     private bool isUploadingFile;
     private bool scanUploaded;
     private string? scanProgress;
@@ -85,7 +86,11 @@ public partial class DiscScanOffer : CancellableComponentBase
         }
     }
 
-    private async Task ScanDiscAsync()
+    private Task ScanDiscAsync() => ScanDiscAsync(false);
+
+    private Task ScanDiscWithCompatibilityPickerAsync() => ScanDiscAsync(true);
+
+    private async Task ScanDiscAsync(bool useCompatibilityPicker)
     {
         this.error = null;
         this.scanWarnings = [];
@@ -97,7 +102,9 @@ public partial class DiscScanOffer : CancellableComponentBase
                 this.ManifestUri,
                 MarkScanning,
                 ReportScanProgress,
-                this.CancellationToken);
+                this.CancellationToken,
+                useCompatibilityPicker: useCompatibilityPicker,
+                onNativePickerAborted: () => this.showCompatibilityPicker = true);
 
             this.scanWarnings = result.Warnings;
             this.error = result.Error;

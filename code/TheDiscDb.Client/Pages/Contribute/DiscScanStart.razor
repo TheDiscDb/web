@@ -25,6 +25,10 @@
             @this.ButtonContent
         }
     </button>
+    @if (this.showCompatibilityPicker)
+    {
+        <DiscFolderPickerFallback Disabled="this.isScanning" OnPickFolder="this.ScanDiscWithCompatibilityPickerAsync" />
+    }
     @if (this.isScanning)
     {
         <div class="scan-status">

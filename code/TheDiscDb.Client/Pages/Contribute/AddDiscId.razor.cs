@@ -38,6 +38,7 @@ public partial class AddDiscId : CancellableComponentBase
         && (!string.IsNullOrWhiteSpace(MediaItemSlug) || !string.IsNullOrWhiteSpace(BoxsetSlug));
 
     private bool isBusy;
+    private bool showCompatibilityPicker;
     private string? message;
     private string? resultClass;
     private string? computedDiscId;
@@ -53,14 +54,20 @@ public partial class AddDiscId : CancellableComponentBase
         }
     }
 
-    private async Task OpenFolderAsync()
+    private Task OpenFolderAsync() => OpenFolderAsync(false);
+
+    private Task OpenFolderWithCompatibilityPickerAsync() => OpenFolderAsync(true);
+
+    private async Task OpenFolderAsync(bool useCompatibilityPicker)
     {
         Reset();
         try
         {
             await using var selection = await this.DiscDirectoryPicker.PickAsync(
                 this.CancellationToken,
-                onSelectionCommitted: MarkBusy);
+                onSelectionCommitted: MarkBusy,
+                useCompatibilityPicker: useCompatibilityPicker,
+                onNativePickerAborted: () => this.showCompatibilityPicker = true);
             if (selection is null)
             {
                 return;

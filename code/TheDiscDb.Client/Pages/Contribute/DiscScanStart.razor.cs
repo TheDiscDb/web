@@ -36,6 +36,7 @@ public partial class DiscScanStart
     private bool IsDevelopmentMode => this.HostEnvironment.Environment == "Development";
     private string manualHash = string.Empty;
     private bool isScanning;
+    private bool showCompatibilityPicker;
     private string? scanProgress;
     private string? error;
 
@@ -47,7 +48,11 @@ public partial class DiscScanStart
         }
     }
 
-    private async Task ScanDiscAsync()
+    private Task ScanDiscAsync() => ScanDiscAsync(false);
+
+    private Task ScanDiscWithCompatibilityPickerAsync() => ScanDiscAsync(true);
+
+    private async Task ScanDiscAsync(bool useCompatibilityPicker)
     {
         this.error = null;
         this.scanProgress = null;
@@ -63,7 +68,9 @@ public partial class DiscScanStart
                 this.CancellationToken,
                 hashOverride,
                 this.IsKnownDiscAsync,
-                saveLocally: true);
+                saveLocally: true,
+                useCompatibilityPicker: useCompatibilityPicker,
+                onNativePickerAborted: () => this.showCompatibilityPicker = true);
             this.error = result.Result.Error;
             if (result.Result.Uploaded && result.DiscHash is not null)
             {
