@@ -1,6 +1,7 @@
 namespace TheDiscDb.Data.Import.Pipeline
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Text.Json;
     using System.Threading;
@@ -23,6 +24,36 @@ namespace TheDiscDb.Data.Import.Pipeline
 
         public async Task Process(ImportItem item, CancellationToken cancellationToken)
         {
+            var releaseFolders = item.MediaItem == null
+                ? Array.Empty<string>()
+                : item.ReleaseScope == null
+                    ? await this.fileSystem.Directory.GetDirectories(item.BasePath, cancellationToken)
+                    : new[] { item.ReleaseScope.Directory };
+            var imagePaths = new List<string>();
+            if (item.MediaItem != null)
+            {
+                imagePaths.Add(this.fileSystem.Path.Combine(item.BasePath, "cover.jpg"));
+                foreach (var folder in releaseFolders)
+                {
+                    imagePaths.Add(this.fileSystem.Path.Combine(folder, "front.jpg"));
+                    imagePaths.Add(this.fileSystem.Path.Combine(folder, "back.jpg"));
+                }
+            }
+            else if (item.Boxset != null)
+            {
+                imagePaths.Add(this.fileSystem.Path.Combine(item.BasePath, "front.jpg"));
+                imagePaths.Add(this.fileSystem.Path.Combine(item.BasePath, "back.jpg"));
+            }
+
+            // Decode every image before uploading any assets or importing database rows.
+            foreach (var path in imagePaths)
+            {
+                if (await this.fileSystem.File.Exists(path, cancellationToken))
+                {
+                    await CoverImageConverter.Normalize(this.fileSystem, path, cancellationToken);
+                }
+            }
+
             if (item.MediaItem != null)
             {
                 string coverImagePath = this.fileSystem.Path.Combine(item.BasePath, "cover.jpg");
@@ -47,9 +78,6 @@ namespace TheDiscDb.Data.Import.Pipeline
                     }
                 }
 
-                var releaseFolders = item.ReleaseScope == null
-                    ? await this.fileSystem.Directory.GetDirectories(item.BasePath, cancellationToken)
-                    : new[] { item.ReleaseScope.Directory };
                 foreach (var releaseFolder in releaseFolders)
                 {
                     string frontCoverPath = this.fileSystem.Path.Combine(releaseFolder, "front.jpg");
@@ -82,7 +110,6 @@ namespace TheDiscDb.Data.Import.Pipeline
                         }
                     }
 
-                    // TODO: save back cover if it exists
                     string backCoverPath = this.fileSystem.Path.Combine(releaseFolder, "back.jpg");
                     if (await this.fileSystem.File.Exists(backCoverPath, cancellationToken))
                     {
@@ -101,6 +128,13 @@ namespace TheDiscDb.Data.Import.Pipeline
                         if (!await this.imageStore.Exists(remotePath, cancellationToken))
                         {
                             await this.imageStore.Save(backCoverPath, remotePath, ContentTypes.ImageContentType, cancellationToken);
+                        }
+                        release.BackImageUrl = remotePath;
+                        if (releaseFile.BackImageUrl != remotePath)
+                        {
+                            releaseFile.BackImageUrl = remotePath;
+                            json = JsonSerializer.Serialize(releaseFile, JsonHelper.JsonOptions);
+                            await this.fileSystem.File.WriteAllText(releaseFilePath, json, cancellationToken);
                         }
                     }
                 }
@@ -132,6 +166,31 @@ namespace TheDiscDb.Data.Import.Pipeline
                         // re-save the boxset file
                         string json = JsonSerializer.Serialize(file, JsonHelper.JsonOptions);
                         await this.fileSystem.File.WriteAllText(this.fileSystem.Path.Combine(item.BasePath, BoxSetReleaseFile.Filename), json, cancellationToken);
+                    }
+                }
+
+                string backImagePath = this.fileSystem.Path.Combine(item.BasePath, "back.jpg");
+                if (await this.fileSystem.File.Exists(backImagePath, cancellationToken))
+                {
+                    string remotePath = $"boxset/{item.Boxset.Slug}-back.jpg";
+                    if (!await this.imageStore.Exists(remotePath, cancellationToken))
+                    {
+                        await this.imageStore.Save(backImagePath, remotePath, ContentTypes.ImageContentType, cancellationToken);
+                    }
+
+                    if (item.Boxset.Release != null)
+                    {
+                        item.Boxset.Release.BackImageUrl = remotePath;
+                    }
+
+                    string filePath = this.fileSystem.Path.Combine(item.BasePath, BoxSetReleaseFile.Filename);
+                    var file = JsonSerializer.Deserialize<BoxSetReleaseFile>(
+                        await this.fileSystem.File.ReadAllText(filePath, cancellationToken), JsonHelper.JsonOptions);
+                    if (file != null && file.BackImageUrl != remotePath)
+                    {
+                        file.BackImageUrl = remotePath;
+                        await this.fileSystem.File.WriteAllText(filePath,
+                            JsonSerializer.Serialize(file, JsonHelper.JsonOptions), cancellationToken);
                     }
                 }
             }

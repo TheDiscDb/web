@@ -224,6 +224,7 @@ public class DataImportItemFactory
                         Asin = file.Asin,
                         Year = file.Year,
                         RegionCode = file.RegionCode,
+                        BackImageUrl = file.BackImageUrl,
                         ReleaseDate = file.ReleaseDate,
                         DateAdded = DateTimeOffset.UtcNow
                     }
@@ -434,6 +435,7 @@ public class DataImportItemFactory
         release.Year = releaseFile.Year;
         release.Title = releaseFile.Title;
         release.ImageUrl = releaseFile.ImageUrl;
+        release.BackImageUrl = releaseFile.BackImageUrl;
         release.ReleaseDate = releaseFile.ReleaseDate;
         release.DateAdded = releaseFile.DateAdded;
 

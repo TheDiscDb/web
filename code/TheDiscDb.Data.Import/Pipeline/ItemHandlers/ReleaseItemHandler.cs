@@ -30,6 +30,7 @@ public class ReleaseItemHandler : ItemHandler<Release>
         fromDatabase.Locale = newValue.Locale;
         fromDatabase.Asin = newValue.Asin;
         fromDatabase.ImageUrl = newValue.ImageUrl;
+        fromDatabase.BackImageUrl = newValue.BackImageUrl;
         fromDatabase.Isbn = newValue.Isbn;
         fromDatabase.RegionCode = newValue.RegionCode;
         fromDatabase.Upc = newValue.Upc;
