@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using StrawberryShake;
 using TheDiscDb.Client.Contributions;
 
@@ -11,6 +12,10 @@ public partial class Messages : CancellableComponentBase
     [Inject]
     private IContributionClient ContributionClient { get; set; } = null!;
 
+    [Inject]
+    private AuthenticationStateProvider AuthProvider { get; set; } = null!;
+
+    private bool isAdmin;
     private (string Text, string Url)[] breadcrumbItems = [];
     private List<IGetMessageThreads_MessageThreads>? threads;
     private bool isLoading = true;
@@ -18,8 +23,9 @@ public partial class Messages : CancellableComponentBase
 
     protected override async Task OnInitializedAsync()
     {
+        this.isAdmin = (await this.AuthProvider.GetAuthenticationStateAsync()).User.IsInRole("Administrator");
         breadcrumbItems = [
-            BreadCrumbHelper.GetRootContributionLink()
+            this.isAdmin ? ("Admin", "/admin") : BreadCrumbHelper.GetRootContributionLink()
         ];
 
         try

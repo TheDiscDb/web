@@ -150,7 +150,7 @@ public class MessageServiceTests
     }
 
     [Test]
-    public async Task SendUserMessageAsync_SetsToUserId_ToLastAdmin()
+    public async Task SendUserMessageAsync_AfterMultipleAdmins_StillTargetsSharedInbox()
     {
         var dbName = Guid.NewGuid().ToString();
 
@@ -183,7 +183,7 @@ public class MessageServiceTests
         var service = CreateService(dbName);
         var result = await service.SendUserMessageAsync(42, "user-1", "Thanks for the feedback");
 
-        await Assert.That(result.ToUserId).IsEqualTo("admin-latest");
+        await Assert.That(result.ToUserId).IsEqualTo(string.Empty);
     }
 
     [Test]

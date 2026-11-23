@@ -1,150 +1,63 @@
-using Markdig;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
 using StrawberryShake;
 using TheDiscDb.Client.Contributions;
+using TheDiscDb.Client.Controls;
 
 namespace TheDiscDb.Client.Pages.Contribute;
 
 [Authorize]
-public partial class BoxsetMessages : CancellableComponentBase
+public partial class BoxsetMessages : MessageConversationBase
 {
     [Parameter]
     public string? BoxsetId { get; set; }
 
-    [Inject]
-    private IContributionClient ContributionClient { get; set; } = null!;
+    protected override string? ThreadId => this.BoxsetId;
+    protected override (string Text, string Url)[] Breadcrumbs => [
+        ("Messages", "/messages"),
+        ("Boxset", $"/contribution/boxset/{this.BoxsetId}")
+    ];
 
-    [Inject]
-    private NavigationManager Navigation { get; set; } = null!;
-
-    private List<IGetBoxsetChat_BoxsetChat_Nodes>? chatItems;
-    private bool isLoading = true;
-    private string? loadError;
-    private string newMessage = string.Empty;
-    private string? sendError;
-    private bool isSending;
-    private bool showPreview;
-    private (string Text, string Url)[] breadcrumbItems = [];
-
-    protected override async Task OnInitializedAsync()
+    protected override async Task<MessagePage> GetPage(string threadId, string? after, CancellationToken cancellationToken)
     {
-        breadcrumbItems = [
-            BreadCrumbHelper.GetRootContributionLink(),
-            (Text: "Boxset", Url: $"/contribution/boxset/{BoxsetId}")
-        ];
+        var result = await this.ContributionClient.GetBoxsetChat.ExecuteAsync(threadId, 100, after, cancellationToken);
+        if (!result.IsSuccessResult() || result.Data?.BoxsetChat == null)
+            throw new InvalidOperationException("Failed to load messages.");
 
-        if (string.IsNullOrEmpty(BoxsetId))
-        {
-            loadError = "Invalid boxset ID.";
-            isLoading = false;
-            return;
-        }
-
-        await LoadMessages();
+        var chat = result.Data.BoxsetChat;
+        return new MessagePage(chat.Nodes?.Select(m => new ConversationMessage(m.Id, m.FromUserId, m.ToUserId, m.Message, m.IsRead, m.CreatedAt, m.Type)).ToList() ?? [],
+            chat.PageInfo.HasNextPage, chat.PageInfo.EndCursor, result.Data.CurrentUserId);
     }
 
-    private async Task LoadMessages()
+    protected override async Task<bool> Acknowledge(string threadId, int[] messageIds, CancellationToken cancellationToken)
     {
-        isLoading = true;
-        loadError = null;
-
-        try
+        var result = await this.ContributionClient.MarkBoxsetMessagesAsRead.ExecuteAsync(new MarkBoxsetMessagesAsReadInput
         {
-            var result = await ContributionClient.GetBoxsetChat.ExecuteAsync(BoxsetId!, 100, null);
-
-            if (result.IsSuccessResult())
-            {
-                chatItems = result.Data?.BoxsetChat?.Nodes?.ToList()
-                    ?? new List<IGetBoxsetChat_BoxsetChat_Nodes>();
-
-                await ContributionClient.MarkBoxsetMessagesAsRead.ExecuteAsync(new MarkBoxsetMessagesAsReadInput
-                {
-                    BoxsetId = BoxsetId!
-                });
-            }
-            else
-            {
-                loadError = "Failed to load messages.";
-            }
-        }
-        catch (Exception ex)
-        {
-            loadError = $"Error loading messages: {ex.Message}";
-        }
-        finally
-        {
-            isLoading = false;
-        }
+            BoxsetId = threadId,
+            MessageIds = messageIds
+        }, cancellationToken);
+        return result.IsSuccessResult() && result.Data?.MarkBoxsetMessagesAsRead?.Boolean == true &&
+            !(result.Data.MarkBoxsetMessagesAsRead.Errors?.Any() ?? false);
     }
 
-    private async Task SendMessage()
+    protected override async Task<string?> Send(string threadId, string message, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(newMessage) || string.IsNullOrEmpty(BoxsetId))
-            return;
-
-        isSending = true;
-        sendError = null;
-
-        try
+        var result = await this.ContributionClient.SendBoxsetUserMessage.ExecuteAsync(new SendBoxsetUserMessageInput
         {
-            var result = await ContributionClient.SendBoxsetUserMessage.ExecuteAsync(new SendBoxsetUserMessageInput
+            BoxsetId = threadId,
+            Message = message
+        }, cancellationToken);
+        if (result.Data?.SendBoxsetUserMessage?.Errors?.FirstOrDefault() is { } error)
+        {
+            return error switch
             {
-                BoxsetId = BoxsetId,
-                Message = newMessage
-            });
-
-            if (result.Data?.SendBoxsetUserMessage?.Errors is { Count: > 0 } errors)
-            {
-                var error = errors[0];
-                sendError = error switch
-                {
-                    ISendBoxsetUserMessage_SendBoxsetUserMessage_Errors_BoxsetNotFoundError e => e.Message,
-                    ISendBoxsetUserMessage_SendBoxsetUserMessage_Errors_AuthenticationError e => e.Message,
-                    ISendBoxsetUserMessage_SendBoxsetUserMessage_Errors_InvalidIdError e => e.Message,
-                    ISendBoxsetUserMessage_SendBoxsetUserMessage_Errors_InvalidOwnershipError e => e.Message,
-                    _ => "An unexpected error occurred."
-                };
-                return;
-            }
-
-            newMessage = string.Empty;
-            showPreview = false;
-            await LoadMessages();
+                ISendBoxsetUserMessage_SendBoxsetUserMessage_Errors_BoxsetNotFoundError e => e.Message,
+                ISendBoxsetUserMessage_SendBoxsetUserMessage_Errors_AuthenticationError e => e.Message,
+                ISendBoxsetUserMessage_SendBoxsetUserMessage_Errors_InvalidIdError e => e.Message,
+                ISendBoxsetUserMessage_SendBoxsetUserMessage_Errors_InvalidOwnershipError e => e.Message,
+                _ => "An unexpected error occurred."
+            };
         }
-        catch (Exception ex)
-        {
-            sendError = $"Failed to send message: {ex.Message}";
-        }
-        finally
-        {
-            isSending = false;
-        }
-    }
-
-    private static string GetBadgeClass(UserMessageType type) => type switch
-    {
-        UserMessageType.AdminMessage => "bg-primary",
-        UserMessageType.UserMessage => "bg-secondary",
-        _ => "bg-light text-dark"
-    };
-
-    private static string GetTypeLabel(UserMessageType type) => type switch
-    {
-        UserMessageType.AdminMessage => "Admin",
-        UserMessageType.UserMessage => "You",
-        _ => type.ToString()
-    };
-
-    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
-        .UseAdvancedExtensions()
-        .Build();
-
-    private static string RenderMarkdown(string? text)
-    {
-        if (string.IsNullOrEmpty(text))
-            return string.Empty;
-
-        return Markdown.ToHtml(text, MarkdownPipeline);
+        return result.IsSuccessResult() && result.Data?.SendBoxsetUserMessage != null ? null : "Failed to send message.";
     }
 }

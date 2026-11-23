@@ -211,6 +211,7 @@ type MessageThread {
 }
 
 type ContributionQuery {
+  currentUserId: String @authorize @cost(weight: "1")
   contributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput @cost(weight: "10") order: [UserContributionSortInput!] @cost(weight: "10")): ContributionsConnection @authorize(policy: "Admin") @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
   myContributions("Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String where: UserContributionFilterInput @cost(weight: "10") order: [UserContributionSortInput!] @cost(weight: "10")): MyContributionsConnection @authorize @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
   contributionHistory(contributionId: Int! "Returns the first _n_ elements from the list." first: Int "Returns the elements in the list that come after the specified cursor." after: String "Returns the last _n_ elements from the list." last: Int "Returns the elements in the list that come before the specified cursor." before: String order: [ContributionHistorySortInput!] @cost(weight: "10")): ContributionHistoryConnection @authorize(policy: "Admin") @listSize(assumedSize: 100, slicingArguments: [ "first", "last" ], slicingArgumentDefaultValue: 50, sizedFields: [ "edges", "nodes" ], requireOneSlicingArgument: false) @cost(weight: "10")
@@ -767,9 +768,9 @@ union SendAdminMessageError = ContributionNotFoundError | AuthenticationError
 
 union SendUserMessageError = ContributionNotFoundError | AuthenticationError | InvalidOwnershipError
 
-union MarkMessagesAsReadError = AuthenticationError
+union MarkMessagesAsReadError = AuthenticationError | ContributionNotFoundError | InvalidIdError | InvalidOwnershipError
 
-union MarkBoxsetMessagesAsReadError = AuthenticationError
+union MarkBoxsetMessagesAsReadError = AuthenticationError | BoxsetNotFoundError | InvalidIdError | InvalidOwnershipError
 
 union SendAdminBoxsetMessageError = BoxsetNotFoundError | AuthenticationError | InvalidIdError
 
@@ -1089,10 +1090,12 @@ input SendUserMessageInput {
 
 input MarkMessagesAsReadInput {
   contributionId: String!
+  messageIds: [Int!]
 }
 
 input MarkBoxsetMessagesAsReadInput {
   boxsetId: String!
+  messageIds: [Int!]
 }
 
 input SendAdminBoxsetMessageInput {

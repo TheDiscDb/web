@@ -1,4 +1,5 @@
 query GetBoxsetChat($boxsetId: String!, $first: Int, $after: String) {
+  currentUserId
   boxsetChat(boxsetId: $boxsetId, first: $first, after: $after) {
     nodes {
       id

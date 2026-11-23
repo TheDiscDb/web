@@ -39,7 +39,7 @@ using TheDiscDb.Web.Authentication;
 using TheDiscDb.Web.Data;
 using TheDiscDb.Web.Email;
 using TheDiscDb.Web.Sitemap;
-    
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
@@ -51,7 +51,7 @@ builder.Services.AddEditSuggestions();
 builder.Services.AddContributionDiscServices();
 builder.Services.Configure<DiscScanOptions>(builder.Configuration.GetSection(DiscScanOptions.SectionName));
 
-builder.Services.AddControllersWithViews( options =>
+builder.Services.AddControllersWithViews(options =>
 {
     options.InputFormatters.Add(new PlainTextInputFormatter());
 });
@@ -357,6 +357,7 @@ builder.Services.AddHighlight();
 builder.Services.AddSingleton<IAmazonImporter, AmazonImporter>();
 builder.Services.AddScoped<IContributionHistoryService, ContributionHistoryService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<TheDiscDb.Client.Services.IUnreadMessagesService, ServerUnreadMessagesService>();
 
 // Gruv affiliate links — IGruvLinkLookup is scoped (per-request batched cache) so list pages
 // rendering many releases issue a single DB query for all of them. AffiliateLinkService is
