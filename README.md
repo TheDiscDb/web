@@ -46,6 +46,11 @@ removes the file after publishing, including when a build or test fails.
 
 ### Release import behavior
 
+The contribution Release Details screen requires title metadata from TMDB before
+it enables the release form. Failed or empty lookups show a retry option and a
+link back to title search, without discarding the saved disc scan. Retrying
+restores the release draft after metadata loads successfully.
+
 Imports merge a media item's releases by slug. A contribution workspace may contain
 only one release, so releases absent from an import are retained; deleting a release
 requires the explicit release-deletion workflow. Disc, title, and track updates

@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Fantastic.TheMovieDb" Version="2.1.1" />
+        <PackageReference Include="Fantastic.TheMovieDb" Version="2.1.2" />
         <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.15" />
     </ItemGroup>
 
