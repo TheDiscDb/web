@@ -11,6 +11,7 @@ public partial class SearchDisc
 
     [Inject] private DiscDirectoryPicker Picker { get; set; } = default!;
     [Inject] private DiscSearchService Search { get; set; } = default!;
+    [Inject] private HttpClient Http { get; set; } = default!;
     [Inject] private DiscScanUploader Uploader { get; set; } = default!;
     [Inject] private ContributionContinuationService Continuation { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
@@ -102,6 +103,7 @@ public partial class SearchDisc
         this.progress = "Reading disc identifiers and checking the database...";
         this.StateHasChanged();
         await this.session!.SearchAsync(selection, this.lifetime.Token);
+        await this.SuggestIdentifiersAsync();
     });
 
     private Task RetryAsync() => this.RunAsync(async () =>
@@ -109,7 +111,20 @@ public partial class SearchDisc
         this.prepared = null;
         this.progress = "Checking the database...";
         await this.session!.RetryAsync(this.lifetime.Token);
+        await this.SuggestIdentifiersAsync();
     });
+
+    private async Task SuggestIdentifiersAsync()
+    {
+        try
+        {
+            await this.session!.SuggestMissingIdentifiersAsync(this.Http, this.lifetime.Token);
+        }
+        catch (HttpRequestException ex)
+        {
+            this.Logger.LogWarning(ex, "Could not submit missing disc identifiers from disc search");
+        }
+    }
 
     private Task StartNewSearchAsync() => this.RunAsync(async () =>
     {
