@@ -2,6 +2,9 @@ namespace TheDiscDb.UnitTests.Services.DiscId;
 
 using System.Linq;
 using System.Text.Json;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using TheDiscDb.Data.Changes;
 using TheDiscDb.Data.Changes.DiscFields;
@@ -20,6 +23,137 @@ public class DiscIdBackfillServiceTests
     private const string OtherDiscId = "91C2EB717C4323D8807C01BA79011A6B";
     private const string Fingerprint = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     private const string OtherFingerprint = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task DiscSearch_BackfillIsPendingAndAttributedToSignedInOrDefaultUser(bool signedIn)
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        await db.SaveChangesAsync();
+        var context = new DefaultHttpContext();
+        if (signedIn)
+        {
+            context.User = new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim(ClaimTypes.NameIdentifier, "signed-in-user")], "test"));
+        }
+        var config = new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?> { ["EditSuggestions:AnonymousDiscSearchUserId"] = "scan-submitter" }).Build();
+
+        await TheDiscDb.Web.DiscLookupEndpoints.SuggestIdentifiers(
+            new(ContentHash, DiscId.ToLowerInvariant(), Fingerprint), context, config,
+            CreateService(db), CancellationToken.None);
+
+        var suggestion = await db.EditSuggestions.Include(s => s.Changes).SingleAsync();
+        await Assert.That(suggestion.UserId).IsEqualTo(signedIn ? "signed-in-user" : "scan-submitter");
+        await Assert.That(suggestion.Status).IsEqualTo(EditSuggestionStatus.Pending);
+        var change = suggestion.Changes.Single();
+        await Assert.That(change.Status).IsEqualTo(EditSuggestionChangeStatus.Pending);
+        var proposed = JsonSerializer.Deserialize<DiscFieldsDetails>(change.ProposedJson, JsonOptions)!;
+        await Assert.That(proposed.GlobalDiscId).IsEqualTo(DiscId);
+        await Assert.That(proposed.Fingerprint).IsEqualTo(Fingerprint);
+        await Assert.That(proposed.ContentHash).IsEqualTo(ContentHash);
+        await Assert.That(proposed.Name).IsEqualTo(seed.ReleaseDisc.Name);
+        await Assert.That(proposed.Format).IsEqualTo(seed.ReleaseDisc.Format);
+        await Assert.That(proposed.TargetEntityKey).IsEqualTo(
+            $"{ChangeTestSeed.MediaItemSlug}/{ChangeTestSeed.ReleaseSlug}/{ChangeTestSeed.DiscSlug}");
+        await Assert.That(seed.ReleaseDisc.GlobalDiscId).IsNull();
+        await Assert.That(seed.ReleaseDisc.Fingerprint).IsNull();
+    }
+
+    [Test]
+    public async Task DiscSearch_RepeatedScansDeduplicateMissingFieldsAcrossUsers()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        await db.SaveChangesAsync();
+        var service = CreateService(db);
+
+        await Assert.That(await service.SuggestMissingIdentifiersAsync("anonymous-disc-search", ContentHash, null, Fingerprint)).IsTrue();
+        await Assert.That(await service.SuggestMissingIdentifiersAsync("user", ContentHash, DiscId, Fingerprint)).IsTrue();
+        await Assert.That(await service.SuggestMissingIdentifiersAsync("other-user", ContentHash, DiscId, Fingerprint)).IsFalse();
+
+        var changes = await db.EditSuggestionChanges.OrderBy(c => c.Id).ToListAsync();
+        await Assert.That(changes.Count).IsEqualTo(2);
+        var second = JsonSerializer.Deserialize<DiscFieldsDetails>(changes[1].ProposedJson, JsonOptions)!;
+        await Assert.That(second.GlobalDiscId).IsEqualTo(DiscId);
+        await Assert.That(second.Fingerprint).IsNull();
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task DiscSearch_PreservesExistingIdentifiersIncludingSiblingValues(bool complete)
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        var sibling = AddMediaRelease(seed.MediaItem, seed.Disc, "other-release", "Other", 2020,
+            "other-disc", 1, "Other", OtherDiscId);
+        sibling.Fingerprint = complete ? OtherFingerprint : null;
+        await db.SaveChangesAsync();
+
+        bool created = await CreateService(db).SuggestMissingIdentifiersAsync("user", ContentHash, DiscId, Fingerprint);
+
+        await Assert.That(created).IsEqualTo(!complete);
+        await Assert.That(sibling.GlobalDiscId).IsEqualTo(OtherDiscId);
+        await Assert.That(seed.ReleaseDisc.GlobalDiscId).IsNull();
+        if (!complete)
+        {
+            var change = await db.EditSuggestionChanges.SingleAsync();
+            var proposed = JsonSerializer.Deserialize<DiscFieldsDetails>(change.ProposedJson, JsonOptions)!;
+            await Assert.That(proposed.GlobalDiscId).IsNull();
+            await Assert.That(proposed.Fingerprint).IsEqualTo(Fingerprint);
+        }
+        else
+        {
+            await Assert.That(await db.EditSuggestions.CountAsync()).IsEqualTo(0);
+        }
+    }
+
+    [Test]
+    public async Task DiscSearch_NoMatchOrInvalidIdentifiersCannotCreateSuggestions()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        ChangeTestSeed.Seed(db);
+        await Assert.That(await CreateService(db).SuggestMissingIdentifiersAsync("user", ContentHash, DiscId, Fingerprint)).IsFalse();
+        var response = await TheDiscDb.Web.DiscLookupEndpoints.SuggestIdentifiers(
+            new(ContentHash, "invalid", Fingerprint), new DefaultHttpContext(),
+            new ConfigurationBuilder().Build(), CreateService(db), CancellationToken.None);
+        await Assert.That(((IStatusCodeHttpResult)response).StatusCode).IsEqualTo(400);
+        await Assert.That(await db.EditSuggestions.CountAsync()).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task DiscSearch_BoxsetSuggestionCanBeApprovedThroughExistingReviewFlow()
+    {
+        using var db = ChangeTestSeed.CreateDbContext();
+        var seed = ChangeTestSeed.Seed(db);
+        seed.Disc.ContentHash = ContentHash;
+        seed.Release.MediaItem = null;
+        seed.Release.Boxset = new Boxset { Slug = "collection", Title = "Collection", Release = seed.Release };
+        seed.MediaItem.Releases.Remove(seed.Release);
+        await db.SaveChangesAsync();
+        await CreateService(db).SuggestMissingIdentifiersAsync("user", ContentHash, DiscId, Fingerprint);
+        var suggestion = await db.EditSuggestions.Include(s => s.Changes).SingleAsync();
+        var change = suggestion.Changes.Single();
+        var proposed = JsonSerializer.Deserialize<DiscFieldsDetails>(change.ProposedJson, JsonOptions)!;
+        await Assert.That(proposed.BoxsetSlug).IsEqualTo("collection");
+        await Assert.That(proposed.MediaItemSlug).IsNull();
+        var factory = new ChangeFactory([new ChangeBuilder<DiscFieldsDetails>(
+            DiscFieldsUpdate.Key, (d, opts) => new DiscFieldsUpdate(d, opts))]);
+        var review = new EditSuggestionReviewService(db, factory, new EditSuggestionHistoryService(db));
+
+        await review.ApproveChangeAsync(suggestion.Id, change.Id, "admin", null, CancellationToken.None);
+
+        await Assert.That(change.Status).IsEqualTo(EditSuggestionChangeStatus.Applied);
+        await Assert.That(seed.ReleaseDisc.GlobalDiscId).IsEqualTo(DiscId);
+        await Assert.That(seed.ReleaseDisc.Fingerprint).IsEqualTo(Fingerprint);
+        await Assert.That(seed.ReleaseDisc.Name).IsEqualTo("Original Disc Name");
+    }
 
     private static DiscIdBackfillService CreateService(SqlServerDataContext db)
     {

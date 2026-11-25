@@ -1,6 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using TheDiscDb.Core.DiscHash;
+using TheDiscDb.Services.DiscId;
 using TheDiscDb.Services.DiscLookup;
 using TheDiscDb.Web.Data;
 
@@ -23,6 +26,34 @@ public sealed class DiscLookupEndpoints
         var group = app.MapGroup("/api");
         group.MapGet("/discid/{globalDiscId}", LookupByDiscId);
         group.MapGet("/dischash/{discHash}", LookupByDiscHash);
+        group.MapPost("/disc-search/identifiers", SuggestIdentifiers)
+            .RequireRateLimiting("disc-search-identifiers");
+    }
+
+    public sealed record IdentifierSuggestionInput(string ContentHash, string? GlobalDiscId, string Fingerprint);
+    public sealed record IdentifierSuggestionResult(bool Created);
+
+    public static async Task<IResult> SuggestIdentifiers(
+        IdentifierSuggestionInput input,
+        HttpContext context,
+        IConfiguration configuration,
+        IDiscIdBackfillService backfillService,
+        CancellationToken cancellationToken)
+    {
+        if (!DiscLookupQuery.IsValidDiscHash(input.ContentHash)
+            || (input.GlobalDiscId is not null && !DiscLookupQuery.IsValidDiscId(input.GlobalDiscId))
+            || !DiscFingerprint.IsValidFingerprint(input.Fingerprint))
+        {
+            return TypedResults.BadRequest("Invalid disc identifiers.");
+        }
+
+        string userId = context.User.Identity?.IsAuthenticated == true
+            ? context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? throw new InvalidOperationException("The signed-in user has no user ID.")
+            : configuration["EditSuggestions:AnonymousDiscSearchUserId"] ?? "anonymous-disc-search";
+        bool created = await backfillService.SuggestMissingIdentifiersAsync(
+            userId, input.ContentHash, input.GlobalDiscId?.ToUpperInvariant(), input.Fingerprint, cancellationToken);
+        return TypedResults.Ok(new IdentifierSuggestionResult(created));
     }
 
     private static async Task<IResult> LookupByDiscId(string globalDiscId, IDbContextFactory<SqlServerDataContext> dbContextFactory, CancellationToken cancellationToken)

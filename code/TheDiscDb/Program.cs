@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using SixLabors.ImageSharp.Web;
 using SixLabors.ImageSharp.Web.Azure.Caching;
 using SixLabors.ImageSharp.Web.Middleware;
@@ -63,6 +65,18 @@ builder.Services.AddCors(options =>
         .WithMethods("GET", "POST", "OPTIONS"));
 });
 builder.Services.AddMemoryCache();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("disc-search-identifiers", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+            }));
+});
 builder.Services.AddSingleton<TheDiscDb.Web.Authentication.ApiKeyManager>();
 
 var gihubOptions = new TheDiscDb.Web.Authentication.AuthenticationOptions();
@@ -464,6 +478,7 @@ app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.UseWhen(
     ctx => ctx.Request.Path.StartsWithSegments("/graphql"),

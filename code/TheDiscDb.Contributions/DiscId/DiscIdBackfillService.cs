@@ -94,6 +94,13 @@ public sealed record DiscIdTargetCandidate(
 
 public interface IDiscIdBackfillService
 {
+    Task<bool> SuggestMissingIdentifiersAsync(
+        string userId,
+        string contentHash,
+        string? globalDiscId,
+        string fingerprint,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<DiscIdTargetCandidate>> GetTargetsByContentHashAsync(
         string contentHash,
         CancellationToken cancellationToken = default);
@@ -126,6 +133,102 @@ public sealed class DiscIdBackfillService(
     IEditSuggestionReviewService reviewService) : IDiscIdBackfillService
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    public Task<bool> SuggestMissingIdentifiersAsync(
+        string userId,
+        string contentHash,
+        string? globalDiscId,
+        string fingerprint,
+        CancellationToken cancellationToken = default)
+        => database.Database.CreateExecutionStrategy().ExecuteAsync(() =>
+            SuggestMissingIdentifiersCoreAsync(userId, contentHash, globalDiscId, fingerprint, cancellationToken));
+
+    private async Task<bool> SuggestMissingIdentifiersCoreAsync(
+        string userId,
+        string contentHash,
+        string? globalDiscId,
+        string fingerprint,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+        contentHash = contentHash.ToUpperInvariant();
+        await using var transaction = database.Database.IsSqlServer()
+            ? await database.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+        if (transaction is not null)
+        {
+            // Serialize submissions for the same canonical disc across requests and app instances.
+            await database.Discs.FromSqlInterpolated(
+                $"SELECT * FROM [Discs] WITH (UPDLOCK, HOLDLOCK) WHERE [ContentHash] = {contentHash}")
+                .LoadAsync(cancellationToken);
+        }
+
+        var matches = await BaseQuery()
+            .Where(rd => rd.Disc != null && rd.Disc.ContentHash == contentHash)
+            .OrderBy(rd => rd.Id)
+            .ToListAsync(cancellationToken);
+        if (matches.Count == 0)
+        {
+            return false;
+        }
+        if (matches.Select(rd => rd.DiscId).Distinct().Count() != 1)
+        {
+            throw new InvalidOperationException("This disc hash matches multiple canonical discs. Identifiers require manual review.");
+        }
+
+        // A value stored on any sibling already identifies this canonical disc.
+        string? missingId = matches.Any(rd => !string.IsNullOrEmpty(rd.GlobalDiscId)) ? null : globalDiscId;
+        string? missingFingerprint = matches.Any(rd => !string.IsNullOrEmpty(rd.Fingerprint)) ? null : fingerprint;
+        var snapshots = matches.Select(rd => DiscFieldsUpdate.SnapshotFrom(
+            rd, rd.Release?.MediaItem?.Slug, rd.Release?.Boxset?.Slug, rd.Release?.Slug ?? "")).ToArray();
+        var keys = snapshots.Select(snapshot => snapshot.TargetEntityKey).ToArray();
+        var pendingJson = await database.EditSuggestionChanges
+            .Where(change => change.Type == DiscFieldsUpdate.Key
+                && (change.Status == EditSuggestionChangeStatus.Pending
+                    || change.Status == EditSuggestionChangeStatus.Approved
+                    || change.Status == EditSuggestionChangeStatus.Conflicted)
+                && change.Suggestion != null
+                && keys.Contains(change.Suggestion.TargetEntityKey!)
+                && change.Suggestion.Status != EditSuggestionStatus.Withdrawn
+                && change.Suggestion.Status != EditSuggestionStatus.Rejected)
+            .Select(change => change.ProposedJson)
+            .ToListAsync(cancellationToken);
+        foreach (var json in pendingJson)
+        {
+            var pending = JsonSerializer.Deserialize<DiscFieldsDetails>(json, JsonOptions);
+            if (missingId is not null && pending?.GlobalDiscId == missingId)
+            {
+                missingId = null;
+            }
+            if (missingFingerprint is not null && pending?.Fingerprint == missingFingerprint)
+            {
+                missingFingerprint = null;
+            }
+        }
+        if (missingId is null && missingFingerprint is null)
+        {
+            return false;
+        }
+
+        var snapshot = snapshots.First(s => !string.IsNullOrEmpty(s.ReleaseSlug)
+            && (!string.IsNullOrEmpty(s.MediaItemSlug) || !string.IsNullOrEmpty(s.BoxsetSlug)));
+        var proposed = snapshot with
+        {
+            GlobalDiscId = missingId ?? snapshot.GlobalDiscId,
+            Fingerprint = missingFingerprint ?? snapshot.Fingerprint,
+        };
+        await editSuggestionService.SubmitAsync(
+            userId, EditSuggestionSource.Web, "Backfill missing disc identifiers from disc search",
+            [new SubmitChangeInput(DiscFieldsUpdate.Key,
+                JsonSerializer.Serialize(proposed, JsonOptions),
+                JsonSerializer.Serialize(snapshot, JsonOptions))],
+            cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+        return true;
+    }
 
     public async Task<IReadOnlyList<DiscIdTargetCandidate>> GetTargetsByContentHashAsync(
         string contentHash,

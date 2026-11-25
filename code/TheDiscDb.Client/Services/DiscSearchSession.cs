@@ -1,5 +1,7 @@
 namespace TheDiscDb.Client.Services;
 
+using System.Net.Http.Json;
+using TheDiscDb.Core.DiscHash;
 using TheDiscDb.Client.Pages.Contribute;
 
 public sealed record DiscSearchContribution(string Hash, DiscTitleMatch? Title, IReadOnlyList<string> Warnings);
@@ -13,6 +15,7 @@ public sealed class DiscSearchSession(DiscSearchService search, DiscScanUploader
     private bool disposed;
 
     public DiscSearchResult? Result { get; private set; }
+    public bool IdentifiersSuggested { get; private set; }
     public bool CanRetry => this.hash is not null;
     public bool CanPrepareContribution => this.selection is not null && this.identifiers is not null && this.Result is not null;
 
@@ -72,6 +75,29 @@ public sealed class DiscSearchSession(DiscSearchService search, DiscScanUploader
         return this.LookupAsync(hash, ++this.revision, cancellationToken);
     }
 
+    public async Task SuggestMissingIdentifiersAsync(HttpClient http, CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(this.disposed, this);
+        if (this.identifiers is not { } scan || this.Result is not { Found: true } result)
+        {
+            return;
+        }
+        int current = this.revision;
+        using var response = await http.PostAsJsonAsync("api/disc-search/identifiers", new
+        {
+            ContentHash = result.Hash,
+            scan.GlobalDiscId,
+            Fingerprint = DiscFingerprint.Calculate(scan.FingerprintFiles),
+        }, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        var suggestion = await response.Content.ReadFromJsonAsync<IdentifierSuggestionResult>(cancellationToken)
+            ?? throw new InvalidOperationException("The identifier suggestion response was empty.");
+        this.EnsureCurrent(current, cancellationToken);
+        this.IdentifiersSuggested |= suggestion.Created;
+    }
+
+    private sealed record IdentifierSuggestionResult(bool Created);
+
     public async Task<DiscSearchContribution> PrepareContributionAsync(
         DiscTitleMatch? title, string baseUri, Action<string> reportProgress, CancellationToken cancellationToken)
     {
@@ -125,6 +151,7 @@ public sealed class DiscSearchSession(DiscSearchService search, DiscScanUploader
         this.identifiers = null;
         this.hash = null;
         this.Result = null;
+        this.IdentifiersSuggested = false;
         if (previous is not null)
         {
             await previous.DisposeAsync();

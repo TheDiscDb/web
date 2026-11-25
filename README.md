@@ -95,8 +95,16 @@ with an alternative folder picker for restricted folders and other browsers.
 
 The search calculates the existing disc content hash and links to matching movie,
 series, and boxset releases, with front-cover thumbnails when available.
-Searching is public and does not upload video,
-generate a full manifest, or create a submission. **Submit this disc** prepares a
+Searching is public and does not upload video or generate a full manifest.
+When a folder scan matches a disc with missing identifiers, it automatically creates
+a pending suggested edit containing only the missing Disc ID and/or Matrix256
+fingerprint. Existing identifiers (including those stored on a shared disc's sibling
+release) are preserved, and identical pending suggestions are not submitted again.
+Hash-only searches cannot backfill identifiers. Signed-in scans use the current user's
+ID; anonymous scans use `EditSuggestions:AnonymousDiscSearchUserId`, which defaults to
+`anonymous-disc-search`. This is a dedicated attribution ID, not a login account.
+The public identifier endpoint is limited to ten requests per minute per IP.
+**Submit this disc** prepares a
 full browser-local scan only after a no-match result. **Add a new release** reuses
 a matching movie/series disc; boxset-only matches use a full scan and movie/series
 title selection. Login is required only when continuing into a contribution.

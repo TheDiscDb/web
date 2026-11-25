@@ -16,6 +16,69 @@ namespace TheDiscDb.UnitTests.Client;
 public class DiscSearchTests
 {
     [Test]
+    public async Task SearchSession_SubmitsOnlyScannedIdentifiersAndClearsSubmissionState()
+    {
+        using var fixture = new Fixture(_ => Data([Media("movie", "Movie", [Release("one")])], []));
+        await using var session = new DiscSearchSession(fixture.Search, null!);
+        using var handler = new IdentifierHandler();
+        using var http = new HttpClient(handler) { BaseAddress = new Uri("https://localhost/") };
+        await session.SearchAsync(Selection(), CancellationToken.None);
+
+        await session.SuggestMissingIdentifiersAsync(http, CancellationToken.None);
+
+        await Assert.That(session.IdentifiersSuggested).IsTrue();
+        using var payload = JsonDocument.Parse(handler.Payload!);
+        await Assert.That(payload.RootElement.GetProperty("contentHash").GetString()).IsEqualTo(session.Result!.Hash);
+        await Assert.That(payload.RootElement.GetProperty("globalDiscId").ValueKind).IsEqualTo(JsonValueKind.Null);
+        await Assert.That(payload.RootElement.GetProperty("fingerprint").GetString()).IsEqualTo(
+            TheDiscDb.Core.DiscHash.DiscFingerprint.Calculate(
+                [new TheDiscDb.Core.DiscHash.DiscFingerprintFile("BDMV/STREAM/00001.m2ts", 1024)]));
+        await session.ClearAsync();
+        await Assert.That(session.IdentifiersSuggested).IsFalse();
+    }
+
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
+    public async Task SearchSession_HashOnlyOrUnmatchedScansNeverSubmitIdentifiers(bool hashOnly)
+    {
+        using var fixture = new Fixture(_ => Data(hashOnly ? [Media("movie", "Movie", [Release("one")])] : [], []));
+        await using var session = new DiscSearchSession(fixture.Search, null!);
+        if (hashOnly)
+        {
+            await session.SearchHashAsync("ABC", CancellationToken.None);
+        }
+        else
+        {
+            await session.SearchAsync(Selection(), CancellationToken.None);
+        }
+        using var http = new HttpClient(new NoUploadHandler());
+
+        await session.SuggestMissingIdentifiersAsync(http, CancellationToken.None);
+
+        await Assert.That(session.IdentifiersSuggested).IsFalse();
+    }
+
+    [Test]
+    public async Task SearchSession_SubmissionFailurePreservesResultsAndCanRetry()
+    {
+        using var fixture = new Fixture(_ => Data([], [Boxset("collection")]));
+        await using var session = new DiscSearchSession(fixture.Search, null!);
+        using var handler = new IdentifierHandler { Status = HttpStatusCode.TooManyRequests };
+        using var http = new HttpClient(handler) { BaseAddress = new Uri("https://localhost/") };
+        await session.SearchAsync(Selection(), CancellationToken.None);
+
+        await Assert.That(() => session.SuggestMissingIdentifiersAsync(http, CancellationToken.None))
+            .Throws<HttpRequestException>();
+        await Assert.That(session.Result!.Found).IsTrue();
+        await Assert.That(session.IdentifiersSuggested).IsFalse();
+        handler.Status = HttpStatusCode.OK;
+        await session.RetryAsync(CancellationToken.None);
+        await session.SuggestMissingIdentifiersAsync(http, CancellationToken.None);
+        await Assert.That(session.IdentifiersSuggested).IsTrue();
+    }
+
+    [Test]
     [Arguments(false)]
     [Arguments(true)]
     public async Task SearchSession_QueryHash_SearchesAndRetriesWithoutDiscSelection(bool found)
@@ -484,5 +547,24 @@ public class DiscSearchTests
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             => throw new InvalidOperationException("Searching and preparing a local draft must not upload anything.");
+    }
+
+    private sealed class IdentifierHandler : HttpMessageHandler
+    {
+        public string? Payload { get; private set; }
+        public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (request.Method != HttpMethod.Post || request.RequestUri!.AbsolutePath != "/api/disc-search/identifiers")
+            {
+                throw new InvalidOperationException("Unexpected identifier submission request.");
+            }
+            this.Payload = await request.Content!.ReadAsStringAsync(cancellationToken);
+            return new HttpResponseMessage(this.Status)
+            {
+                Content = new StringContent("{\"created\":true}", Encoding.UTF8, "application/json"),
+            };
+        }
     }
 }
