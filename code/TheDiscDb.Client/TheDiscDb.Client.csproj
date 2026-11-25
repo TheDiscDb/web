@@ -43,7 +43,7 @@
         <GraphQL Remove="graphql\queries\GetSeries.graphql" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Fantastic.TheMovieDb" Version="2.1.1" />
+        <PackageReference Include="Fantastic.TheMovieDb" Version="2.1.2" />
         <PackageReference Include="KristofferStrube.Blazor.FileSystemAccess" Version="4.0.0" />
         <PackageReference Include="Markdig" Version="1.4.2" />
         <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="10.0.15" />

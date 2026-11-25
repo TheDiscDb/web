@@ -71,6 +71,8 @@ public partial class ReleaseDetailInput : CancellableComponentBase
     private string releaseDate = string.Empty;
     private string releaseDateValidationMessage = string.Empty;
     private IGetExternalData_ExternalData_ExternalMetadata? externalData;
+    private string? externalDataError;
+    private bool isLoadingExternalData = true;
     private Guid id = Guid.NewGuid();
     private string frontImageUploadUrl => $"/api/contribute/images/front/upload/{id}";
     private string frontImageRemoveUrl => $"/api/contribute/images/front/remove/{id}";
@@ -121,29 +123,51 @@ public partial class ReleaseDetailInput : CancellableComponentBase
 
         await this.LoadDiscScanDraftAsync();
 
-        var result = await this.ContributionClient.GetExternalData.ExecuteAsync(new ExternalDataInput
-        {
-            ExternalId = this.request.ExternalId,
-            MediaType = this.request.MediaType,
-            Provider = this.request.ExternalProvider
-        });
+        await this.LoadReleaseDetailsAsync();
+    }
 
-        if (result != null && result.IsSuccessResult())
+    private async Task LoadReleaseDetailsAsync()
+    {
+        this.isLoadingExternalData = true;
+        this.externalDataError = null;
+        try
         {
-            this.externalData = result.Data!.ExternalData.ExternalMetadata;
-            this.request.Title = this.externalData!.Title;
-            this.request.Year = this.externalData!.Year.ToString();
+            var result = await this.ContributionClient.GetExternalData.ExecuteAsync(new ExternalDataInput
+            {
+                ExternalId = this.request.ExternalId,
+                MediaType = this.request.MediaType,
+                Provider = this.request.ExternalProvider
+            }, this.CancellationToken);
+
+            var metadata = result?.Data?.ExternalData?.ExternalMetadata;
+            if (result is null || !result.IsSuccessResult() || metadata is null)
+            {
+                this.externalDataError = "We couldn't load this title from TMDB. Check the TMDB number or try again. Your disc scan has not been discarded.";
+                return;
+            }
+
+            this.externalData = metadata;
+            this.request.Title = metadata.Title;
+            this.request.Year = metadata.Year.ToString();
+
+            await this.RestoreReleaseDraftAsync();
+            this.lastAppliedDiscHash = this.DiscHash;
+            await this.PersistReleaseDraftAsync();
         }
-        else
+        catch (HttpRequestException)
         {
-            this.NavigationManager.NavigateTo($"/contribution/externalIdNotFound/{this.request.ExternalId}");
+            this.externalDataError = "We couldn't connect to load this title. Try again when your connection is available. Your disc scan has not been discarded.";
         }
+        finally
+        {
+            this.isLoadingExternalData = false;
+        }
+    }
 
-        await this.RestoreReleaseDraftAsync();
-        this.lastAppliedDiscHash = this.DiscHash;
-        await this.PersistReleaseDraftAsync();
-
-        // TODO: Check for other releases in the database for this ExternalId - then prompt or redirect?
+    private async Task RetryLoadReleaseDetailsAsync()
+    {
+        await this.LoadReleaseDetailsAsync();
+        await this.OnParametersSetAsync();
     }
 
     private async Task LoadDiscScanDraftAsync()
@@ -287,6 +311,11 @@ public partial class ReleaseDetailInput : CancellableComponentBase
 
     protected override async Task OnParametersSetAsync()
     {
+        if (this.externalData is null)
+        {
+            return;
+        }
+
         if (this.DiscHash != this.lastAppliedDiscHash && this.form is not null)
         {
             this.lastAppliedDiscHash = this.DiscHash;
@@ -514,7 +543,7 @@ public partial class ReleaseDetailInput : CancellableComponentBase
 
     async Task HandleValidSubmit()
     {
-        if (this.isSubmitting)
+        if (this.isSubmitting || this.externalData is null || this.isLoadingExternalData)
         {
             return;
         }

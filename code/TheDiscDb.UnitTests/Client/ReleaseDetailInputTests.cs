@@ -25,7 +25,7 @@ public class ReleaseDetailInputTests
         using var services = CreateServices(handler);
         var js = new DraftJsRuntime();
         await using var storage = new ContributionDraftStorage(js);
-        using var component = CreateComponent(services, handler, storage);
+        using var component = await CreateComponentAsync(services, handler, storage);
         void ClearScan()
         {
             component.DiscHash = null;
@@ -55,7 +55,7 @@ public class ReleaseDetailInputTests
         using var handler = new SubmissionHandler { PauseCreation = true };
         using var services = CreateServices(handler);
         await using var storage = new ContributionDraftStorage(new DraftJsRuntime());
-        using var component = CreateComponent(services, handler, storage);
+        using var component = await CreateComponentAsync(services, handler, storage);
 
         var firstSubmission = SubmitAsync(component);
         await handler.CreationStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
@@ -73,7 +73,7 @@ public class ReleaseDetailInputTests
         using var handler = new SubmissionHandler();
         using var services = CreateServices(handler);
         await using var storage = new ContributionDraftStorage(new DraftJsRuntime());
-        using var component = CreateComponent(services, handler, storage);
+        using var component = await CreateComponentAsync(services, handler, storage);
         SetField(component, "releaseDate", "invalid");
 
         await SubmitAsync(component);
@@ -100,7 +100,34 @@ public class ReleaseDetailInputTests
         return services.BuildServiceProvider();
     }
 
-    private static ReleaseDetailInput CreateComponent(
+    [Test]
+    [Arguments("payload")]
+    [Arguments("graphql")]
+    [Arguments("transport")]
+    public async Task LoadReleaseDetails_MetadataFailure_BlocksSubmitAndAllowsRetry(string failure)
+    {
+        using var handler = new SubmissionHandler { MetadataFailure = failure };
+        using var services = CreateServices(handler);
+        await using var storage = new ContributionDraftStorage(new DraftJsRuntime());
+        using var component = await CreateComponentAsync(services, handler, storage);
+
+        await Assert.That(GetField<string?>(component, "externalDataError")).IsNotNull();
+        await Assert.That(GetField<bool>(component, "isLoadingExternalData")).IsFalse();
+        await SubmitAsync(component);
+        await Assert.That(handler.ContributionsCreated).IsEqualTo(0);
+        await Assert.That(component.DiscHash).IsEqualTo("abc");
+        await Assert.That(new Uri(component.NavigationManager.Uri).AbsolutePath)
+            .IsEqualTo("/contribute/movie/603");
+
+        handler.MetadataFailure = null;
+        await LoadDetailsAsync(component);
+        await Assert.That(GetField<string?>(component, "externalDataError")).IsNull();
+        await SubmitAsync(component);
+        await Assert.That(handler.ContributionsCreated).IsEqualTo(1);
+        await Assert.That(handler.Attached).IsTrue();
+    }
+
+    private static async Task<ReleaseDetailInput> CreateComponentAsync(
         ServiceProvider services,
         SubmissionHandler handler,
         ContributionDraftStorage storage)
@@ -134,8 +161,18 @@ public class ReleaseDetailInputTests
         request.ReleaseSlug = "2024-blu-ray";
         SetField(component, "form", new ReleaseDetailFormBindings(request));
         SetField(component, "releaseDate", "2024-01-01");
+        await LoadDetailsAsync(component);
         return component;
     }
+
+    private static Task LoadDetailsAsync(ReleaseDetailInput component)
+        => (Task)typeof(ReleaseDetailInput)
+            .GetMethod("RetryLoadReleaseDetailsAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(component, null)!;
+
+    private static T GetField<T>(ReleaseDetailInput component, string name)
+        => (T)typeof(ReleaseDetailInput).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(component)!;
 
     private static Task SubmitAsync(ReleaseDetailInput component)
         => (Task)typeof(ReleaseDetailInput)
@@ -152,6 +189,7 @@ public class ReleaseDetailInputTests
 
     private sealed class SubmissionHandler : HttpMessageHandler
     {
+        public string? MetadataFailure { get; set; }
         public Action? OnLink { get; set; }
         public bool PauseCreation { get; init; }
         public TaskCompletionSource CreationStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -181,6 +219,22 @@ public class ReleaseDetailInputTests
             string data;
             switch (operation)
             {
+                case "GetExternalData":
+                    if (this.MetadataFailure == "transport")
+                    {
+                        throw new HttpRequestException("Connection unavailable");
+                    }
+                    if (this.MetadataFailure == "graphql")
+                    {
+                        return new HttpResponseMessage(HttpStatusCode.OK)
+                        {
+                            Content = new StringContent("""{"errors":[{"message":"Unexpected Execution Error"}]}""", Encoding.UTF8, "application/json")
+                        };
+                    }
+                    data = this.MetadataFailure == "payload"
+                        ? """{"externalData":{"__typename":"ExternalDataPayload","externalMetadata":null,"errors":[{"__typename":"ExternalDataNotFoundError","message":"Movie not found"}]}}"""
+                        : """{"externalData":{"__typename":"ExternalDataPayload","externalMetadata":{"__typename":"ExternalMetadata","id":603,"title":"The Matrix","year":1999,"imageUrl":"poster.jpg"},"errors":null}}""";
+                    break;
                 case "CreateContribution":
                     this.ContributionsCreated++;
                     this.CreationStarted.TrySetResult();

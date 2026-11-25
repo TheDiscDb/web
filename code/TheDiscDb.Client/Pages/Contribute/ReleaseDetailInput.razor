@@ -31,6 +31,20 @@
         </div>
     }
 
+@if (isLoadingExternalData)
+{
+    <p role="status">Loading title details...</p>
+}
+else if (externalData is null)
+{
+    <div class="alert alert-danger" role="alert">@externalDataError</div>
+    <div class="cta-row split">
+        <a class="btn btn-secondary" href="@GetBackUrl()">Back to title search</a>
+        <button type="button" class="btn btn-primary" @onclick="RetryLoadReleaseDetailsAsync">Try again</button>
+    </div>
+}
+else
+{
 <EditForm EditContext="@editContext" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
@@ -137,6 +151,7 @@
         <button type="submit" class="btn btn-primary" disabled="@isSubmitting">@(isSubmitting ? "Saving..." : "Save Release Details")</button>
     </div>
 </EditForm>
+}
 
 <div class="col-lg-12 control-section toast-default-section">
     <SfToast ID="toast_default" @ref="toast" Title="User Message" Content="@toastContent" Timeout="5000" Icon="e-meeting">
